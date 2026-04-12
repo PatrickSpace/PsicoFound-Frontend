@@ -32,7 +32,8 @@
   </LayoutDefault>
 </template>
 <script setup>
-const valid = false;
+import { ref } from 'vue'
+const valid = ref(false);
 import DataTablePsicologos from "@/components/Psicologos/DataTablePsicologos.vue";
 import LayoutDefault from "@/components/Layout/Layoutmain.vue";
 const incialDataPs = [
