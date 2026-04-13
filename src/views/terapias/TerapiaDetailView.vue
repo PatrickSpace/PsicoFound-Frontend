@@ -95,13 +95,18 @@
 </template>
 
 <script setup>
-import { computed, onMounted, ref } from "vue";
-import { useRoute } from "vue-router";
+import { computed, ref, watch } from "vue";
+import { storeToRefs } from "pinia";
+import { useRoute, useRouter } from "vue-router";
 import LayoutDefault from "@/components/Layout/Layoutmain.vue";
 import CitaDialog from "@/components/Terapias/CitaDialog.vue";
-import { getTherapyById } from "@/services/terapiaService";
+import { useAuthStore } from "@/store/auth";
+import { getTherapyByIdForPatient } from "@/services/terapiaService";
 
 const route = useRoute();
+const router = useRouter();
+const authStore = useAuthStore();
+const { currentUser } = storeToRefs(authStore);
 const therapy = ref(null);
 const dialog = ref(false);
 const appointmentHeaders = [
@@ -139,17 +144,30 @@ function statusColor(status) {
 
 async function loadTherapy() {
   const therapyId = route.query.id?.toString() || "";
-  if (!therapyId) return;
+  const pacienteUid = currentUser.value?.uid;
+
+  if (!therapyId || !pacienteUid) {
+    therapy.value = null;
+    return;
+  }
 
   try {
-    therapy.value = await getTherapyById(therapyId);
+    therapy.value = await getTherapyByIdForPatient(therapyId, pacienteUid);
+
+    if (!therapy.value) {
+      router.replace("/dashboard");
+    }
   } catch (error) {
     console.error("Error loading therapy detail:", error);
     therapy.value = null;
   }
 }
 
-onMounted(() => {
-  loadTherapy();
-});
+watch(
+  [() => route.query.id, () => currentUser.value?.uid],
+  () => {
+    loadTherapy();
+  },
+  { immediate: true }
+);
 </script>

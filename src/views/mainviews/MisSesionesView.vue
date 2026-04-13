@@ -89,9 +89,11 @@
       </v-row>
 
       <v-card
-        class="pa-2 my-5 card-backgoundcustom"
+        class="pa-2 my-5 card-backgoundcustom clickable-card"
+        :class="{ 'clickable-card--disabled': !editableAppointment }"
         elevation="2"
         variant="text"
+        @click="openRescheduleDialog"
       >
         <v-card-title class="text-h5">
           ¿Cambio de planes? <v-icon size="small">mdi-book-edit</v-icon>
@@ -101,7 +103,11 @@
           <v-list-item class="pt-5 px-0">
             <v-list-item-title>Reprograma tu sesión</v-list-item-title>
             <v-list-item-subtitle>
-              Puedes cambiar el horario de una sesión programada
+              {{
+                editableAppointment
+                  ? "Puedes cambiar el horario de tu cita pendiente o confirmada."
+                  : "Aun no tienes una cita pendiente o confirmada para reprogramar."
+              }}
             </v-list-item-subtitle>
           </v-list-item>
         </v-card-text>
@@ -163,18 +169,20 @@
 
       <CitaDialog
         v-model="dialog"
-        :terapia-id="activeTherapy?.id || ''"
-        :terapeuta-id="activeTherapy?.terapeutaId || ''"
-        :terapeuta-nombre="activeTherapy?.terapeutaNombre || ''"
+        :terapia-id="dialogAppointment?.terapiaId || activeTherapy?.id || ''"
+        :terapeuta-id="dialogAppointment?.terapeutaId || activeTherapy?.terapeutaId || ''"
+        :terapeuta-nombre="dialogAppointment?.terapeutaNombre || activeTherapy?.terapeutaNombre || ''"
+        :cita-id="dialogAppointment?.citaId || ''"
+        :initial-appointment="dialogAppointment || {}"
         :redirect-on-save="false"
-        @saved="loadTherapies"
+        @saved="handleDialogSaved"
       />
     </v-container>
   </LayoutDefault>
 </template>
 
 <script setup>
-import { computed, onMounted, ref } from "vue";
+import { computed, ref, watch } from "vue";
 import { storeToRefs } from "pinia";
 import LayoutDefault from "@/components/Layout/Layoutmain.vue";
 import CitaDialog from "@/components/Terapias/CitaDialog.vue";
@@ -185,6 +193,7 @@ const authStore = useAuthStore();
 const { currentUser } = storeToRefs(authStore);
 const therapies = ref([]);
 const dialog = ref(false);
+const dialogAppointment = ref(null);
 
 function parseAppointmentDate(appointment) {
   if (!appointment?.fecha) return null;
@@ -203,6 +212,8 @@ const nextAppointment = computed(() => {
       (Array.isArray(therapy.citas) ? therapy.citas : []).map(
         (appointment) => ({
           ...appointment,
+          terapiaId: therapy.id,
+          terapeutaId: therapy.terapeutaId,
           terapeutaNombre: therapy.terapeutaNombre,
         })
       )
@@ -214,6 +225,24 @@ const nextAppointment = computed(() => {
     .sort((a, b) => parseAppointmentDate(a) - parseAppointmentDate(b));
 
   return appointments[0] || null;
+});
+
+const editableAppointment = computed(() => {
+  if (!nextAppointment.value) {
+    return null;
+  }
+
+  return {
+    citaId: nextAppointment.value.citaId || "",
+    terapiaId: nextAppointment.value.terapiaId || "",
+    terapeutaId: nextAppointment.value.terapeutaId || "",
+    terapeutaNombre: nextAppointment.value.terapeutaNombre || "",
+    fecha: nextAppointment.value.fecha || "",
+    hora: nextAppointment.value.hora || "",
+    notas: nextAppointment.value.notas || "",
+    modalidad: nextAppointment.value.modalidad || "",
+    ubicacion: nextAppointment.value.ubicacion || "",
+  };
 });
 
 const hasScheduledAppointments = computed(() =>
@@ -263,9 +292,29 @@ const nextAppointmentMode = computed(() => {
   return nextAppointment.value.modalidad || "Aún no tienes una modalidad definida";
 });
 
+function openRescheduleDialog() {
+  if (!editableAppointment.value) {
+    return;
+  }
+
+  dialogAppointment.value = { ...editableAppointment.value };
+  dialog.value = true;
+}
+
+function handleDialogSaved() {
+  dialogAppointment.value = null;
+  loadTherapies();
+}
+
 async function loadTherapies() {
+  const pacienteUid = currentUser.value?.uid;
+
+  if (!pacienteUid) {
+    therapies.value = [];
+    return;
+  }
+
   try {
-    const pacienteUid = currentUser.value?.uid || "demo-user";
     therapies.value = await getTherapiesByPatient(pacienteUid);
   } catch (error) {
     console.error("Error loading therapies for sessions:", error);
@@ -273,7 +322,32 @@ async function loadTherapies() {
   }
 }
 
-onMounted(() => {
-  loadTherapies();
-});
+watch(
+  () => currentUser.value?.uid,
+  () => {
+    dialogAppointment.value = null;
+    loadTherapies();
+  },
+  { immediate: true }
+);
 </script>
+
+<style scoped>
+.clickable-card {
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, opacity 0.2s ease;
+}
+
+.clickable-card:hover {
+  transform: translateY(-2px);
+}
+
+.clickable-card--disabled {
+  cursor: default;
+  opacity: 0.7;
+}
+
+.clickable-card--disabled:hover {
+  transform: none;
+}
+</style>

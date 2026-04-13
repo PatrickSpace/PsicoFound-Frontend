@@ -92,7 +92,7 @@
 </template>
 
 <script setup>
-import { computed, onMounted, ref } from "vue";
+import { computed, ref, watch } from "vue";
 import { storeToRefs } from "pinia";
 import { useAuthStore } from "@/store/auth";
 import CitaDialog from "@/components/Terapias/CitaDialog.vue";
@@ -163,10 +163,17 @@ function buildSortableDate(fecha, hora) {
 }
 
 async function loadAppointments() {
+  const pacienteUid = currentUser.value?.uid;
+
+  if (!pacienteUid) {
+    therapies.value = [];
+    items.value = [];
+    return;
+  }
+
   loading.value = true;
 
   try {
-    const pacienteUid = currentUser.value?.uid || "demo-user";
     therapies.value = await getTherapiesByPatient(pacienteUid);
 
     items.value = therapies.value.flatMap((therapy) =>
@@ -316,7 +323,11 @@ async function handleResetAppointment(item) {
   }
 }
 
-onMounted(() => {
-  loadAppointments();
-});
+watch(
+  () => currentUser.value?.uid,
+  () => {
+    loadAppointments();
+  },
+  { immediate: true }
+);
 </script>

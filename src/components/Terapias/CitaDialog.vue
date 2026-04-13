@@ -293,6 +293,17 @@ async function submitAppointment() {
     return;
   }
 
+  if (!currentUser.value?.uid) {
+    window.dispatchEvent(
+      new CustomEvent("api-error", {
+        detail: {
+          message: "Necesitas iniciar sesion para registrar una cita.",
+        },
+      })
+    );
+    return;
+  }
+
   saving.value = true;
 
   try {
@@ -309,11 +320,11 @@ async function submitAppointment() {
     } else {
       await createAppointment({
         terapiaId: props.terapiaId || "",
-        usuarioId: currentUser.value?.uid || "demo-user",
+        usuarioId: currentUser.value.uid,
         terapeutaId: props.terapeutaId,
         terapeutaNombre: props.terapeutaNombre,
-        pacienteUid: currentUser.value?.uid || "demo-user",
-        pacienteNombre: userName.value || "Usuario demo",
+        pacienteUid: currentUser.value.uid,
+        pacienteNombre: userName.value || "Usuario",
         pacienteEmail: currentUser.value?.email || "",
         fecha: form.fecha,
         hora: form.hora,
@@ -345,7 +356,8 @@ async function submitAppointment() {
     window.dispatchEvent(
       new CustomEvent("api-error", {
         detail: {
-          message: "No se pudo registrar la cita. Intenta nuevamente.",
+          message:
+            error?.message || "No se pudo registrar la cita. Intenta nuevamente.",
         },
       })
     );

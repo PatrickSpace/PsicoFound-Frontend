@@ -1,4 +1,5 @@
 import { createRouter, createWebHistory } from "vue-router";
+import { onAuthStateChanged } from "firebase/auth";
 import InicioencuestaView from "@/views/encuesta/InicioEncuestaView.vue";
 import EncuestaView from "@/views/encuesta/EncuestaView.vue";
 import PsicologosView from "@/views/PsicologosView.vue";
@@ -13,6 +14,20 @@ import ProgresoView from "@/views/mainviews/ProgresoView.vue";
 import HistorialView from "@/views/mainviews/HistorialView.vue";
 import HerramientasView from "@/views/mainviews/HerramientasView.vue";
 import TerapiaDetailView from "@/views/terapias/TerapiaDetailView.vue";
+import { auth } from "@/plugins/Firebase/firebase";
+
+function getCurrentAuthUser() {
+  if (auth.currentUser) {
+    return Promise.resolve(auth.currentUser);
+  }
+
+  return new Promise((resolve) => {
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      unsubscribe();
+      resolve(user);
+    });
+  });
+}
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -21,11 +36,13 @@ const router = createRouter({
       path: "/",
       name: "home",
       component: HomeView,
+      meta: { public: true },
     },
     {
       path: "/registro",
       name: "registro",
       component: SignUpview,
+      meta: { public: true, guestOnly: true },
     },
     {
       path: "/iniciarencuesta",
@@ -56,6 +73,7 @@ const router = createRouter({
       path: "/login",
       name: "login",
       component: LogInView,
+      meta: { public: true, guestOnly: true },
     },
     {
       path: "/elegirterapeuta",
@@ -89,5 +107,22 @@ const router = createRouter({
     },
  
 ]});
+
+router.beforeEach(async (to) => {
+  const user = await getCurrentAuthUser();
+  const isPublicRoute = Boolean(to.meta.public);
+  const isGuestOnlyRoute = Boolean(to.meta.guestOnly);
+
+  if (!user && !isPublicRoute) {
+    return {
+      path: "/login",
+      query: { redirect: to.fullPath },
+    };
+  }
+
+  if (user && isGuestOnlyRoute) {
+    return "/dashboard";
+  }
+});
 
 export default router;

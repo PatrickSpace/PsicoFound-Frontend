@@ -23,6 +23,20 @@ export async function createAppointment(data = {}) {
         estado: "activo",
       });
 
+  if (therapy.id) {
+    const currentTherapy = await getTherapyById(therapy.id);
+    const hasOpenAppointment = (Array.isArray(currentTherapy?.citas) ? currentTherapy.citas : []).some(
+      (cita) => {
+        const status = (cita?.estado || "").toString().trim().toLowerCase();
+        return status === "pendiente" || status === "confirmada";
+      }
+    );
+
+    if (hasOpenAppointment) {
+      throw new Error("Ya existe una cita pendiente o confirmada para esta terapia");
+    }
+  }
+
   const payload = {
     terapiaId: therapy.id,
     terapeutaId: data.terapeutaId || "",

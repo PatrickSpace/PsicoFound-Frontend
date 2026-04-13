@@ -42,7 +42,7 @@
 </template>
 
 <script setup>
-import { computed, onMounted, ref } from "vue";
+import { computed, ref, watch } from "vue";
 import { useRouter } from "vue-router";
 import { storeToRefs } from "pinia";
 import { useAuthStore } from "@/store/auth";
@@ -109,10 +109,16 @@ function normalizeTherapy(item) {
 }
 
 async function loadTherapies() {
+  const pacienteUid = currentUser.value?.uid;
+
+  if (!pacienteUid) {
+    items.value = [];
+    return;
+  }
+
   loading.value = true;
 
   try {
-    const pacienteUid = currentUser.value?.uid || "demo-user";
     const therapies = await getTherapiesByPatient(pacienteUid);
     items.value = therapies.map(normalizeTherapy);
   } catch (error) {
@@ -127,7 +133,11 @@ function itemdetail(id) {
   router.push({ path: "/terapiadetail", query: { id } });
 }
 
-onMounted(() => {
-  loadTherapies();
-});
+watch(
+  () => currentUser.value?.uid,
+  () => {
+    loadTherapies();
+  },
+  { immediate: true }
+);
 </script>

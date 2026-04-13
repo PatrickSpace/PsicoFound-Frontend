@@ -72,6 +72,10 @@ export async function getTherapyById(terapiaId) {
 }
 
 export async function getTherapiesByPatient(pacienteUid) {
+  if (!pacienteUid) {
+    return [];
+  }
+
   const therapiesRef = collection(db, THERAPIES_COLLECTION);
   const therapiesQuery = query(
     therapiesRef,
@@ -84,4 +88,18 @@ export async function getTherapiesByPatient(pacienteUid) {
     id: item.id,
     ...item.data(),
   }));
+}
+
+export async function getTherapyByIdForPatient(terapiaId, pacienteUid) {
+  if (!terapiaId || !pacienteUid) {
+    return null;
+  }
+
+  const therapy = await getTherapyById(terapiaId);
+
+  if (!therapy || therapy.pacienteUid !== pacienteUid) {
+    return null;
+  }
+
+  return therapy;
 }
