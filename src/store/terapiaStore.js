@@ -9,7 +9,7 @@ export const useTerapiaStore = defineStore("terapia", () => {
   const modalidad = ref("")          // 'presencial' | 'remota' | 'hibrida' | ''
   const preferencia_edad_min = ref(0)
   const preferencia_edad_max = ref(0)
-  const topterapeutas = []          // resultados de la última búsqueda
+  const topterapeutas = ref([])          // resultados de la última búsqueda
 
   // selección actual (opcional)
   const terapia = ref(null)
@@ -29,6 +29,75 @@ export const useTerapiaStore = defineStore("terapia", () => {
 
   function getTopTerapeutas() {
     return topterapeutas.value;
+  }
+
+  function setTopTerapeutas(items = []) {
+    topterapeutas.value = Array.isArray(items) ? items : []
+  }
+
+  function normalizarEspecialidades(valores = []) {
+    return (Array.isArray(valores) ? valores : [])
+      .map((item) => {
+        if (typeof item === "string") return item
+        if (item?.title) return item.title
+        return ""
+      })
+      .filter(Boolean)
+  }
+
+  function normalizarGenero(valor) {
+    const normalized = (valor || "").toString().trim().toLowerCase()
+
+    if (normalized === "hombre") return "masculino"
+    if (normalized === "mujer") return "femenino"
+    if (normalized === "me es indiferente") return ""
+
+    return normalized
+  }
+
+  function normalizarModalidad(valor) {
+    const normalized = (valor || "").toString().trim().toLowerCase()
+
+    if (normalized === "me es indiferente") return ""
+    if (normalized === "online" || normalized === "remota" || normalized === "remoto") return "remoto"
+    if (normalized === "presencial" || normalized === "precencial") return "presencial"
+    if (
+      normalized === "hibrida" ||
+      normalized === "hiibrido" ||
+      normalized === "híbrida" ||
+      normalized === "hibrido" ||
+      normalized === "híbrido"
+    ) return "hibrido"
+
+    return normalized
+  }
+
+  function aplicarPreferenciaEdad(valor) {
+    const normalized = (valor || "").toString().trim()
+
+    preferencia_edad_min.value = 0
+    preferencia_edad_max.value = 0
+
+    if (normalized === "18-25") {
+      preferencia_edad_min.value = 18
+      preferencia_edad_max.value = 25
+    } else if (normalized === "25-35") {
+      preferencia_edad_min.value = 25
+      preferencia_edad_max.value = 35
+    } else if (normalized === "35-45") {
+      preferencia_edad_min.value = 35
+      preferencia_edad_max.value = 45
+    } else if (normalized === "+ 45" || normalized === "+45") {
+      preferencia_edad_min.value = 45
+    }
+  }
+
+  function setCriteriosBusqueda({ especialidades: nuevasEspecialidades = [], enfoque: nuevoEnfoque = "", genero: nuevoGenero = "", modalidad: nuevaModalidad = "", edad = "" } = {}) {
+    especialidades.value = normalizarEspecialidades(nuevasEspecialidades)
+    enfoque.value = (nuevoEnfoque || "").toString().trim()
+    genero.value = normalizarGenero(nuevoGenero)
+    modalidad.value = normalizarModalidad(nuevaModalidad)
+    aplicarPreferenciaEdad(edad)
   }
   function buscarterapeutaejemplo() {
     // Ejemplo predeterminado basado en el terapeuta id:1 (María González)
@@ -95,7 +164,7 @@ export const useTerapiaStore = defineStore("terapia", () => {
         }
 
         // modalidad: permitir que terapeuta tenga modalidad simple o array
-        const tModalidades = normalizeArray(t.modalidades || t.modalidad)
+        const tModalidades = normalizeArray(t.modalidades || t.modalidad).map(normalizarModalidad)
         if (reqModalidad) {
           if (tModalidades.includes(reqModalidad)) score += 1
         }
@@ -142,7 +211,9 @@ export const useTerapiaStore = defineStore("terapia", () => {
     setTerapia,
     buscarterapeutas,
     buscarterapeutaejemplo,
-    getTopTerapeutas
+    getTopTerapeutas,
+    setTopTerapeutas,
+    setCriteriosBusqueda,
   }
 })
 

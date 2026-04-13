@@ -1,15 +1,42 @@
-// src/stores/auth.js
+import { computed, ref } from "vue";
 import { defineStore } from "pinia";
-import { useStorage } from "@vueuse/core";
+import { onAuthStateChanged } from "firebase/auth";
+import { auth } from "@/plugins/Firebase/firebase";
 
-let user = null
+export const useAuthStore = defineStore("auth", () => {
+  const currentUser = ref(null);
+  const isReady = ref(false);
+  let unsubscribe = null;
 
+  function initAuth() {
+    if (unsubscribe) {
+      return unsubscribe;
+    }
 
-function setglobalUser(){
-  
-}
+    unsubscribe = onAuthStateChanged(auth, (user) => {
+      currentUser.value = user;
+      isReady.value = true;
+    });
 
-export const globaluser = {}
+    return unsubscribe;
+  }
 
+  const isAuthenticated = computed(() => Boolean(currentUser.value));
+  const userName = computed(() => {
+    const user = currentUser.value;
 
+    if (!user) {
+      return "Usuario";
+    }
 
+    return user.displayName || user.email?.split("@")[0] || "Usuario";
+  });
+
+  return {
+    currentUser,
+    isReady,
+    isAuthenticated,
+    userName,
+    initAuth,
+  };
+});

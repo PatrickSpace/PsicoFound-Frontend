@@ -108,7 +108,10 @@
 }
 </style>
 <script setup>
+import { storeToRefs } from "pinia";
 import LayoutDefault from "@/components/Layout/Layoutmain.vue";
-import { nombreglobaluser } from "@/plugins/Firebase/firebase.js";
-const username = nombreglobaluser;
+import { useAuthStore } from "@/store/auth";
+
+const authStore = useAuthStore();
+const { userName: username } = storeToRefs(authStore);
 </script>

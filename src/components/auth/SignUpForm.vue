@@ -82,7 +82,10 @@
 import { reactive, ref } from "vue";
 import { auth } from "@/plugins/Firebase/firebase";
 import { createUserWithEmailAndPassword } from "firebase/auth";
+import { createUserInFirestore } from "@/plugins/Firebase/firestore";
+import { useRouter } from "vue-router";
 
+const router = useRouter();
 const form = reactive({ usuario: "", password: "" });
 const valid = ref(false);
 const loading = ref(false);
@@ -94,6 +97,8 @@ const r = {
 };
 
 async function registrarse() {
+  if (!valid.value || loading.value) return;
+
   try {
     loading.value = true;
     const usersignup = await createUserWithEmailAndPassword(
@@ -102,7 +107,13 @@ async function registrarse() {
       form.password
     );
     console.log(usersignup);
-    // Aquí puedes redirigir al usuario o mostrar un mensaje de éxito
+    await createUserInFirestore({
+      id: usersignup.user.uid,
+      email: usersignup.user.email,
+      nombre: usersignup.user.email?.split("@")[0] || "Usuario",
+      rol: "paciente",
+    });
+    await router.push("/dashboard");
   } catch (error) {
     console.error(error);
     alert("Error al registrarse: " + error.message);

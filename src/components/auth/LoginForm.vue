@@ -77,12 +77,9 @@ import {
   GoogleAuthProvider,
   signInWithPopup,
 } from "firebase/auth";
-import { useRoute, useRouter } from "vue-router";
-//import { useAuthStore } from "@/store/auth";
+import { useRouter } from "vue-router";
 
-const route = useRoute();
 const router = useRouter();
-//const auth = useAuthStore();
 
 const form = reactive({ usuario: "", password: "" });
 const valid = ref(false);
@@ -105,20 +102,10 @@ async function LogIn() {
       form.password
     );
     console.log(userlogged.user);
-    const newUser = {
-      id: userlogged.user.uid,
-      email: userlogged.user.email,
-      nombre: userlogged.user.displayName || "Usuario",
-      rol: "paciente",
-    };
-    createUserInFirestore(newUser);
     router.push("/dashboard");
-    // const next = route.query.next || "/encuesta";
-    // const path = Array.isArray(next) ? next[0] : next;
-    // await router.push(path);
   } catch (e) {
     console.error("Login error:", e);
-    alert("Error al registrarse: " + e.message);
+    alert("Error al iniciar sesión: " + e.message);
   } finally {
     loading.value = false;
   }
@@ -128,7 +115,6 @@ async function LoginGoogle() {
   try {
     loadingGoogle.value = true;
     const result = await signInWithPopup(auth, new GoogleAuthProvider());
-    const token = GoogleAuthProvider.credentialFromResult(result).accessToken;
     const userlogged = result.user;
     console.log("Google user:", userlogged);
     const newUser = {
@@ -138,12 +124,12 @@ async function LoginGoogle() {
       rol: "paciente",
     };
     console.log("Google user:", newUser);
-    createUserInFirestore(newUser);
+    await createUserInFirestore(newUser);
+    await router.push("/dashboard");
   } catch (error) {
     console.log(error.message);
   } finally {
     loadingGoogle.value = false;
-    router.push("/dashboard");
   }
 }
 </script>

@@ -23,7 +23,7 @@ import MainLogo from "@/components/Common/MainLogo.vue";
           <v-col cols="2"></v-col>
           <v-col cols="10" class="d-flex my-5" align-self="end">
             <v-btn
-              to="registro"
+              to="/registro"
               append-icon="mdi-arrow-top-right"
               class="text-white text-body-1"
               variant="text"

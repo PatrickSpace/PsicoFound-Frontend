@@ -1,7 +1,11 @@
 <template>
   <div id="main">
     <v-row id="mainrow" class="h-screen m-0">
-      <v-col class="bg-image d-md-flex d-sm-none d-none" cols="6"></v-col>
+      <v-col
+        class="bg-image d-md-flex d-sm-none d-none"
+        cols="6"
+        :style="{ backgroundImage: `url(${bgHomeImage})` }"
+      ></v-col>
       <v-col class="bg-diagonal h-auto">
         <v-row>
           <v-col cols="1" xs="1"></v-col>
@@ -11,14 +15,14 @@
                 <v-toolbar color="transparent">
                   <v-spacer></v-spacer>
                   <v-btn
-                    to="login"
+                    to="/login"
                     class="text-white"
                     variant="tonal"
                     rounded="0"
                   >
                     Iniciar sesion
                   </v-btn>
-                  <v-btn to="signup" class="text-white" variant="text">
+                  <v-btn to="/registro" class="text-white" variant="text">
                     Registrarse
                   </v-btn>
                 </v-toolbar>
@@ -64,7 +68,8 @@
     </v-row>
   </div>
 </template>
-<script>
+<script setup>
+import bgHomeImage from "@/assets/img/bg-home.jpg";
 </script>
 <style>
 #main {
@@ -72,7 +77,6 @@
 }
 
 .bg-image {
-  background-image: url("../assets/img/bg-home.jpg");
   background-size: cover;
   background-repeat: no-repeat;
   background-position-y: bottom;

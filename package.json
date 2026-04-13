@@ -9,15 +9,12 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@vueuse/core": "^13.6.0",
     "axios": "^1.9.0",
     "firebase": "^12.4.0",
     "pinia": "^3.0.3",
     "vue": "^3.5.22",
     "vue-router": "^4.3.0",
-    "vue3-google-login": "^2.0.34",
-    "vuetify": "^3.11.6",
-    "vuex": "^4.1.0"
+    "vuetify": "^3.11.6"
   },
   "devDependencies": {
     "@mdi/font": "^7.4.47",
