@@ -142,10 +142,11 @@
 
         <v-col cols="12" sm="12" md="6" class="d-flex">
           <v-card
-            to="/terapiadetail"
-            class="pa-2 card-backgoundcustom flex-grow-1 d-flex flex-column"
+            class="pa-2 card-backgoundcustom flex-grow-1 d-flex flex-column clickable-card"
+            :class="{ 'clickable-card--disabled': !activeTherapy?.id }"
             elevation="2"
             variant="text"
+            @click="openActiveTherapy"
           >
             <v-card-title class="text-h5">
               <v-icon size="small">mdi-archive-edit</v-icon> Administra tu
@@ -184,11 +185,13 @@
 <script setup>
 import { computed, ref, watch } from "vue";
 import { storeToRefs } from "pinia";
+import { useRouter } from "vue-router";
 import LayoutDefault from "@/components/Layout/Layoutmain.vue";
 import CitaDialog from "@/components/Terapias/CitaDialog.vue";
 import { useAuthStore } from "@/store/auth";
 import { getTherapiesByPatient } from "@/services/terapiaService";
 
+const router = useRouter();
 const authStore = useAuthStore();
 const { currentUser } = storeToRefs(authStore);
 const therapies = ref([]);
@@ -304,6 +307,17 @@ function openRescheduleDialog() {
 function handleDialogSaved() {
   dialogAppointment.value = null;
   loadTherapies();
+}
+
+function openActiveTherapy() {
+  if (!activeTherapy.value?.id) {
+    return;
+  }
+
+  router.push({
+    path: "/terapiadetail",
+    query: { id: activeTherapy.value.id },
+  });
 }
 
 async function loadTherapies() {

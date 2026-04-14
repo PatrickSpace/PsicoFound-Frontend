@@ -2,10 +2,10 @@
   <v-row>
     <v-col cols="12" md="6">
       <v-btn
-        to="/iniciarencuesta"
         size="x-large"
         prepend-icon="mdi-plus"
         variant="tonal"
+        @click="handleNewTherapy"
       >
         Iniciar una nueva terapia
       </v-btn>
@@ -84,6 +84,14 @@ const filteredItems = computed(() => {
   });
 });
 
+const activeTherapy = computed(
+  () =>
+    items.value.find(
+      (therapy) =>
+        (therapy.estado || "").toString().trim().toLowerCase() === "activo"
+    ) || null
+);
+
 function formatDate(value) {
   if (!value) return "No definida";
 
@@ -131,6 +139,22 @@ async function loadTherapies() {
 
 function itemdetail(id) {
   router.push({ path: "/terapiadetail", query: { id } });
+}
+
+function handleNewTherapy() {
+  if (activeTherapy.value?.id) {
+    window.dispatchEvent(
+      new CustomEvent("api-error", {
+        detail: {
+          message:
+            "Ya tienes una terapia activa. Debes pausarla o cancelarla antes de iniciar una nueva.",
+        },
+      })
+    );
+    return;
+  }
+
+  router.push("/iniciarencuesta");
 }
 
 watch(

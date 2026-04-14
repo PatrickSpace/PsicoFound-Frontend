@@ -13,8 +13,19 @@ import {
 import { db } from "@/plugins/Firebase/firestore";
 
 const THERAPIES_COLLECTION = "terapias";
+const ACTIVE_THERAPY_STATUS = "activo";
 
 export async function createTherapy(data = {}) {
+  if (data.pacienteUid) {
+    const activeTherapy = await getActiveTherapyByPatient(data.pacienteUid);
+
+    if (activeTherapy) {
+      throw new Error(
+        "Ya tienes una terapia activa. Debes pausarla o cancelarla antes de crear una nueva."
+      );
+    }
+  }
+
   const therapiesRef = collection(db, THERAPIES_COLLECTION);
   const payload = {
     usuarioId: data.usuarioId || data.pacienteUid || "demo-user",
@@ -90,6 +101,18 @@ export async function getTherapiesByPatient(pacienteUid) {
   }));
 }
 
+export async function getActiveTherapyByPatient(pacienteUid) {
+  const therapies = await getTherapiesByPatient(pacienteUid);
+
+  return (
+    therapies.find(
+      (therapy) =>
+        (therapy.estado || "").toString().trim().toLowerCase() ===
+        ACTIVE_THERAPY_STATUS
+    ) || null
+  );
+}
+
 export async function getTherapyByIdForPatient(terapiaId, pacienteUid) {
   if (!terapiaId || !pacienteUid) {
     return null;
@@ -102,4 +125,35 @@ export async function getTherapyByIdForPatient(terapiaId, pacienteUid) {
   }
 
   return therapy;
+}
+
+export async function updateTherapyStatus(terapiaId, estado) {
+  if (!terapiaId || !estado) {
+    throw new Error("Missing terapiaId or estado");
+  }
+
+  const currentTherapy = await getTherapyById(terapiaId);
+
+  if (!currentTherapy) {
+    throw new Error("No se encontro la terapia a actualizar.");
+  }
+
+  const normalizedStatus = estado.toString().trim().toLowerCase();
+
+  if (normalizedStatus === ACTIVE_THERAPY_STATUS) {
+    const activeTherapy = await getActiveTherapyByPatient(currentTherapy.pacienteUid);
+
+    if (activeTherapy && activeTherapy.id !== terapiaId) {
+      throw new Error(
+        "Ya tienes otra terapia activa. Debes pausarla o cancelarla antes de reactivar esta."
+      );
+    }
+  }
+
+  const therapyRef = doc(db, THERAPIES_COLLECTION, terapiaId);
+
+  await updateDoc(therapyRef, {
+    estado,
+    updatedAt: serverTimestamp(),
+  });
 }

@@ -3,6 +3,7 @@ import { db } from "@/plugins/Firebase/firestore";
 import {
   appendAppointmentToTherapy,
   createTherapy,
+  getActiveTherapyByPatient,
   getTherapyById,
   replaceTherapyAppointments,
 } from "@/services/terapiaService";
@@ -10,6 +11,16 @@ import {
 const APPOINTMENTS_COLLECTION = "citas";
 
 export async function createAppointment(data = {}) {
+  if (!data.terapiaId && data.pacienteUid) {
+    const activeTherapy = await getActiveTherapyByPatient(data.pacienteUid);
+
+    if (activeTherapy) {
+      throw new Error(
+        "Ya tienes una terapia activa. Debes pausarla o cancelarla antes de crear una nueva."
+      );
+    }
+  }
+
   const therapy = data.terapiaId
     ? { id: data.terapiaId }
     : await createTherapy({
