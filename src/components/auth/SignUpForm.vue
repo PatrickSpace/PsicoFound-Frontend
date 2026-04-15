@@ -45,6 +45,8 @@
     variant="tonal"
     size="large"
     jutify-start
+    @click="registerWithGoogle"
+    :loading="loadingGoogle"
   >
     Iniciar sesion con Google
     <template v-slot:prepend>
@@ -81,7 +83,11 @@
 <script setup>
 import { reactive, ref } from "vue";
 import { auth } from "@/plugins/Firebase/firebase";
-import { createUserWithEmailAndPassword } from "firebase/auth";
+import {
+  createUserWithEmailAndPassword,
+  GoogleAuthProvider,
+  signInWithPopup,
+} from "firebase/auth";
 import { createUserInFirestore } from "@/plugins/Firebase/firestore";
 import { useRouter } from "vue-router";
 
@@ -89,6 +95,7 @@ const router = useRouter();
 const form = reactive({ usuario: "", password: "" });
 const valid = ref(false);
 const loading = ref(false);
+const loadingGoogle = ref(false);
 
 const r = {
   required: (v) => !!v || "Requerido",
@@ -113,12 +120,36 @@ async function registrarse() {
       nombre: usersignup.user.email?.split("@")[0] || "Usuario",
       rol: "paciente",
     });
-    await router.push("/dashboard");
+    await router.push("/encuesta");
   } catch (error) {
     console.error(error);
     alert("Error al registrarse: " + error.message);
   } finally {
     loading.value = false;
+  }
+}
+
+async function registerWithGoogle() {
+  if (loadingGoogle.value) return;
+
+  try {
+    loadingGoogle.value = true;
+    const result = await signInWithPopup(auth, new GoogleAuthProvider());
+    const user = result.user;
+
+    await createUserInFirestore({
+      id: user.uid,
+      email: user.email,
+      nombre: user.displayName || user.email?.split("@")[0] || "Usuario",
+      rol: "paciente",
+    });
+
+    await router.push("/encuesta");
+  } catch (error) {
+    console.error(error);
+    alert("Error al registrarse con Google: " + error.message);
+  } finally {
+    loadingGoogle.value = false;
   }
 }
 </script>
