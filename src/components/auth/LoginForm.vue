@@ -4,8 +4,8 @@
       <v-container class="px-0">
         <v-text-field
           v-model="form.usuario"
-          label="Usuario"
-          placeholder="Tu usuario"
+          label="Correo"
+          placeholder="Correo electronico"
           :rules="[r.required, r.email]"
           required
           clearable
