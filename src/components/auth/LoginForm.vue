@@ -112,9 +112,12 @@ async function LogIn() {
 }
 
 async function LoginGoogle() {
+  if (loadingGoogle.value) return;
+
   try {
     loadingGoogle.value = true;
-    const result = await signInWithPopup(auth, new GoogleAuthProvider());
+    const provider = new GoogleAuthProvider();
+    const result = await signInWithPopup(auth, provider);
     const userlogged = result.user;
     console.log("Google user:", userlogged);
     const newUser = {
@@ -127,7 +130,8 @@ async function LoginGoogle() {
     await createUserInFirestore(newUser);
     await router.push("/dashboard");
   } catch (error) {
-    console.log(error.message);
+    console.error("Google login error:", error);
+    alert("Error al iniciar sesión con Google: " + error.message);
   } finally {
     loadingGoogle.value = false;
   }
