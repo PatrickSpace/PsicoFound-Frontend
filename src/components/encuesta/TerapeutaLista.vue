@@ -119,16 +119,19 @@
                       }}
                     </v-alert>
 
+
                     <div class="d-flex flex-column ga-2">
-                      <v-btn
+                      <!-- 
+                        <v-btn
                         block
                         variant="text"
                         color="secondary"
                         prepend-icon="mdi-account-search"
                         to="/psicologos"
-                      >
+                        >
                         Ver perfil
                       </v-btn>
+                      -->
                       <v-btn
                         block
                         color="secondary"
