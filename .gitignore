@@ -18,6 +18,12 @@ coverage
 /cypress/screenshots/
 
 .env
+.env.*
+!.env.example
+.vercel
+.agents/
+.claude/
+skills-lock.json
 
 # Editor directories and files
 .vscode/*

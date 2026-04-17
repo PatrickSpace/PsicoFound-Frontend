@@ -1,0 +1,91 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(uid) {
+      return signedIn() && request.auth.uid == uid;
+    }
+
+    function currentUserDoc() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid));
+    }
+
+    function isAdmin() {
+      return signedIn() &&
+        currentUserDoc().data.rol in ["admin", "psicofound-admin"];
+    }
+
+    function ownsExistingPatientDoc() {
+      return signedIn() && resource.data.pacienteUid == request.auth.uid;
+    }
+
+    function ownsIncomingPatientDoc() {
+      return signedIn() && request.resource.data.pacienteUid == request.auth.uid;
+    }
+
+    match /users/{uid} {
+      allow read, create: if isOwner(uid);
+      allow update: if isOwner(uid) &&
+        request.resource.data.rol == resource.data.rol;
+      allow delete: if false;
+    }
+
+    match /profiles/{uid} {
+      allow read: if isOwner(uid) || isAdmin();
+      allow write: if false;
+    }
+
+    match /conversations/{uid} {
+      allow read: if isOwner(uid) || isAdmin();
+      allow write: if false;
+
+      match /messages/{messageId} {
+        allow read: if isOwner(uid) || isAdmin();
+        allow write: if false;
+      }
+    }
+
+    match /therapists/{therapistId} {
+      allow read: if signedIn();
+      allow create, update, delete: if isAdmin();
+    }
+
+    match /citas/{citaId} {
+      allow read: if ownsExistingPatientDoc() || isAdmin();
+      allow create: if ownsIncomingPatientDoc();
+      allow update: if ownsExistingPatientDoc() &&
+        ownsIncomingPatientDoc() &&
+        request.resource.data.pacienteUid == resource.data.pacienteUid;
+      allow delete: if false;
+    }
+
+    match /terapias/{terapiaId} {
+      allow read: if ownsExistingPatientDoc() || isAdmin();
+      allow create: if ownsIncomingPatientDoc();
+      allow update: if ownsExistingPatientDoc() &&
+        ownsIncomingPatientDoc() &&
+        request.resource.data.pacienteUid == resource.data.pacienteUid;
+      allow delete: if false;
+    }
+
+    match /feddback/{feedbackId} {
+      allow create: if signedIn() &&
+        request.resource.data.userId == request.auth.uid;
+      allow read, update, delete: if false;
+    }
+
+    match /feedback/{feedbackId} {
+      allow create: if signedIn() &&
+        request.resource.data.userId == request.auth.uid;
+      allow read, update, delete: if false;
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

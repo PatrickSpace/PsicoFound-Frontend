@@ -11,9 +11,9 @@
         Buscar terapeuta por nombre
       </v-btn>
     </v-app-bar>
-    <v-main>
-      <v-container>
-        <EncuestaTree />
+    <v-main class="survey-main">
+      <v-container class="survey-container" fluid>
+        <ConversationalSurvey />
       </v-container>
     </v-main>
   </v-app>
@@ -21,12 +21,24 @@
 
 <script setup>
 import MainLogo from "@/components/Common/MainLogo.vue";
-import EncuestaTree from "@/components/encuesta/EncuestaTree.vue";
+import ConversationalSurvey from "@/components/encuesta/ConversationalSurvey.vue";
 </script>
 
 <style scoped>
 .bg-diagonal {
   background: linear-gradient(to left bottom, #4a9ba7, #0d1c1e);
+}
+
+.survey-main {
+  min-height: 0;
+}
+
+.survey-container {
+  height: calc(100dvh - var(--v-layout-top, 64px));
+  max-width: 960px;
+  display: flex;
+  padding-top: 16px;
+  padding-bottom: 16px;
 }
 
 a {
