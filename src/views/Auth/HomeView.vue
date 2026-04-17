@@ -51,16 +51,21 @@
                   Encuentra a tu terapeuta
                 </v-btn>
               </v-col>
-              <v-col cols="12" class="d-flex my-5" align-self="end">
-                <v-btn
-                  append-icon="mdi-arrow-top-right"
-                  class="text-white text-body-1 d-flex"
-                  variant="text"
-                  size="large"
-                >
-                  Ya cuento con un terapeuta
-                </v-btn>
-              </v-col>
+
+<!--  
+  
+<v-col cols="12" class="d-flex my-5" align-self="end">
+  <v-btn
+  append-icon="mdi-arrow-top-right"
+  class="text-white text-body-1 d-flex"
+  variant="text"
+  size="large"
+  >
+  Ya cuento con un terapeuta
+</v-btn>
+</v-col>
+-->
+
             </v-row>
           </v-col>
         </v-row>

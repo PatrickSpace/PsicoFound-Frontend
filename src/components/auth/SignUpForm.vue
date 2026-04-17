@@ -4,8 +4,8 @@
       <v-text-field
         class="mb-2"
         v-model="form.usuario"
-        label="Usuario"
-        placeholder="Tu usuario"
+        label="Correo"
+        placeholder="Correo electrónico"
         :rules="[r.required, r.email]"
         required
         clearable
