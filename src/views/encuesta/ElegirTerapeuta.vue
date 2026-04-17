@@ -5,6 +5,7 @@
         <MainLogo />
       </v-app-bar-title>
       <v-spacer></v-spacer>
+      <!--
       <v-btn to="/encuesta" append-icon="mdi-arrow-left" class="text-white text-body-1 my-5" variant="text" size="large">
         Reiniciar busqueda
       </v-btn>
@@ -15,6 +16,7 @@
         to="psicologos">
         Buscar terapeuta por nombre
       </v-btn>
+      -->
     </v-app-bar>
     <v-main>
       <TerapeutaLista :terapeutas="therapists" />

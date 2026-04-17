@@ -26,9 +26,11 @@
                   multiple
                   :items="especialidades"
                 ></v-combobox>
+                <!--
                 <v-btn to="/elegirterapeuta" @click="conversarConAlguien" variant="text"
                   >Solo quiero conversar con alguien</v-btn
                 >
+                -->
               </v-container>
             </v-card>
           </v-stepper-window-item>
@@ -89,6 +91,7 @@
                   v-model="edad"
                   :items="['18-25', '25-35', '35-45', '+ 45']"
                 ></v-combobox>
+                <!--
                 <v-btn
                   class="mx-auto text-center"
                   variant="tonal"
@@ -97,6 +100,7 @@
                 >
                   Buscar terapeuta</v-btn
                 >
+                -->
               </v-container>
             </v-card>
           </v-stepper-window-item>

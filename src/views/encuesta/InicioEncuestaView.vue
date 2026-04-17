@@ -39,6 +39,7 @@
             Si ya elegiste a un terapeuta registrado en PsicoFound puedes
             realizar una búsqueda aquí:
           </h1>
+          <!--
           <v-btn
             append-icon="mdi-arrow-top-right"
             class="text-white text-body-1 my-5"
@@ -47,6 +48,7 @@
           >
             Buscar terapeuta por nombre
           </v-btn>
+          -->
         </v-container>
       </v-col>
     </v-row>
