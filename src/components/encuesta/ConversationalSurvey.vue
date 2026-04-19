@@ -46,18 +46,6 @@
       </div>
     </div>
 
-    <div v-if="showQuickActions" class="quick-actions">
-      <v-btn
-        variant="tonal"
-        color="secondary"
-        prepend-icon="mdi-chat-processing-outline"
-        :disabled="loading"
-        @click="handleQuickMessage('Solo quiero conversar')"
-      >
-        Solo quiero conversar
-      </v-btn>
-    </div>
-
     <form class="composer" @submit.prevent="handleSubmit">
       <v-textarea
         v-model="draft"
@@ -132,6 +120,7 @@ const messages = ref([]);
 const profile = ref(null);
 const messagesContainer = ref(null);
 const activeSessionId = ref("");
+const crisisRouteTriggered = ref(false);
 
 let unsubscribeConversation = null;
 let unsubscribeMessages = null;
@@ -141,7 +130,7 @@ const welcomeMessage = {
   id: "welcome",
   role: "assistant",
   text:
-    "Hola, soy el asistente de PsicoFound. Cuéntame qué te trae por aquí o elige la opción de solo conversar.",
+    "Hola, soy el asistente de PsicoFound. Cuéntame qué te trae por aquí o qué tipo de apoyo buscas.",
 };
 
 const visibleMessages = computed(() =>
@@ -149,12 +138,6 @@ const visibleMessages = computed(() =>
 );
 
 const canSend = computed(() => draft.value.trim().length > 0 && !loading.value);
-const showQuickActions = computed(
-  () =>
-    messages.value.length === 0 &&
-    !profile.value?.completado &&
-    !profile.value?.soloConversar
-);
 
 watch(
   () => authStore.currentUser,
@@ -167,6 +150,7 @@ watch(
       messages.value = [];
       profile.value = null;
       activeSessionId.value = "";
+      crisisRouteTriggered.value = false;
       return;
     }
 
@@ -205,6 +189,15 @@ watch(
       user.uid,
       (item) => {
         profile.value = item;
+
+        if (item?.riesgoSuicida && !crisisRouteTriggered.value) {
+          crisisRouteTriggered.value = true;
+          applyProfileToTerapiaStore(item, terapiaStore);
+          router.push({
+            path: "/elegirterapeuta",
+            query: { crisis: "1" },
+          });
+        }
       },
       () => {
         notifyError("No pudimos cargar tu perfil de búsqueda.");
@@ -228,14 +221,6 @@ async function handleSubmit() {
   }
 
   draft.value = "";
-
-  await sendChatMessage(message);
-}
-
-async function handleQuickMessage(message) {
-  if (loading.value || resetting.value) {
-    return;
-  }
 
   await sendChatMessage(message);
 }
@@ -353,13 +338,6 @@ function notifyError(message) {
 .messages-panel::-webkit-scrollbar-thumb {
   background: rgba(76, 175, 180, 0.58);
   border-radius: 999px;
-}
-
-.quick-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-  margin-top: 14px;
 }
 
 .message-row {

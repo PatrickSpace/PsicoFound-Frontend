@@ -17,10 +17,43 @@ const GEMINI_HTTP_TIMEOUT_MS = 15000;
 const CHAT_SESSION_DURATION_MS = 5 * 60 * 1000;
 const CHAT_HISTORY_FETCH_LIMIT = 10;
 const CHAT_HISTORY_MODEL_LIMIT = 4;
+const CRISIS_REPLY =
+  "Siento mucho que estes pasando por esto. Si estas en Peru y necesitas " +
+  "apoyo urgente en salud mental, llama gratis a la Linea 113 Salud, " +
+  "opcion 5, disponible las 24 horas. Si estas en peligro inmediato, " +
+  "contacta emergencias o acude al establecimiento de salud mas cercano.";
+const SUICIDE_RISK_PATTERNS = [
+  new RegExp(
+      "\\b(quiero|voy a|planeo|pienso|estoy pensando en|estoy por)" +
+      "\\s+(matarme|suicidarme)\\b",
+  ),
+  new RegExp(
+      "\\b(quiero|voy a|planeo|pienso|estoy pensando en|estoy por)" +
+      "\\s+quitarme la vida\\b",
+  ),
+  new RegExp(
+      "\\b(quiero|voy a|planeo|pienso|estoy pensando en|estoy por)" +
+      "\\s+acabar con mi vida\\b",
+  ),
+  new RegExp(
+      "\\b(quiero|voy a|planeo|pienso|estoy pensando en|estoy por)" +
+      "\\s+terminar con mi vida\\b",
+  ),
+  new RegExp(
+      "\\b(tengo|ya tengo)\\s+un plan\\b.*\\b" +
+      "(suicidarme|matarme|quitarme la vida)\\b",
+  ),
+  new RegExp(
+      "\\b(suicidarme|matarme|quitarme la vida)\\b.*\\b" +
+      "(tengo|ya tengo)\\s+un plan\\b",
+  ),
+  /\b(voy a|quiero|planeo)\s+(cortarme las venas|tomar pastillas)\b/,
+];
 
 const PROFILE_DEFAULTS = {
   motivoConsulta: "",
   soloConversar: false,
+  riesgoSuicida: false,
   temas: [],
   enfoque: "",
   preferenciaEdad: "",
@@ -92,10 +125,19 @@ exports.sendProfileChatMessage = onCall(
       });
 
       const currentProfile = await getCurrentProfile(profileRef);
-      const history = await getRecentHistory(messagesRef, chatSession.id);
-      const geminiResult = await askGemini({currentProfile, history});
-      const cleanData = sanitizeProfileData(geminiResult.data);
-      const reply = normalizeReply(geminiResult.reply);
+      const crisisResult = getCrisisResult(message);
+      let cleanData;
+      let reply;
+
+      if (crisisResult) {
+        cleanData = sanitizeProfileData(crisisResult.data);
+        reply = crisisResult.reply;
+      } else {
+        const history = await getRecentHistory(messagesRef, chatSession.id);
+        const geminiResult = await askGemini({currentProfile, history});
+        cleanData = sanitizeProfileData(geminiResult.data);
+        reply = normalizeReply(geminiResult.reply);
+      }
 
       await profileRef.set(
           {
@@ -172,6 +214,40 @@ function normalizeMessage(value) {
 function normalizeReply(value) {
   const fallback = "Gracias por contarme. Sigamos paso a paso.";
   return (value || fallback).toString().trim() || fallback;
+}
+
+function getCrisisResult(message) {
+  if (!hasClearSuicideRisk(message)) {
+    return null;
+  }
+
+  return {
+    reply: CRISIS_REPLY,
+    data: {
+      motivoConsulta: "Riesgo suicida expresado por el usuario.",
+      soloConversar: false,
+      riesgoSuicida: true,
+      temas: [],
+      enfoque: "indiferente",
+      urgencia: "alta",
+      observaciones: "Se detecto intencion clara de atentar contra su vida.",
+      completado: true,
+    },
+  };
+}
+
+function hasClearSuicideRisk(message) {
+  const normalized = normalizeForMatching(message);
+  return SUICIDE_RISK_PATTERNS.some((pattern) => pattern.test(normalized));
+}
+
+function normalizeForMatching(value) {
+  return (value || "")
+      .toString()
+      .trim()
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "");
 }
 
 async function getCurrentProfile(profileRef) {
@@ -329,10 +405,13 @@ function buildPrompt({currentProfile, history}) {
   return `
 Eres el asistente conversacional de PsicoFound.
 Objetivo unico: recolectar los criterios que usa el motor deterministico de
-recomendacion de psicologos. No recomiendes psicologos, no diagnostiques y no
-prometas resultados.
+recomendacion de psicologos. Conversa con calidez profesional para hacer una
+admision breve, pero no hagas terapia. No recomiendes psicologos, no
+diagnostiques, no prometas resultados y no des consejos, tecnicas, ejercicios,
+planes de accion ni indicaciones clinicas.
 
 El motor usa estos campos:
+CRISIS. riesgoSuicida: true si hay intencion clara de atentar contra su vida.
 0. soloConversar: true si el usuario quiere solo conversar sin filtrar por
    problema ni enfoque.
 1. temas: especialidades del psicologo.
@@ -342,18 +421,47 @@ El motor usa estos campos:
    Integrativo o indiferente.
 5. preferenciaEdad: 18-25, 25-35, 35-45, +45 o indiferente.
 
-Responde en maximo 2 frases y haz solo 1 pregunta breve.
+Responde en maximo 2 frases. Haz solo 1 pregunta breve, salvo en modo crisis,
+donde la respuesta debe priorizar ayuda inmediata y no necesita pregunta.
 Extrae datos aunque el usuario responda de forma informal.
 
+Modo crisis por riesgo suicida:
+- Si el usuario expresa una intencion clara de atentar contra su vida, quitarse
+  la vida, suicidarse, hacerse dano mortal, tener un plan o estar por hacerlo,
+  activa modo crisis.
+- En modo crisis guarda riesgoSuicida=true, urgencia="alta", completado=true,
+  temas=[] y enfoque="indiferente".
+- En modo crisis ignora todos los criterios del algoritmo; la app mostrara una
+  lista de psicologos disponibles sin filtrar.
+- En modo crisis NO hagas preguntas de matching, NO des consejos, NO des
+  tecnicas y NO intentes hacer contencion prolongada.
+- La respuesta debe ser breve, directa y orientada a ayuda inmediata. Incluye:
+  "Si estas en Peru y necesitas apoyo urgente en salud mental, llama gratis a
+  la Linea 113 Salud, opcion 5, disponible las 24 horas."
+- Tambien indica que si esta en peligro inmediato debe contactar emergencias o
+  acudir al establecimiento de salud mas cercano.
+- No actives riesgoSuicida por tristeza, ansiedad o frases vagas si no hay
+  intencion clara. Si es ambiguo, pregunta de forma breve si esta en peligro
+  inmediato o pensando en hacerse dano ahora.
+
 Opcion especial "solo quiero conversar":
-- Si el usuario dice que solo quiere conversar, hablar con alguien, desahogarse
-  o no tiene un problema especifico, guarda soloConversar=true.
-- En ese modo, el problema a resolver y el enfoque terapeutico NO influyen en
-  el matching: guarda temas=[] y enfoque="indiferente".
-- En ese modo NO preguntes por temas ni por estilo/enfoque de ayuda.
-- En ese modo pregunta solo preferencias practicas en este orden:
+- Detecta senales de que el usuario busca principalmente conversar, ser
+  escuchado, desahogarse, hablar con alguien o no tiene un problema especifico.
+- Si el usuario lo dice de forma explicita, guarda soloConversar=true.
+- Si la intencion parece probable pero no esta clara, NO asumas. Haz una
+  pregunta directa y breve: "Para orientarte mejor, estas buscando
+  principalmente conversar con un terapeuta sin enfocarte en un problema
+  especifico?"
+- Si el usuario confirma, guarda soloConversar=true, temas=[] y
+  enfoque="indiferente".
+- Si el usuario no confirma o menciona un problema especifico, guarda
+  soloConversar=false y continua el flujo normal.
+- En modo soloConversar, el problema a resolver y el enfoque terapeutico NO
+  influyen en el matching.
+- En modo soloConversar NO preguntes por temas ni por estilo/enfoque de ayuda.
+- En modo soloConversar pregunta solo preferencias practicas en este orden:
   modalidad, preferenciaGenero, preferenciaEdad.
-- En ese modo completado=true cuando modalidad, preferenciaGenero y
+- En modo soloConversar completado=true cuando modalidad, preferenciaGenero y
   preferenciaEdad tengan valor o fueron marcados como indiferente.
 
 Si soloConversar=false o el usuario menciona un problema especifico, pregunta
@@ -380,6 +488,14 @@ Regla importante para enfoque:
 No preguntes por nivel de malestar, ciudad, presupuesto ni disponibilidad como
 parte del flujo principal. Esos campos no bloquean el matching actual.
 motivoConsulta debe ser un resumen breve del motivo en lenguaje natural.
+
+Estilo de conversacion:
+- Usa escucha empatica breve, similar a una admision profesional.
+- Valida sin interpretar ni aconsejar. Ejemplo: "Entiendo, gracias por
+  contarmelo."
+- Despues de validar, haz una sola pregunta de recopilacion, salvo en modo
+  crisis.
+- No expliques que estas haciendo matching ni menciones el algoritmo.
 
 Para temas usa nombres cercanos a este catalogo:
 Ansiedad, Depresion, Trauma infantil, Problemas de autoestima, Problemas de
@@ -425,6 +541,7 @@ function buildResponseSchema() {
         properties: {
           motivoConsulta: {type: Type.STRING},
           soloConversar: {type: Type.BOOLEAN},
+          riesgoSuicida: {type: Type.BOOLEAN},
           temas: {
             type: Type.ARRAY,
             items: {type: Type.STRING},

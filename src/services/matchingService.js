@@ -56,6 +56,17 @@ const AGE_MAP = {
 export function buildSearchCriteriaFromProfile(profile = {}) {
   const temas = Array.isArray(profile.temas) ? profile.temas : [];
   const soloConversar = Boolean(profile.soloConversar);
+  const riesgoSuicida = Boolean(profile.riesgoSuicida);
+
+  if (riesgoSuicida) {
+    return {
+      especialidades: [],
+      enfoque: "",
+      genero: "",
+      modalidad: "",
+      edad: "",
+    };
+  }
 
   return {
     especialidades: soloConversar

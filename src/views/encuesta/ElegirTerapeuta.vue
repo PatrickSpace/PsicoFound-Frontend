@@ -19,6 +19,19 @@
       -->
     </v-app-bar>
     <v-main>
+      <v-alert
+        v-if="isCrisisMode"
+        class="ma-6"
+        color="error"
+        variant="tonal"
+        icon="mdi-alert-circle-outline"
+        title="Ayuda urgente disponible"
+      >
+        Si estás en Perú y necesitas apoyo urgente en salud mental, llama gratis
+        a la Línea 113 Salud, opción 5, disponible las 24 horas. Si estás en
+        peligro inmediato, contacta emergencias o acude al establecimiento de
+        salud más cercano.
+      </v-alert>
       <TerapeutaLista :terapeutas="therapists" />
     </v-main>
   </v-app>
@@ -28,15 +41,21 @@
 import MainLogo from "@/components/Common/MainLogo.vue";
 import TerapeutaLista from "@/components/encuesta/TerapeutaLista.vue";
 import { useTerapiaStore } from "@/store/terapiaStore";
-import { onMounted, ref } from "vue";
+import { computed, onMounted, ref } from "vue";
+import { useRoute } from "vue-router";
 import { getTherapists } from "@/services/psicologoService";
 const terapiaStore = useTerapiaStore();
+const route = useRoute();
 const therapists = ref([]);
+const isCrisisMode = computed(() => route.query.crisis === "1");
 
 async function buscarTerapeutas() {
   try {
     const therapistsFromDb = await getTherapists();
-    const results = terapiaStore.buscarterapeutas(therapistsFromDb);
+    const activeTherapists = therapistsFromDb.filter(
+      (therapist) => therapist.activo !== false
+    );
+    const results = terapiaStore.buscarterapeutas(activeTherapists);
     terapiaStore.setTopTerapeutas(results);
     therapists.value = terapiaStore.getTopTerapeutas();
   } catch (error) {
