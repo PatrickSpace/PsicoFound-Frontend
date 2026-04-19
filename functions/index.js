@@ -20,6 +20,7 @@ const CHAT_HISTORY_MODEL_LIMIT = 4;
 
 const PROFILE_DEFAULTS = {
   motivoConsulta: "",
+  soloConversar: false,
   temas: [],
   enfoque: "",
   preferenciaEdad: "",
@@ -332,6 +333,8 @@ recomendacion de psicologos. No recomiendes psicologos, no diagnostiques y no
 prometas resultados.
 
 El motor usa estos campos:
+0. soloConversar: true si el usuario quiere solo conversar sin filtrar por
+   problema ni enfoque.
 1. temas: especialidades del psicologo.
 2. modalidad: online, presencial, hibrido o indiferente.
 3. preferenciaGenero: masculino, femenino o indiferente.
@@ -341,7 +344,20 @@ El motor usa estos campos:
 
 Responde en maximo 2 frases y haz solo 1 pregunta breve.
 Extrae datos aunque el usuario responda de forma informal.
-Pregunta por el primer criterio faltante en este orden:
+
+Opcion especial "solo quiero conversar":
+- Si el usuario dice que solo quiere conversar, hablar con alguien, desahogarse
+  o no tiene un problema especifico, guarda soloConversar=true.
+- En ese modo, el problema a resolver y el enfoque terapeutico NO influyen en
+  el matching: guarda temas=[] y enfoque="indiferente".
+- En ese modo NO preguntes por temas ni por estilo/enfoque de ayuda.
+- En ese modo pregunta solo preferencias practicas en este orden:
+  modalidad, preferenciaGenero, preferenciaEdad.
+- En ese modo completado=true cuando modalidad, preferenciaGenero y
+  preferenciaEdad tengan valor o fueron marcados como indiferente.
+
+Si soloConversar=false o el usuario menciona un problema especifico, pregunta
+por el primer criterio faltante en este orden:
 temas, modalidad, preferenciaGenero, enfoque, preferenciaEdad.
 
 Regla importante para enfoque:
@@ -382,7 +398,8 @@ inmediata/local.
 
 completado=true solo si hay suficiente informacion para el recomendador:
 temas, modalidad, preferenciaGenero, enfoque y preferenciaEdad tienen valor
-o fueron marcados como indiferente.
+o fueron marcados como indiferente. Excepcion: si soloConversar=true, temas y
+enfoque no son requeridos.
 
 Perfil actual:
 ${JSON.stringify(currentProfile)}
@@ -407,6 +424,7 @@ function buildResponseSchema() {
         type: Type.OBJECT,
         properties: {
           motivoConsulta: {type: Type.STRING},
+          soloConversar: {type: Type.BOOLEAN},
           temas: {
             type: Type.ARRAY,
             items: {type: Type.STRING},

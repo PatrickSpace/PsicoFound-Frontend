@@ -55,12 +55,15 @@ const AGE_MAP = {
 
 export function buildSearchCriteriaFromProfile(profile = {}) {
   const temas = Array.isArray(profile.temas) ? profile.temas : [];
+  const soloConversar = Boolean(profile.soloConversar);
 
   return {
-    especialidades: temas
-      .map(normalizeSpecialty)
-      .filter(Boolean),
-    enfoque: normalizeValue(profile.enfoque, APPROACH_MAP),
+    especialidades: soloConversar
+      ? []
+      : temas
+        .map(normalizeSpecialty)
+        .filter(Boolean),
+    enfoque: soloConversar ? "" : normalizeValue(profile.enfoque, APPROACH_MAP),
     genero: normalizeValue(profile.preferenciaGenero, GENDER_MAP),
     modalidad: normalizeValue(profile.modalidad, MODALITY_MAP),
     edad: normalizeValue(profile.preferenciaEdad, AGE_MAP),

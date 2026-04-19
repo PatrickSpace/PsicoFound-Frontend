@@ -46,6 +46,18 @@
       </div>
     </div>
 
+    <div v-if="showQuickActions" class="quick-actions">
+      <v-btn
+        variant="tonal"
+        color="secondary"
+        prepend-icon="mdi-chat-processing-outline"
+        :disabled="loading"
+        @click="handleQuickMessage('Solo quiero conversar')"
+      >
+        Solo quiero conversar
+      </v-btn>
+    </div>
+
     <form class="composer" @submit.prevent="handleSubmit">
       <v-textarea
         v-model="draft"
@@ -129,7 +141,7 @@ const welcomeMessage = {
   id: "welcome",
   role: "assistant",
   text:
-    "Hola, soy el asistente de PsicoFound. Para empezar, cuéntame qué te trae por aquí o qué te gustaría mejorar.",
+    "Hola, soy el asistente de PsicoFound. Cuéntame qué te trae por aquí o elige la opción de solo conversar.",
 };
 
 const visibleMessages = computed(() =>
@@ -137,6 +149,12 @@ const visibleMessages = computed(() =>
 );
 
 const canSend = computed(() => draft.value.trim().length > 0 && !loading.value);
+const showQuickActions = computed(
+  () =>
+    messages.value.length === 0 &&
+    !profile.value?.completado &&
+    !profile.value?.soloConversar
+);
 
 watch(
   () => authStore.currentUser,
@@ -209,8 +227,21 @@ async function handleSubmit() {
     return;
   }
 
-  loading.value = true;
   draft.value = "";
+
+  await sendChatMessage(message);
+}
+
+async function handleQuickMessage(message) {
+  if (loading.value || resetting.value) {
+    return;
+  }
+
+  await sendChatMessage(message);
+}
+
+async function sendChatMessage(message) {
+  loading.value = true;
 
   try {
     await sendProfileChatMessage(message);
@@ -322,6 +353,13 @@ function notifyError(message) {
 .messages-panel::-webkit-scrollbar-thumb {
   background: rgba(76, 175, 180, 0.58);
   border-radius: 999px;
+}
+
+.quick-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 14px;
 }
 
 .message-row {
