@@ -1,3 +1,14 @@
+import { getFunctions, httpsCallable } from "firebase/functions";
+import { app } from "@/plugins/Firebase/firebase";
+
+const FUNCTIONS_REGION =
+  import.meta.env.VITE_FIREBASE_FUNCTIONS_REGION || "southamerica-east1";
+const functions = getFunctions(app, FUNCTIONS_REGION);
+const getRecommendedTherapistsCallable = httpsCallable(
+  functions,
+  "getRecommendedTherapists"
+);
+
 const GENDER_MAP = {
   hombre: "masculino",
   masculino: "masculino",
@@ -87,6 +98,30 @@ export function applyProfileToTerapiaStore(profile, terapiaStore) {
   }
 
   terapiaStore.setCriteriosBusqueda(buildSearchCriteriaFromProfile(profile));
+}
+
+export async function getRecommendedTherapists() {
+  try {
+    const result = await getRecommendedTherapistsCallable();
+    return {
+      therapists: Array.isArray(result.data?.therapists)
+        ? result.data.therapists
+        : [],
+      profile: result.data?.profile || null,
+      criteria: result.data?.criteria || null,
+    };
+  } catch (error) {
+    throw createMatchingError(error);
+  }
+}
+
+function createMatchingError(error) {
+  const readableError = new Error(
+    error?.message ||
+      "No pudimos obtener las recomendaciones. Inténtalo nuevamente."
+  );
+  readableError.code = error?.code || "";
+  return readableError;
 }
 
 function normalizeValue(value, dictionary) {

@@ -32,6 +32,19 @@
         peligro inmediato, contacta emergencias o acude al establecimiento de
         salud más cercano.
       </v-alert>
+      <v-alert
+        v-if="errorMessage"
+        class="ma-6"
+        color="error"
+        variant="tonal"
+        icon="mdi-alert-outline"
+        title="No pudimos cargar las recomendaciones"
+      >
+        {{ errorMessage }}
+      </v-alert>
+      <div v-if="loading" class="pa-6 d-flex justify-center">
+        <v-progress-circular indeterminate color="secondary" />
+      </div>
       <TerapeutaLista :terapeutas="therapists" />
     </v-main>
   </v-app>
@@ -43,25 +56,31 @@ import TerapeutaLista from "@/components/encuesta/TerapeutaLista.vue";
 import { useTerapiaStore } from "@/store/terapiaStore";
 import { computed, onMounted, ref } from "vue";
 import { useRoute } from "vue-router";
-import { getTherapists } from "@/services/psicologoService";
+import { getRecommendedTherapists } from "@/services/matchingService";
 const terapiaStore = useTerapiaStore();
 const route = useRoute();
 const therapists = ref([]);
+const loading = ref(false);
+const errorMessage = ref("");
 const isCrisisMode = computed(() => route.query.crisis === "1");
 
 async function buscarTerapeutas() {
+  loading.value = true;
+  errorMessage.value = "";
+
   try {
-    const therapistsFromDb = await getTherapists();
-    const activeTherapists = therapistsFromDb.filter(
-      (therapist) => therapist.activo !== false
-    );
-    const results = terapiaStore.buscarterapeutas(activeTherapists);
+    const { therapists: results } = await getRecommendedTherapists();
     terapiaStore.setTopTerapeutas(results);
-    therapists.value = terapiaStore.getTopTerapeutas();
+    therapists.value = results;
   } catch (error) {
     console.error("Error buscando terapeutas:", error);
+    errorMessage.value =
+      error?.message ||
+      "Ocurrió un error al obtener los psicólogos recomendados.";
     therapists.value = [];
     terapiaStore.setTopTerapeutas([]);
+  } finally {
+    loading.value = false;
   }
 }
 
