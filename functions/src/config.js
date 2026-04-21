@@ -4,8 +4,8 @@ const GEMINI_API_KEY = defineSecret("GEMINI_API_KEY");
 const GEMINI_MODEL = "gemini-2.5-flash-lite";
 const GEMINI_HTTP_TIMEOUT_MS = 15000;
 const CHAT_SESSION_DURATION_MS = 5 * 60 * 1000;
-const CHAT_HISTORY_FETCH_LIMIT = 10;
-const CHAT_HISTORY_MODEL_LIMIT = 10;
+const CHAT_HISTORY_FETCH_LIMIT = 15;
+const CHAT_HISTORY_MODEL_LIMIT = 15;
 
 module.exports = {
   GEMINI_API_KEY,
