@@ -1,6 +1,11 @@
 <template>
-  <v-dialog :model-value="modelValue" max-width="700px" @update:model-value="emit('update:modelValue', $event)">
-    <v-card class="ma-5">
+  <v-dialog
+    :model-value="modelValue"
+    class="appointment-dialog"
+    max-width="700px"
+    @update:model-value="emit('update:modelValue', $event)"
+  >
+    <v-card class="appointment-card ma-5">
       <v-card-title class="text-h5">Agendar cita</v-card-title>
       <v-divider class="mx-4"></v-divider>
       <v-card-text class="pt-6">
@@ -65,7 +70,7 @@
           </v-row>
         </v-container>
       </v-card-text>
-      <v-card-actions>
+      <v-card-actions class="appointment-actions">
         <v-spacer></v-spacer>
         <v-btn variant="text" @click="emit('update:modelValue', false)">Cancelar</v-btn>
         <v-btn
@@ -366,3 +371,35 @@ async function submitAppointment() {
   }
 }
 </script>
+
+<style scoped>
+@media (max-width: 600px) {
+  .appointment-dialog :deep(.v-overlay__content) {
+    width: calc(100% - 20px) !important;
+    max-height: calc(100dvh - 20px);
+    margin: 10px;
+  }
+
+  .appointment-card {
+    margin: 0 !important;
+  }
+
+  .appointment-card :deep(.v-card-title) {
+    font-size: 1.25rem;
+    line-height: 1.25;
+  }
+
+  .appointment-card :deep(.v-card-text) {
+    padding-inline: 12px;
+  }
+
+  .appointment-actions {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .appointment-actions :deep(.v-btn) {
+    flex: 1 1 100%;
+  }
+}
+</style>

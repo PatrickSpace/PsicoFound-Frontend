@@ -1,11 +1,11 @@
 <template>
-  <v-container>
-    <h1>Busqueda de psicologos</h1>
+  <v-container class="search-view-container">
+    <h1 class="text-h5 text-sm-h4">Busqueda de psicologos</h1>
     <v-divider></v-divider>
     <v-row class="mt-2">
-      <v-col>
-        <h2>Ingresa tus datos</h2>
-        <v-form class="mx-10">
+      <v-col cols="12" md="6">
+        <h2 class="text-h6 text-sm-h5">Ingresa tus datos</h2>
+        <v-form class="search-form">
           <v-text-field variant="underlined" label="Nombre"> </v-text-field>
           <v-combobox
             label="Enfoque"
@@ -43,8 +43,8 @@
           <!-- <v-btn class="mt-2" color="teal" block>Buscar</v-btn> -->
         </v-form>
       </v-col>
-      <v-col>
-        <h2>Resultados</h2>
+      <v-col cols="12" md="6">
+        <h2 class="text-h6 text-sm-h5">Resultados</h2>
         <v-card :title="psicologo.nombre" subtitle="Hombre">
           <template v-slot:prepend>
             <v-icon size="x-large" color="primary" icon="mdi-account"></v-icon>
@@ -84,3 +84,19 @@ export default {
   },
 };
 </script>
+
+<style scoped>
+.search-view-container {
+  padding-inline: 16px;
+}
+
+.search-form {
+  margin-inline: 0;
+}
+
+@media (min-width: 960px) {
+  .search-form {
+    margin-inline: 40px;
+  }
+}
+</style>

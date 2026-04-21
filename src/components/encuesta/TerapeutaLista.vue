@@ -1,5 +1,5 @@
 <template>
-  <v-container fluid class="py-6">
+  <v-container fluid class="therapist-list-container">
     <v-row justify="center">
       <v-col cols="12" lg="8" xl="7" class="mx-auto">
         <div class="d-flex flex-column ga-4">
@@ -8,7 +8,7 @@
             :key="therapist.id"
             rounded="xl"
             elevation="6"
-            class="card-backgoundcustom"
+            class="therapist-card card-backgoundcustom"
           >
             <v-card-text class="pa-0">
               <v-row align="stretch" class="ma-0">
@@ -23,7 +23,7 @@
                   <div
                     class="d-flex flex-column flex-md-row align-center justify-center ga-3 w-100"
                   >
-                    <v-avatar size="112" rounded="xl">
+                    <v-avatar class="therapist-avatar" size="112" rounded="xl">
                       <v-img
                         v-if="therapist.avatar"
                         :src="therapist.avatar"
@@ -224,3 +224,37 @@ function openAppointmentDialog(therapist) {
   dialog.value = true;
 }
 </script>
+
+<style scoped>
+.therapist-list-container {
+  padding-block: 24px;
+}
+
+.therapist-card {
+  overflow: hidden;
+}
+
+@media (max-width: 600px) {
+  .therapist-list-container {
+    padding: 12px;
+  }
+
+  .therapist-avatar {
+    width: 88px !important;
+    height: 88px !important;
+  }
+
+  .therapist-card :deep(.v-col) {
+    padding: 14px !important;
+  }
+
+  .therapist-card :deep(.v-alert) {
+    font-size: 0.88rem;
+    line-height: 1.4;
+  }
+
+  .therapist-card :deep(.v-chip) {
+    max-width: 100%;
+  }
+}
+</style>

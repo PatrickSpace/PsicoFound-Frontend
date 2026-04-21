@@ -5,8 +5,8 @@
     floating
     id="navd"
     theme="dark"
-    class="d-flex"
-    width="400"
+    class="d-none d-lg-flex"
+    width="320"
     app
   >
     <div class="my-auto fill-height d-flex ml-10">

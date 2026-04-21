@@ -1,6 +1,12 @@
 <template>
-  <v-app class="screen h-screen">
-    <v-app-bar app class="px-15" color="transparent" dark :elevation="0">
+  <v-app class="screen recommendations-page">
+    <v-app-bar
+      app
+      class="responsive-app-bar"
+      color="transparent"
+      dark
+      :elevation="0"
+    >
       <v-app-bar-title class="text-white">
         <MainLogo />
       </v-app-bar-title>
@@ -94,4 +100,8 @@ onMounted(() => {
 });
 
 </script>
-<style></style>
+<style scoped>
+.recommendations-page {
+  min-height: 100dvh;
+}
+</style>

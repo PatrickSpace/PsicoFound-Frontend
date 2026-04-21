@@ -1,5 +1,5 @@
 <template>
-  <v-bottom-navigation class="bg-transparent d-lg-none" grow>
+  <v-bottom-navigation class="bottom-nav-mobile bg-transparent d-lg-none" grow>
     <v-btn
       v-for="(item, i) in items"
       :key="i"
@@ -14,16 +14,38 @@
 </template>
     <script setup>
 const items = [
-  { name: "Home", icon: "mdi-home", link: "/dashboard" },
-  { name: "Mis sesiones", icon: "mdi-calendar-month", link: "/" },
-  { name: "Progreso", icon: "mdi-finance", link: "/" },
+  { name: "Inicio", icon: "mdi-home", link: "/dashboard" },
+  { name: "Sesiones", icon: "mdi-calendar-month", link: "/sesiones" },
+  { name: "Progreso", icon: "mdi-finance", link: "/progreso" },
   {
-    name: "Terapias",
+    name: "Historial",
     icon: "mdi-book-open-page-variant",
-    link: "/",
+    link: "/historial",
   },
-  { name: "Herramientas", icon: "mdi-tools", link: "/" },
+  { name: "Herramientas", icon: "mdi-tools", link: "/herramientas" },
 ];
 </script>
-<style>
+<style scoped>
+.bottom-nav-mobile {
+  min-height: calc(64px + env(safe-area-inset-bottom));
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+.bottom-nav-mobile :deep(.v-btn) {
+  min-width: 0;
+  padding-inline: 4px;
+}
+
+.bottom-nav-mobile :deep(.v-btn__content) {
+  gap: 2px;
+}
+
+.bottom-nav-mobile :deep(span) {
+  max-width: 64px;
+  overflow: hidden;
+  font-size: 0.68rem;
+  line-height: 1.1;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 </style>

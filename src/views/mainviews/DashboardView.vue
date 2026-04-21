@@ -15,19 +15,19 @@
           </v-card-item>
           <v-card-text class="pb-0">
             <v-row class="text-center py-5">
-              <v-col cols="4">
+              <v-col cols="12" sm="4">
                 <div>
                   <h3 class="text-h4">{{ upcomingSessionsCount }}</h3>
                   <p>Sesiones agendadas</p>
                 </div>
               </v-col>
-              <v-col cols="4">
+              <v-col cols="12" sm="4">
                 <div>
                   <h3 class="text-h4">{{ learnedToolsCount }}</h3>
                   <p>Herramientas aprendidas</p>
                 </div>
               </v-col>
-              <v-col cols="4">
+              <v-col cols="12" sm="4">
                 <div>
                   <h3 class="text-h4">{{ completedSessionsCount }}</h3>
                   <p>Sesiones tomadas</p>
@@ -75,7 +75,7 @@
         </v-card>
 
         <v-row v-if="hasScheduledAppointments" align="stretch">
-          <v-col cols="4" class="d-flex">
+          <v-col cols="12" md="4" class="d-flex">
             <v-card
               class="pa-2 my-5 card-backgoundcustom flex-grow-1 d-flex flex-column"
               elevation="2"
@@ -86,7 +86,7 @@
                 <v-divider></v-divider>
                 <v-list-item class="w-150 mx-auto pt-5">
                   <template v-slot:prepend>
-                    <h4 class="text-h3">{{ nextAppointmentDay }}</h4>
+                    <h4 class="appointment-day">{{ nextAppointmentDay }}</h4>
                   </template>
                   <v-list-item-title class="pl-5">{{ nextAppointmentMonth }}</v-list-item-title>
                   <v-list-item-subtitle class="pl-5"
@@ -97,7 +97,7 @@
             </v-card>
           </v-col>
 
-          <v-col cols="8" class="d-flex">
+          <v-col cols="12" md="8" class="d-flex">
             <v-card
               class="pa-2 my-5 card-backgoundcustom flex-grow-1 d-flex flex-column"
               elevation="2"
@@ -163,6 +163,18 @@
 
 .card-backgoundcustom {
   background-color: #4d575839 !important;
+}
+
+.appointment-day {
+  font-size: 3rem;
+  line-height: 1;
+  letter-spacing: 0;
+}
+
+@media (max-width: 600px) {
+  .appointment-day {
+    font-size: 2.25rem;
+  }
 }
 </style>
 <script setup>

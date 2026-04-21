@@ -3,49 +3,78 @@ import Loginform from "@/components/auth/LoginForm.vue";
 import MainLogo from "@/components/Common/MainLogo.vue";
 </script>
 <template>
-  <div>
-    <v-row class="ma-0 h-screen">
-      <v-col class="bg-image d-sm-none d-none d-md-flex" md="6"></v-col>
-      <v-col class="bg-diagonal">
-        <v-row class="h-screen">
-          <v-col cols="12" class="d-flex" align-self="start"> </v-col>
+  <section class="auth-page min-dvh-page">
+    <div class="auth-image" aria-hidden="true"></div>
 
-          <v-col sm="2" xs="1" class="d-sm-flex"></v-col>
-          <v-col md="8" lg="6" sm="9" xs="12" class="">
-            <MainLogo />
-            <p class="text-h4 font-weight-medium text-white w-75">
-              Iniciar sesion
-            </p>
-            <Loginform />
-          </v-col>
-          <v-col md="2" lg="4" sm="1" class="d-sm-flex"></v-col>
+    <main class="auth-content safe-bottom-mobile">
+      <div class="auth-form-shell">
+        <MainLogo />
+        <h1 class="responsive-title-lg font-weight-medium text-white">
+          Iniciar sesion
+        </h1>
+        <Loginform />
+      </div>
 
-          <v-col cols="2"></v-col>
-          <v-col cols="10" class="d-flex my-5" align-self="end">
-            <v-btn
-              to="/registro"
-              append-icon="mdi-arrow-top-right"
-              class="text-white text-body-1"
-              variant="text"
-              size="large"
-            >
-              Registrarse
-            </v-btn>
-          </v-col>
-        </v-row>
-      </v-col>
-    </v-row>
-  </div>
+      <v-btn
+        to="/registro"
+        append-icon="mdi-arrow-top-right"
+        class="auth-link text-white text-body-1"
+        variant="text"
+        size="large"
+      >
+        Registrarse
+      </v-btn>
+    </main>
+  </section>
 </template>
-<style>
-.bg-image {
+<style scoped>
+.auth-page {
+  display: grid;
+  grid-template-columns: 1fr;
+  background: linear-gradient(200deg, #4a9ba7, #000000);
+}
+
+.auth-image {
+  display: none;
   background-image: url("@/assets/img/bg-home.jpg");
   background-size: cover;
   background-repeat: no-repeat;
   background-position-y: bottom;
 }
 
-.bg-diagonal {
-  background: linear-gradient(200deg, #4a9ba7, #000000);
+.auth-content {
+  display: flex;
+  min-height: 100dvh;
+  flex-direction: column;
+  justify-content: center;
+  gap: 28px;
+  padding: 24px 20px;
+}
+
+.auth-form-shell {
+  width: min(100%, 440px);
+  margin-inline: auto;
+}
+
+.auth-form-shell h1 {
+  margin: 18px 0 12px;
+}
+
+.auth-link {
+  align-self: center;
+}
+
+@media (min-width: 960px) {
+  .auth-page {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+
+  .auth-image {
+    display: block;
+  }
+
+  .auth-content {
+    padding-inline: 56px;
+  }
 }
 </style>

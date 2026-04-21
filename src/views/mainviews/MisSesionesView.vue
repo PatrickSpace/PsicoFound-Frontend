@@ -49,7 +49,7 @@
               <v-divider></v-divider>
               <v-list-item class="w-150 mx-auto pt-5">
                 <template #prepend>
-                  <h4 class="text-h3">{{ nextAppointmentDay }}</h4>
+                  <h4 class="appointment-day">{{ nextAppointmentDay }}</h4>
                 </template>
                 <v-list-item-title class="pl-5">{{
                   nextAppointmentMonth
@@ -363,5 +363,17 @@ watch(
 
 .clickable-card--disabled:hover {
   transform: none;
+}
+
+.appointment-day {
+  font-size: 3rem;
+  line-height: 1;
+  letter-spacing: 0;
+}
+
+@media (max-width: 600px) {
+  .appointment-day {
+    font-size: 2.25rem;
+  }
 }
 </style>

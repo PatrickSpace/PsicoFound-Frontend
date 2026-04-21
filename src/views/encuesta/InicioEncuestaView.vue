@@ -1,57 +1,48 @@
 <template>
-  <v-app class="bg-diagonal h-screen">
-    <v-row class="ma-0">
-      <v-col cols="12" align-self="start">
-        <v-app-bar app class="px-15" color="transparent" dark :elevation="0">
-          <v-app-bar-title class="text-white">PsicoFound</v-app-bar-title>
-          <v-spacer></v-spacer>
-          <v-btn text class="text-white" to="/login" rounded="0" variant="tonal"
-            >Iniciar sesión</v-btn
-          >
-          <v-btn text class="text-white">Registrarse</v-btn>
-        </v-app-bar>
-      </v-col>
+  <v-app class="bg-diagonal min-dvh-page">
+    <v-app-bar
+      app
+      class="responsive-app-bar"
+      color="transparent"
+      dark
+      :elevation="0"
+    >
+      <v-app-bar-title class="text-white">PsicoFound</v-app-bar-title>
+      <v-spacer></v-spacer>
+      <v-btn text class="text-white" to="/login" rounded="0" variant="tonal">
+        Iniciar sesión
+      </v-btn>
+      <v-btn text class="text-white" to="/registro">Registrarse</v-btn>
+    </v-app-bar>
 
-      <v-col cols="12" align-self="center">
-        <v-container class="text-center">
-          <h4 class="text-white font-weight-bold text-h3 pb-5">
+    <v-main class="intro-main safe-bottom-mobile">
+      <v-container class="intro-container text-center">
+        <div class="intro-copy">
+          <h1 class="responsive-title-lg text-white font-weight-bold">
             Cuentanos mas sobre tí
-          </h4>
-          <p class="text-white text-body-1">
+          </h1>
+          <p class="intro-description text-white">
             Te ayudaremos a elegir a un terapeuta a través de una breve
             encuesta.
           </p>
           <v-btn
             to="encuesta"
             rounded="0"
-            class="text-white mt-15 text-subtitle-1"
+            class="text-white text-subtitle-1"
             variant="tonal"
             append-icon="mdi-arrow-right"
-            size="x-large"
+            size="large"
           >
             Iniciar encuesta
           </v-btn>
-        </v-container>
-      </v-col>
-      <v-col cols="12" class="pa-0" align-self="end">
-        <v-container class="text-center">
-          <h1 class="text-white text-body-1">
-            Si ya elegiste a un terapeuta registrado en PsicoFound puedes
-            realizar una búsqueda aquí:
-          </h1>
-          <!--
-          <v-btn
-            append-icon="mdi-arrow-top-right"
-            class="text-white text-body-1 my-5"
-            variant="text"
-            size="large"
-          >
-            Buscar terapeuta por nombre
-          </v-btn>
-          -->
-        </v-container>
-      </v-col>
-    </v-row>
+        </div>
+
+        <p class="intro-footnote text-white">
+          Si ya elegiste a un terapeuta registrado en PsicoFound puedes
+          realizar una búsqueda desde tu cuenta.
+        </p>
+      </v-container>
+    </v-main>
   </v-app>
 </template>
 
@@ -65,5 +56,37 @@ export default {
 <style scoped>
 .bg-diagonal {
   background: linear-gradient(to left bottom, #4a9ba7, #0d1c1e);
+}
+
+.intro-main {
+  min-height: 100dvh;
+}
+
+.intro-container {
+  display: flex;
+  min-height: calc(100dvh - var(--v-layout-top, 64px));
+  flex-direction: column;
+  justify-content: center;
+  gap: 48px;
+  padding-block: 56px 24px;
+}
+
+.intro-copy {
+  max-width: 620px;
+  margin-inline: auto;
+}
+
+.intro-description {
+  margin: 18px auto 32px;
+  max-width: 520px;
+  line-height: 1.6;
+}
+
+.intro-footnote {
+  max-width: 620px;
+  margin-inline: auto;
+  font-size: 0.95rem;
+  line-height: 1.55;
+  opacity: 0.86;
 }
 </style>

@@ -1,5 +1,5 @@
 <template>
-  <Analytics/>
+  <Analytics />
   <v-app>
     <!-- Contenido principal -->
     <RouterView />
@@ -42,7 +42,7 @@
 <script setup>
 import { ref, onMounted, onBeforeUnmount } from "vue";
 import { RouterView } from "vue-router";
-import { Analytics } from '@vercel/analytics/vue';
+import { Analytics } from "@vercel/analytics/vue";
 
 // Estado del snackbar global
 const snack = ref({
@@ -92,11 +92,15 @@ body,
 #app {
   height: 100%;
 }
+
 #app {
   padding: 0;
   width: 100%;
-  overflow-y: hidden;
+  min-height: 100%;
+  overflow-x: hidden;
+  overflow-y: auto;
 }
+
 a {
   background-color: transparent;
 }

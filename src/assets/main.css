@@ -2,7 +2,7 @@
 
 #app {
   margin: 0;
-  padding: 2rem;
+  padding: 0;
   font-weight: normal;
 }
 
@@ -27,6 +27,72 @@ a,
   }
 
   #app {
-    padding: 0 2rem;
+    padding: 0;
+  }
+}
+
+.min-dvh-page {
+  min-height: 100dvh;
+}
+
+.responsive-app-bar {
+  padding-inline: 16px !important;
+}
+
+.responsive-page-container {
+  width: min(100%, 1120px);
+  margin-inline: auto;
+  padding-inline: 16px;
+}
+
+.responsive-title-xl {
+  font-size: 2.25rem;
+  line-height: 1.08;
+  letter-spacing: 0;
+}
+
+.responsive-title-lg {
+  font-size: 1.8rem;
+  line-height: 1.16;
+  letter-spacing: 0;
+}
+
+.safe-bottom-mobile {
+  padding-bottom: calc(16px + env(safe-area-inset-bottom));
+}
+
+@media (min-width: 600px) {
+  .responsive-app-bar {
+    padding-inline: 24px !important;
+  }
+
+  .responsive-page-container {
+    padding-inline: 24px;
+  }
+
+  .responsive-title-xl {
+    font-size: 3rem;
+  }
+
+  .responsive-title-lg {
+    font-size: 2.4rem;
+  }
+}
+
+@media (min-width: 960px) {
+  .responsive-app-bar {
+    padding-inline: 64px !important;
+  }
+
+  .responsive-page-container {
+    padding-inline: 32px;
+  }
+
+  .responsive-title-xl {
+    font-size: 3.75rem;
+  }
+
+  .responsive-title-lg {
+    font-size: 3rem;
   }
 }

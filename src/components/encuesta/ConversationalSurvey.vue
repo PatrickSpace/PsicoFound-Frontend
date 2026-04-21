@@ -5,7 +5,7 @@
         <p class="text-caption text-medium-emphasis mb-1">
           Encuesta conversacional
         </p>
-        <h1 class="text-h4 font-weight-bold">
+        <h1 class="survey-title font-weight-bold">
           Cuéntanos qué estás buscando
         </h1>
       </div>
@@ -312,6 +312,12 @@ function notifyError(message) {
   margin-bottom: 20px;
 }
 
+.survey-title {
+  font-size: 2.125rem;
+  line-height: 1.18;
+  letter-spacing: 0;
+}
+
 .messages-panel {
   flex: 1 1 auto;
   min-height: 280px;
@@ -438,19 +444,45 @@ function notifyError(message) {
 @media (max-width: 720px) {
   .survey-header {
     flex-direction: column;
+    gap: 10px;
+    margin-bottom: 12px;
+  }
+
+  .survey-title {
+    font-size: 1.55rem;
+    line-height: 1.2;
   }
 
   .messages-panel {
-    min-height: 260px;
-    padding: 14px;
+    min-height: 220px;
+    padding: 12px;
   }
 
   .message-bubble {
     max-width: 94%;
+    padding: 10px 12px;
+  }
+
+  .message-text {
+    font-size: 0.95rem;
+    line-height: 1.45;
+  }
+
+  .composer {
+    grid-template-columns: 1fr 44px;
+    gap: 8px;
+    margin-top: 12px;
+  }
+
+  .send-button {
+    width: 44px;
+    height: 44px;
   }
 
   .survey-actions {
     justify-content: stretch;
+    gap: 8px;
+    margin-top: 12px;
   }
 
   .survey-actions :deep(.v-btn) {
