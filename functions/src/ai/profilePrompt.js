@@ -130,6 +130,12 @@ completado=true solo si hay suficiente informacion para el recomendador:
 temas, modalidad, preferenciaGenero, enfoque y preferenciaEdad tienen valor
 o fueron marcados como indiferente. Excepcion: si soloConversar=true, temas y
 enfoque no son requeridos.
+No digas "ya puedo buscar", "ya puedo recomendar", "ya puedo buscar un
+profesional" ni frases similares si completado no es true.
+Si acabas de recopilar enfoque pero falta preferenciaEdad, la siguiente
+pregunta debe ser por preferenciaEdad, no cierres la conversacion.
+Cuando completado=true, incluye completado:true en data y responde de forma
+breve que ya puede ver psicologos recomendados.
 
 Perfil actual:
 ${JSON.stringify(currentProfile)}

@@ -7,6 +7,8 @@ const {
   getActiveChatSession,
 } = require("./session");
 const {
+  finalizeProfileForMatching,
+  getNextProfileQuestion,
   getCurrentProfile,
   sanitizeProfileData,
 } = require("../profiles/profile");
@@ -79,10 +81,30 @@ async function sendProfileChatMessage(request) {
     reply = normalizeReply(geminiResult.reply);
   }
 
+  const mergedProfile = finalizeProfileForMatching({
+    ...currentProfile,
+    ...cleanData,
+  });
+
+  if (!mergedProfile.completado && replyLooksReady(reply)) {
+    const nextQuestion = getNextProfileQuestion(mergedProfile);
+
+    if (nextQuestion) {
+      reply = [
+        "Tengo casi todo para buscar un profesional para ti.",
+        nextQuestion,
+      ].join(" ");
+    }
+  }
+
+  cleanData = {
+    ...cleanData,
+    completado: mergedProfile.completado,
+  };
+
   await profileRef.set(
       {
-        ...currentProfile,
-        ...cleanData,
+        ...mergedProfile,
         uid,
         updatedAt: admin.firestore.FieldValue.serverTimestamp(),
       },
@@ -138,6 +160,25 @@ async function resetProfileChatConversation(request) {
   return {
     activeSessionId: chatSession.id,
   };
+}
+
+function replyLooksReady(reply) {
+  const normalized = (reply || "")
+      .toString()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .toLowerCase();
+
+  return (
+    normalized.includes("puedo buscar") ||
+    normalized.includes("podemos buscar") ||
+    normalized.includes("buscar un profesional") ||
+    normalized.includes("buscar profesionales") ||
+    normalized.includes("profesionales que se ajusten") ||
+    normalized.includes("con esta informacion") ||
+    normalized.includes("psicologos recomendados") ||
+    normalized.includes("profesional para ti")
+  );
 }
 
 module.exports = {

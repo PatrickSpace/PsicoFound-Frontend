@@ -11,11 +11,11 @@
       </div>
 
       <v-chip
-        :color="profile?.completado ? 'success' : 'cyan-lighten-2'"
+        :color="canViewRecommendations ? 'success' : 'cyan-lighten-2'"
         variant="tonal"
         prepend-icon="mdi-clipboard-check-outline"
       >
-        {{ profile?.completado ? "Perfil listo" : "Perfil en progreso" }}
+        {{ canViewRecommendations ? "Perfil listo" : "Perfil en progreso" }}
       </v-chip>
     </div>
 
@@ -86,7 +86,7 @@
         color="secondary"
         variant="flat"
         append-icon="mdi-account-search"
-        :disabled="!profile?.completado"
+        :disabled="!canViewRecommendations"
         @click="goToRecommendations"
       >
         Ver psicólogos recomendados
@@ -107,7 +107,10 @@ import {
   watchConversationMessages,
   watchProfile,
 } from "@/services/conversationService";
-import { applyProfileToTerapiaStore } from "@/services/matchingService";
+import {
+  applyProfileToTerapiaStore,
+  isProfileReadyForRecommendations,
+} from "@/services/matchingService";
 
 const router = useRouter();
 const authStore = useAuthStore();
@@ -138,6 +141,11 @@ const visibleMessages = computed(() =>
 );
 
 const canSend = computed(() => draft.value.trim().length > 0 && !loading.value);
+const canViewRecommendations = computed(
+  () =>
+    Boolean(profile.value?.completado) ||
+    isProfileReadyForRecommendations(profile.value)
+);
 
 watch(
   () => authStore.currentUser,

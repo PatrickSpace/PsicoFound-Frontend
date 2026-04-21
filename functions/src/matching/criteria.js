@@ -85,7 +85,7 @@ function normalizeValue(value, dictionary) {
   const rawValue = (value || "").toString().trim();
   const normalized = normalizeKey(rawValue);
 
-  if (!normalized || normalized.includes("indiferente")) {
+  if (!normalized || isIndifferentValue(normalized)) {
     return "";
   }
 
@@ -96,7 +96,7 @@ function normalizeSpecialty(value) {
   const rawValue = (value || "").toString().trim();
   const normalized = normalizeKey(rawValue);
 
-  if (!normalized || normalized.includes("indiferente")) {
+  if (!normalized || isIndifferentValue(normalized)) {
     return "";
   }
 
@@ -110,6 +110,20 @@ function normalizeKey(value) {
       .toLowerCase()
       .normalize("NFD")
       .replace(/[\u0300-\u036f]/g, "");
+}
+
+function isIndifferentValue(normalized) {
+  return [
+    "indiferente",
+    "me es indiferente",
+    "me da igual",
+    "da igual",
+    "igual",
+    "cualquiera",
+    "sin preferencia",
+    "no tengo preferencia",
+    "no importa",
+  ].includes(normalized);
 }
 
 module.exports = {

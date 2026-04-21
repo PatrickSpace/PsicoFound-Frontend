@@ -100,6 +100,34 @@ export function applyProfileToTerapiaStore(profile, terapiaStore) {
   terapiaStore.setCriteriosBusqueda(buildSearchCriteriaFromProfile(profile));
 }
 
+export function isProfileReadyForRecommendations(profile = {}) {
+  if (!profile || typeof profile !== "object") {
+    return false;
+  }
+
+  if (Boolean(profile.riesgoSuicida)) {
+    return true;
+  }
+
+  if (Boolean(profile.soloConversar)) {
+    return [
+      profile.modalidad,
+      profile.preferenciaGenero,
+      profile.preferenciaEdad,
+    ].every(hasProfileValue);
+  }
+
+  const temas = Array.isArray(profile.temas) ? profile.temas : [];
+
+  return (
+    temas.length > 0 &&
+    hasProfileValue(profile.modalidad) &&
+    hasProfileValue(profile.preferenciaGenero) &&
+    hasProfileValue(profile.enfoque) &&
+    hasProfileValue(profile.preferenciaEdad)
+  );
+}
+
 export async function getRecommendedTherapists() {
   try {
     const result = await getRecommendedTherapistsCallable();
@@ -128,7 +156,7 @@ function normalizeValue(value, dictionary) {
   const rawValue = (value || "").toString().trim();
   const normalized = normalizeKey(rawValue);
 
-  if (!normalized || normalized.includes("indiferente")) {
+  if (!normalized || isIndifferentValue(normalized)) {
     return "";
   }
 
@@ -139,11 +167,29 @@ function normalizeSpecialty(value) {
   const rawValue = (value || "").toString().trim();
   const normalized = normalizeKey(rawValue);
 
-  if (!normalized || normalized.includes("indiferente")) {
+  if (!normalized || isIndifferentValue(normalized)) {
     return "";
   }
 
   return SPECIALTY_MAP[normalized] || rawValue;
+}
+
+function hasProfileValue(value) {
+  return (value || "").toString().trim().length > 0;
+}
+
+function isIndifferentValue(normalized) {
+  return [
+    "indiferente",
+    "me es indiferente",
+    "me da igual",
+    "da igual",
+    "igual",
+    "cualquiera",
+    "sin preferencia",
+    "no tengo preferencia",
+    "no importa",
+  ].includes(normalized);
 }
 
 function normalizeKey(value) {
