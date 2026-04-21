@@ -237,7 +237,8 @@ async function sendChatMessage(message) {
   loading.value = true;
 
   try {
-    await sendProfileChatMessage(message);
+    const result = await sendProfileChatMessage(message);
+    syncProfileFromChatResult(result);
   } catch (err) {
     notifyError(
       getReadableErrorMessage(err) ||
@@ -269,6 +270,19 @@ async function handleResetConversation() {
     resetting.value = false;
     scrollToBottom();
   }
+}
+
+function syncProfileFromChatResult(result) {
+  const nextProfile = result?.profile || result?.data;
+
+  if (!nextProfile || typeof nextProfile !== "object") {
+    return;
+  }
+
+  profile.value = {
+    ...(profile.value || {}),
+    ...nextProfile,
+  };
 }
 
 function goToRecommendations() {

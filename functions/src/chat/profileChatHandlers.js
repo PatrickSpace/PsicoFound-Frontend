@@ -1,4 +1,5 @@
 const admin = require("firebase-admin");
+const logger = require("firebase-functions/logger");
 const {HttpsError} = require("firebase-functions/v2/https");
 const {askGemini} = require("../ai/geminiClient");
 const {getRecentHistory} = require("./history");
@@ -85,8 +86,9 @@ async function sendProfileChatMessage(request) {
     ...currentProfile,
     ...cleanData,
   });
+  const initialReplyLooksReady = replyLooksReady(reply);
 
-  if (!mergedProfile.completado && replyLooksReady(reply)) {
+  if (!mergedProfile.completado && initialReplyLooksReady) {
     const nextQuestion = getNextProfileQuestion(mergedProfile);
 
     if (nextQuestion) {
@@ -101,6 +103,14 @@ async function sendProfileChatMessage(request) {
     ...cleanData,
     completado: mergedProfile.completado,
   };
+
+  logger.info("profile chat result", {
+    uidHash: uid.slice(-6),
+    completado: mergedProfile.completado,
+    replyLooksReady: initialReplyLooksReady,
+    cleanDataKeys: Object.keys(cleanData),
+    profileState: getProfileStateForLogs(mergedProfile),
+  });
 
   await profileRef.set(
       {
@@ -131,6 +141,8 @@ async function sendProfileChatMessage(request) {
   return {
     reply,
     data: cleanData,
+    profile: mergedProfile,
+    readyForRecommendations: mergedProfile.completado,
   };
 }
 
@@ -179,6 +191,31 @@ function replyLooksReady(reply) {
     normalized.includes("psicologos recomendados") ||
     normalized.includes("profesional para ti")
   );
+}
+
+function getProfileStateForLogs(profile = {}) {
+  return {
+    riesgoSuicida: Boolean(profile.riesgoSuicida),
+    soloConversar: Boolean(profile.soloConversar),
+    temasCount: Array.isArray(profile.temas) ? profile.temas.length : 0,
+    hasModalidad: hasValue(profile.modalidad),
+    hasPreferenciaGenero: hasValue(profile.preferenciaGenero),
+    hasEnfoque: hasValue(profile.enfoque),
+    hasPreferenciaEdad: hasValue(profile.preferenciaEdad),
+    modalidad: sanitizeLogValue(profile.modalidad),
+    preferenciaGenero: sanitizeLogValue(profile.preferenciaGenero),
+    enfoque: sanitizeLogValue(profile.enfoque),
+    preferenciaEdad: sanitizeLogValue(profile.preferenciaEdad),
+  };
+}
+
+function hasValue(value) {
+  return (value || "").toString().trim().length > 0;
+}
+
+function sanitizeLogValue(value) {
+  const cleanValue = (value || "").toString().trim();
+  return cleanValue.length > 40 ? `${cleanValue.slice(0, 40)}...` : cleanValue;
 }
 
 module.exports = {
