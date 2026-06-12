@@ -17,15 +17,6 @@ import NavBar from "@/components/Navigation/NavBar.vue";
 import BottomNav from "@/components/Navigation/BottomNav.vue";
 </script>
 <style>
-.screen {
-  background: linear-gradient(
-    225deg,
-    #1f4146 0%,
-    rgb(18, 44, 47) 28%,
-    rgba(3, 7, 7, 1) 75%
-  ) !important;
-}
-
 .layout-main-content {
   min-height: 100dvh;
   padding-bottom: calc(72px + env(safe-area-inset-bottom));

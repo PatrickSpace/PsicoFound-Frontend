@@ -1,5 +1,5 @@
 <template>
-  <v-app class="screen recommendations-page">
+  <v-app class="screen min-dvh-page">
     <v-app-bar
       app
       class="responsive-app-bar"
@@ -100,8 +100,3 @@ onMounted(() => {
 });
 
 </script>
-<style scoped>
-.recommendations-page {
-  min-height: 100dvh;
-}
-</style>

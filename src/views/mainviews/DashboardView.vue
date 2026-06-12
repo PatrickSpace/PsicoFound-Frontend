@@ -5,7 +5,7 @@
       <v-divider class="my-5 mx-auto"></v-divider>
 
       <template v-if="activeTherapy">
-        <v-card class="pa-2 card-backgoundcustom" id="container" elevation="2">
+        <v-card class="pa-2 card-backgoundcustom" elevation="2">
           <v-card-item>
             <v-card-title class="text-h5"> Tu progreso </v-card-title>
             <v-card-subtitle>
@@ -156,27 +156,6 @@
     </v-container>
   </LayoutDefault>
 </template>
-<style>
-#container {
-  width: 100%;
-}
-
-.card-backgoundcustom {
-  background-color: #4d575839 !important;
-}
-
-.appointment-day {
-  font-size: 3rem;
-  line-height: 1;
-  letter-spacing: 0;
-}
-
-@media (max-width: 600px) {
-  .appointment-day {
-    font-size: 2.25rem;
-  }
-}
-</style>
 <script setup>
 import { computed, ref, watch } from "vue";
 import { storeToRefs } from "pinia";

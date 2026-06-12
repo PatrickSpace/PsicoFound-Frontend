@@ -364,16 +364,4 @@ watch(
 .clickable-card--disabled:hover {
   transform: none;
 }
-
-.appointment-day {
-  font-size: 3rem;
-  line-height: 1;
-  letter-spacing: 0;
-}
-
-@media (max-width: 600px) {
-  .appointment-day {
-    font-size: 2.25rem;
-  }
-}
 </style>

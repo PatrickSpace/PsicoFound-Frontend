@@ -15,6 +15,3 @@
 <script setup>
 import LayoutDefault from "@/components/Layout/Layoutmain.vue";
 </script>
-
-<style>
-</style>

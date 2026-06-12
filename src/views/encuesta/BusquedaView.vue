@@ -1,11 +1,11 @@
 <template>
-  <v-container class="search-view-container">
+  <v-container>
     <h1 class="text-h5 text-sm-h4">Busqueda de psicologos</h1>
     <v-divider></v-divider>
     <v-row class="mt-2">
       <v-col cols="12" md="6">
         <h2 class="text-h6 text-sm-h5">Ingresa tus datos</h2>
-        <v-form class="search-form">
+        <v-form class="mx-0 mx-md-10">
           <v-text-field variant="underlined" label="Nombre"> </v-text-field>
           <v-combobox
             label="Enfoque"
@@ -84,19 +84,3 @@ export default {
   },
 };
 </script>
-
-<style scoped>
-.search-view-container {
-  padding-inline: 16px;
-}
-
-.search-form {
-  margin-inline: 0;
-}
-
-@media (min-width: 960px) {
-  .search-form {
-    margin-inline: 40px;
-  }
-}
-</style>

@@ -15,7 +15,7 @@
       <v-btn text class="text-white" to="/registro">Registrarse</v-btn>
     </v-app-bar>
 
-    <v-main class="intro-main safe-bottom-mobile">
+    <v-main class="min-dvh-page safe-bottom-mobile">
       <v-container class="intro-container text-center">
         <div class="intro-copy">
           <h1 class="responsive-title-lg text-white font-weight-bold">
@@ -54,14 +54,6 @@ export default {
 </script>
 
 <style scoped>
-.bg-diagonal {
-  background: linear-gradient(to left bottom, #4a9ba7, #0d1c1e);
-}
-
-.intro-main {
-  min-height: 100dvh;
-}
-
 .intro-container {
   display: flex;
   min-height: calc(100dvh - var(--v-layout-top, 64px));

@@ -37,7 +37,6 @@
     </v-form>
     <v-divider color="white"></v-divider>
     <v-btn
-      id="google"
       block
       class="my-5 text-white bg-google text-left"
       elevation="4"
@@ -53,9 +52,8 @@
     </v-btn>
 
     <v-btn
-      id="apple"
       block
-      class="my-5 text-white"
+      class="my-5 text-white bg-apple"
       variant="tonal"
       size="large"
       elevation="4"
@@ -137,32 +135,3 @@ async function LoginGoogle() {
   }
 }
 </script>
-
-<style>
-#google {
-  background: rgb(137, 0, 11);
-  background: linear-gradient(
-    90deg,
-    rgba(168, 0, 14, 1) 0%,
-    rgba(255, 255, 255, 0) 65%
-  );
-}
-
-#facebook {
-  background: rgb(0, 76, 168);
-  background: linear-gradient(
-    90deg,
-    rgb(0, 50, 199) 0%,
-    rgba(255, 255, 255, 0) 65%
-  );
-}
-
-#apple {
-  background: rgb(7, 0, 1);
-  background: linear-gradient(
-    90deg,
-    rgb(0, 0, 1) 0%,
-    rgba(255, 255, 255, 0) 65%
-  );
-}
-</style>

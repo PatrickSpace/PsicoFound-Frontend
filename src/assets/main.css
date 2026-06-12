@@ -1,34 +1,55 @@
-@import './base.css';
-
-#app {
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
   margin: 0;
-  padding: 0;
   font-weight: normal;
 }
 
-a,
-.green {
+html,
+body,
+#app {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  min-height: 100dvh;
+  color: #2c3e50;
+  background: #ffffff;
+  transition:
+    color 0.5s,
+    background-color 0.5s;
+  line-height: 1.6;
+  font-family:
+    Inter,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    Roboto,
+    Oxygen,
+    Ubuntu,
+    Cantarell,
+    "Fira Sans",
+    "Droid Sans",
+    "Helvetica Neue",
+    sans-serif;
+  font-size: 15px;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+#app {
+  width: 100%;
+  min-height: 100%;
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+
+a {
   text-decoration: none;
-  color: hsla(160, 100%, 37%, 1);
-  transition: 0.4s;
-  padding: 3px;
-}
-
-@media (hover: hover) {
-  a:hover {
-    background-color: transparent;
-  }
-}
-
-@media (min-width: 1024px) {
-  body {
-    display: block;
-    place-items: center;
-  }
-
-  #app {
-    padding: 0;
-  }
+  background-color: transparent;
 }
 
 .min-dvh-page {
@@ -59,6 +80,95 @@ a,
 
 .safe-bottom-mobile {
   padding-bottom: calc(16px + env(safe-area-inset-bottom));
+}
+
+.bg-diagonal {
+  background: linear-gradient(to left bottom, #4a9ba7, #0d1c1e) !important;
+}
+
+.screen {
+  background: linear-gradient(
+    225deg,
+    #1f4146 0%,
+    rgb(18, 44, 47) 28%,
+    rgba(3, 7, 7, 1) 75%
+  ) !important;
+}
+
+.card-backgoundcustom {
+  background-color: #4d575839 !important;
+}
+
+.appointment-day {
+  font-size: 3rem;
+  line-height: 1;
+  letter-spacing: 0;
+}
+
+.auth-page {
+  display: grid;
+  grid-template-columns: 1fr;
+  background: linear-gradient(200deg, #4a9ba7, #000000);
+}
+
+.auth-image {
+  display: none;
+  background-image: url("@/assets/img/bg-home.jpg");
+  background-size: cover;
+  background-repeat: no-repeat;
+  background-position-y: bottom;
+}
+
+.auth-content {
+  display: flex;
+  min-height: 100dvh;
+  flex-direction: column;
+  justify-content: center;
+  gap: 28px;
+  padding: 24px 20px;
+}
+
+.auth-form-shell {
+  width: min(100%, 440px);
+  margin-inline: auto;
+}
+
+.auth-form-shell h1 {
+  margin: 18px 0 12px;
+}
+
+.auth-link {
+  align-self: center;
+}
+
+.bg-google {
+  background: linear-gradient(
+    90deg,
+    rgba(168, 0, 14, 1) 0%,
+    rgba(255, 255, 255, 0) 65%
+  );
+}
+
+.bg-facebook {
+  background: linear-gradient(
+    90deg,
+    rgb(0, 50, 199) 0%,
+    rgba(255, 255, 255, 0) 65%
+  );
+}
+
+.bg-apple {
+  background: linear-gradient(
+    90deg,
+    rgb(0, 0, 1) 0%,
+    rgba(255, 255, 255, 0) 65%
+  );
+}
+
+@media (max-width: 600px) {
+  .appointment-day {
+    font-size: 2.25rem;
+  }
 }
 
 @media (min-width: 600px) {
@@ -94,5 +204,17 @@ a,
 
   .responsive-title-lg {
     font-size: 3rem;
+  }
+
+  .auth-page {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+
+  .auth-image {
+    display: block;
+  }
+
+  .auth-content {
+    padding-inline: 56px;
   }
 }

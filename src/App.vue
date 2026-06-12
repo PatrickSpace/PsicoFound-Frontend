@@ -85,23 +85,3 @@ onBeforeUnmount(() => {
   window.removeEventListener("ui-success", onUiSuccess);
 });
 </script>
-
-<style>
-html,
-body,
-#app {
-  height: 100%;
-}
-
-#app {
-  padding: 0;
-  width: 100%;
-  min-height: 100%;
-  overflow-x: hidden;
-  overflow-y: auto;
-}
-
-a {
-  background-color: transparent;
-}
-</style>

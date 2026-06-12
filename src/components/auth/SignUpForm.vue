@@ -38,7 +38,6 @@
   <v-divider color="white"></v-divider>
 
   <v-btn
-    id="google"
     block
     class="my-5 text-white bg-google text-left"
     elevation="4"
@@ -54,7 +53,6 @@
     </template>
   </v-btn>
   <v-btn
-    id="facebook"
     block
     class="my-5 text-white bg-facebook"
     elevation="4"
@@ -67,9 +65,8 @@
     </template>
   </v-btn>
   <v-btn
-    id="apple"
     block
-    class="my-5 text-white"
+    class="my-5 text-white bg-apple"
     variant="tonal"
     size="large"
     elevation="4"

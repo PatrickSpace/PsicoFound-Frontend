@@ -3,9 +3,8 @@
 <template>
   <v-navigation-drawer
     floating
-    id="navd"
     theme="dark"
-    class="d-none d-lg-flex"
+    class="d-none d-lg-flex bg-transparent"
     width="320"
     app
   >
@@ -28,12 +27,6 @@
     </div>
   </v-navigation-drawer>
 </template>
-<style>
-#navd {
-  background: transparent;
-  /*linear-gradient(to left bottom, #4a9ba7, #0d1c1e);*/
-}
-</style>
 <script setup>
 const items = [
   { name: "Home", icon: "mdi-home", link: "/dashboard" },
