@@ -47,6 +47,11 @@ import { useRouter } from "vue-router";
 import { storeToRefs } from "pinia";
 import { useAuthStore } from "@/store/auth";
 import { getTherapiesByPatient } from "@/services/terapiaService";
+import {
+  isTableLoadingTimeout,
+  notifyTableLoadingTimeout,
+  withTableLoadingTimeout,
+} from "@/utils/tableLoadingTimeout";
 
 const router = useRouter();
 const authStore = useAuthStore();
@@ -127,10 +132,15 @@ async function loadTherapies() {
   loading.value = true;
 
   try {
-    const therapies = await getTherapiesByPatient(pacienteUid);
+    const therapies = await withTableLoadingTimeout(
+      getTherapiesByPatient(pacienteUid)
+    );
     items.value = therapies.map(normalizeTherapy);
   } catch (error) {
     console.error("Error loading therapies:", error);
+    if (isTableLoadingTimeout(error)) {
+      notifyTableLoadingTimeout(error.message);
+    }
     items.value = [];
   } finally {
     loading.value = false;

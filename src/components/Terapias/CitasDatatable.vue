@@ -102,6 +102,11 @@ import {
   resetAppointmentToPending,
 } from "@/services/citaService";
 import { getTherapiesByPatient } from "@/services/terapiaService";
+import {
+  isTableLoadingTimeout,
+  notifyTableLoadingTimeout,
+  withTableLoadingTimeout,
+} from "@/utils/tableLoadingTimeout";
 
 const authStore = useAuthStore();
 const { currentUser } = storeToRefs(authStore);
@@ -174,7 +179,9 @@ async function loadAppointments() {
   loading.value = true;
 
   try {
-    therapies.value = await getTherapiesByPatient(pacienteUid);
+    therapies.value = await withTableLoadingTimeout(
+      getTherapiesByPatient(pacienteUid)
+    );
 
     items.value = therapies.value.flatMap((therapy) =>
       (Array.isArray(therapy.citas) ? therapy.citas : []).map((appointment) => ({
@@ -194,6 +201,9 @@ async function loadAppointments() {
     );
   } catch (error) {
     console.error("Error loading appointments:", error);
+    if (isTableLoadingTimeout(error)) {
+      notifyTableLoadingTimeout(error.message);
+    }
     therapies.value = [];
     items.value = [];
   } finally {

@@ -4,6 +4,9 @@
     :headers="headers"
     :items="therapists"
     item-value="id"
+    :loading="loading"
+    loading-text="Cargando psicologos..."
+    :no-data-text="loadingError || 'No hay psicologos para mostrar'"
   >
     <template #item.especialidades="{ value }">
       <v-chip-group>
@@ -300,6 +303,11 @@ import {
   updateTherapist,
   watchTherapists,
 } from "@/services/psicologoService";
+import {
+  TABLE_LOADING_TIMEOUT_MESSAGE,
+  TABLE_LOADING_TIMEOUT_MS,
+  notifyTableLoadingTimeout,
+} from "@/utils/tableLoadingTimeout";
 
 const especialidadesOptions = [
   "Abuso de sustancias",
@@ -341,6 +349,8 @@ export default {
     ],
     therapists: [],
     loading: false,
+    loadingError: "",
+    loadingTimeoutId: null,
     unsubscribeTherapists: null,
     editedIndex: -1,
     editedItem: {
@@ -403,6 +413,7 @@ export default {
   },
 
   beforeUnmount() {
+    this.clearLoadingTimeout();
     this.unsubscribeTherapists?.();
   },
 
@@ -467,20 +478,43 @@ export default {
 
     initialize() {
       this.loading = true;
+      this.loadingError = "";
+      this.clearLoadingTimeout();
       this.unsubscribeTherapists?.();
+      this.loadingTimeoutId = window.setTimeout(() => {
+        this.loading = false;
+        this.loadingError = TABLE_LOADING_TIMEOUT_MESSAGE;
+        this.therapists = [];
+        this.unsubscribeTherapists?.();
+        this.unsubscribeTherapists = null;
+        notifyTableLoadingTimeout(TABLE_LOADING_TIMEOUT_MESSAGE);
+      }, TABLE_LOADING_TIMEOUT_MS);
       this.unsubscribeTherapists = watchTherapists(
         (therapistsFromDb) => {
+          this.clearLoadingTimeout();
           this.therapists = therapistsFromDb.map((item, index) =>
             this.normalizeItem(item, index)
           );
+          this.loadingError = "";
           this.loading = false;
         },
         (error) => {
+          this.clearLoadingTimeout();
           console.error("Error loading therapists:", error);
           this.therapists = [];
+          this.loadingError = "No se pudieron cargar los psicologos.";
           this.loading = false;
         }
       );
+    },
+
+    clearLoadingTimeout() {
+      if (!this.loadingTimeoutId) {
+        return;
+      }
+
+      window.clearTimeout(this.loadingTimeoutId);
+      this.loadingTimeoutId = null;
     },
 
     modalidadTexto(item) {
