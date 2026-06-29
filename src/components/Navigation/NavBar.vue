@@ -1,7 +1,16 @@
 <template>
   <v-app-bar app class="bg-transparent responsive-app-bar" flat>
-    <v-app-bar-title class="text-h5">PsicoFound</v-app-bar-title>
+    <v-app-bar-title class="text-h5 nav-title">PsicoFound</v-app-bar-title>
     <v-spacer />
+    <v-chip
+      v-if="activeMode"
+      class="mode-chip d-none d-md-inline-flex"
+      color="secondary"
+      variant="tonal"
+      :prepend-icon="activeMode.icon"
+    >
+      {{ activeMode.label }}
+    </v-chip>
     <v-btn-toggle
       v-if="appContext.canSwitchModes"
       :model-value="appContext.activeMode"
@@ -38,24 +47,45 @@
         />
       </v-list>
     </v-menu>
-    <v-btn icon>
-      <v-icon>mdi-magnify</v-icon>
-    </v-btn>
-    <v-btn icon>
-      <v-icon>mdi-bell</v-icon>
-    </v-btn>
     <v-btn icon @click="isFeedbackDialogOpen = true">
       <v-icon>mdi-message-alert-outline</v-icon>
     </v-btn>
 
-    <v-menu open-on-hover>
+    <v-menu location="bottom end">
       <template v-slot:activator="{ props }">
         <v-btn icon v-bind="props">
           <v-icon>mdi-account</v-icon>
         </v-btn>
       </template>
       <v-list density="compact">
-        <v-list-item link @click="logout()"> LogOut</v-list-item>
+        <v-list-item
+          :title="userName"
+          :subtitle="currentUser?.email || activeMode?.label || ''"
+          prepend-icon="mdi-account-circle-outline"
+        />
+        <v-divider />
+        <v-list-item
+          v-if="activeMode"
+          :title="`Vista ${activeMode.label}`"
+          :prepend-icon="activeMode.icon"
+        />
+        <template v-if="appContext.canSwitchModes">
+          <v-list-subheader>Cambiar vista</v-list-subheader>
+          <v-list-item
+            v-for="mode in appContext.availableModes"
+            :key="mode.value"
+            :active="mode.value === appContext.activeMode"
+            :prepend-icon="mode.icon"
+            :title="mode.label"
+            @click="switchMode(mode.value)"
+          />
+        </template>
+        <v-divider />
+        <v-list-item
+          title="Cerrar sesión"
+          prepend-icon="mdi-logout"
+          @click="logout()"
+        />
       </v-list>
     </v-menu>
 
@@ -70,17 +100,28 @@
   </v-app-bar>
 </template>
 <script setup>
-import { ref } from "vue";
+import { computed, ref } from "vue";
+import { storeToRefs } from "pinia";
 import { auth } from "@/plugins/Firebase/firebase";
 import { signOut } from "firebase/auth";
 import { useRouter } from "vue-router";
 import FeedbackDialog from "@/components/Navigation/FeedbackDialog.vue";
 import { useAppContextStore } from "@/store/appContext";
+import { useAuthStore } from "@/store/auth";
 
 const router = useRouter();
+const authStore = useAuthStore();
 const appContext = useAppContextStore();
+const { currentUser, userName } = storeToRefs(authStore);
 const isFeedbackDialogOpen = ref(false);
 const showFeedbackSaved = ref(false);
+
+const activeMode = computed(
+  () =>
+    appContext.availableModes.find(
+      (mode) => mode.value === appContext.activeMode
+    ) || null
+);
 
 function switchMode(mode) {
   if (!mode || mode === appContext.activeMode) {
@@ -119,5 +160,19 @@ function defaultRouteForMode(mode) {
 .mode-switch {
   max-width: min(44vw, 420px);
   overflow: hidden;
+}
+
+.mode-chip {
+  margin-inline-end: 12px;
+}
+
+.nav-title {
+  min-width: 0;
+}
+
+@media (max-width: 600px) {
+  .nav-title {
+    font-size: 1.1rem !important;
+  }
 }
 </style>

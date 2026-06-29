@@ -6,20 +6,31 @@
     width="320"
     app
   >
-    <div class="my-auto fill-height d-flex ml-10">
+    <div class="nav-drawer-content fill-height d-flex flex-column">
+      <div class="mode-summary">
+        <v-chip
+          v-if="activeMode"
+          color="secondary"
+          variant="tonal"
+          :prepend-icon="activeMode.icon"
+        >
+          {{ activeMode.label }}
+        </v-chip>
+      </div>
       <v-list
-        class="pl-10 d-inline-flex w-100 flex-column justify-center"
+        class="nav-list d-inline-flex w-100 flex-column justify-center"
         nav
         variant="text"
       >
         <v-list-item
-        v-for="(item, i) in items"
+          v-for="(item, i) in items"
           :key="i"
-          class="py-5 pl-5 my-2"
+          class="py-4 pl-5 my-1"
           :prepend-icon="item.icon"
           :to="item.link"
+          rounded="lg"
         >
-          <p class="">{{ item.name }}</p>
+          <p>{{ item.name }}</p>
         </v-list-item>
       </v-list>
     </div>
@@ -71,4 +82,31 @@ const navigationByMode = {
 const items = computed(
   () => navigationByMode[appContext.activeMode] || navigationByMode.patient
 );
+
+const activeMode = computed(
+  () =>
+    appContext.availableModes.find(
+      (mode) => mode.value === appContext.activeMode
+    ) || null
+);
 </script>
+
+<style scoped>
+.nav-drawer-content {
+  justify-content: center;
+  padding-inline: 40px 32px;
+}
+
+.mode-summary {
+  margin-bottom: 16px;
+  padding-left: 8px;
+}
+
+.nav-list {
+  padding-left: 0;
+}
+
+.nav-list :deep(.v-list-item--active) {
+  background-color: rgba(255, 255, 255, 0.12);
+}
+</style>

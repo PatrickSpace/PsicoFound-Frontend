@@ -203,6 +203,15 @@
           <v-card class="pa-4 mt-4 card-backgoundcustom" elevation="2" variant="text">
             <v-card-title class="text-subtitle-1">Crear objetivo</v-card-title>
             <v-card-text>
+              <v-alert
+                v-if="!therapist && !activeTherapy"
+                class="mb-4"
+                color="warning"
+                variant="tonal"
+                icon="mdi-information-outline"
+              >
+                Necesitas una terapia activa para crear objetivos de seguimiento.
+              </v-alert>
               <v-row>
                 <v-col v-if="therapist" cols="12" md="6">
                   <v-select
@@ -310,6 +319,15 @@
           >
             <v-card-title class="text-subtitle-1">Agregar registro</v-card-title>
             <v-card-text>
+              <v-alert
+                v-if="!activeTherapy"
+                class="mb-4"
+                color="warning"
+                variant="tonal"
+                icon="mdi-information-outline"
+              >
+                Cuando tengas una terapia activa podrás registrar check-ins emocionales asociados a tu proceso.
+              </v-alert>
               <v-row>
                 <v-col cols="12" md="6">
                   <v-select

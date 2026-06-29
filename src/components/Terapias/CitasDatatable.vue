@@ -31,6 +31,14 @@
     :loading="loading"
     :sort-by="[{ key: 'fechaOrden', order: 'desc' }]"
   >
+    <template #no-data>
+      <v-empty-state
+        headline="No hay citas registradas"
+        text="Cuando agendes una cita, aparecerá en esta lista con su estado y enlace de sesión."
+        icon="mdi-calendar-search"
+      ></v-empty-state>
+    </template>
+
     <template #item.estado="{ value }">
       <v-chip :color="statusColor(value)" size="small" variant="tonal">
         {{ value || "pendiente" }}

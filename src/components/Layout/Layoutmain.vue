@@ -2,6 +2,12 @@
   <div class="screen layout-shell">
     <NavBar />
     <NavDrawer />
+    <v-progress-linear
+      v-if="appContext.loading"
+      class="context-progress"
+      color="secondary"
+      indeterminate
+    />
     <v-main class="layout-main-content">
       <v-container class="layout-container">
         <slot name="default"></slot>
@@ -15,8 +21,19 @@
 import NavDrawer from "@/components/Navigation/NavDrawer.vue";
 import NavBar from "@/components/Navigation/NavBar.vue";
 import BottomNav from "@/components/Navigation/BottomNav.vue";
+import { useAppContextStore } from "@/store/appContext";
+
+const appContext = useAppContextStore();
 </script>
 <style>
+.context-progress {
+  left: 0;
+  position: fixed;
+  right: 0;
+  top: var(--v-layout-top, 64px);
+  z-index: 1006;
+}
+
 .layout-main-content {
   min-height: 100dvh;
   padding-bottom: calc(72px + env(safe-area-inset-bottom));

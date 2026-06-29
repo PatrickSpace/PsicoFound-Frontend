@@ -98,6 +98,14 @@
               :sort-by="[{ key: 'fechaOrden', order: 'asc' }]"
               class="card-backgoundcustom"
             >
+              <template #no-data>
+                <v-empty-state
+                  headline="No tienes sesiones asignadas"
+                  text="Las citas de tus pacientes aparecerán aquí cuando exista una terapia activa con sesiones agendadas."
+                  icon="mdi-calendar-search"
+                ></v-empty-state>
+              </template>
+
               <template #item.estado="{ value }">
                 <v-chip :color="statusColor(value)" size="small" variant="tonal">
                   {{ value || "pendiente" }}

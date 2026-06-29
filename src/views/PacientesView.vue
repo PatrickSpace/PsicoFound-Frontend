@@ -84,6 +84,14 @@
             :loading="loading"
             class="card-backgoundcustom"
           >
+            <template #no-data>
+              <v-empty-state
+                headline="No hay pacientes para mostrar"
+                text="Cuando existan terapias asignadas o pacientes registrados, aparecerán aquí."
+                icon="mdi-account-search-outline"
+              ></v-empty-state>
+            </template>
+
             <template #item.profileStatus="{ item }">
               <v-chip
                 :color="item.profile?.completado ? 'success' : 'warning'"
