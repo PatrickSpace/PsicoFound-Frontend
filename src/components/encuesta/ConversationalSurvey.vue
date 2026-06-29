@@ -3,7 +3,7 @@
     <div class="chat-layout">
       <div class="chat-header">
         <div class="assistant-mark" aria-hidden="true">
-          <v-icon size="24">mdi-heart-pulse</v-icon>
+          <v-icon size="24">mdi-message-processing-outline</v-icon>
         </div>
         <div class="chat-heading">
           <p class="text-caption text-medium-emphasis mb-1">
