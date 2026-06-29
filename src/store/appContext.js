@@ -52,13 +52,13 @@ export const useAppContextStore = defineStore("appContext", () => {
 
   const canSwitchModes = computed(() => availableModes.value.length > 1);
 
-  async function loadForUser(uid) {
+  async function loadForUser(uid, options = {}) {
     if (!uid) {
       reset();
       return;
     }
 
-    if (loadedForUid.value === uid && !loading.value) {
+    if (loadedForUid.value === uid && !loading.value && !options.force) {
       ensureValidMode();
       return;
     }

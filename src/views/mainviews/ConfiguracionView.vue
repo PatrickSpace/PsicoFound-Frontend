@@ -30,12 +30,60 @@
             </v-card-title>
             <v-card-text>
               <v-divider class="mb-4"></v-divider>
-              <v-list class="bg-transparent" density="compact">
-                <v-list-item title="Nombre" :subtitle="displayName" />
-                <v-list-item title="Correo" :subtitle="currentUser?.email || 'No disponible'" />
-                <v-list-item title="Rol base" :subtitle="userRole" />
-                <v-list-item title="UID" :subtitle="currentUser?.uid || 'No disponible'" />
-              </v-list>
+              <v-alert
+                v-if="profileError"
+                class="mb-4"
+                color="error"
+                variant="tonal"
+                icon="mdi-alert-outline"
+              >
+                {{ profileError }}
+              </v-alert>
+              <v-row>
+                <v-col cols="12">
+                  <v-text-field
+                    v-model="profileForm.nombre"
+                    label="Nombre"
+                    variant="outlined"
+                  />
+                </v-col>
+                <v-col cols="12">
+                  <v-text-field
+                    :model-value="currentUser?.email || ''"
+                    label="Correo"
+                    readonly
+                    variant="outlined"
+                  />
+                </v-col>
+                <v-col cols="12" md="6">
+                  <v-text-field
+                    v-model="profileForm.fechaNacimiento"
+                    label="Fecha de nacimiento"
+                    type="date"
+                    variant="outlined"
+                  />
+                </v-col>
+                <v-col cols="12" md="6">
+                  <v-text-field
+                    v-model="profileForm.telefono"
+                    label="Teléfono"
+                    placeholder="Opcional"
+                    variant="outlined"
+                  />
+                </v-col>
+              </v-row>
+              <div class="d-flex justify-end">
+                <v-btn
+                  color="secondary"
+                  variant="flat"
+                  prepend-icon="mdi-content-save-outline"
+                  :loading="savingProfile"
+                  :disabled="!canSaveProfile"
+                  @click="saveProfile"
+                >
+                  Guardar cambios
+                </v-btn>
+              </div>
             </v-card-text>
           </v-card>
         </v-col>
@@ -137,7 +185,7 @@
 </template>
 
 <script setup>
-import { computed } from "vue";
+import { computed, reactive, ref, watch } from "vue";
 import { storeToRefs } from "pinia";
 import { signOut } from "firebase/auth";
 import { useRouter } from "vue-router";
@@ -145,11 +193,20 @@ import LayoutDefault from "@/components/Layout/Layoutmain.vue";
 import { auth } from "@/plugins/Firebase/firebase";
 import { useAppContextStore } from "@/store/appContext";
 import { useAuthStore } from "@/store/auth";
+import { updateUserProfile } from "@/services/userService";
 
 const router = useRouter();
 const authStore = useAuthStore();
 const appContext = useAppContextStore();
 const { currentUser, userName } = storeToRefs(authStore);
+const savingProfile = ref(false);
+const profileError = ref("");
+
+const profileForm = reactive({
+  nombre: "",
+  fechaNacimiento: "",
+  telefono: "",
+});
 
 const activeMode = computed(
   () =>
@@ -158,16 +215,22 @@ const activeMode = computed(
     ) || null
 );
 
-const displayName = computed(
-  () =>
-    appContext.userProfile?.nombre ||
-    currentUser.value?.displayName ||
-    userName.value ||
-    "Usuario"
+const canSaveProfile = computed(
+  () => Boolean(currentUser.value?.uid) && profileForm.nombre.trim().length > 0
 );
 
-const userRole = computed(
-  () => appContext.userProfile?.rol || appContext.userProfile?.role || "patient"
+watch(
+  () => appContext.userProfile,
+  (profile) => {
+    profileForm.nombre =
+      profile?.nombre ||
+      currentUser.value?.displayName ||
+      userName.value ||
+      "";
+    profileForm.fechaNacimiento = profile?.fechaNacimiento || "";
+    profileForm.telefono = profile?.telefono || "";
+  },
+  { immediate: true }
 );
 
 function switchMode(mode) {
@@ -183,6 +246,39 @@ function showPsychologistRequest() {
       },
     })
   );
+}
+
+async function saveProfile() {
+  if (!canSaveProfile.value || savingProfile.value) {
+    return;
+  }
+
+  savingProfile.value = true;
+  profileError.value = "";
+
+  try {
+    await updateUserProfile(currentUser.value.uid, {
+      nombre: profileForm.nombre.trim(),
+      fechaNacimiento: profileForm.fechaNacimiento,
+      telefono: profileForm.telefono.trim(),
+    });
+    await appContext.loadForUser(currentUser.value.uid, { force: true });
+
+    window.dispatchEvent(
+      new CustomEvent("ui-success", {
+        detail: {
+          title: "Perfil actualizado",
+          message: "Tus datos personales fueron guardados.",
+        },
+      })
+    );
+  } catch (error) {
+    console.error("Error updating user profile:", error);
+    profileError.value =
+      error?.message || "No pudimos guardar tus datos personales.";
+  } finally {
+    savingProfile.value = false;
+  }
 }
 
 async function logout() {

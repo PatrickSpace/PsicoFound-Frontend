@@ -3,6 +3,8 @@ import {
   doc,
   getDoc,
   getDocs,
+  serverTimestamp,
+  updateDoc,
 } from "firebase/firestore";
 import { db } from "@/plugins/Firebase/firestore";
 
@@ -23,6 +25,27 @@ export async function getUserById(uid) {
         ...snapshot.data(),
       }
     : null;
+}
+
+export async function updateUserProfile(uid, data = {}) {
+  if (!uid) {
+    throw new Error("No se encontró el usuario a actualizar.");
+  }
+
+  const userRef = doc(db, USERS_COLLECTION, uid);
+  const payload = {
+    nombre: data.nombre || "",
+    fechaNacimiento: data.fechaNacimiento || "",
+    telefono: data.telefono || "",
+    updatedAt: serverTimestamp(),
+  };
+
+  await updateDoc(userRef, payload);
+
+  return {
+    id: uid,
+    ...payload,
+  };
 }
 
 export async function getUsers() {
