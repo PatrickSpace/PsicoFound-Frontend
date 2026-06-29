@@ -37,8 +37,8 @@ const appContext = useAppContextStore();
 .layout-main-content {
   min-height: 100dvh;
   min-height: 100svh;
-  padding-top: 80px;
-  padding-bottom: calc(80px + env(safe-area-inset-bottom));
+  padding-top: 88px !important;
+  padding-bottom: calc(80px + env(safe-area-inset-bottom)) !important;
   overflow: visible;
 }
 
@@ -65,14 +65,19 @@ const appContext = useAppContextStore();
   .layout-main-content {
     padding-left: 0 !important;
     padding-right: 0 !important;
-    padding-top: 76px;
-    padding-bottom: calc(96px + env(safe-area-inset-bottom));
+    padding-top: 112px !important;
+    padding-bottom: calc(104px + env(safe-area-inset-bottom)) !important;
   }
 
   .layout-container {
     max-width: none !important;
     padding-inline: 12px;
+    padding-top: 0;
     width: 100%;
+  }
+
+  .layout-container > .v-container {
+    padding-top: 0;
   }
 }
 
