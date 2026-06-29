@@ -1,6 +1,6 @@
 <template>
-  <v-theme-provider theme="dark">
-    <v-form v-model="valid" class="text-white" @submit.prevent="LogIn()">
+  <div>
+    <v-form v-model="valid" @submit.prevent="LogIn()">
       <v-container class="px-0">
         <v-text-field
           v-model="form.usuario"
@@ -35,7 +35,7 @@
         </v-btn>
       </v-container>
     </v-form>
-    <v-divider color="white"></v-divider>
+    <v-divider></v-divider>
     <v-btn
       block
       class="my-5 text-white bg-google text-left"
@@ -50,8 +50,7 @@
         <v-icon>mdi-google</v-icon>
       </template>
     </v-btn>
-
-  </v-theme-provider>
+  </div>
 </template>
 
 <script setup>

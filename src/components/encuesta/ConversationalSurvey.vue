@@ -354,6 +354,11 @@ function notifyError(message) {
   backdrop-filter: blur(12px);
 }
 
+:global(.v-theme--light) .messages-panel {
+  border-color: rgba(65, 105, 102, 0.16);
+  background: rgba(255, 255, 255, 0.72);
+}
+
 .messages-panel::-webkit-scrollbar {
   width: 10px;
 }
@@ -363,9 +368,17 @@ function notifyError(message) {
   border-radius: 999px;
 }
 
+:global(.v-theme--light) .messages-panel::-webkit-scrollbar-track {
+  background: rgba(65, 105, 102, 0.08);
+}
+
 .messages-panel::-webkit-scrollbar-thumb {
   background: rgba(76, 175, 180, 0.58);
   border-radius: 999px;
+}
+
+:global(.v-theme--light) .messages-panel::-webkit-scrollbar-thumb {
+  background: rgba(95, 128, 123, 0.5);
 }
 
 .message-row {
@@ -388,8 +401,16 @@ function notifyError(message) {
   background: rgba(255, 255, 255, 0.1);
 }
 
+:global(.v-theme--light) .message-bubble {
+  background: rgba(65, 105, 102, 0.08);
+}
+
 .message-row.is-user .message-bubble {
   background: rgba(76, 175, 180, 0.32);
+}
+
+:global(.v-theme--light) .message-row.is-user .message-bubble {
+  background: rgba(95, 128, 123, 0.2);
 }
 
 .message-author {
@@ -397,6 +418,10 @@ function notifyError(message) {
   font-size: 0.76rem;
   font-weight: 700;
   color: rgba(255, 255, 255, 0.72);
+}
+
+:global(.v-theme--light) .message-author {
+  color: rgba(31, 65, 70, 0.72);
 }
 
 .message-text {
@@ -439,6 +464,10 @@ function notifyError(message) {
   border-radius: 999px;
   background: rgba(255, 255, 255, 0.76);
   animation: pulse 1s infinite ease-in-out;
+}
+
+:global(.v-theme--light) .typing-dots span {
+  background: rgba(31, 65, 70, 0.72);
 }
 
 .typing-dots span:nth-child(2) {

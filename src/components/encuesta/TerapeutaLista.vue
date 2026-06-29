@@ -84,7 +84,7 @@
                       v-for="especialidad in therapist.especialidades || []"
                       :key="`${therapist.id}-esp-${especialidad}`"
                       size="small"
-                      color="white"
+                      color="secondary"
                       variant="tonal"
                     >
                       {{ especialidad }}
@@ -109,7 +109,7 @@
                     <v-alert
                       density="compact"
                       variant="tonal"
-                      color="white"
+                      color="info"
                       icon="mdi-chat-processing-outline"
                       rounded="lg"
                     >

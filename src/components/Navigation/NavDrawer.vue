@@ -2,7 +2,6 @@
   <v-navigation-drawer
     v-if="lgAndUp"
     floating
-    theme="dark"
     class="bg-transparent"
     width="320"
     app
@@ -111,5 +110,9 @@ const activeMode = computed(
 
 .nav-list :deep(.v-list-item--active) {
   background-color: rgba(255, 255, 255, 0.12);
+}
+
+:global(.v-theme--light) .nav-list :deep(.v-list-item--active) {
+  background-color: rgba(65, 105, 102, 0.12);
 }
 </style>

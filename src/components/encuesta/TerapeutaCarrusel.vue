@@ -132,7 +132,7 @@
           <div class="d-flex justify-end mt-6">
             <v-btn
               variant="tonal"
-              color="white"
+              color="secondary"
               :disabled="!selectedSlot"
               @click="confirmAppointment"
               to="/dashboard"

@@ -1,5 +1,5 @@
 <template>
-  <v-form v-model="valid" class="text-white" @submit.prevent="registrarse()">
+  <v-form v-model="valid" @submit.prevent="registrarse()">
     <v-container class="px-0">
       <v-text-field
         class="mb-2"
@@ -35,7 +35,7 @@
       </v-btn>
     </v-container>
   </v-form>
-  <v-divider color="white"></v-divider>
+  <v-divider></v-divider>
 
   <v-btn
     block

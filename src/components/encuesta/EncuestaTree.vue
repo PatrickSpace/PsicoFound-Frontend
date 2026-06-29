@@ -2,14 +2,14 @@
   <div>
     <v-stepper v-model="e1" class="bg-transparent elevation-0" non-linear>
       <template v-slot:default="{ prev, next }">
-        <v-stepper-header class="elevation-0" color="white">
+        <v-stepper-header class="elevation-0" color="secondary">
           <template v-for="paso in pasos" :key="paso.key">
             <v-stepper-item
               :title="paso.value"
               :complete="e1 > paso.n"
               :step="`Step {{ paso.n }}`"
               :value="paso.n"
-              color="white"
+              color="secondary"
               editable
             ></v-stepper-item>
             <v-divider v-if="paso.n !== steps" :key="paso.n"></v-divider>

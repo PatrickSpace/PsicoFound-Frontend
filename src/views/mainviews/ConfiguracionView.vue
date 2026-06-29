@@ -190,6 +190,37 @@
         <v-col cols="12" md="6" class="d-flex">
           <v-card class="pa-4 card-backgoundcustom flex-grow-1" elevation="2" variant="text">
             <v-card-title class="text-h5">
+              <v-icon size="small">mdi-theme-light-dark</v-icon>
+              Apariencia
+            </v-card-title>
+            <v-card-text>
+              <v-divider class="mb-4"></v-divider>
+              <p class="text-body-2 text-medium-emphasis mb-4">
+                Elige cómo quieres ver PsicoFound en este dispositivo.
+              </p>
+              <v-btn-toggle
+                v-model="appTheme"
+                color="secondary"
+                mandatory
+                rounded="lg"
+                variant="tonal"
+              >
+                <v-btn value="dark">
+                  <v-icon start>mdi-weather-night</v-icon>
+                  Oscuro
+                </v-btn>
+                <v-btn value="light">
+                  <v-icon start>mdi-white-balance-sunny</v-icon>
+                  Claro
+                </v-btn>
+              </v-btn-toggle>
+            </v-card-text>
+          </v-card>
+        </v-col>
+
+        <v-col cols="12" md="6" class="d-flex">
+          <v-card class="pa-4 card-backgoundcustom flex-grow-1" elevation="2" variant="text">
+            <v-card-title class="text-h5">
               <v-icon size="small">mdi-shield-lock-outline</v-icon>
               Seguridad
             </v-card-title>
@@ -224,11 +255,13 @@ import { auth } from "@/plugins/Firebase/firebase";
 import { useAppContextStore } from "@/store/appContext";
 import { useAuthStore } from "@/store/auth";
 import { updateUserProfile } from "@/services/userService";
+import { useAppTheme } from "@/composables/useAppTheme";
 
 const router = useRouter();
 const authStore = useAuthStore();
 const appContext = useAppContextStore();
 const { currentUser, userName } = storeToRefs(authStore);
+const { appTheme } = useAppTheme();
 const savingProfile = ref(false);
 const profileError = ref("");
 const isEditingProfile = ref(false);

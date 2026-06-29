@@ -4,31 +4,30 @@
       app
       class="responsive-app-bar"
       color="transparent"
-      dark
       :elevation="0"
     >
-      <v-app-bar-title class="text-white">PsicoFound</v-app-bar-title>
+      <v-app-bar-title class="theme-contrast-text">PsicoFound</v-app-bar-title>
       <v-spacer></v-spacer>
-      <v-btn text class="text-white" to="/login" rounded="0" variant="tonal">
+      <v-btn text class="theme-contrast-text" to="/login" rounded="0" variant="tonal">
         Iniciar sesión
       </v-btn>
-      <v-btn text class="text-white" to="/registro">Registrarse</v-btn>
+      <v-btn text class="theme-contrast-text" to="/registro">Registrarse</v-btn>
     </v-app-bar>
 
     <v-main class="min-dvh-page safe-bottom-mobile">
       <v-container class="intro-container text-center">
         <div class="intro-copy">
-          <h1 class="responsive-title-lg text-white font-weight-bold">
+          <h1 class="responsive-title-lg theme-contrast-text font-weight-bold">
             Cuentanos mas sobre tí
           </h1>
-          <p class="intro-description text-white">
+          <p class="intro-description theme-contrast-text">
             Te ayudaremos a elegir a un terapeuta a través de una breve
             encuesta.
           </p>
           <v-btn
             to="encuesta"
             rounded="0"
-            class="text-white text-subtitle-1"
+            class="theme-contrast-text text-subtitle-1"
             variant="tonal"
             append-icon="mdi-arrow-right"
             size="large"
@@ -37,7 +36,7 @@
           </v-btn>
         </div>
 
-        <p class="intro-footnote text-white">
+        <p class="intro-footnote theme-contrast-text">
           Si ya elegiste a un terapeuta registrado en PsicoFound puedes
           realizar una búsqueda desde tu cuenta.
         </p>

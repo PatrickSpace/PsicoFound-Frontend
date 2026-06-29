@@ -9,7 +9,7 @@ import MainLogo from "@/components/Common/MainLogo.vue";
     <main class="auth-content safe-bottom-mobile">
       <div class="auth-form-shell">
         <MainLogo />
-        <h1 class="responsive-title-lg font-weight-medium text-white">
+        <h1 class="responsive-title-lg font-weight-medium theme-contrast-text">
           Iniciar sesion
         </h1>
         <Loginform />
@@ -18,7 +18,7 @@ import MainLogo from "@/components/Common/MainLogo.vue";
       <v-btn
         to="/registro"
         append-icon="mdi-arrow-top-right"
-        class="auth-link text-white text-body-1"
+        class="auth-link theme-contrast-text text-body-1"
         variant="text"
         size="large"
       >

@@ -147,6 +147,16 @@ function defaultRouteForMode(mode) {
   z-index: 1100;
 }
 
+:global(.v-theme--light) .app-top-nav {
+  background:
+    linear-gradient(
+      180deg,
+      rgba(238, 246, 243, 0.88) 0%,
+      rgba(238, 246, 243, 0.62) 72%,
+      rgba(238, 246, 243, 0) 100%
+    );
+}
+
 .app-top-nav::after {
   background: rgba(255, 255, 255, 0.08);
   bottom: 0;
@@ -155,6 +165,10 @@ function defaultRouteForMode(mode) {
   left: 12px;
   position: absolute;
   right: 12px;
+}
+
+:global(.v-theme--light) .app-top-nav::after {
+  background: rgba(65, 105, 102, 0.16);
 }
 
 .app-top-nav__content {
@@ -196,7 +210,7 @@ function defaultRouteForMode(mode) {
 
 .nav-icon-btn {
   background: transparent !important;
-  color: white;
+  color: rgb(var(--v-theme-on-background));
   flex: 0 0 44px;
   height: 44px;
   width: 44px;

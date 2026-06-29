@@ -43,6 +43,10 @@
 import { ref, onMounted, onBeforeUnmount } from "vue";
 import { RouterView } from "vue-router";
 import { Analytics } from "@vercel/analytics/vue";
+import { useAppTheme } from "@/composables/useAppTheme";
+
+const { initializeAppTheme } = useAppTheme();
+initializeAppTheme();
 
 // Estado del snackbar global
 const snack = ref({

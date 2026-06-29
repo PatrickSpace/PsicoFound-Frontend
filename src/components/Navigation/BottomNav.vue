@@ -101,6 +101,17 @@ const navItemCount = computed(() =>
   width: 100vw !important;
 }
 
+:global(.v-theme--light) .bottom-nav-mobile {
+  background:
+    linear-gradient(
+      0deg,
+      rgba(238, 246, 243, 0.94) 0%,
+      rgba(238, 246, 243, 0.7) 78%,
+      rgba(238, 246, 243, 0) 100%
+    ) !important;
+  border-top-color: rgba(65, 105, 102, 0.16);
+}
+
 .bottom-nav-mobile :deep(.v-bottom-navigation__content) {
   display: grid;
   grid-template-columns: repeat(var(--bottom-nav-count), minmax(0, 1fr));
@@ -145,7 +156,10 @@ const navItemCount = computed(() =>
 
 .bottom-nav-menu {
   background-color: rgba(18, 44, 47, 0.98) !important;
-  color: white;
+}
+
+:global(.v-theme--light) .bottom-nav-menu {
+  background-color: rgba(248, 251, 250, 0.98) !important;
 }
 
 @media (max-width: 380px) {
