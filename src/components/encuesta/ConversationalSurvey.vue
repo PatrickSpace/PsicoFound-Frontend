@@ -11,7 +11,7 @@
       </div>
 
       <v-chip
-        :color="canViewRecommendations ? 'success' : 'cyan-lighten-2'"
+        :color="canViewRecommendations ? 'success' : 'secondary'"
         variant="tonal"
         prepend-icon="mdi-clipboard-check-outline"
       >

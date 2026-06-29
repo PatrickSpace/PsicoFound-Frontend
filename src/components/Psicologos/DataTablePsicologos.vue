@@ -61,7 +61,7 @@
     </template>
 
     <template #top>
-      <v-toolbar color="cyan-darken-3">
+      <v-toolbar color="primary">
         <v-toolbar-title>Psicologos activos</v-toolbar-title>
         <v-divider class="mx-4" inset vertical></v-divider>
         <v-spacer></v-spacer>

@@ -101,7 +101,7 @@
               :key="day"
               class="d-flex justify-center"
             >
-              <v-btn size="x-large" color="teal darken-2" class="day-pill">
+              <v-btn size="x-large" color="secondary" class="day-pill">
                 {{ day }}
               </v-btn>
             </v-col>
@@ -118,7 +118,7 @@
                 <v-btn
                   class="time-btn"
                   :variant="isSelectedSlot(dayIndex, time)"
-                  :color="slotColor(dayIndex, time) || 'teal darken-2'"
+                  :color="slotColor(dayIndex, time) || 'secondary'"
                   size="large"
                   @click="selectSlot(dayIndex, time)"
                 >
