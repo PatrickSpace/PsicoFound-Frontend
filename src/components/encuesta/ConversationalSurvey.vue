@@ -6,7 +6,7 @@
           Encuesta conversacional
         </p>
         <h1 class="survey-title font-weight-bold">
-          Cuéntanos qué estás buscando
+          Cuéntame cómo te sientes
         </h1>
       </div>
 
