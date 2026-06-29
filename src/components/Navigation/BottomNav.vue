@@ -2,6 +2,7 @@
   <v-bottom-navigation
     class="bottom-nav-mobile bg-transparent d-lg-none"
     grow
+    :style="{ '--bottom-nav-count': navItemCount }"
   >
     <v-btn
       v-for="(item, i) in primaryItems"
@@ -76,26 +77,47 @@ const items = computed(
 
 const primaryItems = computed(() => items.value.slice(0, 3));
 const overflowItems = computed(() => items.value.slice(3));
+const navItemCount = computed(() =>
+  String(primaryItems.value.length + (overflowItems.value.length ? 1 : 0))
+);
 </script>
 <style scoped>
 .bottom-nav-mobile {
   border-top: 1px solid rgba(255, 255, 255, 0.08);
-  min-height: calc(60px + env(safe-area-inset-bottom));
+  height: calc(64px + env(safe-area-inset-bottom)) !important;
+  left: 0 !important;
+  max-width: 100vw;
+  min-height: calc(64px + env(safe-area-inset-bottom));
   padding-bottom: env(safe-area-inset-bottom);
+  right: 0 !important;
+  width: 100vw !important;
+}
+
+.bottom-nav-mobile :deep(.v-bottom-navigation__content) {
+  display: grid;
+  grid-template-columns: repeat(var(--bottom-nav-count), minmax(0, 1fr));
+  height: 64px;
   width: 100%;
 }
 
 .bottom-nav-mobile :deep(.v-btn) {
+  height: 64px;
   min-width: 0;
+  width: 100%;
   padding-inline: 2px;
 }
 
 .bottom-nav-mobile :deep(.v-btn__content) {
-  gap: 2px;
+  align-items: center;
+  display: flex;
+  gap: 3px;
+  justify-content: center;
+  min-width: 0;
+  width: 100%;
 }
 
 .bottom-nav-mobile :deep(span) {
-  max-width: 74px;
+  max-width: min(78px, 21vw);
   overflow: hidden;
   font-size: 0.7rem;
   line-height: 1.1;
@@ -106,5 +128,12 @@ const overflowItems = computed(() => items.value.slice(3));
 .bottom-nav-menu {
   background-color: rgba(18, 44, 47, 0.98) !important;
   color: white;
+}
+
+@media (max-width: 380px) {
+  .bottom-nav-mobile :deep(span) {
+    font-size: 0.66rem;
+    max-width: 19vw;
+  }
 }
 </style>
