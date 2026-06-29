@@ -17,14 +17,28 @@
           </p>
         </div>
 
-        <v-chip
-          class="status-chip"
-          :color="canViewRecommendations ? 'success' : 'secondary'"
-          variant="tonal"
-          :prepend-icon="canViewRecommendations ? 'mdi-check-circle-outline' : 'mdi-progress-clock'"
-        >
-          {{ canViewRecommendations ? "Perfil listo" : "En progreso" }}
-        </v-chip>
+        <div class="chat-header-actions">
+          <v-chip
+            class="status-chip"
+            :color="canViewRecommendations ? 'success' : 'secondary'"
+            variant="tonal"
+            :prepend-icon="canViewRecommendations ? 'mdi-check-circle-outline' : 'mdi-progress-clock'"
+          >
+            {{ canViewRecommendations ? "Perfil listo" : "En progreso" }}
+          </v-chip>
+          <v-btn
+            class="reset-button"
+            variant="text"
+            color="secondary"
+            size="small"
+            prepend-icon="mdi-refresh"
+            :loading="resetting"
+            :disabled="loading || resetting"
+            @click="handleResetConversation"
+          >
+            Reiniciar
+          </v-btn>
+        </div>
       </div>
 
       <div ref="messagesContainer" class="messages-panel">
@@ -92,6 +106,7 @@
           <v-btn
             class="send-button"
             color="secondary"
+            variant="text"
             type="submit"
             icon="mdi-arrow-up"
             :loading="loading"
@@ -101,14 +116,6 @@
         </form>
         <div class="composer-footer">
           <span>Tu información ayuda a orientar la recomendación, no reemplaza diagnóstico clínico.</span>
-          <button
-            class="text-reset"
-            type="button"
-            :disabled="loading || resetting"
-            @click="handleResetConversation"
-          >
-            Reiniciar
-          </button>
         </div>
       </div>
 
@@ -527,6 +534,17 @@ function notifyError(message) {
   flex: 0 0 auto;
 }
 
+.chat-header-actions {
+  display: flex;
+  align-items: center;
+  flex: 0 0 auto;
+  gap: 8px;
+}
+
+.reset-button {
+  min-width: 0;
+}
+
 .messages-panel {
   flex: 1 1 auto;
   min-height: 0;
@@ -695,6 +713,7 @@ function notifyError(message) {
 .send-button {
   width: 42px;
   height: 42px;
+  border-radius: 999px;
 }
 
 .composer-footer {
@@ -709,22 +728,6 @@ function notifyError(message) {
 
 :global(.v-theme--light) .composer-footer {
   color: rgba(23, 38, 34, 0.58);
-}
-
-.text-reset {
-  border: 0;
-  padding: 0;
-  color: rgb(var(--v-theme-secondary));
-  background: transparent;
-  cursor: pointer;
-  font: inherit;
-  font-weight: 700;
-  white-space: nowrap;
-}
-
-.text-reset:disabled {
-  cursor: default;
-  opacity: 0.45;
 }
 
 .survey-actions {
@@ -797,7 +800,12 @@ function notifyError(message) {
     height: 40px;
   }
 
-  .status-chip {
+  .chat-header-actions {
+    margin-left: auto;
+  }
+
+  .status-chip,
+  .reset-button :deep(.v-btn__content span) {
     display: none;
   }
 
