@@ -24,13 +24,22 @@
         v-for="message in visibleMessages"
         :key="message.id"
         class="message-row"
-        :class="message.role === 'user' ? 'is-user' : 'is-assistant'"
+        :class="[
+          message.role === 'user' ? 'is-user' : 'is-assistant',
+          {
+            'is-pending': message.pending,
+            'has-error': message.error,
+          },
+        ]"
       >
         <div class="message-bubble">
           <div class="message-author">
             {{ message.role === "user" ? "Tú" : "PsicoFound" }}
           </div>
           <p class="message-text">{{ message.text }}</p>
+          <div v-if="message.pending || message.error" class="message-status">
+            {{ message.error ? "No enviado" : "Enviando..." }}
+          </div>
         </div>
       </div>
 
@@ -120,6 +129,7 @@ const draft = ref("");
 const loading = ref(false);
 const resetting = ref(false);
 const messages = ref([]);
+const optimisticMessages = ref([]);
 const profile = ref(null);
 const messagesContainer = ref(null);
 const activeSessionId = ref("");
@@ -136,9 +146,16 @@ const welcomeMessage = {
     "Hola, soy el asistente de PsicoFound. Cuéntame qué te trae por aquí o qué tipo de apoyo buscas.",
 };
 
-const visibleMessages = computed(() =>
-  messages.value.length > 0 ? messages.value : [welcomeMessage]
-);
+const visibleMessages = computed(() => {
+  const mergedMessages = [
+    ...messages.value,
+    ...optimisticMessages.value.filter(
+      (optimisticMessage) => !hasConfirmedMessage(optimisticMessage)
+    ),
+  ].sort(compareMessagesByCreatedAt);
+
+  return mergedMessages.length > 0 ? mergedMessages : [welcomeMessage];
+});
 
 const canSend = computed(() => draft.value.trim().length > 0 && !loading.value);
 const canViewRecommendations = computed(
@@ -156,6 +173,7 @@ watch(
 
     if (!user?.uid) {
       messages.value = [];
+      optimisticMessages.value = [];
       profile.value = null;
       activeSessionId.value = "";
       crisisRouteTriggered.value = false;
@@ -180,6 +198,7 @@ watch(
               sessionId,
               (items) => {
                 messages.value = items;
+                reconcileOptimisticMessages();
                 scrollToBottom();
               },
               () => {
@@ -235,11 +254,14 @@ async function handleSubmit() {
 
 async function sendChatMessage(message) {
   loading.value = true;
+  const optimisticMessage = addOptimisticMessage(message);
+  scrollToBottom();
 
   try {
     const result = await sendProfileChatMessage(message);
     syncProfileFromChatResult(result);
   } catch (err) {
+    markOptimisticMessageAsFailed(optimisticMessage.id);
     notifyError(
       getReadableErrorMessage(err) ||
         "No pudimos enviar el mensaje. Inténtalo nuevamente en unos segundos."
@@ -261,6 +283,7 @@ async function handleResetConversation() {
   try {
     await resetProfileChatConversation();
     messages.value = [];
+    optimisticMessages.value = [];
   } catch (err) {
     notifyError(
       getReadableErrorMessage(err) ||
@@ -283,6 +306,93 @@ function syncProfileFromChatResult(result) {
     ...(profile.value || {}),
     ...nextProfile,
   };
+}
+
+function addOptimisticMessage(text) {
+  const optimisticMessage = {
+    id: `optimistic-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+    role: "user",
+    text,
+    pending: true,
+    localCreatedAt: Date.now(),
+    sessionId: activeSessionId.value || "",
+  };
+
+  optimisticMessages.value = [...optimisticMessages.value, optimisticMessage];
+  return optimisticMessage;
+}
+
+function reconcileOptimisticMessages() {
+  optimisticMessages.value = optimisticMessages.value.filter(
+    (optimisticMessage) =>
+      optimisticMessage.error || !hasConfirmedMessage(optimisticMessage)
+  );
+}
+
+function markOptimisticMessageAsFailed(id) {
+  optimisticMessages.value = optimisticMessages.value.map((message) =>
+    message.id === id
+      ? {
+          ...message,
+          pending: false,
+          error: true,
+        }
+      : message
+  );
+}
+
+function hasConfirmedMessage(optimisticMessage) {
+  return messages.value.some((message) => {
+    if (message.role !== "user") {
+      return false;
+    }
+
+    if (
+      normalizeMessageText(message.text) !==
+      normalizeMessageText(optimisticMessage.text)
+    ) {
+      return false;
+    }
+
+    const confirmedAt = getMessageCreatedAt(message);
+    const optimisticAt = getMessageCreatedAt(optimisticMessage);
+
+    if (!confirmedAt || !optimisticAt) {
+      return true;
+    }
+
+    return Math.abs(confirmedAt - optimisticAt) < 5 * 60 * 1000;
+  });
+}
+
+function normalizeMessageText(text) {
+  return (text || "").toString().trim();
+}
+
+function compareMessagesByCreatedAt(a, b) {
+  return getMessageCreatedAt(a) - getMessageCreatedAt(b);
+}
+
+function getMessageCreatedAt(message) {
+  const createdAt = message?.createdAt;
+
+  if (typeof message?.localCreatedAt === "number") {
+    return message.localCreatedAt;
+  }
+
+  if (typeof createdAt?.toMillis === "function") {
+    return createdAt.toMillis();
+  }
+
+  if (typeof createdAt?.seconds === "number") {
+    return createdAt.seconds * 1000;
+  }
+
+  if (typeof createdAt === "number") {
+    return createdAt;
+  }
+
+  return 0;
 }
 
 function goToRecommendations() {
@@ -394,6 +504,14 @@ function notifyError(message) {
   justify-content: flex-start;
 }
 
+.message-row.is-pending .message-bubble {
+  opacity: 0.82;
+}
+
+.message-row.has-error .message-bubble {
+  outline: 1px solid rgba(var(--v-theme-error), 0.48);
+}
+
 .message-bubble {
   max-width: min(680px, 86%);
   padding: 12px 14px;
@@ -428,6 +546,17 @@ function notifyError(message) {
   margin: 0;
   white-space: pre-wrap;
   line-height: 1.48;
+}
+
+.message-status {
+  margin-top: 6px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.62);
+}
+
+:global(.v-theme--light) .message-status {
+  color: rgba(23, 38, 34, 0.56);
 }
 
 .composer {
