@@ -188,10 +188,8 @@ const visibleMessages = computed(() => {
 });
 
 const canSend = computed(() => draft.value.trim().length > 0 && !loading.value);
-const canViewRecommendations = computed(
-  () =>
-    Boolean(profile.value?.completado) ||
-    isProfileReadyForRecommendations(profile.value)
+const canViewRecommendations = computed(() =>
+  isProfileReadyForRecommendations(profile.value)
 );
 
 watch(
@@ -314,6 +312,7 @@ async function handleResetConversation() {
     await resetProfileChatConversation();
     messages.value = [];
     optimisticMessages.value = [];
+    profile.value = null;
   } catch (err) {
     notifyError(
       getReadableErrorMessage(err) ||

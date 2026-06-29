@@ -8,10 +8,11 @@ const {
   getActiveChatSession,
 } = require("./session");
 const {
+  PROFILE_DEFAULTS,
   finalizeProfileForMatching,
   getNextProfileQuestion,
   getCurrentProfile,
-  sanitizeProfileData,
+  sanitizeModelProfileData,
 } = require("../profiles/profile");
 const {getCrisisResult} = require("../safety/suicideRisk");
 const {
@@ -75,12 +76,12 @@ async function sendProfileChatMessage(request) {
   let reply;
 
   if (crisisResult) {
-    cleanData = sanitizeProfileData(crisisResult.data);
+    cleanData = sanitizeModelProfileData(crisisResult.data);
     reply = crisisResult.reply;
   } else {
     const history = await getRecentHistory(messagesRef, chatSession.id);
     const geminiResult = await askGemini({currentProfile, history});
-    cleanData = sanitizeProfileData(geminiResult.data);
+    cleanData = sanitizeModelProfileData(geminiResult.data);
     reply = normalizeReply(geminiResult.reply);
   }
 
@@ -223,6 +224,7 @@ async function resetProfileChatConversation(request) {
   const uid = request.auth.uid;
   const db = admin.firestore();
   const conversationRef = db.collection("conversations").doc(uid);
+  const profileRef = db.collection("profiles").doc(uid);
   const chatSession = createChatSession();
 
   await conversationRef.set(
@@ -233,6 +235,15 @@ async function resetProfileChatConversation(request) {
         sessionStartedAt: chatSession.startedAt,
         sessionExpiresAt: chatSession.expiresAt,
         lastMessage: "",
+        updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+      },
+      {merge: true},
+  );
+
+  await profileRef.set(
+      {
+        ...PROFILE_DEFAULTS,
+        uid,
         updatedAt: admin.firestore.FieldValue.serverTimestamp(),
       },
       {merge: true},

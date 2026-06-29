@@ -94,11 +94,11 @@
 
             <template #item.profileStatus="{ item }">
               <v-chip
-                :color="item.profile?.completado ? 'success' : 'warning'"
+                :color="isProfileReady(item.profile) ? 'success' : 'warning'"
                 size="small"
                 variant="tonal"
               >
-                {{ item.profile?.completado ? "Listo" : "En progreso" }}
+                {{ isProfileReady(item.profile) ? "Listo" : "En progreso" }}
               </v-chip>
             </template>
 
@@ -162,6 +162,7 @@ import {
   getTherapiesByPatient,
   getTherapiesByTherapist,
 } from "@/services/terapiaService";
+import { isProfileReadyForRecommendations } from "@/services/matchingService";
 
 const router = useRouter();
 const authStore = useAuthStore();
@@ -203,7 +204,7 @@ const filteredPatients = computed(() => {
 });
 
 const completedProfilesCount = computed(
-  () => patients.value.filter((patient) => patient.profile?.completado).length
+  () => patients.value.filter((patient) => isProfileReady(patient.profile)).length
 );
 
 const activeTherapiesCount = computed(
@@ -329,5 +330,9 @@ function openTherapy(item) {
     path: "/terapiadetail",
     query: { id: item.activeTherapy.id },
   });
+}
+
+function isProfileReady(profile) {
+  return isProfileReadyForRecommendations(profile);
 }
 </script>

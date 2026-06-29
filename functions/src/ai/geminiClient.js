@@ -112,7 +112,6 @@ function buildResponseSchema() {
           presupuesto: {type: Type.STRING},
           ciudad: {type: Type.STRING},
           observaciones: {type: Type.STRING},
-          completado: {type: Type.BOOLEAN},
         },
       },
     },

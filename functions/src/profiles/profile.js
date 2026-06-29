@@ -17,6 +17,9 @@ const PROFILE_DEFAULTS = {
 };
 
 const PROFILE_KEYS = Object.keys(PROFILE_DEFAULTS);
+const MODEL_WRITABLE_PROFILE_KEYS = PROFILE_KEYS.filter(
+    (key) => key !== "completado",
+);
 const OPTIONAL_PREFERENCE_FIELDS = new Set([
   "enfoque",
   "modalidad",
@@ -54,6 +57,29 @@ async function getCurrentProfile(profileRef) {
 
 function sanitizeProfileData(data = {}) {
   return PROFILE_KEYS.reduce((profile, key) => {
+    if (!Object.prototype.hasOwnProperty.call(data, key)) {
+      return profile;
+    }
+
+    const value = data[key];
+
+    if (Array.isArray(PROFILE_DEFAULTS[key])) {
+      profile[key] = Array.isArray(value) ? cleanStringArray(value) : [];
+      return profile;
+    }
+
+    if (typeof PROFILE_DEFAULTS[key] === "boolean") {
+      profile[key] = Boolean(value);
+      return profile;
+    }
+
+    profile[key] = sanitizeTextValue(key, value);
+    return profile;
+  }, {});
+}
+
+function sanitizeModelProfileData(data = {}) {
+  return MODEL_WRITABLE_PROFILE_KEYS.reduce((profile, key) => {
     if (!Object.prototype.hasOwnProperty.call(data, key)) {
       return profile;
     }
@@ -186,5 +212,6 @@ module.exports = {
   getNextProfileQuestion,
   getCurrentProfile,
   isProfileComplete,
+  sanitizeModelProfileData,
   sanitizeProfileData,
 };

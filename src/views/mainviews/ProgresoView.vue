@@ -9,12 +9,12 @@
           </p>
         </div>
         <v-chip
-          :color="profile?.completado ? 'success' : 'warning'"
+          :color="isProfileReady ? 'success' : 'warning'"
           variant="tonal"
           prepend-icon="mdi-account-heart-outline"
           class="align-self-start"
         >
-          {{ profile?.completado ? "Perfil listo" : "Perfil en progreso" }}
+          {{ isProfileReady ? "Perfil listo" : "Perfil en progreso" }}
         </v-chip>
       </div>
       <v-divider class="my-5 mx-auto"></v-divider>
@@ -538,6 +538,7 @@ import {
   getPermissionAwareMessage,
   isPermissionDeniedError,
 } from "@/utils/firebaseErrors";
+import { isProfileReadyForRecommendations } from "@/services/matchingService";
 
 const authStore = useAuthStore();
 const appContext = useAppContextStore();
@@ -608,6 +609,10 @@ const goalProgressForm = reactive({
 
 const profileTopics = computed(() =>
   Array.isArray(profile.value?.temas) ? profile.value.temas : []
+);
+
+const isProfileReady = computed(() =>
+  isProfileReadyForRecommendations(profile.value)
 );
 
 const activeGoalsCount = computed(
