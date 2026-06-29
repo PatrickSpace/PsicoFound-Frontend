@@ -1,8 +1,9 @@
 <template>
   <v-navigation-drawer
+    v-if="lgAndUp"
     floating
     theme="dark"
-    class="d-none d-lg-flex bg-transparent"
+    class="bg-transparent"
     width="320"
     app
   >
@@ -38,9 +39,11 @@
 </template>
 <script setup>
 import { computed } from "vue";
+import { useDisplay } from "vuetify";
 import { useAppContextStore } from "@/store/appContext";
 
 const appContext = useAppContextStore();
+const { lgAndUp } = useDisplay();
 
 const navigationByMode = {
   patient: [

@@ -36,18 +36,35 @@ const appContext = useAppContextStore();
 
 .layout-main-content {
   min-height: 100dvh;
+  min-height: 100svh;
   padding-bottom: calc(72px + env(safe-area-inset-bottom));
   overflow: visible;
 }
 
 .layout-shell {
   min-height: 100dvh;
+  min-height: 100svh;
   overflow: visible;
+  width: 100%;
 }
 
 .layout-container {
   width: min(100%, 1120px);
   padding-inline: 16px;
+}
+
+@media (max-width: 599px) {
+  .layout-main-content {
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+    padding-bottom: calc(92px + env(safe-area-inset-bottom));
+  }
+
+  .layout-container {
+    max-width: none !important;
+    padding-inline: 12px;
+    width: 100%;
+  }
 }
 
 @media (min-width: 1280px) {

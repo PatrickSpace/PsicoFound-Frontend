@@ -174,5 +174,13 @@ function defaultRouteForMode(mode) {
   .nav-title {
     font-size: 1.1rem !important;
   }
+
+  :deep(.v-toolbar__content) {
+    gap: 2px;
+  }
+
+  :deep(.v-btn--icon) {
+    width: 40px;
+  }
 }
 </style>
