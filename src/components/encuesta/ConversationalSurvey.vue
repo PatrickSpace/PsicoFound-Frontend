@@ -1,105 +1,128 @@
 <template>
   <section class="survey-shell">
-    <div class="survey-header">
-      <div>
-        <p class="text-caption text-medium-emphasis mb-1">
-          Encuesta conversacional
-        </p>
-        <h1 class="survey-title font-weight-bold">
-          Cuéntame cómo te sientes
-        </h1>
+    <div class="chat-layout">
+      <div class="chat-header">
+        <div class="assistant-mark" aria-hidden="true">
+          <v-icon size="24">mdi-heart-pulse</v-icon>
+        </div>
+        <div class="chat-heading">
+          <p class="text-caption text-medium-emphasis mb-1">
+            Encuesta conversacional
+          </p>
+          <h1 class="survey-title font-weight-bold">
+            Cuéntame cómo te sientes
+          </h1>
+          <p class="survey-subtitle text-body-2 text-medium-emphasis">
+            Te haré algunas preguntas para entender tu momento y sugerirte psicólogos afines.
+          </p>
+        </div>
+
+        <v-chip
+          class="status-chip"
+          :color="canViewRecommendations ? 'success' : 'secondary'"
+          variant="tonal"
+          :prepend-icon="canViewRecommendations ? 'mdi-check-circle-outline' : 'mdi-progress-clock'"
+        >
+          {{ canViewRecommendations ? "Perfil listo" : "En progreso" }}
+        </v-chip>
       </div>
 
-      <v-chip
-        :color="canViewRecommendations ? 'success' : 'secondary'"
-        variant="tonal"
-        prepend-icon="mdi-clipboard-check-outline"
-      >
-        {{ canViewRecommendations ? "Perfil listo" : "Perfil en progreso" }}
-      </v-chip>
-    </div>
-
-    <div ref="messagesContainer" class="messages-panel">
-      <div
-        v-for="message in visibleMessages"
-        :key="message.id"
-        class="message-row"
-        :class="[
-          message.role === 'user' ? 'is-user' : 'is-assistant',
-          {
-            'is-pending': message.pending,
-            'has-error': message.error,
-          },
-        ]"
-      >
-        <div class="message-bubble">
-          <div class="message-author">
-            {{ message.role === "user" ? "Tú" : "PsicoFound" }}
+      <div ref="messagesContainer" class="messages-panel">
+        <div class="conversation-stream">
+          <div
+            v-for="message in visibleMessages"
+            :key="message.id"
+            class="message-row"
+            :class="[
+              message.role === 'user' ? 'is-user' : 'is-assistant',
+              {
+                'is-pending': message.pending,
+                'has-error': message.error,
+              },
+            ]"
+          >
+            <div v-if="message.role !== 'user'" class="message-avatar" aria-hidden="true">
+              <v-icon size="18">mdi-heart-outline</v-icon>
+            </div>
+            <div class="message-stack">
+              <div class="message-author">
+                {{ message.role === "user" ? "Tú" : "PsicoFound" }}
+              </div>
+              <div class="message-bubble">
+                <p class="message-text">{{ message.text }}</p>
+                <div v-if="message.pending || message.error" class="message-status">
+                  {{ message.error ? "No enviado" : "Enviando..." }}
+                </div>
+              </div>
+            </div>
           </div>
-          <p class="message-text">{{ message.text }}</p>
-          <div v-if="message.pending || message.error" class="message-status">
-            {{ message.error ? "No enviado" : "Enviando..." }}
+
+          <div v-if="loading" class="message-row is-assistant">
+            <div class="message-avatar" aria-hidden="true">
+              <v-icon size="18">mdi-heart-outline</v-icon>
+            </div>
+            <div class="message-stack">
+              <div class="message-author">PsicoFound</div>
+              <div class="message-bubble typing-bubble">
+                <div class="typing-dots" aria-label="Pensando">
+                  <span></span>
+                  <span></span>
+                  <span></span>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
 
-      <div v-if="loading" class="message-row is-assistant">
-        <div class="message-bubble">
-          <div class="message-author">PsicoFound</div>
-          <div class="typing-dots" aria-label="Pensando">
-            <span></span>
-            <span></span>
-            <span></span>
-          </div>
+      <div class="composer-shell">
+        <form class="composer" @submit.prevent="handleSubmit">
+          <v-textarea
+            v-model="draft"
+            auto-grow
+            rows="1"
+            max-rows="5"
+            variant="plain"
+            hide-details
+            :disabled="loading"
+            placeholder="Escribe libremente cómo te sientes..."
+            @keydown.enter.exact.prevent="handleSubmit"
+          />
+
+          <v-btn
+            class="send-button"
+            color="secondary"
+            type="submit"
+            icon="mdi-arrow-up"
+            :loading="loading"
+            :disabled="!canSend"
+            aria-label="Enviar mensaje"
+          />
+        </form>
+        <div class="composer-footer">
+          <span>Tu información ayuda a orientar la recomendación, no reemplaza diagnóstico clínico.</span>
+          <button
+            class="text-reset"
+            type="button"
+            :disabled="loading || resetting"
+            @click="handleResetConversation"
+          >
+            Reiniciar
+          </button>
         </div>
       </div>
-    </div>
 
-    <form class="composer" @submit.prevent="handleSubmit">
-      <v-textarea
-        v-model="draft"
-        auto-grow
-        rows="1"
-        max-rows="4"
-        variant="solo-filled"
-        rounded="lg"
-        hide-details
-        :disabled="loading"
-        placeholder="Escribe cómo te has sentido o qué tipo de apoyo buscas"
-        @keydown.enter.exact.prevent="handleSubmit"
-      />
-
-      <v-btn
-        class="send-button"
-        color="secondary"
-        type="submit"
-        icon="mdi-send"
-        :loading="loading"
-        :disabled="!canSend"
-        aria-label="Enviar mensaje"
-      />
-    </form>
-
-    <div class="survey-actions">
-      <v-btn
-        variant="tonal"
-        prepend-icon="mdi-refresh"
-        :loading="resetting"
-        :disabled="loading || resetting"
-        @click="handleResetConversation"
-      >
-        Reiniciar conversación
-      </v-btn>
-
-      <v-btn
-        color="secondary"
-        variant="flat"
-        append-icon="mdi-account-search"
-        :disabled="!canViewRecommendations"
-        @click="goToRecommendations"
-      >
-        Ver psicólogos recomendados
-      </v-btn>
+      <div class="survey-actions">
+        <v-btn
+          color="secondary"
+          variant="flat"
+          append-icon="mdi-account-search"
+          :disabled="!canViewRecommendations"
+          @click="goToRecommendations"
+        >
+          Ver psicólogos recomendados
+        </v-btn>
+      </div>
     </div>
   </section>
 </template>
@@ -427,7 +450,7 @@ function notifyError(message) {
 
 <style scoped>
 .survey-shell {
-  width: min(920px, 100%);
+  width: min(980px, 100%);
   margin: 0 auto;
   height: 100%;
   min-height: 0;
@@ -436,37 +459,83 @@ function notifyError(message) {
   flex-direction: column;
 }
 
-.survey-header {
+.chat-layout {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto auto;
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 8px;
+  background:
+    linear-gradient(180deg, rgba(29, 52, 55, 0.74), rgba(14, 29, 31, 0.64));
+  box-shadow: 0 22px 70px rgba(0, 18, 20, 0.28);
+  backdrop-filter: blur(16px);
+}
+
+:global(.v-theme--light) .chat-layout {
+  background: rgba(255, 255, 255, 0.88);
+  border-color: rgba(23, 63, 58, 0.12);
+  box-shadow:
+    0 1px 2px rgba(23, 63, 58, 0.06),
+    0 22px 64px rgba(23, 63, 58, 0.12);
+}
+
+.chat-header {
   display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 16px;
-  margin-bottom: 20px;
+  align-items: center;
+  gap: 14px;
+  padding: 20px 22px 16px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+:global(.v-theme--light) .chat-header {
+  border-bottom-color: rgba(23, 63, 58, 0.1);
+}
+
+.assistant-mark {
+  display: grid;
+  place-items: center;
+  flex: 0 0 48px;
+  width: 48px;
+  height: 48px;
+  border-radius: 8px;
+  color: rgb(var(--v-theme-on-secondary));
+  background:
+    linear-gradient(135deg, rgb(var(--v-theme-secondary)), rgb(var(--v-theme-primary)));
+  box-shadow: 0 12px 30px rgba(0, 18, 20, 0.22);
+}
+
+.chat-heading {
+  min-width: 0;
+  flex: 1 1 auto;
 }
 
 .survey-title {
-  font-size: 2.125rem;
+  font-size: clamp(1.5rem, 2.4vw, 2rem);
   line-height: 1.18;
   letter-spacing: 0;
 }
 
+.survey-subtitle {
+  max-width: 640px;
+  margin: 6px 0 0;
+  line-height: 1.45;
+}
+
+.status-chip {
+  flex: 0 0 auto;
+}
+
 .messages-panel {
   flex: 1 1 auto;
-  min-height: 280px;
+  min-height: 0;
   overflow-y: scroll;
   overscroll-behavior: contain;
   scrollbar-gutter: stable;
   -webkit-overflow-scrolling: touch;
-  padding: 20px;
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  border-radius: 8px;
-  background: rgba(6, 20, 23, 0.58);
-  backdrop-filter: blur(12px);
-}
-
-:global(.v-theme--light) .messages-panel {
-  border-color: rgba(65, 105, 102, 0.16);
-  background: rgba(255, 255, 255, 0.72);
+  padding: 24px 18px;
+  background: transparent;
 }
 
 .messages-panel::-webkit-scrollbar {
@@ -491,9 +560,16 @@ function notifyError(message) {
   background: rgba(95, 128, 123, 0.5);
 }
 
+.conversation-stream {
+  width: min(760px, 100%);
+  margin: 0 auto;
+}
+
 .message-row {
   display: flex;
-  margin-bottom: 14px;
+  align-items: flex-start;
+  gap: 10px;
+  margin-bottom: 18px;
 }
 
 .message-row.is-user {
@@ -502,6 +578,29 @@ function notifyError(message) {
 
 .message-row.is-assistant {
   justify-content: flex-start;
+}
+
+.message-avatar {
+  display: grid;
+  place-items: center;
+  flex: 0 0 34px;
+  width: 34px;
+  height: 34px;
+  margin-top: 20px;
+  border-radius: 999px;
+  color: rgb(var(--v-theme-on-secondary));
+  background: rgb(var(--v-theme-secondary));
+}
+
+.message-stack {
+  display: flex;
+  flex-direction: column;
+  max-width: min(680px, calc(100% - 44px));
+}
+
+.message-row.is-user .message-stack {
+  align-items: flex-end;
+  max-width: min(620px, 86%);
 }
 
 .message-row.is-pending .message-bubble {
@@ -513,26 +612,30 @@ function notifyError(message) {
 }
 
 .message-bubble {
-  max-width: min(680px, 86%);
-  padding: 12px 14px;
+  padding: 13px 15px;
   border-radius: 8px;
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 :global(.v-theme--light) .message-bubble {
-  background: rgba(65, 105, 102, 0.08);
+  background: rgba(23, 63, 58, 0.06);
+  border-color: rgba(23, 63, 58, 0.08);
 }
 
 .message-row.is-user .message-bubble {
-  background: rgba(76, 175, 180, 0.32);
+  color: rgb(var(--v-theme-on-secondary));
+  background: rgb(var(--v-theme-secondary));
+  border-color: transparent;
 }
 
 :global(.v-theme--light) .message-row.is-user .message-bubble {
-  background: rgba(95, 128, 123, 0.2);
+  color: rgb(var(--v-theme-on-secondary));
+  background: rgb(var(--v-theme-secondary));
 }
 
 .message-author {
-  margin-bottom: 4px;
+  margin-bottom: 5px;
   font-size: 0.76rem;
   font-weight: 700;
   color: rgba(255, 255, 255, 0.72);
@@ -545,7 +648,7 @@ function notifyError(message) {
 .message-text {
   margin: 0;
   white-space: pre-wrap;
-  line-height: 1.48;
+  line-height: 1.55;
 }
 
 .message-status {
@@ -559,17 +662,69 @@ function notifyError(message) {
   color: rgba(23, 38, 34, 0.56);
 }
 
+.composer-shell {
+  width: min(760px, calc(100% - 36px));
+  margin: 0 auto 18px;
+  padding: 10px 12px 9px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 8px;
+  background: rgba(3, 7, 7, 0.26);
+  box-shadow: 0 16px 42px rgba(0, 18, 20, 0.18);
+}
+
+:global(.v-theme--light) .composer-shell {
+  background: rgba(255, 255, 255, 0.94);
+  border-color: rgba(23, 63, 58, 0.14);
+  box-shadow: 0 16px 40px rgba(23, 63, 58, 0.1);
+}
+
 .composer {
   display: grid;
-  grid-template-columns: 1fr 48px;
-  gap: 12px;
-  align-items: end;
-  margin-top: 16px;
+  grid-template-columns: minmax(0, 1fr) 42px;
+  gap: 10px;
+  align-items: center;
+}
+
+.composer :deep(.v-field__input) {
+  padding-top: 8px;
+  padding-bottom: 8px;
+  min-height: 42px;
+  mask-image: none;
 }
 
 .send-button {
-  width: 48px;
-  height: 48px;
+  width: 42px;
+  height: 42px;
+}
+
+.composer-footer {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 4px 4px 0;
+  color: rgba(255, 255, 255, 0.58);
+  font-size: 0.74rem;
+  line-height: 1.35;
+}
+
+:global(.v-theme--light) .composer-footer {
+  color: rgba(23, 38, 34, 0.58);
+}
+
+.text-reset {
+  border: 0;
+  padding: 0;
+  color: rgb(var(--v-theme-secondary));
+  background: transparent;
+  cursor: pointer;
+  font: inherit;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.text-reset:disabled {
+  cursor: default;
+  opacity: 0.45;
 }
 
 .survey-actions {
@@ -577,7 +732,12 @@ function notifyError(message) {
   flex-wrap: wrap;
   gap: 12px;
   justify-content: flex-end;
-  margin-top: 16px;
+  width: min(760px, calc(100% - 36px));
+  margin: 0 auto 18px;
+}
+
+.typing-bubble {
+  min-width: 72px;
 }
 
 .typing-dots {
@@ -622,10 +782,23 @@ function notifyError(message) {
 }
 
 @media (max-width: 720px) {
-  .survey-header {
-    flex-direction: column;
-    gap: 10px;
-    margin-bottom: 12px;
+  .chat-layout {
+    border-radius: 8px;
+  }
+
+  .chat-header {
+    align-items: flex-start;
+    padding: 16px 14px 12px;
+  }
+
+  .assistant-mark {
+    flex-basis: 40px;
+    width: 40px;
+    height: 40px;
+  }
+
+  .status-chip {
+    display: none;
   }
 
   .survey-title {
@@ -633,14 +806,25 @@ function notifyError(message) {
     line-height: 1.2;
   }
 
+  .survey-subtitle {
+    font-size: 0.82rem;
+  }
+
   .messages-panel {
-    min-height: 220px;
-    padding: 12px;
+    padding: 16px 12px;
+  }
+
+  .message-avatar {
+    display: none;
+  }
+
+  .message-stack,
+  .message-row.is-user .message-stack {
+    max-width: 92%;
   }
 
   .message-bubble {
-    max-width: 94%;
-    padding: 10px 12px;
+    padding: 11px 12px;
   }
 
   .message-text {
@@ -648,21 +832,30 @@ function notifyError(message) {
     line-height: 1.45;
   }
 
+  .composer-shell,
+  .survey-actions {
+    width: calc(100% - 20px);
+  }
+
+  .composer-footer {
+    flex-direction: column;
+    gap: 6px;
+  }
+
   .composer {
-    grid-template-columns: 1fr 44px;
+    grid-template-columns: minmax(0, 1fr) 40px;
     gap: 8px;
-    margin-top: 12px;
   }
 
   .send-button {
-    width: 44px;
-    height: 44px;
+    width: 40px;
+    height: 40px;
   }
 
   .survey-actions {
     justify-content: stretch;
     gap: 8px;
-    margin-top: 12px;
+    margin-bottom: 12px;
   }
 
   .survey-actions :deep(.v-btn) {
