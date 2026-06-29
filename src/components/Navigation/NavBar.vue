@@ -35,7 +35,13 @@
         </v-btn-toggle>
         <v-menu v-if="appContext.canSwitchModes" location="bottom end">
           <template #activator="{ props }">
-            <v-btn icon v-bind="props" class="d-sm-none nav-icon-btn" aria-label="Cambiar vista">
+            <v-btn
+              icon
+              v-bind="props"
+              class="d-sm-none nav-icon-btn"
+              aria-label="Cambiar vista"
+              variant="text"
+            >
               <v-icon>mdi-swap-horizontal</v-icon>
             </v-btn>
           </template>
@@ -49,13 +55,25 @@
             />
           </v-list>
         </v-menu>
-        <v-btn icon class="nav-icon-btn" aria-label="Enviar feedback" @click="isFeedbackDialogOpen = true">
+        <v-btn
+          icon
+          class="nav-icon-btn"
+          aria-label="Enviar feedback"
+          variant="text"
+          @click="isFeedbackDialogOpen = true"
+        >
           <v-icon>mdi-message-alert-outline</v-icon>
         </v-btn>
 
         <v-menu location="bottom end">
           <template v-slot:activator="{ props }">
-            <v-btn icon v-bind="props" class="nav-icon-btn" aria-label="Cuenta">
+            <v-btn
+              icon
+              v-bind="props"
+              class="nav-icon-btn"
+              aria-label="Cuenta"
+              variant="text"
+            >
               <v-icon>mdi-account</v-icon>
             </v-btn>
           </template>
@@ -211,9 +229,16 @@ function defaultRouteForMode(mode) {
 }
 
 .nav-icon-btn {
+  background: transparent !important;
+  color: white;
   flex: 0 0 44px;
   height: 44px;
   width: 44px;
+}
+
+.nav-icon-btn :deep(.v-btn__overlay),
+.nav-icon-btn :deep(.v-btn__underlay) {
+  opacity: 0 !important;
 }
 
 @media (max-width: 600px) {
