@@ -37,7 +37,7 @@ const appContext = useAppContextStore();
 .layout-main-content {
   min-height: 100dvh;
   min-height: 100svh;
-  padding-top: calc(64px + env(safe-area-inset-top));
+  padding-top: 80px;
   padding-bottom: calc(80px + env(safe-area-inset-bottom));
   overflow: visible;
 }
@@ -50,7 +50,8 @@ const appContext = useAppContextStore();
   width: 100%;
 }
 
-.layout-shell > * {
+.layout-shell > .layout-main-content,
+.layout-shell > .context-progress {
   position: relative;
   z-index: 1;
 }
@@ -64,8 +65,8 @@ const appContext = useAppContextStore();
   .layout-main-content {
     padding-left: 0 !important;
     padding-right: 0 !important;
-    padding-top: calc(56px + env(safe-area-inset-top));
-    padding-bottom: calc(88px + env(safe-area-inset-bottom));
+    padding-top: 76px;
+    padding-bottom: calc(96px + env(safe-area-inset-bottom));
   }
 
   .layout-container {

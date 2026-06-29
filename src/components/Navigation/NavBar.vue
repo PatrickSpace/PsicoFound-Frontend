@@ -162,9 +162,12 @@ function defaultRouteForMode(mode) {
 
 <style scoped>
 .app-top-nav {
+  backdrop-filter: blur(18px);
+  background: rgba(3, 7, 7, 0.72);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
   left: 0;
-  min-height: calc(56px + env(safe-area-inset-top));
-  padding-top: env(safe-area-inset-top);
+  min-height: 64px;
+  padding-top: 0;
   position: fixed;
   right: 0;
   top: 0;
@@ -176,7 +179,7 @@ function defaultRouteForMode(mode) {
   align-items: center;
   display: flex;
   gap: 12px;
-  height: 56px;
+  height: 64px;
   padding-inline: 16px;
   width: 100%;
 }
@@ -216,8 +219,13 @@ function defaultRouteForMode(mode) {
 }
 
 @media (max-width: 600px) {
+  .app-top-nav {
+    min-height: 64px;
+  }
+
   .app-top-nav__content {
     gap: 8px;
+    height: 64px;
     padding-inline: 12px;
   }
 

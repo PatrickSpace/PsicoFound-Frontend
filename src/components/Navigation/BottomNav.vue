@@ -83,11 +83,13 @@ const navItemCount = computed(() =>
 </script>
 <style scoped>
 .bottom-nav-mobile {
+  backdrop-filter: blur(18px);
+  background: rgba(3, 7, 7, 0.82) !important;
   border-top: 1px solid rgba(255, 255, 255, 0.08);
-  height: calc(64px + env(safe-area-inset-bottom)) !important;
+  height: calc(72px + env(safe-area-inset-bottom)) !important;
   left: 0 !important;
   max-width: 100vw;
-  min-height: calc(64px + env(safe-area-inset-bottom));
+  min-height: calc(72px + env(safe-area-inset-bottom));
   padding-bottom: env(safe-area-inset-bottom);
   right: 0 !important;
   width: 100vw !important;
@@ -96,12 +98,12 @@ const navItemCount = computed(() =>
 .bottom-nav-mobile :deep(.v-bottom-navigation__content) {
   display: grid;
   grid-template-columns: repeat(var(--bottom-nav-count), minmax(0, 1fr));
-  height: 64px;
+  height: 72px;
   width: 100%;
 }
 
 .bottom-nav-mobile :deep(.v-btn) {
-  height: 64px;
+  height: 72px;
   min-width: 0;
   width: 100%;
   padding-inline: 2px;
