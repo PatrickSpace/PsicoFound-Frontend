@@ -83,7 +83,14 @@ const navItemCount = computed(() =>
 </script>
 <style scoped>
 .bottom-nav-mobile {
-  background: transparent !important;
+  backdrop-filter: blur(16px);
+  background:
+    linear-gradient(
+      0deg,
+      rgba(3, 7, 7, 0.78) 0%,
+      rgba(3, 7, 7, 0.48) 78%,
+      rgba(3, 7, 7, 0) 100%
+    ) !important;
   border-top: 1px solid rgba(255, 255, 255, 0.08);
   height: calc(72px + env(safe-area-inset-bottom)) !important;
   left: 0 !important;
@@ -102,6 +109,7 @@ const navItemCount = computed(() =>
 }
 
 .bottom-nav-mobile :deep(.v-btn) {
+  background: transparent !important;
   height: 72px;
   min-width: 0;
   width: 100%;
