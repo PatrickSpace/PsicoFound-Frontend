@@ -1,94 +1,96 @@
 <template>
-  <v-app-bar app class="bg-transparent responsive-app-bar" flat>
-    <v-app-bar-title class="nav-title">PsicoFound</v-app-bar-title>
-    <v-spacer />
-    <div class="nav-actions">
-      <v-chip
-        v-if="activeMode"
-        class="mode-chip d-none d-md-inline-flex"
-        color="secondary"
-        variant="tonal"
-        :prepend-icon="activeMode.icon"
-      >
-        {{ mode.label }}
-      </v-chip>
-      <v-btn-toggle
-        v-if="appContext.canSwitchModes"
-        :model-value="appContext.activeMode"
-        class="mode-switch d-none d-sm-inline-flex"
-        density="comfortable"
-        mandatory
-        rounded="lg"
-        variant="tonal"
-        @update:model-value="switchMode"
-      >
-        <v-btn
-          v-for="mode in appContext.availableModes"
-          :key="mode.value"
-          :value="mode.value"
-          size="small"
+  <header class="app-top-nav">
+    <div class="app-top-nav__content">
+      <div class="nav-title">PsicoFound</div>
+      <v-spacer />
+      <div class="nav-actions">
+        <v-chip
+          v-if="activeMode"
+          class="mode-chip d-none d-md-inline-flex"
+          color="secondary"
+          variant="tonal"
+          :prepend-icon="activeMode.icon"
         >
-          <v-icon start>{{ mode.icon }}</v-icon>
-          {{ mode.label }}
-        </v-btn>
-      </v-btn-toggle>
-      <v-menu v-if="appContext.canSwitchModes" location="bottom end">
-        <template #activator="{ props }">
-          <v-btn icon v-bind="props" class="d-sm-none nav-icon-btn" aria-label="Cambiar vista">
-            <v-icon>mdi-swap-horizontal</v-icon>
-          </v-btn>
-        </template>
-        <v-list density="compact">
-          <v-list-item
+          {{ activeMode.label }}
+        </v-chip>
+        <v-btn-toggle
+          v-if="appContext.canSwitchModes"
+          :model-value="appContext.activeMode"
+          class="mode-switch d-none d-sm-inline-flex"
+          density="comfortable"
+          mandatory
+          rounded="lg"
+          variant="tonal"
+          @update:model-value="switchMode"
+        >
+          <v-btn
             v-for="mode in appContext.availableModes"
             :key="mode.value"
-            :prepend-icon="mode.icon"
-            :title="mode.label"
-            @click="switchMode(mode.value)"
-          />
-        </v-list>
-      </v-menu>
-      <v-btn icon class="nav-icon-btn" aria-label="Enviar feedback" @click="isFeedbackDialogOpen = true">
-        <v-icon>mdi-message-alert-outline</v-icon>
-      </v-btn>
-
-      <v-menu location="bottom end">
-        <template v-slot:activator="{ props }">
-          <v-btn icon v-bind="props" class="nav-icon-btn" aria-label="Cuenta">
-            <v-icon>mdi-account</v-icon>
+            :value="mode.value"
+            size="small"
+          >
+            <v-icon start>{{ mode.icon }}</v-icon>
+            {{ mode.label }}
           </v-btn>
-        </template>
-        <v-list density="compact">
-          <v-list-item
-            :title="userName"
-            :subtitle="currentUser?.email || activeMode?.label || ''"
-            prepend-icon="mdi-account-circle-outline"
-          />
-          <v-divider />
-          <v-list-item
-            v-if="activeMode"
-            :title="`Vista ${activeMode.label}`"
-            :prepend-icon="activeMode.icon"
-          />
-          <template v-if="appContext.canSwitchModes">
-            <v-list-subheader>Cambiar vista</v-list-subheader>
+        </v-btn-toggle>
+        <v-menu v-if="appContext.canSwitchModes" location="bottom end">
+          <template #activator="{ props }">
+            <v-btn icon v-bind="props" class="d-sm-none nav-icon-btn" aria-label="Cambiar vista">
+              <v-icon>mdi-swap-horizontal</v-icon>
+            </v-btn>
+          </template>
+          <v-list density="compact">
             <v-list-item
               v-for="mode in appContext.availableModes"
               :key="mode.value"
-              :active="mode.value === appContext.activeMode"
               :prepend-icon="mode.icon"
               :title="mode.label"
               @click="switchMode(mode.value)"
             />
+          </v-list>
+        </v-menu>
+        <v-btn icon class="nav-icon-btn" aria-label="Enviar feedback" @click="isFeedbackDialogOpen = true">
+          <v-icon>mdi-message-alert-outline</v-icon>
+        </v-btn>
+
+        <v-menu location="bottom end">
+          <template v-slot:activator="{ props }">
+            <v-btn icon v-bind="props" class="nav-icon-btn" aria-label="Cuenta">
+              <v-icon>mdi-account</v-icon>
+            </v-btn>
           </template>
-          <v-divider />
-          <v-list-item
-            title="Cerrar sesión"
-            prepend-icon="mdi-logout"
-            @click="logout()"
-          />
-        </v-list>
-      </v-menu>
+          <v-list density="compact">
+            <v-list-item
+              :title="userName"
+              :subtitle="currentUser?.email || activeMode?.label || ''"
+              prepend-icon="mdi-account-circle-outline"
+            />
+            <v-divider />
+            <v-list-item
+              v-if="activeMode"
+              :title="`Vista ${activeMode.label}`"
+              :prepend-icon="activeMode.icon"
+            />
+            <template v-if="appContext.canSwitchModes">
+              <v-list-subheader>Cambiar vista</v-list-subheader>
+              <v-list-item
+                v-for="mode in appContext.availableModes"
+                :key="mode.value"
+                :active="mode.value === appContext.activeMode"
+                :prepend-icon="mode.icon"
+                :title="mode.label"
+                @click="switchMode(mode.value)"
+              />
+            </template>
+            <v-divider />
+            <v-list-item
+              title="Cerrar sesión"
+              prepend-icon="mdi-logout"
+              @click="logout()"
+            />
+          </v-list>
+        </v-menu>
+      </div>
     </div>
 
     <FeedbackDialog
@@ -99,7 +101,7 @@
     <v-snackbar v-model="showFeedbackSaved" color="success" timeout="2500">
       Feedback enviado correctamente.
     </v-snackbar>
-  </v-app-bar>
+  </header>
 </template>
 <script setup>
 import { computed, ref } from "vue";
@@ -159,6 +161,26 @@ function defaultRouteForMode(mode) {
 </script>
 
 <style scoped>
+.app-top-nav {
+  left: 0;
+  min-height: calc(56px + env(safe-area-inset-top));
+  padding-top: env(safe-area-inset-top);
+  position: fixed;
+  right: 0;
+  top: 0;
+  width: 100vw;
+  z-index: 1100;
+}
+
+.app-top-nav__content {
+  align-items: center;
+  display: flex;
+  gap: 12px;
+  height: 56px;
+  padding-inline: 16px;
+  width: 100%;
+}
+
 .mode-switch {
   max-width: min(44vw, 420px);
   overflow: hidden;
@@ -179,10 +201,10 @@ function defaultRouteForMode(mode) {
 .nav-title {
   flex: 1 1 auto;
   font-size: 1.35rem;
+  font-weight: 500;
   line-height: 1;
   min-width: 0;
   overflow: hidden;
-  padding-inline-start: 0;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -193,19 +215,14 @@ function defaultRouteForMode(mode) {
   width: 44px;
 }
 
-:deep(.v-toolbar__content) {
-  gap: 12px;
-  padding-inline: 16px !important;
-}
-
 @media (max-width: 600px) {
-  .nav-title {
-    font-size: 1.18rem !important;
+  .app-top-nav__content {
+    gap: 8px;
+    padding-inline: 12px;
   }
 
-  :deep(.v-toolbar__content) {
-    gap: 8px;
-    padding-inline: 12px !important;
+  .nav-title {
+    font-size: 1.18rem !important;
   }
 
   :deep(.v-btn--icon) {
