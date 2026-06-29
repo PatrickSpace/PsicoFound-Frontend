@@ -99,6 +99,18 @@ const activeMode = computed(
   padding-inline: 40px 32px;
 }
 
+:global(.v-theme--light) .nav-drawer-content {
+  background:
+    linear-gradient(
+      90deg,
+      rgba(255, 255, 255, 0.72) 0%,
+      rgba(255, 255, 255, 0.52) 74%,
+      rgba(255, 255, 255, 0) 100%
+    );
+  border-right: 1px solid rgba(23, 63, 58, 0.08);
+  box-shadow: 16px 0 42px rgba(23, 63, 58, 0.06);
+}
+
 .mode-summary {
   margin-bottom: 16px;
   padding-left: 8px;
@@ -113,6 +125,11 @@ const activeMode = computed(
 }
 
 :global(.v-theme--light) .nav-list :deep(.v-list-item--active) {
-  background-color: rgba(65, 105, 102, 0.12);
+  background-color: rgba(55, 111, 101, 0.12);
+  color: rgb(var(--v-theme-primary));
+}
+
+:global(.v-theme--light) .nav-list :deep(.v-list-item) {
+  color: rgba(23, 38, 34, 0.78);
 }
 </style>

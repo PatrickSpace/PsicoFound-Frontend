@@ -148,13 +148,9 @@ function defaultRouteForMode(mode) {
 }
 
 :global(.v-theme--light) .app-top-nav {
-  background:
-    linear-gradient(
-      180deg,
-      rgba(238, 246, 243, 0.88) 0%,
-      rgba(238, 246, 243, 0.62) 72%,
-      rgba(238, 246, 243, 0) 100%
-    );
+  background: rgba(255, 255, 255, 0.84);
+  border-bottom: 1px solid rgba(23, 63, 58, 0.1);
+  box-shadow: 0 10px 30px rgba(23, 63, 58, 0.08);
 }
 
 .app-top-nav::after {
@@ -168,7 +164,7 @@ function defaultRouteForMode(mode) {
 }
 
 :global(.v-theme--light) .app-top-nav::after {
-  background: rgba(65, 105, 102, 0.16);
+  background: transparent;
 }
 
 .app-top-nav__content {
@@ -206,6 +202,11 @@ function defaultRouteForMode(mode) {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+:global(.v-theme--light) .nav-title {
+  color: rgb(var(--v-theme-on-background));
+  font-weight: 600;
 }
 
 .nav-icon-btn {
