@@ -180,7 +180,14 @@ function defaultRouteForMode(mode) {
 
 <style scoped>
 .app-top-nav {
-  background: transparent;
+  backdrop-filter: blur(16px);
+  background:
+    linear-gradient(
+      180deg,
+      rgba(3, 7, 7, 0.72) 0%,
+      rgba(3, 7, 7, 0.42) 72%,
+      rgba(3, 7, 7, 0) 100%
+    );
   left: 0;
   min-height: 64px;
   padding-top: 0;
@@ -189,6 +196,16 @@ function defaultRouteForMode(mode) {
   top: 0;
   width: 100vw;
   z-index: 1100;
+}
+
+.app-top-nav::after {
+  background: rgba(255, 255, 255, 0.08);
+  bottom: 0;
+  content: "";
+  height: 1px;
+  left: 12px;
+  position: absolute;
+  right: 12px;
 }
 
 .app-top-nav__content {
