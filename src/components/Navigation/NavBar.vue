@@ -65,49 +65,15 @@
           <v-icon>mdi-message-alert-outline</v-icon>
         </v-btn>
 
-        <v-menu location="bottom end">
-          <template v-slot:activator="{ props }">
-            <v-btn
-              icon
-              v-bind="props"
-              class="nav-icon-btn"
-              aria-label="Cuenta"
-              variant="text"
-            >
-              <v-icon>mdi-account</v-icon>
-            </v-btn>
-          </template>
-          <v-list density="compact">
-            <v-list-item
-              :title="userName"
-              :subtitle="currentUser?.email || activeMode?.label || ''"
-              prepend-icon="mdi-account-circle-outline"
-            />
-            <v-divider />
-            <v-list-item
-              v-if="activeMode"
-              :title="`Vista ${activeMode.label}`"
-              :prepend-icon="activeMode.icon"
-            />
-            <template v-if="appContext.canSwitchModes">
-              <v-list-subheader>Cambiar vista</v-list-subheader>
-              <v-list-item
-                v-for="mode in appContext.availableModes"
-                :key="mode.value"
-                :active="mode.value === appContext.activeMode"
-                :prepend-icon="mode.icon"
-                :title="mode.label"
-                @click="switchMode(mode.value)"
-              />
-            </template>
-            <v-divider />
-            <v-list-item
-              title="Cerrar sesión"
-              prepend-icon="mdi-logout"
-              @click="logout()"
-            />
-          </v-list>
-        </v-menu>
+        <v-btn
+          icon
+          class="nav-icon-btn"
+          aria-label="Configuración"
+          variant="text"
+          to="/configuracion"
+        >
+          <v-icon>mdi-cog-outline</v-icon>
+        </v-btn>
       </div>
     </div>
 
@@ -123,18 +89,12 @@
 </template>
 <script setup>
 import { computed, ref } from "vue";
-import { storeToRefs } from "pinia";
-import { auth } from "@/plugins/Firebase/firebase";
-import { signOut } from "firebase/auth";
 import { useRouter } from "vue-router";
 import FeedbackDialog from "@/components/Navigation/FeedbackDialog.vue";
 import { useAppContextStore } from "@/store/appContext";
-import { useAuthStore } from "@/store/auth";
 
 const router = useRouter();
-const authStore = useAuthStore();
 const appContext = useAppContextStore();
-const { currentUser, userName } = storeToRefs(authStore);
 const isFeedbackDialogOpen = ref(false);
 const showFeedbackSaved = ref(false);
 
@@ -152,17 +112,6 @@ function switchMode(mode) {
 
   appContext.setActiveMode(mode);
   router.push(defaultRouteForMode(mode));
-}
-
-async function logout() {
-  try {
-    await signOut(auth);
-    console.log("logout");
-  } catch (e) {
-    console.error(e);
-  } finally {
-    router.push("/login");
-  }
 }
 
 function defaultRouteForMode(mode) {

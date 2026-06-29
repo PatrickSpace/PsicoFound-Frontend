@@ -1,0 +1,192 @@
+<template>
+  <LayoutDefault layout>
+    <v-container>
+      <div class="d-flex flex-column flex-md-row justify-space-between ga-4">
+        <div>
+          <h1 class="text-h4">Configuración</h1>
+          <p class="text-body-2 text-medium-emphasis mt-2 mb-0">
+            Administra tu cuenta, preferencias y accesos dentro de PsicoFound.
+          </p>
+        </div>
+        <v-chip
+          v-if="activeMode"
+          class="align-self-start"
+          color="secondary"
+          variant="tonal"
+          :prepend-icon="activeMode.icon"
+        >
+          Vista {{ activeMode.label }}
+        </v-chip>
+      </div>
+
+      <v-divider class="my-5 mx-auto"></v-divider>
+
+      <v-row align="stretch">
+        <v-col cols="12" md="6" class="d-flex">
+          <v-card class="pa-4 card-backgoundcustom flex-grow-1" elevation="2" variant="text">
+            <v-card-title class="text-h5">
+              <v-icon size="small">mdi-account-circle-outline</v-icon>
+              Perfil de usuario
+            </v-card-title>
+            <v-card-text>
+              <v-divider class="mb-4"></v-divider>
+              <v-list class="bg-transparent" density="compact">
+                <v-list-item title="Nombre" :subtitle="displayName" />
+                <v-list-item title="Correo" :subtitle="currentUser?.email || 'No disponible'" />
+                <v-list-item title="Rol base" :subtitle="userRole" />
+                <v-list-item title="UID" :subtitle="currentUser?.uid || 'No disponible'" />
+              </v-list>
+            </v-card-text>
+          </v-card>
+        </v-col>
+
+        <v-col cols="12" md="6" class="d-flex">
+          <v-card class="pa-4 card-backgoundcustom flex-grow-1" elevation="2" variant="text">
+            <v-card-title class="text-h5">
+              <v-icon size="small">mdi-swap-horizontal</v-icon>
+              Vista y accesos
+            </v-card-title>
+            <v-card-text>
+              <v-divider class="mb-4"></v-divider>
+              <v-alert
+                v-if="!appContext.canSwitchModes"
+                color="info"
+                variant="tonal"
+                icon="mdi-information-outline"
+              >
+                Tu cuenta tiene una sola vista activa por ahora.
+              </v-alert>
+              <v-btn-toggle
+                v-else
+                :model-value="appContext.activeMode"
+                class="mt-1 flex-wrap"
+                color="secondary"
+                mandatory
+                variant="tonal"
+                @update:model-value="switchMode"
+              >
+                <v-btn
+                  v-for="mode in appContext.availableModes"
+                  :key="mode.value"
+                  :value="mode.value"
+                >
+                  <v-icon start>{{ mode.icon }}</v-icon>
+                  {{ mode.label }}
+                </v-btn>
+              </v-btn-toggle>
+            </v-card-text>
+          </v-card>
+        </v-col>
+
+        <v-col cols="12" md="6" class="d-flex">
+          <v-card class="pa-4 card-backgoundcustom flex-grow-1" elevation="2" variant="text">
+            <v-card-title class="text-h5">
+              <v-icon size="small">mdi-account-tie-outline</v-icon>
+              Perfil profesional
+            </v-card-title>
+            <v-card-text>
+              <v-divider class="mb-4"></v-divider>
+              <template v-if="appContext.hasPsychologistAccess">
+                <v-list class="bg-transparent" density="compact">
+                  <v-list-item title="Nombre profesional" :subtitle="appContext.therapistProfile?.nombre || 'No definido'" />
+                  <v-list-item title="Estado" :subtitle="appContext.therapistProfile?.activo === false ? 'Inactivo' : 'Activo'" />
+                </v-list>
+              </template>
+              <template v-else>
+                <p class="text-body-2 text-medium-emphasis mb-4">
+                  Puedes solicitar habilitar un perfil profesional para atender pacientes desde PsicoFound.
+                </p>
+                <v-btn
+                  color="secondary"
+                  variant="flat"
+                  prepend-icon="mdi-account-plus-outline"
+                  @click="showPsychologistRequest"
+                >
+                  Registrarse como psicólogo
+                </v-btn>
+              </template>
+            </v-card-text>
+          </v-card>
+        </v-col>
+
+        <v-col cols="12" md="6" class="d-flex">
+          <v-card class="pa-4 card-backgoundcustom flex-grow-1" elevation="2" variant="text">
+            <v-card-title class="text-h5">
+              <v-icon size="small">mdi-shield-lock-outline</v-icon>
+              Seguridad
+            </v-card-title>
+            <v-card-text>
+              <v-divider class="mb-4"></v-divider>
+              <p class="text-body-2 text-medium-emphasis mb-4">
+                Mantén el control de tu sesión y privacidad. La edición avanzada de datos estará disponible en una siguiente iteración.
+              </p>
+              <v-btn
+                color="error"
+                variant="tonal"
+                prepend-icon="mdi-logout"
+                @click="logout"
+              >
+                Cerrar sesión
+              </v-btn>
+            </v-card-text>
+          </v-card>
+        </v-col>
+      </v-row>
+    </v-container>
+  </LayoutDefault>
+</template>
+
+<script setup>
+import { computed } from "vue";
+import { storeToRefs } from "pinia";
+import { signOut } from "firebase/auth";
+import { useRouter } from "vue-router";
+import LayoutDefault from "@/components/Layout/Layoutmain.vue";
+import { auth } from "@/plugins/Firebase/firebase";
+import { useAppContextStore } from "@/store/appContext";
+import { useAuthStore } from "@/store/auth";
+
+const router = useRouter();
+const authStore = useAuthStore();
+const appContext = useAppContextStore();
+const { currentUser, userName } = storeToRefs(authStore);
+
+const activeMode = computed(
+  () =>
+    appContext.availableModes.find(
+      (mode) => mode.value === appContext.activeMode
+    ) || null
+);
+
+const displayName = computed(
+  () =>
+    appContext.userProfile?.nombre ||
+    currentUser.value?.displayName ||
+    userName.value ||
+    "Usuario"
+);
+
+const userRole = computed(
+  () => appContext.userProfile?.rol || appContext.userProfile?.role || "patient"
+);
+
+function switchMode(mode) {
+  appContext.setActiveMode(mode);
+}
+
+function showPsychologistRequest() {
+  window.dispatchEvent(
+    new CustomEvent("ui-success", {
+      detail: {
+        title: "Solicitud registrada",
+        message: "Pronto configuraremos el flujo para registrar psicólogos.",
+      },
+    })
+  );
+}
+
+async function logout() {
+  await signOut(auth);
+  router.push("/login");
+}
+</script>

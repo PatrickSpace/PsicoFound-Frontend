@@ -13,6 +13,7 @@ import SesionesView from "@/views/mainviews/MisSesionesView.vue";
 import ProgresoView from "@/views/mainviews/ProgresoView.vue";
 import HistorialView from "@/views/mainviews/HistorialView.vue";
 import HerramientasView from "@/views/mainviews/HerramientasView.vue";
+import ConfiguracionView from "@/views/mainviews/ConfiguracionView.vue";
 import TerapiaDetailView from "@/views/terapias/TerapiaDetailView.vue";
 import PsicologoSesionesView from "@/views/psicologo/PsicologoSesionesView.vue";
 import { auth } from "@/plugins/Firebase/firebase";
@@ -109,6 +110,12 @@ const router = createRouter({
       name: "herramientas",
       component: HerramientasView,
       meta: { modes: ["patient", "psychologist"] },
+    },
+    {
+      path: "/configuracion",
+      name: "configuracion",
+      component: ConfiguracionView,
+      meta: { modes: ["patient", "psychologist", "admin"] },
     },
     {
       path: "/terapiadetail",
