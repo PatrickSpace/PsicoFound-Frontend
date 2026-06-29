@@ -67,7 +67,7 @@
     v-model="dialog"
     max-width="1100"
     persistent
-    scrim="rgba(0,0,0,0.85)"
+    scrim="rgba(31, 65, 70, 0.86)"
   >
     <v-card class="dialog-root pa-0" v-if="selectedTherapist">
       <!-- Header: month + navigation + close -->
@@ -276,7 +276,7 @@ const selectedSlot = ref(null)
 }
 
 .dialog-header {
-  background-color: #1976d2;
+  background: linear-gradient(135deg, #2f6f78, #183f44);
   color: white;
 }
 
