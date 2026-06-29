@@ -46,7 +46,13 @@ const appContext = useAppContextStore();
   min-height: 100dvh;
   min-height: 100svh;
   overflow: visible;
+  position: relative;
   width: 100%;
+}
+
+.layout-shell > * {
+  position: relative;
+  z-index: 1;
 }
 
 .layout-container {

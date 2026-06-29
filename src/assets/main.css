@@ -18,14 +18,7 @@ body {
   margin: 0;
   min-height: 100dvh;
   color: #2c3e50;
-  background:
-    linear-gradient(
-      225deg,
-      #1f4146 0%,
-      rgb(18, 44, 47) 28%,
-      rgba(3, 7, 7, 1) 75%
-    )
-    fixed;
+  background: #030707;
   transition:
     color 0.5s,
     background-color 0.5s;
@@ -56,14 +49,7 @@ body {
   min-height: 100svh;
   overflow-y: auto;
   overflow-x: hidden;
-  background:
-    linear-gradient(
-      225deg,
-      #1f4146 0%,
-      rgb(18, 44, 47) 28%,
-      rgba(3, 7, 7, 1) 75%
-    )
-    fixed;
+  background: transparent;
   -webkit-overflow-scrolling: touch;
 }
 
@@ -107,16 +93,31 @@ a {
 }
 
 .screen {
-  background: linear-gradient(
-    225deg,
-    #1f4146 0%,
-    rgb(18, 44, 47) 28%,
-    rgba(3, 7, 7, 1) 75%
-  ) !important;
-  background-attachment: fixed !important;
+  background: transparent !important;
+  isolation: isolate;
   min-height: 100dvh;
   min-height: 100svh;
+  position: relative;
   width: 100%;
+}
+
+.screen::before {
+  background:
+    radial-gradient(circle at 82% 18%, rgba(74, 155, 167, 0.28), transparent 38%),
+    linear-gradient(
+      225deg,
+      #1f4146 0%,
+      rgb(18, 44, 47) 32%,
+      rgba(3, 7, 7, 1) 78%
+    );
+  content: "";
+  inset: 0;
+  min-height: 100svh;
+  pointer-events: none;
+  position: fixed;
+  transform: translateZ(0);
+  width: 100vw;
+  z-index: -1;
 }
 
 .v-application,
