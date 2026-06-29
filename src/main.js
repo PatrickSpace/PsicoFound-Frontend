@@ -12,9 +12,9 @@ import { useAuthStore } from "@/store/auth";
 const app = createApp(App);
 const pinia = createPinia();
 
+app.use(pinia);
 app.use(router);
 app.use(vuetify);
-app.use(pinia);
 
 // Configuracion global disponible antes del mount.
 app.config.globalProperties.$axios = apiClient;

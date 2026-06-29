@@ -101,6 +101,25 @@ export async function getTherapiesByPatient(pacienteUid) {
   }));
 }
 
+export async function getTherapiesByTherapist(terapeutaId) {
+  if (!terapeutaId) {
+    return [];
+  }
+
+  const therapiesRef = collection(db, THERAPIES_COLLECTION);
+  const therapiesQuery = query(
+    therapiesRef,
+    where("terapeutaId", "==", terapeutaId)
+  );
+
+  const snapshot = await getDocs(therapiesQuery);
+
+  return snapshot.docs.map((item) => ({
+    id: item.id,
+    ...item.data(),
+  }));
+}
+
 export async function getActiveTherapyByPatient(pacienteUid) {
   const therapies = await getTherapiesByPatient(pacienteUid);
 

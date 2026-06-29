@@ -93,6 +93,33 @@
                     >{{ nextAppointmentYear }}{{ nextAppointment?.hora ? ` • ${nextAppointment.hora}` : "" }}</v-list-item-subtitle
                   >
                 </v-list-item>
+                <v-alert
+                  v-if="isNextAppointmentRemote"
+                  class="mt-4"
+                  :color="nextAppointmentMeetingUrl ? 'secondary' : 'warning'"
+                  variant="tonal"
+                  density="compact"
+                  icon="mdi-video-outline"
+                >
+                  {{
+                    nextAppointmentMeetingUrl
+                      ? "El enlace de tu sesión ya está disponible."
+                      : "El psicólogo agregará aquí el enlace de la sesión."
+                  }}
+                  <div v-if="nextAppointmentMeetingUrl" class="mt-2">
+                    <v-btn
+                      :href="nextAppointmentMeetingUrl"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      color="secondary"
+                      variant="flat"
+                      size="small"
+                      prepend-icon="mdi-open-in-new"
+                    >
+                      Entrar
+                    </v-btn>
+                  </div>
+                </v-alert>
               </v-card-text>
             </v-card>
           </v-col>
@@ -257,6 +284,19 @@ const nextAppointmentYear = computed(() => {
   const date = parseAppointmentDate(nextAppointment.value);
   return date ? date.getFullYear() : "";
 });
+
+const isNextAppointmentRemote = computed(() => {
+  const mode = (nextAppointment.value?.modalidad || "")
+    .toString()
+    .trim()
+    .toLowerCase();
+
+  return ["remoto", "online", "remota"].includes(mode);
+});
+
+const nextAppointmentMeetingUrl = computed(
+  () => nextAppointment.value?.meetingUrl || ""
+);
 
 const hasScheduledAppointments = computed(() =>
   therapies.value.some((therapy) =>

@@ -10,13 +10,21 @@ html,
 body,
 #app {
   height: 100%;
+  min-height: 100%;
 }
 
 body {
   margin: 0;
   min-height: 100dvh;
   color: #2c3e50;
-  background: #ffffff;
+  background:
+    linear-gradient(
+      225deg,
+      #1f4146 0%,
+      rgb(18, 44, 47) 28%,
+      rgba(3, 7, 7, 1) 75%
+    )
+    fixed;
   transition:
     color 0.5s,
     background-color 0.5s;
@@ -38,13 +46,23 @@ body {
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  overflow: hidden;
 }
 
 #app {
   width: 100%;
-  min-height: 100%;
-  overflow-x: hidden;
+  min-height: 100dvh;
   overflow-y: auto;
+  overflow-x: hidden;
+  background:
+    linear-gradient(
+      225deg,
+      #1f4146 0%,
+      rgb(18, 44, 47) 28%,
+      rgba(3, 7, 7, 1) 75%
+    )
+    fixed;
+  -webkit-overflow-scrolling: touch;
 }
 
 a {
@@ -93,6 +111,14 @@ a {
     rgb(18, 44, 47) 28%,
     rgba(3, 7, 7, 1) 75%
   ) !important;
+  background-attachment: fixed !important;
+  min-height: 100dvh;
+}
+
+.v-application,
+.v-application__wrap {
+  min-height: 100dvh;
+  background: transparent !important;
 }
 
 .card-backgoundcustom {

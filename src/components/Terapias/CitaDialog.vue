@@ -59,6 +59,35 @@
               ></v-text-field>
             </v-col>
 
+            <v-col cols="12" md="6">
+              <v-select
+                v-model="form.meetingProvider"
+                :items="meetingProviderOptions"
+                item-title="title"
+                item-value="value"
+                label="Herramienta de videollamada"
+                variant="outlined"
+                clearable
+                :disabled="!isRemote"
+                :hint="isRemote ? 'Opcional. El psicólogo puede completarlo luego.' : 'Disponible para citas remotas.'"
+                persistent-hint
+              ></v-select>
+            </v-col>
+
+            <v-col cols="12" md="6">
+              <v-text-field
+                v-model="form.meetingUrl"
+                label="URL de la sesión"
+                placeholder="https://meet.google.com/... o https://zoom.us/..."
+                variant="outlined"
+                clearable
+                :disabled="!isRemote"
+                :rules="[r.optionalUrl]"
+                :hint="isRemote ? 'Opcional al agendar. El paciente lo verá cuando esté disponible.' : 'Solo aplica a modalidad remota.'"
+                persistent-hint
+              ></v-text-field>
+            </v-col>
+
             <v-col cols="12">
               <v-textarea
                 v-model="form.notas"
@@ -142,9 +171,34 @@ const form = reactive({
   notas: "",
   modalidad: "",
   ubicacion: "",
+  meetingProvider: "",
+  meetingUrl: "",
 });
 
 const fallbackModalities = ["Remoto", "Presencial", "Hibrido"];
+const meetingProviderOptions = [
+  { title: "Google Meet", value: "google_meet" },
+  { title: "Zoom", value: "zoom" },
+  { title: "Microsoft Teams", value: "teams" },
+  { title: "Otra herramienta", value: "other" },
+];
+
+const r = {
+  optionalUrl: (value) => {
+    const rawValue = (value || "").toString().trim();
+
+    if (!rawValue) {
+      return true;
+    }
+
+    try {
+      const url = new URL(rawValue);
+      return ["http:", "https:"].includes(url.protocol) || "Ingresa una URL valida";
+    } catch {
+      return "Ingresa una URL valida";
+    }
+  },
+};
 
 const isRemote = computed(() => normalizeModalidad(form.modalidad) === "remoto");
 
@@ -163,6 +217,8 @@ watch(
       form.ubicacion =
         props.initialAppointment?.ubicacion ||
         defaultLocationForModalidad(form.modalidad);
+      form.meetingProvider = props.initialAppointment?.meetingProvider || "";
+      form.meetingUrl = props.initialAppointment?.meetingUrl || "";
     }
   }
 );
@@ -177,6 +233,9 @@ watch(
       form.ubicacion = "Terapia Online";
       return;
     }
+
+    form.meetingProvider = "";
+    form.meetingUrl = "";
 
     if (
       !form.ubicacion ||
@@ -298,6 +357,19 @@ async function submitAppointment() {
     return;
   }
 
+  const meetingUrlValidation = r.optionalUrl(form.meetingUrl);
+
+  if (meetingUrlValidation !== true) {
+    window.dispatchEvent(
+      new CustomEvent("api-error", {
+        detail: {
+          message: meetingUrlValidation,
+        },
+      })
+    );
+    return;
+  }
+
   if (!currentUser.value?.uid) {
     window.dispatchEvent(
       new CustomEvent("api-error", {
@@ -321,6 +393,8 @@ async function submitAppointment() {
         notas: form.notas,
         modalidad: normalizeDisplayModalidad(form.modalidad),
         ubicacion: form.ubicacion,
+        meetingProvider: isRemote.value ? form.meetingProvider : "",
+        meetingUrl: isRemote.value ? form.meetingUrl.trim() : "",
       });
     } else {
       await createAppointment({
@@ -336,6 +410,8 @@ async function submitAppointment() {
         notas: form.notas,
         modalidad: normalizeDisplayModalidad(form.modalidad),
         ubicacion: form.ubicacion,
+        meetingProvider: isRemote.value ? form.meetingProvider : "",
+        meetingUrl: isRemote.value ? form.meetingUrl.trim() : "",
         estado: "pendiente",
       });
     }

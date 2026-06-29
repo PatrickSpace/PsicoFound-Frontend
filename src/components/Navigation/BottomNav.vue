@@ -12,18 +12,44 @@
     </v-btn>
   </v-bottom-navigation>
 </template>
-    <script setup>
-const items = [
-  { name: "Inicio", icon: "mdi-home", link: "/dashboard" },
-  { name: "Sesiones", icon: "mdi-calendar-month", link: "/sesiones" },
-  { name: "Progreso", icon: "mdi-finance", link: "/progreso" },
-  {
-    name: "Historial",
-    icon: "mdi-book-open-page-variant",
-    link: "/historial",
-  },
-  { name: "Herramientas", icon: "mdi-tools", link: "/herramientas" },
-];
+<script setup>
+import { computed } from "vue";
+import { useAppContextStore } from "@/store/appContext";
+
+const appContext = useAppContextStore();
+
+const navigationByMode = {
+  patient: [
+    { name: "Inicio", icon: "mdi-home", link: "/dashboard" },
+    { name: "Sesiones", icon: "mdi-calendar-month", link: "/sesiones" },
+    { name: "Progreso", icon: "mdi-finance", link: "/progreso" },
+    {
+      name: "Historial",
+      icon: "mdi-book-open-page-variant",
+      link: "/historial",
+    },
+    { name: "Herramientas", icon: "mdi-tools", link: "/herramientas" },
+  ],
+  psychologist: [
+    { name: "Agenda", icon: "mdi-account-tie", link: "/psicologo/sesiones" },
+    { name: "Pacientes", icon: "mdi-account-group", link: "/pacientes" },
+    { name: "Seguimiento", icon: "mdi-finance", link: "/progreso" },
+    {
+      name: "Historial",
+      icon: "mdi-book-open-page-variant",
+      link: "/historial",
+    },
+    { name: "Tools", icon: "mdi-tools", link: "/herramientas" },
+  ],
+  admin: [
+    { name: "Pacientes", icon: "mdi-account-group", link: "/pacientes" },
+    { name: "Psicólogos", icon: "mdi-account-heart", link: "/psicologos" },
+  ],
+};
+
+const items = computed(
+  () => navigationByMode[appContext.activeMode] || navigationByMode.patient
+);
 </script>
 <style scoped>
 .bottom-nav-mobile {
@@ -41,7 +67,7 @@ const items = [
 }
 
 .bottom-nav-mobile :deep(span) {
-  max-width: 64px;
+  max-width: 56px;
   overflow: hidden;
   font-size: 0.68rem;
   line-height: 1.1;

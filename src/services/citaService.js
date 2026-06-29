@@ -1,4 +1,5 @@
 import { addDoc, collection, doc, serverTimestamp, updateDoc } from "firebase/firestore";
+import { auth } from "@/plugins/Firebase/firebase";
 import { db } from "@/plugins/Firebase/firestore";
 import {
   appendAppointmentToTherapy,
@@ -7,6 +8,7 @@ import {
   getTherapyById,
   replaceTherapyAppointments,
 } from "@/services/terapiaService";
+import { appendLongitudinalEvent } from "@/services/longitudinalHistoryService";
 
 const APPOINTMENTS_COLLECTION = "citas";
 
@@ -60,6 +62,8 @@ export async function createAppointment(data = {}) {
     notas: data.notas || "",
     modalidad: data.modalidad || "",
     ubicacion: data.ubicacion || "",
+    meetingProvider: data.meetingProvider || "",
+    meetingUrl: data.meetingUrl || "",
     estado: data.estado || "pendiente",
     createdAt: serverTimestamp(),
   };
@@ -77,6 +81,19 @@ export async function createAppointment(data = {}) {
     notas: payload.notas,
     modalidad: payload.modalidad,
     ubicacion: payload.ubicacion,
+    meetingProvider: payload.meetingProvider,
+    meetingUrl: payload.meetingUrl,
+  });
+
+  await safelyAppendAppointmentEvent({
+    eventType: "appointment_created",
+    title: "Cita agendada",
+    summary: `Se agendó una cita con ${payload.terapeutaNombre || "el terapeuta"} para el ${payload.fecha || "fecha pendiente"}${payload.hora ? ` a las ${payload.hora}` : ""}.`,
+    appointment: {
+      ...payload,
+      citaId: docRef.id,
+      terapiaId: therapy.id,
+    },
   });
 
   return {
@@ -97,15 +114,50 @@ export async function confirmAppointment({ citaId, terapiaId }) {
     throw new Error("Ya existe otra cita confirmada para esta terapia");
   }
 
-  await updateAppointmentStatus({ citaId, terapiaId, estado: "confirmada" });
+  await updateAppointmentStatus({
+    citaId,
+    terapiaId,
+    estado: "confirmada",
+    eventType: "appointment_confirmed",
+    eventTitle: "Cita confirmada",
+    eventSummary: "La cita fue confirmada.",
+  });
 }
 
-export async function markAppointmentAsCompleted({ citaId, terapiaId }) {
-  await updateAppointmentStatus({ citaId, terapiaId, estado: "realizada" });
+export async function markAppointmentAsCompleted({
+  citaId,
+  terapiaId,
+  sessionSummary = "",
+}) {
+  await updateAppointmentStatus({
+    citaId,
+    terapiaId,
+    estado: "realizada",
+    eventType: "appointment_completed",
+    eventTitle: "Sesión realizada",
+    eventSummary: sessionSummary
+      ? "La sesión fue marcada como realizada con resumen compartido."
+      : "La sesión fue marcada como realizada.",
+    extraFields: {
+      sessionSummary,
+      completedAt: serverTimestamp(),
+    },
+    extraNestedFields: {
+      sessionSummary,
+      completedAt: new Date().toISOString(),
+    },
+  });
 }
 
 export async function resetAppointmentToPending({ citaId, terapiaId }) {
-  await updateAppointmentStatus({ citaId, terapiaId, estado: "pendiente" });
+  await updateAppointmentStatus({
+    citaId,
+    terapiaId,
+    estado: "pendiente",
+    eventType: "appointment_pending",
+    eventTitle: "Cita pendiente",
+    eventSummary: "La cita volvió al estado pendiente.",
+  });
 }
 
 export async function updateAppointment({
@@ -116,10 +168,22 @@ export async function updateAppointment({
   notas,
   modalidad,
   ubicacion,
+  meetingProvider,
+  meetingUrl,
 }) {
   if (!citaId || !terapiaId) {
     throw new Error("Missing citaId or terapiaId");
   }
+
+  const therapy = await getTherapyById(terapiaId);
+  const currentAppointment = (Array.isArray(therapy?.citas) ? therapy.citas : []).find(
+    (cita) => cita.citaId === citaId
+  );
+  const dateOrTimeChanged =
+    currentAppointment?.fecha !== fecha || currentAppointment?.hora !== hora;
+  const nextStatus = dateOrTimeChanged
+    ? "pendiente"
+    : currentAppointment?.estado || "pendiente";
 
   const appointmentRef = doc(db, APPOINTMENTS_COLLECTION, citaId);
   await updateDoc(appointmentRef, {
@@ -128,10 +192,12 @@ export async function updateAppointment({
     notas: notas || "",
     modalidad: modalidad || "",
     ubicacion: ubicacion || "",
-    estado: "pendiente",
+    meetingProvider: meetingProvider || "",
+    meetingUrl: meetingUrl || "",
+    meetingUrlUpdatedAt: meetingUrl ? serverTimestamp() : null,
+    estado: nextStatus,
   });
 
-  const therapy = await getTherapyById(terapiaId);
   const citasActualizadas = (Array.isArray(therapy?.citas) ? therapy.citas : []).map((cita) =>
     cita.citaId === citaId
       ? {
@@ -141,15 +207,60 @@ export async function updateAppointment({
           notas: notas || "",
           modalidad: modalidad || "",
           ubicacion: ubicacion || "",
-          estado: "pendiente",
+          meetingProvider: meetingProvider || "",
+          meetingUrl: meetingUrl || "",
+          meetingUrlUpdatedAt: meetingUrl ? new Date().toISOString() : "",
+          estado: nextStatus,
         }
       : cita
   );
 
   await replaceTherapyAppointments(terapiaId, citasActualizadas);
+
+  await safelyAppendAppointmentEvent({
+    eventType: dateOrTimeChanged
+      ? "appointment_rescheduled"
+      : meetingUrl !== currentAppointment?.meetingUrl
+        ? "appointment_meeting_link_updated"
+        : "appointment_updated",
+    title: dateOrTimeChanged
+      ? "Cita reprogramada"
+      : meetingUrl !== currentAppointment?.meetingUrl
+        ? "Enlace de sesión actualizado"
+        : "Cita actualizada",
+    summary: dateOrTimeChanged
+      ? `La cita fue reprogramada para el ${fecha || "fecha pendiente"}${hora ? ` a las ${hora}` : ""}.`
+      : meetingUrl !== currentAppointment?.meetingUrl
+        ? "Se actualizó el enlace externo de la sesión."
+        : "Se actualizaron los datos de la cita.",
+    appointment: {
+      ...currentAppointment,
+      citaId,
+      terapiaId,
+      fecha,
+      hora,
+      notas: notas || "",
+      modalidad: modalidad || "",
+      ubicacion: ubicacion || "",
+      meetingProvider: meetingProvider || "",
+      meetingUrl: meetingUrl || "",
+      estado: nextStatus,
+      pacienteUid: therapy?.pacienteUid,
+      terapeutaNombre: therapy?.terapeutaNombre,
+    },
+  });
 }
 
-async function updateAppointmentStatus({ citaId, terapiaId, estado }) {
+async function updateAppointmentStatus({
+  citaId,
+  terapiaId,
+  estado,
+  eventType,
+  eventTitle,
+  eventSummary,
+  extraFields = {},
+  extraNestedFields = {},
+}) {
   if (!citaId || !terapiaId) {
     throw new Error("Missing citaId or terapiaId");
   }
@@ -157,17 +268,76 @@ async function updateAppointmentStatus({ citaId, terapiaId, estado }) {
   const appointmentRef = doc(db, APPOINTMENTS_COLLECTION, citaId);
   await updateDoc(appointmentRef, {
     estado,
+    ...extraFields,
   });
 
   const therapy = await getTherapyById(terapiaId);
+  const currentAppointment = (Array.isArray(therapy?.citas) ? therapy.citas : []).find(
+    (cita) => cita.citaId === citaId
+  );
   const citasActualizadas = (Array.isArray(therapy?.citas) ? therapy.citas : []).map((cita) =>
     cita.citaId === citaId
       ? {
           ...cita,
           estado,
+          ...extraNestedFields,
         }
       : cita
   );
 
   await replaceTherapyAppointments(terapiaId, citasActualizadas);
+
+  await safelyAppendAppointmentEvent({
+    eventType,
+    title: eventTitle,
+    summary: eventSummary,
+    appointment: {
+      ...currentAppointment,
+      citaId,
+      terapiaId,
+      estado,
+      ...extraNestedFields,
+      pacienteUid: therapy?.pacienteUid,
+      terapeutaNombre: therapy?.terapeutaNombre,
+    },
+  });
+}
+
+async function safelyAppendAppointmentEvent({
+  eventType,
+  title,
+  summary,
+  appointment,
+}) {
+  if (!appointment?.pacienteUid || !eventType) {
+    return;
+  }
+
+  try {
+    await appendLongitudinalEvent({
+      pacienteUid: appointment.pacienteUid,
+      eventType,
+      sourceType: "appointment",
+      sourceId: appointment.citaId || "",
+      terapiaId: appointment.terapiaId || "",
+      title,
+      summary,
+      createdBy: auth.currentUser?.uid || appointment.pacienteUid,
+      metadata: {
+        citaId: appointment.citaId || "",
+        terapiaId: appointment.terapiaId || "",
+        terapeutaId: appointment.terapeutaId || "",
+        terapeutaNombre: appointment.terapeutaNombre || "",
+        fecha: appointment.fecha || "",
+        hora: appointment.hora || "",
+        estado: appointment.estado || "",
+        modalidad: appointment.modalidad || "",
+        meetingProvider: appointment.meetingProvider || "",
+        hasMeetingUrl: Boolean(appointment.meetingUrl),
+        hasSessionSummary: Boolean(appointment.sessionSummary),
+      },
+    });
+  } catch (error) {
+    console.warn("Could not append longitudinal appointment event:", error);
+  }
 }

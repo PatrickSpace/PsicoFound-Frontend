@@ -83,6 +83,36 @@
                   nextAppointmentMode
                 }}</v-list-item-subtitle>
               </v-list-item>
+
+              <v-alert
+                v-if="isNextAppointmentRemote"
+                class="mt-4"
+                :color="nextAppointmentMeetingUrl ? 'secondary' : 'warning'"
+                variant="tonal"
+                icon="mdi-video-outline"
+              >
+                <div class="d-flex flex-column ga-2">
+                  <span>
+                    {{
+                      nextAppointmentMeetingUrl
+                        ? "Tu enlace de sesión ya está disponible."
+                        : "Tu psicólogo agregará aquí el enlace de Zoom, Google Meet u otra herramienta."
+                    }}
+                  </span>
+                  <v-btn
+                    v-if="nextAppointmentMeetingUrl"
+                    :href="nextAppointmentMeetingUrl"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    color="secondary"
+                    variant="flat"
+                    prepend-icon="mdi-open-in-new"
+                    class="align-self-start"
+                  >
+                    Entrar a la sesión
+                  </v-btn>
+                </div>
+              </v-alert>
             </v-card-text>
           </v-card>
         </v-col>
@@ -245,6 +275,8 @@ const editableAppointment = computed(() => {
     notas: nextAppointment.value.notas || "",
     modalidad: nextAppointment.value.modalidad || "",
     ubicacion: nextAppointment.value.ubicacion || "",
+    meetingProvider: nextAppointment.value.meetingProvider || "",
+    meetingUrl: nextAppointment.value.meetingUrl || "",
   };
 });
 
@@ -294,6 +326,19 @@ const nextAppointmentMode = computed(() => {
   if (!nextAppointment.value) return "Aún no tienes una modalidad definida";
   return nextAppointment.value.modalidad || "Aún no tienes una modalidad definida";
 });
+
+const isNextAppointmentRemote = computed(() => {
+  const mode = (nextAppointment.value?.modalidad || "")
+    .toString()
+    .trim()
+    .toLowerCase();
+
+  return ["remoto", "online", "remota"].includes(mode);
+});
+
+const nextAppointmentMeetingUrl = computed(
+  () => nextAppointment.value?.meetingUrl || ""
+);
 
 function openRescheduleDialog() {
   if (!editableAppointment.value) {

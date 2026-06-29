@@ -44,6 +44,22 @@
       <span class="text-capitalize">{{ value }}</span>
     </template>
 
+    <template #item.uid="{ value }">
+      <v-chip
+        :color="value && value !== 'ejemplo' ? 'success' : 'warning'"
+        size="small"
+        variant="tonal"
+      >
+        {{ value && value !== "ejemplo" ? "Vinculado" : "Sin UID" }}
+      </v-chip>
+    </template>
+
+    <template #item.activo="{ value }">
+      <v-chip :color="value ? 'green' : 'grey'" size="small" variant="tonal">
+        {{ value ? "Activo" : "Inactivo" }}
+      </v-chip>
+    </template>
+
     <template #top>
       <v-toolbar color="cyan-darken-3">
         <v-toolbar-title>Psicologos activos</v-toolbar-title>
@@ -80,6 +96,25 @@
                       label="Avatar URL"
                       variant="outlined"
                     ></v-text-field>
+                  </v-col>
+
+                  <v-col cols="12" md="8">
+                    <v-text-field
+                      v-model="editedItem.uid"
+                      label="UID del usuario psicólogo"
+                      variant="outlined"
+                      hint="Debe coincidir con el UID de Firebase Auth para habilitar su agenda."
+                      persistent-hint
+                    ></v-text-field>
+                  </v-col>
+
+                  <v-col cols="12" md="4">
+                    <v-switch
+                      v-model="editedItem.activo"
+                      color="secondary"
+                      inset
+                      label="Perfil activo"
+                    ></v-switch>
                   </v-col>
 
                   <v-col cols="12">
@@ -345,6 +380,8 @@ export default {
       { title: "Genero", key: "genero" },
       { title: "Edad", key: "edad" },
       { title: "Modalidad", key: "modalidad", sortable: false },
+      { title: "UID", key: "uid", sortable: false },
+      { title: "Estado", key: "activo" },
       { title: "Actions", key: "actions", sortable: false },
     ],
     therapists: [],
@@ -369,6 +406,7 @@ export default {
       colorInicio: "#FF7A7A",
       colorFin: "#6B8DF0",
       gradient: "",
+      activo: true,
     },
     defaultItem: {
       id: null,
@@ -386,6 +424,7 @@ export default {
       colorInicio: "#FF7A7A",
       colorFin: "#6B8DF0",
       gradient: "",
+      activo: true,
     },
     especialidadesOptions,
     enfoquesOptions,
@@ -447,6 +486,7 @@ export default {
         colorInicio: this.extractGradientColors(item.gradient).start,
         colorFin: this.extractGradientColors(item.gradient).end,
         gradient: item.gradient ?? "",
+        activo: item.activo ?? true,
       };
     },
 
@@ -576,6 +616,7 @@ export default {
           modalidades: [],
           colorInicio: "#FF7A7A",
           colorFin: "#6B8DF0",
+          activo: true,
         };
         this.editedIndex = -1;
       });
@@ -591,6 +632,7 @@ export default {
           modalidades: [],
           colorInicio: "#FF7A7A",
           colorFin: "#6B8DF0",
+          activo: true,
         };
         this.editedIndex = -1;
       });
@@ -604,6 +646,7 @@ export default {
         enfoques: [...(this.editedItem.enfoques || [])],
         modalidades: [...(this.editedItem.modalidades || [])],
         gradient: this.buildGradient(this.editedItem),
+        activo: this.editedItem.activo ?? true,
       };
 
       try {

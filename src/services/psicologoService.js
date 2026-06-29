@@ -10,6 +10,7 @@ import {
   query,
   serverTimestamp,
   updateDoc,
+  where,
 } from "firebase/firestore";
 import { db } from "@/plugins/Firebase/firestore";
 
@@ -58,6 +59,22 @@ export async function getTherapistById(id) {
     id: snapshot.id,
     ...snapshot.data(),
   };
+}
+
+export async function getTherapistByUserUid(uid) {
+  if (!uid) return null;
+
+  const therapistsRef = collection(db, THERAPISTS_COLLECTION);
+  const therapistsQuery = query(therapistsRef, where("uid", "==", uid));
+  const snapshot = await getDocs(therapistsQuery);
+  const item = snapshot.docs[0];
+
+  return item
+    ? {
+        id: item.id,
+        ...item.data(),
+      }
+    : null;
 }
 
 export function watchTherapists(onData, onError) {

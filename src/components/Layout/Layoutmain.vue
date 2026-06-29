@@ -1,5 +1,5 @@
 <template>
-  <v-app class="screen" full-height>
+  <div class="screen layout-shell">
     <NavBar />
     <NavDrawer />
     <v-main class="layout-main-content">
@@ -8,7 +8,7 @@
       </v-container>
     </v-main>
     <BottomNav />
-  </v-app>
+  </div>
 </template>
 
 <script setup>
@@ -20,6 +20,12 @@ import BottomNav from "@/components/Navigation/BottomNav.vue";
 .layout-main-content {
   min-height: 100dvh;
   padding-bottom: calc(72px + env(safe-area-inset-bottom));
+  overflow: visible;
+}
+
+.layout-shell {
+  min-height: 100dvh;
+  overflow: visible;
 }
 
 .layout-container {

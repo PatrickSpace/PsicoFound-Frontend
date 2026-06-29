@@ -27,8 +27,35 @@ service cloud.firestore {
       return signedIn() && request.resource.data.pacienteUid == request.auth.uid;
     }
 
+    function assignedTherapist(therapistId) {
+      return signedIn() &&
+        exists(/databases/$(database)/documents/therapists/$(therapistId)) &&
+        get(/databases/$(database)/documents/therapists/$(therapistId)).data.uid ==
+          request.auth.uid;
+    }
+
+    function ownsExistingTherapistDoc() {
+      return signedIn() && assignedTherapist(resource.data.terapeutaId);
+    }
+
+    function ownsIncomingTherapistDoc() {
+      return signedIn() &&
+        request.resource.data.terapeutaId == resource.data.terapeutaId &&
+        assignedTherapist(request.resource.data.terapeutaId);
+    }
+
+    function assignedTherapistForTherapy(therapyId) {
+      return signedIn() &&
+        exists(/databases/$(database)/documents/terapias/$(therapyId)) &&
+        assignedTherapist(
+          get(/databases/$(database)/documents/terapias/$(therapyId))
+            .data.terapeutaId
+        );
+    }
+
     match /users/{uid} {
-      allow read, create: if isOwner(uid);
+      allow read: if isOwner(uid) || isAdmin();
+      allow create: if isOwner(uid);
       allow update: if isOwner(uid) &&
         request.resource.data.rol == resource.data.rol;
       allow delete: if false;
@@ -55,21 +82,112 @@ service cloud.firestore {
     }
 
     match /citas/{citaId} {
-      allow read: if ownsExistingPatientDoc() || isAdmin();
+      allow read: if ownsExistingPatientDoc() ||
+        ownsExistingTherapistDoc() ||
+        isAdmin();
       allow create: if ownsIncomingPatientDoc();
-      allow update: if ownsExistingPatientDoc() &&
+      allow update: if (
+        ownsExistingPatientDoc() &&
         ownsIncomingPatientDoc() &&
-        request.resource.data.pacienteUid == resource.data.pacienteUid;
+        request.resource.data.pacienteUid == resource.data.pacienteUid
+      ) || (
+        ownsExistingTherapistDoc() &&
+        ownsIncomingTherapistDoc() &&
+        request.resource.data.pacienteUid == resource.data.pacienteUid
+      );
       allow delete: if false;
     }
 
     match /terapias/{terapiaId} {
-      allow read: if ownsExistingPatientDoc() || isAdmin();
+      allow read: if ownsExistingPatientDoc() ||
+        ownsExistingTherapistDoc() ||
+        isAdmin();
       allow create: if ownsIncomingPatientDoc();
-      allow update: if ownsExistingPatientDoc() &&
+      allow update: if (
+        ownsExistingPatientDoc() &&
         ownsIncomingPatientDoc() &&
-        request.resource.data.pacienteUid == resource.data.pacienteUid;
+        request.resource.data.pacienteUid == resource.data.pacienteUid
+      ) || (
+        ownsExistingTherapistDoc() &&
+        ownsIncomingTherapistDoc() &&
+        request.resource.data.pacienteUid == resource.data.pacienteUid
+      );
       allow delete: if false;
+    }
+
+    match /longitudinal_history/{eventId} {
+      allow read: if ownsExistingPatientDoc() ||
+        (
+          resource.data.terapiaId is string &&
+          resource.data.terapiaId != "" &&
+          assignedTherapistForTherapy(resource.data.terapiaId)
+        ) ||
+        isAdmin();
+      allow create: if ownsIncomingPatientDoc() ||
+        (
+          request.resource.data.terapiaId is string &&
+          request.resource.data.terapiaId != "" &&
+          assignedTherapistForTherapy(request.resource.data.terapiaId)
+        );
+      allow update, delete: if false;
+    }
+
+    match /exercises/{exerciseId} {
+      allow read: if ownsExistingPatientDoc() ||
+        ownsExistingTherapistDoc() ||
+        isAdmin();
+      allow create: if (
+        ownsIncomingPatientDoc()
+      ) || (
+        request.resource.data.terapiaId is string &&
+        request.resource.data.terapiaId != "" &&
+        request.resource.data.terapeutaId is string &&
+        assignedTherapist(request.resource.data.terapeutaId) &&
+        assignedTherapistForTherapy(request.resource.data.terapiaId)
+      );
+      allow update: if (
+        ownsExistingPatientDoc() &&
+        ownsIncomingPatientDoc() &&
+        request.resource.data.pacienteUid == resource.data.pacienteUid
+      ) || (
+        ownsExistingTherapistDoc() &&
+        ownsIncomingTherapistDoc() &&
+        request.resource.data.pacienteUid == resource.data.pacienteUid
+      );
+      allow delete: if false;
+    }
+
+    match /therapy_goals/{goalId} {
+      allow read: if ownsExistingPatientDoc() ||
+        ownsExistingTherapistDoc() ||
+        isAdmin();
+      allow create: if (
+        ownsIncomingPatientDoc()
+      ) || (
+        request.resource.data.terapiaId is string &&
+        request.resource.data.terapiaId != "" &&
+        request.resource.data.terapeutaId is string &&
+        assignedTherapist(request.resource.data.terapeutaId) &&
+        assignedTherapistForTherapy(request.resource.data.terapiaId)
+      );
+      allow update: if (
+        ownsExistingPatientDoc() &&
+        ownsIncomingPatientDoc() &&
+        request.resource.data.pacienteUid == resource.data.pacienteUid
+      ) || (
+        ownsExistingTherapistDoc() &&
+        ownsIncomingTherapistDoc() &&
+        request.resource.data.pacienteUid == resource.data.pacienteUid
+      );
+      allow delete: if false;
+    }
+
+    match /emotional_checkins/{checkinId} {
+      allow read: if ownsExistingPatientDoc() ||
+        ownsExistingTherapistDoc() ||
+        isAdmin();
+      allow create: if ownsIncomingPatientDoc();
+      allow update, delete: if false;
     }
 
     match /feddback/{feedbackId} {

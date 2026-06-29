@@ -51,18 +51,6 @@
       </template>
     </v-btn>
 
-    <v-btn
-      block
-      class="my-5 text-white bg-apple"
-      variant="tonal"
-      size="large"
-      elevation="4"
-    >
-      Iniciar sesión con Apple
-      <template #prepend>
-        <v-icon>mdi-apple</v-icon>
-      </template>
-    </v-btn>
   </v-theme-provider>
 </template>
 

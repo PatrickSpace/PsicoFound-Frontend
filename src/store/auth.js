@@ -2,6 +2,7 @@ import { computed, ref } from "vue";
 import { defineStore } from "pinia";
 import { onAuthStateChanged } from "firebase/auth";
 import { auth } from "@/plugins/Firebase/firebase";
+import { useAppContextStore } from "@/store/appContext";
 
 export const useAuthStore = defineStore("auth", () => {
   const currentUser = ref(null);
@@ -16,6 +17,13 @@ export const useAuthStore = defineStore("auth", () => {
     unsubscribe = onAuthStateChanged(auth, (user) => {
       currentUser.value = user;
       isReady.value = true;
+
+      const appContext = useAppContextStore();
+      if (user?.uid) {
+        appContext.loadForUser(user.uid);
+      } else {
+        appContext.reset();
+      }
     });
 
     return unsubscribe;

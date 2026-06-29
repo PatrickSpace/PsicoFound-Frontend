@@ -109,6 +109,23 @@
                 {{ value || "pendiente" }}
               </v-chip>
             </template>
+            <template #item.meetingUrl="{ item }">
+              <v-btn
+                v-if="item.meetingUrl"
+                :href="item.meetingUrl"
+                target="_blank"
+                rel="noopener noreferrer"
+                size="small"
+                color="secondary"
+                variant="tonal"
+                prepend-icon="mdi-video-outline"
+              >
+                Abrir
+              </v-btn>
+              <v-chip v-else size="small" variant="tonal" color="grey">
+                Pendiente
+              </v-chip>
+            </template>
           </v-data-table>
         </v-card-text>
       </v-card>
@@ -148,6 +165,7 @@ const appointmentHeaders = [
   { title: "Fecha", value: "fecha" },
   { title: "Hora", value: "hora" },
   { title: "Estado", value: "estado" },
+  { title: "Sesión online", value: "meetingUrl", sortable: false },
   { title: "Notas", value: "notas" },
 ];
 
@@ -168,6 +186,7 @@ const appointmentItems = computed(() =>
     fecha: appointment.fecha || "Sin fecha",
     hora: appointment.hora || "Sin hora",
     estado: appointment.estado || "pendiente",
+    meetingUrl: appointment.meetingUrl || "",
     notas: appointment.notas || "Sin notas",
   }))
 );

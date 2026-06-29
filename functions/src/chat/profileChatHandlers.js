@@ -46,6 +46,7 @@ async function sendProfileChatMessage(request) {
   const messagesRef = conversationRef.collection("messages");
   const profileRef = db.collection("profiles").doc(uid);
   const conversationSnap = await conversationRef.get();
+  const conversationData = conversationSnap.data() || {};
   const chatSession = getActiveChatSession(conversationSnap.data());
 
   await conversationRef.set(
@@ -68,6 +69,7 @@ async function sendProfileChatMessage(request) {
   });
 
   const currentProfile = await getCurrentProfile(profileRef);
+  const profileHadData = hasProfileSignal(currentProfile);
   const crisisResult = getCrisisResult(message);
   let cleanData;
   let reply;
@@ -137,6 +139,73 @@ async function sendProfileChatMessage(request) {
       },
       {merge: true},
   );
+
+  if (!conversationData.startedEventCreatedAt) {
+    await appendLongitudinalEvent(db, uid, {
+      eventType: "interview_started",
+      sourceType: "profile_chat",
+      sourceId: chatSession.id,
+      title: "Entrevista inicial iniciada",
+      summary: [
+        "El paciente inició la entrevista conversacional",
+        "de descubrimiento.",
+      ].join(" "),
+      metadata: {
+        sessionId: chatSession.id,
+      },
+    });
+
+    await conversationRef.set(
+        {
+          startedEventCreatedAt: admin.firestore.FieldValue.serverTimestamp(),
+        },
+        {merge: true},
+    );
+  }
+
+  if (!currentProfile.completado && mergedProfile.completado) {
+    await appendLongitudinalEvent(db, uid, {
+      eventType: "initial_profile_completed",
+      sourceType: "profile",
+      sourceId: uid,
+      title: "Perfil psicológico inicial listo",
+      summary: [
+        "La entrevista reunió información suficiente",
+        "para buscar psicólogos recomendados.",
+      ].join(" "),
+      metadata: buildProfileEventMetadata(mergedProfile),
+    });
+  } else if (!profileHadData && hasProfileSignal(mergedProfile)) {
+    await appendLongitudinalEvent(db, uid, {
+      eventType: "initial_profile_updated",
+      sourceType: "profile",
+      sourceId: uid,
+      title: "Perfil inicial actualizado",
+      summary: [
+        "Se registró nueva información relevante",
+        "para orientar el proceso terapéutico.",
+      ].join(" "),
+      metadata: buildProfileEventMetadata(mergedProfile),
+    });
+  }
+
+  if (crisisResult && !currentProfile.riesgoSuicida) {
+    await appendLongitudinalEvent(db, uid, {
+      eventType: "risk_alert_detected",
+      sourceType: "profile_chat",
+      sourceId: chatSession.id,
+      title: "Alerta de riesgo detectada",
+      summary: [
+        "La plataforma mostró orientación de ayuda urgente.",
+        "Este evento no constituye diagnóstico.",
+      ].join(" "),
+      metadata: {
+        sessionId: chatSession.id,
+        riskFlag: "suicide_risk",
+      },
+      visibility: "patient",
+    });
+  }
 
   return {
     reply,
@@ -216,6 +285,53 @@ function hasValue(value) {
 function sanitizeLogValue(value) {
   const cleanValue = (value || "").toString().trim();
   return cleanValue.length > 40 ? `${cleanValue.slice(0, 40)}...` : cleanValue;
+}
+
+async function appendLongitudinalEvent(db, uid, event = {}) {
+  await db.collection("longitudinal_history").add({
+    pacienteUid: uid,
+    eventType: event.eventType || "profile_event",
+    sourceType: event.sourceType || "profile",
+    sourceId: event.sourceId || uid,
+    terapiaId: "",
+    title: event.title || "Evento de perfil",
+    summary: event.summary || "",
+    metadata: event.metadata || {},
+    visibility: event.visibility || "patient",
+    createdBy: "system",
+    occurredAt: new Date().toISOString(),
+    createdAt: admin.firestore.FieldValue.serverTimestamp(),
+  });
+}
+
+function hasProfileSignal(profile = {}) {
+  return Boolean(
+      profile.motivoConsulta ||
+      profile.nivelMalestar ||
+      profile.urgencia ||
+      profile.modalidad ||
+      profile.preferenciaGenero ||
+      profile.preferenciaEdad ||
+      profile.enfoque ||
+      profile.soloConversar ||
+      profile.riesgoSuicida ||
+      (Array.isArray(profile.temas) && profile.temas.length > 0),
+  );
+}
+
+function buildProfileEventMetadata(profile = {}) {
+  return {
+    completado: Boolean(profile.completado),
+    riesgoSuicida: Boolean(profile.riesgoSuicida),
+    soloConversar: Boolean(profile.soloConversar),
+    temas: Array.isArray(profile.temas) ? profile.temas.slice(0, 8) : [],
+    modalidad: profile.modalidad || "",
+    preferenciaGenero: profile.preferenciaGenero || "",
+    preferenciaEdad: profile.preferenciaEdad || "",
+    enfoque: profile.enfoque || "",
+    nivelMalestar: profile.nivelMalestar || "",
+    urgencia: profile.urgencia || "",
+  };
 }
 
 module.exports = {

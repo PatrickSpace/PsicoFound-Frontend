@@ -52,30 +52,6 @@
       <v-icon>mdi-google</v-icon>
     </template>
   </v-btn>
-  <v-btn
-    block
-    class="my-5 text-white bg-facebook"
-    elevation="4"
-    variant="tonal"
-    size="large"
-  >
-    Iniciar sesion con Facebook
-    <template v-slot:prepend>
-      <v-icon>mdi-facebook</v-icon>
-    </template>
-  </v-btn>
-  <v-btn
-    block
-    class="my-5 text-white bg-apple"
-    variant="tonal"
-    size="large"
-    elevation="4"
-  >
-    Iniciar sesion con Apple
-    <template v-slot:prepend>
-      <v-icon>mdi-apple</v-icon>
-    </template>
-  </v-btn>
 </template>
 <script setup>
 import { reactive, ref } from "vue";

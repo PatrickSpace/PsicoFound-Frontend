@@ -14,7 +14,9 @@ import ProgresoView from "@/views/mainviews/ProgresoView.vue";
 import HistorialView from "@/views/mainviews/HistorialView.vue";
 import HerramientasView from "@/views/mainviews/HerramientasView.vue";
 import TerapiaDetailView from "@/views/terapias/TerapiaDetailView.vue";
+import PsicologoSesionesView from "@/views/psicologo/PsicologoSesionesView.vue";
 import { auth } from "@/plugins/Firebase/firebase";
+import { useAppContextStore } from "@/store/appContext";
 
 function getCurrentAuthUser() {
   if (auth.currentUser) {
@@ -58,16 +60,19 @@ const router = createRouter({
       path: "/psicologos",
       name: "psicologos",
       component: PsicologosView,
+      meta: { modes: ["admin"] },
     },
     {
       path: "/pacientes",
       name: "pacientes",
       component: PacientesView,
+      meta: { modes: ["psychologist", "admin"] },
     },
     {
       path: "/dashboard",
       name: "dashboard",
       component: DasboardView,
+      meta: { modes: ["patient", "admin"] },
     },
     {
       path: "/login",
@@ -79,31 +84,43 @@ const router = createRouter({
       path: "/elegirterapeuta",
       name: "elegirterapeuta",
       component: ElegirTerapeutaView,
+      meta: { modes: ["patient"] },
     },
     {
       path: "/sesiones",
       name: "sesiones",
       component: SesionesView,
+      meta: { modes: ["patient"] },
     },
     {
       path: "/progreso",
       name: "progreso",
       component: ProgresoView,
+      meta: { modes: ["patient", "psychologist"] },
     },
     {
       path: "/historial",
       name: "historial",
       component: HistorialView,
+      meta: { modes: ["patient", "psychologist"] },
     },
     {
       path: "/herramientas",
       name: "herramientas",
       component: HerramientasView,
+      meta: { modes: ["patient", "psychologist"] },
     },
     {
       path: "/terapiadetail",
       name: "terapiadetail",
       component: TerapiaDetailView,
+      meta: { modes: ["patient", "psychologist", "admin"] },
+    },
+    {
+      path: "/psicologo/sesiones",
+      name: "psicologo-sesiones",
+      component: PsicologoSesionesView,
+      meta: { modes: ["psychologist"] },
     },
  
 ]});
@@ -123,6 +140,32 @@ router.beforeEach(async (to) => {
   if (user && isGuestOnlyRoute) {
     return "/dashboard";
   }
+
+  if (user && !isPublicRoute) {
+    const appContext = useAppContextStore();
+    await appContext.loadForUser(user.uid);
+
+    const allowedModes = Array.isArray(to.meta.modes) ? to.meta.modes : [];
+
+    if (
+      allowedModes.length > 0 &&
+      !allowedModes.includes(appContext.activeMode)
+    ) {
+      return defaultRouteForMode(appContext.activeMode);
+    }
+  }
 });
 
 export default router;
+
+function defaultRouteForMode(mode) {
+  if (mode === "psychologist") {
+    return "/psicologo/sesiones";
+  }
+
+  if (mode === "admin") {
+    return "/pacientes";
+  }
+
+  return "/dashboard";
+}

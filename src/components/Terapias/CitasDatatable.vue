@@ -37,6 +37,30 @@
       </v-chip>
     </template>
 
+    <template #item.meetingUrl="{ item }">
+      <v-btn
+        v-if="item.meetingUrl"
+        :href="item.meetingUrl"
+        target="_blank"
+        rel="noopener noreferrer"
+        size="small"
+        color="secondary"
+        variant="tonal"
+        prepend-icon="mdi-video-outline"
+      >
+        Abrir
+      </v-btn>
+      <v-chip v-else size="small" variant="tonal" color="grey">
+        Pendiente
+      </v-chip>
+    </template>
+
+    <template #item.sessionSummary="{ item }">
+      <span class="text-body-2">
+        {{ item.sessionSummary || "Pendiente" }}
+      </span>
+    </template>
+
     <template #item.actions="{ item }">
       <div class="d-flex ga-1">
         <v-btn
@@ -125,6 +149,8 @@ const headers = [
   { title: "Estado", value: "estado" },
   { title: "Terapeuta", value: "terapeutaNombre" },
   { title: "Terapia", value: "terapiaNombre" },
+  { title: "Sesión online", value: "meetingUrl", sortable: false },
+  { title: "Resumen", value: "sessionSummary", sortable: false },
   { title: "Notas", value: "notas" },
   { title: "Confirmar", key: "actions", sortable: false },
 ];
@@ -141,6 +167,8 @@ const filteredItems = computed(() => {
       item.terapeutaNombre,
       item.terapiaNombre,
       item.notas,
+      item.meetingProvider,
+      item.meetingUrl,
     ]
       .join(" ")
       .toLowerCase();
@@ -197,6 +225,9 @@ async function loadAppointments() {
         notas: appointment.notas || "Sin notas",
         modalidad: appointment.modalidad || "",
         ubicacion: appointment.ubicacion || "",
+        meetingProvider: appointment.meetingProvider || "",
+        meetingUrl: appointment.meetingUrl || "",
+        sessionSummary: appointment.sessionSummary || "",
       }))
     );
   } catch (error) {
@@ -240,6 +271,8 @@ function openEditDialog(item) {
     notas: item.notas,
     modalidad: item.modalidad,
     ubicacion: item.ubicacion,
+    meetingProvider: item.meetingProvider,
+    meetingUrl: item.meetingUrl,
   };
 
   dialogTherapy.value = therapies.value.find((therapy) => therapy.id === item.terapiaId) || null;
