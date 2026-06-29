@@ -37,6 +37,7 @@ const appContext = useAppContextStore();
 .layout-main-content {
   min-height: 100dvh;
   min-height: 100svh;
+  padding-top: calc(64px + env(safe-area-inset-top));
   padding-bottom: calc(72px + env(safe-area-inset-bottom));
   overflow: visible;
 }
@@ -57,6 +58,7 @@ const appContext = useAppContextStore();
   .layout-main-content {
     padding-left: 0 !important;
     padding-right: 0 !important;
+    padding-top: calc(56px + env(safe-area-inset-top));
     padding-bottom: calc(92px + env(safe-area-inset-bottom));
   }
 

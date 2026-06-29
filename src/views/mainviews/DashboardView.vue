@@ -1,6 +1,6 @@
 <template>
   <LayoutDefault layout>
-    <v-container>
+    <div class="dashboard-shell">
       <h1 class="text-h4">Bienvenido, {{ username }}</h1>
       <v-divider class="my-5 mx-auto"></v-divider>
 
@@ -84,7 +84,7 @@
               <v-card-title class="text-h5"> <v-icon size="small">mdi-calendar-clock</v-icon> Proxima sesión </v-card-title>
               <v-card-text>
                 <v-divider></v-divider>
-                <v-list-item class="w-150 mx-auto pt-5">
+                <v-list-item class="dashboard-list-item mx-auto pt-5">
                   <template v-slot:prepend>
                     <h4 class="appointment-day">{{ nextAppointmentDay }}</h4>
                   </template>
@@ -135,7 +135,7 @@
               </v-card-title>
               <v-card-text>
                 <v-divider></v-divider>
-                <v-list-item class="w-150 pt-5">
+                <v-list-item class="dashboard-list-item pt-5">
                   <template v-slot:prepend>
                     <v-avatar
                       color="white"
@@ -180,7 +180,7 @@
         :redirect-on-save="false"
         @saved="loadActiveTherapy"
       />
-    </v-container>
+    </div>
   </LayoutDefault>
 </template>
 <script setup>
@@ -353,3 +353,31 @@ watch(
   { immediate: true }
 );
 </script>
+
+<style scoped>
+.dashboard-shell {
+  width: 100%;
+}
+
+.dashboard-list-item {
+  max-width: 100%;
+}
+
+@media (max-width: 599px) {
+  .dashboard-shell {
+    padding-inline: 0;
+  }
+
+  .dashboard-shell :deep(.v-card) {
+    width: 100%;
+  }
+
+  .dashboard-shell :deep(.v-card-title) {
+    white-space: normal;
+  }
+
+  .dashboard-shell :deep(.v-list-item) {
+    padding-inline: 0;
+  }
+}
+</style>
