@@ -83,8 +83,7 @@ const navItemCount = computed(() =>
 </script>
 <style scoped>
 .bottom-nav-mobile {
-  backdrop-filter: blur(18px);
-  background: rgba(3, 7, 7, 0.82) !important;
+  background: transparent !important;
   border-top: 1px solid rgba(255, 255, 255, 0.08);
   height: calc(72px + env(safe-area-inset-bottom)) !important;
   left: 0 !important;
@@ -107,6 +106,15 @@ const navItemCount = computed(() =>
   min-width: 0;
   width: 100%;
   padding-inline: 2px;
+}
+
+.bottom-nav-mobile :deep(.v-btn::before),
+.bottom-nav-mobile :deep(.v-btn__overlay) {
+  display: none;
+}
+
+.bottom-nav-mobile :deep(.v-btn--selected) {
+  color: rgb(var(--v-theme-secondary));
 }
 
 .bottom-nav-mobile :deep(.v-btn__content) {

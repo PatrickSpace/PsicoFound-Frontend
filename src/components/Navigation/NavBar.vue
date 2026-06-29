@@ -162,9 +162,7 @@ function defaultRouteForMode(mode) {
 
 <style scoped>
 .app-top-nav {
-  backdrop-filter: blur(18px);
-  background: rgba(3, 7, 7, 0.72);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  background: transparent;
   left: 0;
   min-height: 64px;
   padding-top: 0;
