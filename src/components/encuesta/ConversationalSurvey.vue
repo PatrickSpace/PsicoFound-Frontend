@@ -863,10 +863,7 @@ function notifyError(message) {
   }
 
   .survey-subtitle {
-    max-width: 240px;
-    margin-top: 4px;
-    font-size: 0.78rem;
-    line-height: 1.35;
+    display: none;
   }
 
   .profile-status {
