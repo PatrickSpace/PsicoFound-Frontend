@@ -471,6 +471,8 @@ function notifyError(message) {
 }
 
 .chat-layout {
+  --chat-surface: rgba(18, 39, 42, 0.82);
+
   display: grid;
   grid-template-rows: auto minmax(0, 1fr) auto auto;
   height: 100%;
@@ -478,14 +480,15 @@ function notifyError(message) {
   overflow: hidden;
   border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: 8px;
-  background:
-    linear-gradient(180deg, rgba(29, 52, 55, 0.74), rgba(14, 29, 31, 0.64));
+  background: var(--chat-surface);
   box-shadow: 0 22px 70px rgba(0, 18, 20, 0.28);
   backdrop-filter: blur(16px);
 }
 
 :global(.v-theme--light) .chat-layout {
-  background: rgba(255, 255, 255, 0.88);
+  --chat-surface: rgba(255, 255, 255, 0.88);
+
+  background: var(--chat-surface);
   border-color: rgba(23, 63, 58, 0.12);
   box-shadow:
     0 1px 2px rgba(23, 63, 58, 0.06),
@@ -582,7 +585,7 @@ function notifyError(message) {
   scrollbar-gutter: stable;
   -webkit-overflow-scrolling: touch;
   padding: 24px 18px;
-  background: transparent;
+  background: var(--chat-surface);
 }
 
 .messages-panel::-webkit-scrollbar {
