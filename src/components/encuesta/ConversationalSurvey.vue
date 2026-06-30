@@ -13,7 +13,7 @@
             Cuéntame cómo te sientes
           </h1>
           <p class="survey-subtitle text-body-2 text-medium-emphasis">
-            Te haré algunas preguntas para entender tu momento y sugerirte psicólogos afines.
+            Te haré algunas preguntas para entender tu situación actual y sugerirte psicólogos afines.
           </p>
           <div
             class="profile-status"
