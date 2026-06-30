@@ -74,8 +74,10 @@ async function sendProfileChatMessage(request) {
       savedProfile,
       chatSession.id,
   );
+  const normalizedMessage = normalizePlainText(message);
+  const isLowInformationGreeting = isLowInformationMessage(normalizedMessage);
   const isOpeningLowInformationMessage =
-    isLowInformationMessage(normalizePlainText(message)) &&
+    isLowInformationGreeting &&
     !(await hasSubstantiveUserMessage(messagesRef, chatSession.id));
 
   if (isOpeningLowInformationMessage) {
@@ -90,13 +92,9 @@ async function sendProfileChatMessage(request) {
   let cleanData;
   let reply;
 
-  if (isOpeningLowInformationMessage) {
+  if (isLowInformationGreeting) {
     cleanData = {};
-    reply = [
-      "Hola, gracias por escribir.",
-      "Para orientarte mejor, cuentame que te trae por aqui",
-      "o que tipo de apoyo estas buscando.",
-    ].join(" ");
+    reply = getNeutralLowInformationReply(currentProfile);
   } else if (crisisResult) {
     cleanData = sanitizeModelProfileData(crisisResult.data);
     reply = crisisResult.reply;
@@ -323,6 +321,23 @@ function getProfileForActiveSession(profile = {}, sessionId = "") {
     ...PROFILE_DEFAULTS,
     sessionId,
   };
+}
+
+function getNeutralLowInformationReply(currentProfile = {}) {
+  const nextQuestion = getNextProfileQuestion(currentProfile);
+
+  if (nextQuestion) {
+    return [
+      "Hola, gracias por escribir.",
+      nextQuestion,
+    ].join(" ");
+  }
+
+  return [
+    "Hola, gracias por escribir.",
+    "Para orientarte mejor, cuentame que te trae por aqui",
+    "o que tipo de apoyo estas buscando.",
+  ].join(" ");
 }
 
 function validateModelProfileData({
