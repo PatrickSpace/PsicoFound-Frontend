@@ -85,6 +85,23 @@ async function sendProfileChatMessage(request) {
     reply = normalizeReply(geminiResult.reply);
   }
 
+  const validationResult = validateModelProfileData({
+    cleanData,
+    currentProfile,
+    message,
+  });
+  cleanData = validationResult.cleanData;
+
+  if (validationResult.forceQuestion) {
+    reply = getNextProfileQuestion({
+      ...currentProfile,
+      ...cleanData,
+    }) || [
+      "Hola, gracias por escribir.",
+      "Que te gustaria trabajar o conversar con un terapeuta?",
+    ].join(" ");
+  }
+
   const mergedProfile = finalizeProfileForMatching({
     ...currentProfile,
     ...cleanData,
@@ -271,6 +288,136 @@ function replyLooksReady(reply) {
     normalized.includes("psicologos recomendados") ||
     normalized.includes("profesional para ti")
   );
+}
+
+function validateModelProfileData({
+  cleanData = {},
+  currentProfile = {},
+  message = "",
+}) {
+  const nextData = {...cleanData};
+  const normalizedMessage = normalizePlainText(message);
+  const currentHasSignal = hasProfileSignal(currentProfile);
+
+  if (!currentHasSignal && isLowInformationMessage(normalizedMessage)) {
+    return {
+      cleanData: {},
+      forceQuestion: true,
+    };
+  }
+
+  if (
+    nextData.soloConversar === true &&
+    !currentProfile.soloConversar &&
+    !hasSoloConversationSignal(normalizedMessage)
+  ) {
+    delete nextData.soloConversar;
+  }
+
+  [
+    "modalidad",
+    "preferenciaGenero",
+    "preferenciaEdad",
+    "enfoque",
+  ].forEach((field) => {
+    if (
+      isIndifferentValue(nextData[field]) &&
+      !hasValue(currentProfile[field]) &&
+      !hasIndifferenceSignal(normalizedMessage)
+    ) {
+      delete nextData[field];
+    }
+  });
+
+  if (
+    Array.isArray(nextData.temas) &&
+    nextData.temas.length > 0 &&
+    !Array.isArray(currentProfile.temas) &&
+    isLowInformationMessage(normalizedMessage)
+  ) {
+    delete nextData.temas;
+  }
+
+  return {
+    cleanData: nextData,
+    forceQuestion: false,
+  };
+}
+
+function normalizePlainText(value = "") {
+  return (value || "")
+      .toString()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .toLowerCase()
+      .replace(/[^\p{L}\p{N}\s]/gu, " ")
+      .replace(/\s+/g, " ")
+      .trim();
+}
+
+function isLowInformationMessage(normalizedMessage = "") {
+  if (!normalizedMessage) {
+    return true;
+  }
+
+  const words = normalizedMessage.split(" ").filter(Boolean);
+  const greetings = new Set([
+    "hola",
+    "buenas",
+    "buenos",
+    "dias",
+    "tardes",
+    "noches",
+    "hello",
+    "hi",
+    "hey",
+    "saludos",
+  ]);
+
+  return words.length <= 3 && words.every((word) => greetings.has(word));
+}
+
+function hasSoloConversationSignal(normalizedMessage = "") {
+  return [
+    "solo quiero conversar",
+    "solo conversar",
+    "quiero conversar",
+    "quiero hablar",
+    "hablar con alguien",
+    "desahogarme",
+    "ser escuchado",
+    "ser escuchada",
+    "no tengo un problema especifico",
+    "sin problema especifico",
+  ].some((signal) => normalizedMessage.includes(signal));
+}
+
+function hasIndifferenceSignal(normalizedMessage = "") {
+  return [
+    "indiferente",
+    "me es indiferente",
+    "me da igual",
+    "da igual",
+    "cualquiera",
+    "sin preferencia",
+    "no tengo preferencia",
+    "no importa",
+    "no se",
+  ].some((signal) => normalizedMessage.includes(signal));
+}
+
+function isIndifferentValue(value = "") {
+  return [
+    "indiferente",
+    "me es indiferente",
+    "me da igual",
+    "da igual",
+    "igual",
+    "cualquiera",
+    "sin preferencia",
+    "no tengo preferencia",
+    "no importa",
+  ].includes(normalizePlainText(value));
 }
 
 function getProfileStateForLogs(profile = {}) {
