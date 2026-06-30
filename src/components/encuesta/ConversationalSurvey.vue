@@ -10,10 +10,16 @@
             Encuesta conversacional
           </p>
           <h1 class="survey-title font-weight-bold">
-            Cuéntame cómo te sientes
+            <span class="desktop-copy">Cuéntame cómo te sientes</span>
+            <span class="mobile-copy">¿Cómo te sientes?</span>
           </h1>
           <p class="survey-subtitle text-body-2 text-medium-emphasis">
-            Te haré algunas preguntas para entender tu situación actual y sugerirte psicólogos afines.
+            <span class="desktop-copy">
+              Te haré algunas preguntas para entender tu situación actual y sugerirte psicólogos afines.
+            </span>
+            <span class="mobile-copy">
+              Te haré unas preguntas para orientarte mejor.
+            </span>
           </p>
           <div
             class="profile-status"
@@ -111,7 +117,7 @@
             variant="plain"
             hide-details
             :disabled="loading"
-            placeholder="Escribe libremente cómo te sientes..."
+            placeholder="Escribe cómo te sientes..."
             @keydown.enter.exact.prevent="handleSubmit"
           />
 
@@ -174,7 +180,7 @@ const welcomeMessage = {
   id: "welcome",
   role: "assistant",
   text:
-    "Hola, soy el asistente de PsicoFound. Cuéntame qué te trae por aquí o qué tipo de apoyo buscas.",
+    "Hola, soy PsicoFound. Cuéntame qué tipo de apoyo buscas.",
 };
 
 const visibleMessages = computed(() => {
@@ -537,6 +543,10 @@ function notifyError(message) {
   line-height: 1.45;
 }
 
+.mobile-copy {
+  display: none;
+}
+
 .profile-status {
   display: inline-flex;
   align-items: center;
@@ -814,7 +824,8 @@ function notifyError(message) {
 
   .chat-header {
     align-items: flex-start;
-    padding: 16px 14px 12px;
+    gap: 10px;
+    padding: 14px 12px 10px;
   }
 
   .assistant-mark {
@@ -827,26 +838,44 @@ function notifyError(message) {
     margin-left: auto;
   }
 
-  .reset-button :deep(.v-btn__content span),
-  .recommendations-button :deep(.v-btn__content span) {
+  .reset-button {
+    width: 36px;
+    min-width: 36px;
+    padding: 0;
+  }
+
+  .reset-button :deep(.v-btn__content),
+  .recommendations-button :deep(.v-btn__content) {
     display: none;
   }
 
+  .desktop-copy {
+    display: none;
+  }
+
+  .mobile-copy {
+    display: inline;
+  }
+
   .survey-title {
-    font-size: 1.55rem;
+    font-size: 1.45rem;
     line-height: 1.2;
   }
 
   .survey-subtitle {
-    font-size: 0.82rem;
+    max-width: 240px;
+    margin-top: 4px;
+    font-size: 0.78rem;
+    line-height: 1.35;
   }
 
   .profile-status {
     font-size: 0.72rem;
+    margin-top: 7px;
   }
 
   .messages-panel {
-    padding: 16px 12px;
+    padding: 14px 12px;
   }
 
   .message-avatar {
@@ -869,11 +898,11 @@ function notifyError(message) {
 
   .composer-shell {
     width: calc(100% - 20px);
+    margin-bottom: 12px;
   }
 
   .composer-footer {
-    flex-direction: column;
-    gap: 6px;
+    display: none;
   }
 
   .composer {

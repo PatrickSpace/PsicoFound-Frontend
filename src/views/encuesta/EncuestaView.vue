@@ -7,7 +7,7 @@
       :elevation="0"
     >
       <v-app-bar-title class="theme-contrast-text">
-        <MainLogo />
+        <MainLogo hide-icon />
       </v-app-bar-title>
       <v-spacer></v-spacer>
 
