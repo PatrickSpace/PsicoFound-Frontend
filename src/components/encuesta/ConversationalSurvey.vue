@@ -19,7 +19,9 @@
             class="profile-status"
             :class="{ 'is-ready': canViewRecommendations }"
           >
-            <span class="profile-status-dot"></span>
+            <v-icon size="15">
+              {{ canViewRecommendations ? "mdi-check-circle-outline" : "mdi-progress-clock" }}
+            </v-icon>
             <span>{{ canViewRecommendations ? "Perfil listo" : "Perfil en progreso" }}</span>
           </div>
         </div>
@@ -531,29 +533,29 @@ function notifyError(message) {
 .profile-status {
   display: inline-flex;
   align-items: center;
-  gap: 7px;
+  gap: 6px;
   margin-top: 8px;
+  padding: 5px 8px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 999px;
   color: rgba(255, 255, 255, 0.66);
+  background: rgba(255, 255, 255, 0.05);
+  box-shadow: 0 8px 20px rgba(0, 18, 20, 0.12);
   font-size: 0.78rem;
   font-weight: 600;
   line-height: 1;
+  width: fit-content;
 }
 
 :global(.v-theme--light) .profile-status {
   color: rgba(23, 38, 34, 0.62);
+  background: rgba(55, 111, 101, 0.07);
+  border-color: rgba(23, 63, 58, 0.08);
+  box-shadow: 0 8px 20px rgba(23, 63, 58, 0.08);
 }
 
-.profile-status-dot {
-  width: 7px;
-  height: 7px;
-  border-radius: 999px;
-  background: rgb(var(--v-theme-secondary));
-  opacity: 0.68;
-}
-
-.profile-status.is-ready .profile-status-dot {
-  background: rgb(var(--v-theme-success));
-  opacity: 1;
+.profile-status.is-ready {
+  color: rgb(var(--v-theme-success));
 }
 
 .chat-header-actions {
