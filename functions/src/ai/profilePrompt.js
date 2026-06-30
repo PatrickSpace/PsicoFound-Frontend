@@ -190,6 +190,16 @@ Devuelve solo JSON con esta forma:
 `;
 }
 
+function buildProfileChatMessages(input = {}) {
+  return [
+    {
+      role: "system",
+      content: buildPrompt(input),
+    },
+  ];
+}
+
 module.exports = {
+  buildProfileChatMessages,
   buildPrompt,
 };

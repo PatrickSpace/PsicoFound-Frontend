@@ -1,7 +1,16 @@
 const admin = require("firebase-admin");
 const logger = require("firebase-functions/logger");
 const {HttpsError} = require("firebase-functions/v2/https");
-const {askGemini} = require("../ai/geminiClient");
+const {aiService} = require("../ai/AIService");
+const {buildProfileChatMessages} = require("../ai/profilePrompt");
+const {
+  buildProfileChatResponseSchema,
+} = require("../ai/responseSchemas");
+const {
+  AIProviderConfigurationError,
+  AIProviderRateLimitError,
+  AIProviderUnavailableError,
+} = require("../ai/errors");
 const {getRecentHistory} = require("./history");
 const {
   createChatSession,
@@ -112,13 +121,13 @@ async function sendProfileChatMessage(request) {
     });
   } else {
     const history = await getRecentHistory(messagesRef, chatSession.id);
-    const geminiResult = await askGemini({
+    const aiResult = await getProfileChatAIResult({
       currentProfile,
       history,
       latestUserMessage: message,
     });
-    cleanData = sanitizeModelProfileData(geminiResult.data);
-    reply = normalizeReply(geminiResult.reply);
+    cleanData = sanitizeModelProfileData(aiResult.data);
+    reply = normalizeReply(aiResult.reply);
   }
 
   const validationResult = validateModelProfileData({
@@ -354,6 +363,74 @@ function getNeutralLowInformationReply(currentProfile = {}) {
     "Para orientarte mejor, cuentame que te trae por aqui",
     "o que tipo de apoyo estas buscando.",
   ].join(" ");
+}
+
+async function getProfileChatAIResult({
+  currentProfile,
+  history,
+  latestUserMessage,
+}) {
+  try {
+    const result = await aiService.generateStructuredOutput({
+      messages: buildProfileChatMessages({
+        currentProfile,
+        history,
+        latestUserMessage,
+      }),
+      schema: buildProfileChatResponseSchema(),
+      temperature: 0.2,
+      maxTokens: 700,
+      metadata: {
+        task: "profile-chat",
+      },
+    });
+
+    return normalizeProfileChatAIResult(result.data);
+  } catch (error) {
+    handleAIServiceError(error);
+  }
+}
+
+function normalizeProfileChatAIResult(result = {}) {
+  if (!result || typeof result !== "object") {
+    return {
+      reply: "",
+      data: {},
+    };
+  }
+
+  return {
+    reply: (result.reply || "").toString(),
+    data: result.data && typeof result.data === "object" ? result.data : {},
+  };
+}
+
+function handleAIServiceError(error) {
+  if (error instanceof AIProviderRateLimitError) {
+    throw new HttpsError(
+        "resource-exhausted",
+        "El proveedor de IA no tiene cuota disponible en este momento.",
+    );
+  }
+
+  if (error instanceof AIProviderUnavailableError) {
+    throw new HttpsError(
+        "deadline-exceeded",
+        "El proveedor de IA tardo demasiado o no esta disponible.",
+    );
+  }
+
+  if (error instanceof AIProviderConfigurationError) {
+    throw new HttpsError(
+        "failed-precondition",
+        "El proveedor de IA no esta configurado correctamente.",
+    );
+  }
+
+  throw new HttpsError(
+      "internal",
+      "No pudimos procesar el mensaje con IA en este momento.",
+  );
 }
 
 function getIndifferentPreferenceField(profile = {}, normalizedMessage = "") {

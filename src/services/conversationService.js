@@ -113,9 +113,9 @@ function getProfileChatErrorMessage(error, normalizedCode) {
     "functions/invalid-argument":
       "El mensaje no es válido. Intenta escribirlo un poco más corto.",
     "functions/resource-exhausted":
-      "Gemini no tiene cuota o créditos disponibles en este momento. Revisa la configuración de billing/cuota en AI Studio e inténtalo luego.",
+      "El proveedor de IA no tiene cuota disponible en este momento.",
     "functions/deadline-exceeded":
-      "Gemini tardó demasiado en responder. Intenta enviar un mensaje más breve o espera unos segundos.",
+      "El proveedor de IA tardó demasiado en responder. Intenta enviar un mensaje más breve o espera unos segundos.",
     "functions/unavailable":
       "El servicio de IA no está disponible por el momento. Inténtalo nuevamente en unos segundos.",
     "functions/internal":
