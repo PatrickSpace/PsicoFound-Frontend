@@ -69,7 +69,11 @@ async function sendProfileChatMessage(request) {
     createdAt: admin.firestore.FieldValue.serverTimestamp(),
   });
 
-  const currentProfile = await getCurrentProfile(profileRef);
+  const savedProfile = await getCurrentProfile(profileRef);
+  const currentProfile = getProfileForActiveSession(
+      savedProfile,
+      chatSession.id,
+  );
   const profileHadData = hasProfileSignal(currentProfile);
   const crisisResult = getCrisisResult(message);
   let cleanData;
@@ -135,6 +139,7 @@ async function sendProfileChatMessage(request) {
   await profileRef.set(
       {
         ...mergedProfile,
+        sessionId: chatSession.id,
         uid,
         updatedAt: admin.firestore.FieldValue.serverTimestamp(),
       },
@@ -260,6 +265,7 @@ async function resetProfileChatConversation(request) {
   await profileRef.set(
       {
         ...PROFILE_DEFAULTS,
+        sessionId: chatSession.id,
         uid,
         updatedAt: admin.firestore.FieldValue.serverTimestamp(),
       },
@@ -288,6 +294,17 @@ function replyLooksReady(reply) {
     normalized.includes("psicologos recomendados") ||
     normalized.includes("profesional para ti")
   );
+}
+
+function getProfileForActiveSession(profile = {}, sessionId = "") {
+  if (!sessionId || profile.sessionId === sessionId) {
+    return profile;
+  }
+
+  return {
+    ...PROFILE_DEFAULTS,
+    sessionId,
+  };
 }
 
 function validateModelProfileData({

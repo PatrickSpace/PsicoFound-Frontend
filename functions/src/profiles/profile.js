@@ -1,4 +1,5 @@
 const PROFILE_DEFAULTS = {
+  sessionId: "",
   motivoConsulta: "",
   soloConversar: false,
   riesgoSuicida: false,
@@ -18,7 +19,7 @@ const PROFILE_DEFAULTS = {
 
 const PROFILE_KEYS = Object.keys(PROFILE_DEFAULTS);
 const MODEL_WRITABLE_PROFILE_KEYS = PROFILE_KEYS.filter(
-    (key) => key !== "completado",
+    (key) => !["completado", "sessionId"].includes(key),
 );
 const OPTIONAL_PREFERENCE_FIELDS = new Set([
   "enfoque",
