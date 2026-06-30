@@ -15,17 +15,16 @@
           <p class="survey-subtitle text-body-2 text-medium-emphasis">
             Te haré algunas preguntas para entender tu momento y sugerirte psicólogos afines.
           </p>
+          <div
+            class="profile-status"
+            :class="{ 'is-ready': canViewRecommendations }"
+          >
+            <span class="profile-status-dot"></span>
+            <span>{{ canViewRecommendations ? "Perfil listo" : "Perfil en progreso" }}</span>
+          </div>
         </div>
 
         <div class="chat-header-actions">
-          <v-chip
-            class="status-chip"
-            :color="canViewRecommendations ? 'success' : 'secondary'"
-            variant="tonal"
-            :prepend-icon="canViewRecommendations ? 'mdi-check-circle-outline' : 'mdi-progress-clock'"
-          >
-            {{ canViewRecommendations ? "Perfil listo" : "En progreso" }}
-          </v-chip>
           <v-btn
             class="reset-button"
             variant="text"
@@ -529,8 +528,32 @@ function notifyError(message) {
   line-height: 1.45;
 }
 
-.status-chip {
-  flex: 0 0 auto;
+.profile-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  margin-top: 8px;
+  color: rgba(255, 255, 255, 0.66);
+  font-size: 0.78rem;
+  font-weight: 600;
+  line-height: 1;
+}
+
+:global(.v-theme--light) .profile-status {
+  color: rgba(23, 38, 34, 0.62);
+}
+
+.profile-status-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  background: rgb(var(--v-theme-secondary));
+  opacity: 0.68;
+}
+
+.profile-status.is-ready .profile-status-dot {
+  background: rgb(var(--v-theme-success));
+  opacity: 1;
 }
 
 .chat-header-actions {
@@ -795,7 +818,6 @@ function notifyError(message) {
     margin-left: auto;
   }
 
-  .status-chip,
   .reset-button :deep(.v-btn__content span),
   .recommendations-button :deep(.v-btn__content span) {
     display: none;
@@ -808,6 +830,10 @@ function notifyError(message) {
 
   .survey-subtitle {
     font-size: 0.82rem;
+  }
+
+  .profile-status {
+    font-size: 0.72rem;
   }
 
   .messages-panel {
