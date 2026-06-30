@@ -189,9 +189,13 @@ const visibleMessages = computed(() => {
 });
 
 const canSend = computed(() => draft.value.trim().length > 0 && !loading.value);
-const canViewRecommendations = computed(() =>
-  isProfileReadyForRecommendations(profile.value)
-);
+const canViewRecommendations = computed(() => {
+  if (!activeSessionId.value || profile.value?.sessionId !== activeSessionId.value) {
+    return false;
+  }
+
+  return isProfileReadyForRecommendations(profile.value);
+});
 
 watch(
   () => authStore.currentUser,

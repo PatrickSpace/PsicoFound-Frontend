@@ -70,16 +70,34 @@ async function sendProfileChatMessage(request) {
   });
 
   const savedProfile = await getCurrentProfile(profileRef);
-  const currentProfile = getProfileForActiveSession(
+  let currentProfile = getProfileForActiveSession(
       savedProfile,
       chatSession.id,
   );
+  const isOpeningLowInformationMessage =
+    isLowInformationMessage(normalizePlainText(message)) &&
+    !(await hasSubstantiveUserMessage(messagesRef, chatSession.id));
+
+  if (isOpeningLowInformationMessage) {
+    currentProfile = {
+      ...PROFILE_DEFAULTS,
+      sessionId: chatSession.id,
+    };
+  }
+
   const profileHadData = hasProfileSignal(currentProfile);
   const crisisResult = getCrisisResult(message);
   let cleanData;
   let reply;
 
-  if (crisisResult) {
+  if (isOpeningLowInformationMessage) {
+    cleanData = {};
+    reply = [
+      "Hola, gracias por escribir.",
+      "Para orientarte mejor, cuentame que te trae por aqui",
+      "o que tipo de apoyo estas buscando.",
+    ].join(" ");
+  } else if (crisisResult) {
     cleanData = sanitizeModelProfileData(crisisResult.data);
     reply = crisisResult.reply;
   } else {
@@ -435,6 +453,21 @@ function isIndifferentValue(value = "") {
     "no tengo preferencia",
     "no importa",
   ].includes(normalizePlainText(value));
+}
+
+async function hasSubstantiveUserMessage(messagesRef, sessionId) {
+  const snapshot = await messagesRef
+      .orderBy("createdAt", "desc")
+      .limit(30)
+      .get();
+
+  return snapshot.docs
+      .map((doc) => doc.data())
+      .filter((item) => item.sessionId === sessionId && item.role === "user")
+      .some((item) => {
+        const normalizedText = normalizePlainText(item.text);
+        return normalizedText && !isLowInformationMessage(normalizedText);
+      });
 }
 
 function getProfileStateForLogs(profile = {}) {
