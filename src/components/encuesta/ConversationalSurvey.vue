@@ -38,6 +38,17 @@
           >
             Reiniciar
           </v-btn>
+          <v-btn
+            v-if="canViewRecommendations"
+            class="recommendations-button"
+            variant="text"
+            color="secondary"
+            size="small"
+            append-icon="mdi-arrow-right"
+            @click="goToRecommendations"
+          >
+            Ver psicólogos
+          </v-btn>
         </div>
       </div>
 
@@ -119,17 +130,6 @@
         </div>
       </div>
 
-      <div class="survey-actions">
-        <v-btn
-          color="secondary"
-          variant="flat"
-          append-icon="mdi-account-search"
-          :disabled="!canViewRecommendations"
-          @click="goToRecommendations"
-        >
-          Ver psicólogos recomendados
-        </v-btn>
-      </div>
     </div>
   </section>
 </template>
@@ -540,7 +540,8 @@ function notifyError(message) {
   gap: 8px;
 }
 
-.reset-button {
+.reset-button,
+.recommendations-button {
   min-width: 0;
 }
 
@@ -729,15 +730,6 @@ function notifyError(message) {
   color: rgba(23, 38, 34, 0.58);
 }
 
-.survey-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px;
-  justify-content: flex-end;
-  width: min(760px, calc(100% - 36px));
-  margin: 0 auto 18px;
-}
-
 .typing-bubble {
   min-width: 72px;
 }
@@ -804,7 +796,8 @@ function notifyError(message) {
   }
 
   .status-chip,
-  .reset-button :deep(.v-btn__content span) {
+  .reset-button :deep(.v-btn__content span),
+  .recommendations-button :deep(.v-btn__content span) {
     display: none;
   }
 
@@ -839,8 +832,7 @@ function notifyError(message) {
     line-height: 1.45;
   }
 
-  .composer-shell,
-  .survey-actions {
+  .composer-shell {
     width: calc(100% - 20px);
   }
 
@@ -859,14 +851,5 @@ function notifyError(message) {
     height: 40px;
   }
 
-  .survey-actions {
-    justify-content: stretch;
-    gap: 8px;
-    margin-bottom: 12px;
-  }
-
-  .survey-actions :deep(.v-btn) {
-    flex: 1 1 100%;
-  }
 }
 </style>
