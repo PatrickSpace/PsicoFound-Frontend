@@ -1,5 +1,5 @@
 <template>
-  <v-app class="bg-diagonal min-dvh-page">
+  <v-app class="survey-page bg-diagonal min-dvh-page">
     <v-app-bar
       app
       class="responsive-app-bar"
@@ -38,6 +38,14 @@ import ConversationalSurvey from "@/components/encuesta/ConversationalSurvey.vue
   display: flex;
   padding-top: 16px;
   padding-bottom: 16px;
+}
+
+.survey-page {
+  background: rgba(18, 39, 42, 0.82) !important;
+}
+
+:global(.v-theme--light) .survey-page {
+  background: rgba(255, 255, 255, 0.88) !important;
 }
 
 @media (max-width: 720px) {
