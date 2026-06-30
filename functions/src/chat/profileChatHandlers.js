@@ -89,6 +89,10 @@ async function sendProfileChatMessage(request) {
 
   const profileHadData = hasProfileSignal(currentProfile);
   const crisisResult = getCrisisResult(message);
+  const indifferentPreferenceField = getIndifferentPreferenceField(
+      currentProfile,
+      normalizedMessage,
+  );
   let cleanData;
   let reply;
 
@@ -98,9 +102,21 @@ async function sendProfileChatMessage(request) {
   } else if (crisisResult) {
     cleanData = sanitizeModelProfileData(crisisResult.data);
     reply = crisisResult.reply;
+  } else if (indifferentPreferenceField) {
+    cleanData = {
+      [indifferentPreferenceField]: "indiferente",
+    };
+    reply = getReplyAfterIndifference({
+      ...currentProfile,
+      ...cleanData,
+    });
   } else {
     const history = await getRecentHistory(messagesRef, chatSession.id);
-    const geminiResult = await askGemini({currentProfile, history});
+    const geminiResult = await askGemini({
+      currentProfile,
+      history,
+      latestUserMessage: message,
+    });
     cleanData = sanitizeModelProfileData(geminiResult.data);
     reply = normalizeReply(geminiResult.reply);
   }
@@ -337,6 +353,41 @@ function getNeutralLowInformationReply(currentProfile = {}) {
     "Hola, gracias por escribir.",
     "Para orientarte mejor, cuentame que te trae por aqui",
     "o que tipo de apoyo estas buscando.",
+  ].join(" ");
+}
+
+function getIndifferentPreferenceField(profile = {}, normalizedMessage = "") {
+  if (!hasIndifferenceSignal(normalizedMessage)) {
+    return "";
+  }
+
+  if (
+    !profile.soloConversar &&
+    (!Array.isArray(profile.temas) || profile.temas.length === 0)
+  ) {
+    return "";
+  }
+
+  const fields = profile.soloConversar ?
+    ["modalidad", "preferenciaGenero", "preferenciaEdad"] :
+    ["modalidad", "preferenciaGenero", "enfoque", "preferenciaEdad"];
+
+  return fields.find((field) => !hasValue(profile[field])) || "";
+}
+
+function getReplyAfterIndifference(nextProfile = {}) {
+  const nextQuestion = getNextProfileQuestion(nextProfile);
+
+  if (nextQuestion) {
+    return [
+      "Listo, lo tomo como sin preferencia.",
+      nextQuestion,
+    ].join(" ");
+  }
+
+  return [
+    "Listo, ya tengo la informacion necesaria.",
+    "Puedes ver los psicologos recomendados cuando quieras.",
   ].join(" ");
 }
 

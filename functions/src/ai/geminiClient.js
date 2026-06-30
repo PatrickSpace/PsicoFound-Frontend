@@ -7,7 +7,7 @@ const {
 } = require("../config");
 const {buildPrompt} = require("./profilePrompt");
 
-async function askGemini({currentProfile, history}) {
+async function askGemini({currentProfile, history, latestUserMessage}) {
   const ai = new GoogleGenAI({
     apiKey: GEMINI_API_KEY.value(),
     httpOptions: {
@@ -21,7 +21,7 @@ async function askGemini({currentProfile, history}) {
   try {
     response = await ai.models.generateContent({
       model: GEMINI_MODEL,
-      contents: buildPrompt({currentProfile, history}),
+      contents: buildPrompt({currentProfile, history, latestUserMessage}),
       config: {
         temperature: 0.2,
         maxOutputTokens: 600,

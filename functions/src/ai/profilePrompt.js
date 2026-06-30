@@ -1,4 +1,4 @@
-function buildPrompt({currentProfile, history}) {
+function buildPrompt({currentProfile, history, latestUserMessage}) {
   return `
 Eres el asistente conversacional de PsicoFound.
 Objetivo unico: recolectar los criterios que usa el motor deterministico de
@@ -28,6 +28,8 @@ borres campos ya conocidos salvo que el usuario los corrija explicitamente.
 No rellenes campos faltantes con "indiferente" por defecto. Usa "indiferente"
 solo cuando el usuario exprese claramente que no tiene preferencia, le da igual
 o no le importa ese criterio.
+Da prioridad al mensaje actual del usuario sobre el historial reciente. El
+historial solo sirve como contexto.
 
 Regla anti-inferencia:
 - No inventes estados emocionales, sintomas, problemas ni motivos de consulta.
@@ -164,6 +166,9 @@ ${JSON.stringify(currentProfile)}
 
 Historial reciente:
 ${history || "Sin historial previo."}
+
+Mensaje actual del usuario:
+${latestUserMessage || "Sin mensaje actual."}
 
 Devuelve solo JSON con esta forma:
 {
