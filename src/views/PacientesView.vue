@@ -1,10 +1,11 @@
 <template>
   <LayoutDefault layout>
-    <v-container>
-      <div class="d-flex flex-column flex-md-row justify-space-between ga-4">
+    <v-container class="patients-view">
+      <div class="d-flex flex-column flex-md-row justify-space-between align-md-center ga-4 mb-6">
         <div>
-          <h1 class="text-h4">Pacientes</h1>
-          <p class="text-body-2 text-medium-emphasis mt-2 mb-0">
+          <p class="text-overline text-secondary mb-1">Seguimiento operativo</p>
+          <h1 class="text-h4 font-weight-bold">Pacientes</h1>
+          <p class="text-body-1 text-medium-emphasis mt-2 mb-0">
             Vista operativa de pacientes, perfil inicial y estado del proceso.
           </p>
         </div>
@@ -13,13 +14,12 @@
           variant="tonal"
           prepend-icon="mdi-refresh"
           :loading="loading"
+          class="align-self-start align-self-md-center"
           @click="loadPatients"
         >
           Actualizar
         </v-btn>
       </div>
-
-      <v-divider class="my-5 mx-auto"></v-divider>
 
       <v-alert
         v-if="errorMessage"
@@ -33,37 +33,52 @@
 
       <v-row class="mb-4" align="stretch">
         <v-col cols="12" md="4" class="d-flex">
-          <v-card class="pa-4 card-backgoundcustom flex-grow-1" elevation="2" variant="text">
-            <v-card-title class="text-h6">Pacientes</v-card-title>
-            <v-card-text>
-              <div class="text-h4">{{ patients.length }}</div>
-              <div class="text-body-2 text-medium-emphasis">Registrados</div>
-            </v-card-text>
+          <v-card class="pa-4 card-backgoundcustom flex-grow-1 patients-stat-card" elevation="2" variant="text">
+            <div class="d-flex align-center justify-space-between ga-3">
+              <div>
+                <div class="text-body-2 text-medium-emphasis">Pacientes</div>
+                <div class="text-h4 font-weight-bold mt-1">{{ patients.length }}</div>
+                <div class="text-caption text-medium-emphasis">Registrados</div>
+              </div>
+              <v-avatar color="secondary" variant="tonal" rounded="lg">
+                <v-icon>mdi-account-group-outline</v-icon>
+              </v-avatar>
+            </div>
           </v-card>
         </v-col>
         <v-col cols="12" md="4" class="d-flex">
-          <v-card class="pa-4 card-backgoundcustom flex-grow-1" elevation="2" variant="text">
-            <v-card-title class="text-h6">Perfiles listos</v-card-title>
-            <v-card-text>
-              <div class="text-h4">{{ completedProfilesCount }}</div>
-              <div class="text-body-2 text-medium-emphasis">Con entrevista suficiente</div>
-            </v-card-text>
+          <v-card class="pa-4 card-backgoundcustom flex-grow-1 patients-stat-card" elevation="2" variant="text">
+            <div class="d-flex align-center justify-space-between ga-3">
+              <div>
+                <div class="text-body-2 text-medium-emphasis">Perfiles listos</div>
+                <div class="text-h4 font-weight-bold mt-1">{{ completedProfilesCount }}</div>
+                <div class="text-caption text-medium-emphasis">Con entrevista suficiente</div>
+              </div>
+              <v-avatar color="success" variant="tonal" rounded="lg">
+                <v-icon>mdi-account-check-outline</v-icon>
+              </v-avatar>
+            </div>
           </v-card>
         </v-col>
         <v-col cols="12" md="4" class="d-flex">
-          <v-card class="pa-4 card-backgoundcustom flex-grow-1" elevation="2" variant="text">
-            <v-card-title class="text-h6">Terapias activas</v-card-title>
-            <v-card-text>
-              <div class="text-h4">{{ activeTherapiesCount }}</div>
-              <div class="text-body-2 text-medium-emphasis">Procesos en curso</div>
-            </v-card-text>
+          <v-card class="pa-4 card-backgoundcustom flex-grow-1 patients-stat-card" elevation="2" variant="text">
+            <div class="d-flex align-center justify-space-between ga-3">
+              <div>
+                <div class="text-body-2 text-medium-emphasis">Terapias activas</div>
+                <div class="text-h4 font-weight-bold mt-1">{{ activeTherapiesCount }}</div>
+                <div class="text-caption text-medium-emphasis">Procesos en curso</div>
+              </div>
+              <v-avatar color="primary" variant="tonal" rounded="lg">
+                <v-icon>mdi-heart-pulse</v-icon>
+              </v-avatar>
+            </div>
           </v-card>
         </v-col>
       </v-row>
 
       <v-card class="pa-4 card-backgoundcustom" elevation="2" variant="text">
-        <v-card-title class="text-h5">
-          <v-icon size="small">mdi-account-group-outline</v-icon>
+        <v-card-title class="d-flex align-center ga-2 text-h6 font-weight-bold px-0 pt-0">
+          <v-icon color="secondary" size="small">mdi-account-group-outline</v-icon>
           Seguimiento operativo
         </v-card-title>
         <v-card-text>
@@ -75,6 +90,8 @@
             prepend-inner-icon="mdi-magnify"
             label="Buscar paciente, correo, terapeuta o tema"
             class="mb-4"
+            variant="outlined"
+            density="comfortable"
           />
 
           <v-data-table
@@ -82,7 +99,7 @@
             :items="filteredPatients"
             :items-per-page="10"
             :loading="loading"
-            class="card-backgoundcustom"
+            class="card-backgoundcustom patients-table"
           >
             <template #no-data>
               <v-empty-state
@@ -136,6 +153,7 @@
                 icon
                 variant="text"
                 color="secondary"
+                aria-label="Abrir detalle de terapia"
                 :disabled="!item.activeTherapy?.id"
                 @click="openTherapy(item)"
               >
@@ -336,3 +354,27 @@ function isProfileReady(profile) {
   return isProfileReadyForRecommendations(profile);
 }
 </script>
+
+<style scoped>
+.patients-view {
+  max-width: 1180px;
+}
+
+.patients-stat-card {
+  min-height: 124px;
+}
+
+.patients-table {
+  border-radius: 8px;
+}
+
+@media (max-width: 600px) {
+  .patients-view {
+    padding-inline: 16px;
+  }
+
+  .patients-view :deep(.v-card-title) {
+    line-height: 1.25;
+  }
+}
+</style>
