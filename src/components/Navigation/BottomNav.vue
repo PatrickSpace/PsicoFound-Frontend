@@ -44,7 +44,7 @@ const appContext = useAppContextStore();
 
 const navigationByMode = {
   patient: [
-    { name: "Inicio", icon: "mdi-home", link: "/dashboard" },
+    { name: "Inicio", icon: "mdi-view-dashboard-outline", link: "/dashboard" },
     { name: "Sesiones", icon: "mdi-calendar-month", link: "/sesiones" },
     { name: "Progreso", icon: "mdi-finance", link: "/progreso" },
     {

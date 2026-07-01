@@ -46,7 +46,7 @@ const { lgAndUp } = useDisplay();
 
 const navigationByMode = {
   patient: [
-    { name: "Home", icon: "mdi-home", link: "/dashboard" },
+    { name: "Home", icon: "mdi-view-dashboard-outline", link: "/dashboard" },
     { name: "Mis sesiones", icon: "mdi-calendar-month", link: "/sesiones" },
     { name: "Progreso en terapia", icon: "mdi-finance", link: "/progreso" },
     {
