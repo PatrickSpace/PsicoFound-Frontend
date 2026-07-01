@@ -1,23 +1,23 @@
 <template>
   <LayoutDefault layout>
-    <v-container>
-      <div class="d-flex flex-column flex-md-row justify-space-between ga-4">
+    <v-container class="progress-view">
+      <div class="d-flex flex-column flex-md-row justify-space-between align-md-center ga-4 mb-6">
         <div>
-          <h1 class="text-h4">Progreso</h1>
-          <p class="text-body-2 text-medium-emphasis mt-2 mb-0">
+          <p class="text-overline text-secondary mb-1">Seguimiento terapéutico</p>
+          <h1 class="text-h4 font-weight-bold">Progreso</h1>
+          <p class="text-body-1 text-medium-emphasis mt-2 mb-0">
             Tu perfil inicial y tus sesiones ayudan a construir continuidad en tu proceso.
           </p>
         </div>
         <v-chip
           :color="isProfileReady ? 'success' : 'warning'"
           variant="tonal"
-          prepend-icon="mdi-account-heart-outline"
+          :prepend-icon="isProfileReady ? 'mdi-account-check-outline' : 'mdi-clock-outline'"
           class="align-self-start"
         >
           {{ isProfileReady ? "Perfil listo" : "Perfil en progreso" }}
         </v-chip>
       </div>
-      <v-divider class="my-5 mx-auto"></v-divider>
 
       <v-alert
         v-if="profileError"
@@ -30,8 +30,8 @@
       </v-alert>
 
       <v-card class="pa-4 mb-6 card-backgoundcustom" elevation="2" variant="text">
-        <v-card-title class="text-h5">
-          <v-icon size="small">mdi-clipboard-account-outline</v-icon>
+        <v-card-title class="d-flex align-center ga-2 text-h6 font-weight-bold px-0 pt-0">
+          <v-icon color="secondary" size="small">mdi-clipboard-account-outline</v-icon>
           Perfil psicológico inicial
         </v-card-title>
         <v-card-text>
@@ -45,10 +45,15 @@
             v-else-if="!profile"
             headline="Aun no tienes perfil inicial"
             text="Completa la entrevista conversacional para generar una primera orientación no diagnóstica."
-            icon="mdi-message-question-outline"
+              icon="mdi-message-question-outline"
           >
             <template #actions>
-              <v-btn color="secondary" to="/encuesta" prepend-icon="mdi-chat-outline">
+              <v-btn
+                color="secondary"
+                variant="tonal"
+                to="/encuesta"
+                prepend-icon="mdi-chat-outline"
+              >
                 Completar entrevista
               </v-btn>
             </template>
@@ -107,8 +112,8 @@
       </v-card>
 
       <v-card class="pa-4 mb-6 card-backgoundcustom" elevation="2" variant="text">
-        <v-card-title class="text-h5">
-          <v-icon size="small">mdi-bullseye-arrow</v-icon>
+        <v-card-title class="d-flex align-center ga-2 text-h6 font-weight-bold px-0 pt-0">
+          <v-icon color="secondary" size="small">mdi-bullseye-arrow</v-icon>
           Objetivos terapéuticos
         </v-card-title>
         <v-card-text>
@@ -126,21 +131,45 @@
 
           <v-row class="mb-4" align="stretch">
             <v-col cols="12" md="4" class="d-flex">
-              <v-card class="pa-3 card-backgoundcustom flex-grow-1" elevation="2" variant="text">
-                <div class="text-h5">{{ goals.length }}</div>
-                <div class="text-caption">Objetivos registrados</div>
+              <v-card class="pa-4 card-backgoundcustom flex-grow-1 progress-stat-card" elevation="2" variant="text">
+                <div class="d-flex align-center justify-space-between ga-3">
+                  <div>
+                    <div class="text-body-2 text-medium-emphasis">Registrados</div>
+                    <div class="text-h4 font-weight-bold mt-1">{{ goals.length }}</div>
+                    <div class="text-caption text-medium-emphasis">Objetivos totales</div>
+                  </div>
+                  <v-avatar color="secondary" variant="tonal" rounded="lg">
+                    <v-icon>mdi-flag-outline</v-icon>
+                  </v-avatar>
+                </div>
               </v-card>
             </v-col>
             <v-col cols="12" md="4" class="d-flex">
-              <v-card class="pa-3 card-backgoundcustom flex-grow-1" elevation="2" variant="text">
-                <div class="text-h5">{{ activeGoalsCount }}</div>
-                <div class="text-caption">En progreso</div>
+              <v-card class="pa-4 card-backgoundcustom flex-grow-1 progress-stat-card" elevation="2" variant="text">
+                <div class="d-flex align-center justify-space-between ga-3">
+                  <div>
+                    <div class="text-body-2 text-medium-emphasis">En progreso</div>
+                    <div class="text-h4 font-weight-bold mt-1">{{ activeGoalsCount }}</div>
+                    <div class="text-caption text-medium-emphasis">Seguimiento activo</div>
+                  </div>
+                  <v-avatar color="warning" variant="tonal" rounded="lg">
+                    <v-icon>mdi-chart-timeline-variant</v-icon>
+                  </v-avatar>
+                </div>
               </v-card>
             </v-col>
             <v-col cols="12" md="4" class="d-flex">
-              <v-card class="pa-3 card-backgoundcustom flex-grow-1" elevation="2" variant="text">
-                <div class="text-h5">{{ achievedGoalsCount }}</div>
-                <div class="text-caption">Alcanzados</div>
+              <v-card class="pa-4 card-backgoundcustom flex-grow-1 progress-stat-card" elevation="2" variant="text">
+                <div class="d-flex align-center justify-space-between ga-3">
+                  <div>
+                    <div class="text-body-2 text-medium-emphasis">Alcanzados</div>
+                    <div class="text-h4 font-weight-bold mt-1">{{ achievedGoalsCount }}</div>
+                    <div class="text-caption text-medium-emphasis">Metas completadas</div>
+                  </div>
+                  <v-avatar color="success" variant="tonal" rounded="lg">
+                    <v-icon>mdi-check-decagram-outline</v-icon>
+                  </v-avatar>
+                </div>
               </v-card>
             </v-col>
           </v-row>
@@ -160,16 +189,28 @@
               md="6"
               class="d-flex"
             >
-              <v-card class="goal-card card-backgoundcustom flex-grow-1" elevation="2" variant="text">
-                <v-card-title class="text-subtitle-1">
-                  {{ goal.title }}
-                </v-card-title>
-                <v-card-subtitle>
-                  {{ goal.category || "Proceso terapéutico" }}
-                  <span v-if="goal.targetDate">• meta {{ goal.targetDate }}</span>
-                </v-card-subtitle>
-                <v-card-text>
-                  <p class="mb-3">{{ goal.description || "Sin descripción." }}</p>
+              <v-card class="goal-card card-backgoundcustom flex-grow-1 pa-4" elevation="2" variant="text">
+                <div class="d-flex flex-column flex-sm-row justify-space-between ga-3 mb-3">
+                  <div>
+                    <h2 class="text-subtitle-1 font-weight-bold mb-1">
+                      {{ goal.title }}
+                    </h2>
+                    <div class="text-caption text-medium-emphasis">
+                      {{ goal.category || "Proceso terapéutico" }}
+                      <span v-if="goal.targetDate">• meta {{ goal.targetDate }}</span>
+                    </div>
+                  </div>
+                  <v-chip
+                    :color="goal.status === 'achieved' ? 'success' : 'warning'"
+                    size="small"
+                    variant="tonal"
+                    class="align-self-start"
+                  >
+                    {{ goal.status === "achieved" ? "Alcanzado" : "Activo" }}
+                  </v-chip>
+                </div>
+                <v-card-text class="pa-0">
+                  <p class="mb-4 text-body-2">{{ goal.description || "Sin descripción." }}</p>
                   <v-progress-linear
                     :model-value="Number(goal.progress || 0)"
                     color="secondary"
@@ -178,15 +219,13 @@
                   />
                   <div class="d-flex justify-space-between mt-2">
                     <span class="text-caption">{{ Number(goal.progress || 0) }}%</span>
-                    <v-chip :color="goal.status === 'achieved' ? 'success' : 'warning'" size="small" variant="tonal">
-                      {{ goal.status === "achieved" ? "Alcanzado" : "Activo" }}
-                    </v-chip>
+                    <span class="text-caption text-medium-emphasis">avance registrado</span>
                   </div>
                   <p v-if="goal.lastNote" class="text-caption text-medium-emphasis mt-3">
                     Última nota: {{ goal.lastNote }}
                   </p>
                 </v-card-text>
-                <v-card-actions>
+                <v-card-actions class="px-0 pb-0 pt-4">
                   <v-btn
                     color="secondary"
                     variant="tonal"
@@ -201,7 +240,9 @@
           </v-row>
 
           <v-card class="pa-4 mt-4 card-backgoundcustom" elevation="2" variant="text">
-            <v-card-title class="text-subtitle-1">Crear objetivo</v-card-title>
+            <v-card-title class="text-subtitle-1 font-weight-bold px-0 pt-0">
+              Crear objetivo
+            </v-card-title>
             <v-card-text>
               <v-alert
                 v-if="!therapist && !activeTherapy"
@@ -221,6 +262,7 @@
                     item-value="value"
                     label="Paciente / terapia"
                     variant="outlined"
+                    density="comfortable"
                   />
                 </v-col>
                 <v-col cols="12" :md="therapist ? 6 : 12">
@@ -228,6 +270,7 @@
                     v-model="goalForm.title"
                     label="Objetivo"
                     variant="outlined"
+                    density="comfortable"
                   />
                 </v-col>
                 <v-col cols="12" md="6">
@@ -235,6 +278,7 @@
                     v-model="goalForm.category"
                     label="Categoría"
                     variant="outlined"
+                    density="comfortable"
                   />
                 </v-col>
                 <v-col cols="12" md="6">
@@ -243,6 +287,7 @@
                     label="Fecha objetivo"
                     type="date"
                     variant="outlined"
+                    density="comfortable"
                   />
                 </v-col>
                 <v-col cols="12">
@@ -251,6 +296,7 @@
                     label="Descripción"
                     rows="3"
                     variant="outlined"
+                    density="comfortable"
                   />
                 </v-col>
               </v-row>
@@ -259,7 +305,7 @@
               <v-spacer />
               <v-btn
                 color="secondary"
-                variant="flat"
+                variant="tonal"
                 prepend-icon="mdi-plus"
                 :loading="savingGoal"
                 :disabled="!canCreateGoal"
@@ -273,8 +319,8 @@
       </v-card>
 
       <v-card class="pa-4 mb-6 card-backgoundcustom" elevation="2" variant="text">
-        <v-card-title class="text-h5">
-          <v-icon size="small">mdi-emoticon-outline</v-icon>
+        <v-card-title class="d-flex align-center ga-2 text-h6 font-weight-bold px-0 pt-0">
+          <v-icon color="secondary" size="small">mdi-emoticon-outline</v-icon>
           Registro emocional
         </v-card-title>
         <v-card-text>
@@ -292,21 +338,45 @@
 
           <v-row class="mb-4" align="stretch">
             <v-col cols="12" md="4" class="d-flex">
-              <v-card class="pa-3 card-backgoundcustom flex-grow-1" elevation="2" variant="text">
-                <div class="text-h5">{{ checkins.length }}</div>
-                <div class="text-caption">Registros emocionales</div>
+              <v-card class="pa-4 card-backgoundcustom flex-grow-1 progress-stat-card" elevation="2" variant="text">
+                <div class="d-flex align-center justify-space-between ga-3">
+                  <div>
+                    <div class="text-body-2 text-medium-emphasis">Registros</div>
+                    <div class="text-h4 font-weight-bold mt-1">{{ checkins.length }}</div>
+                    <div class="text-caption text-medium-emphasis">Check-ins emocionales</div>
+                  </div>
+                  <v-avatar color="secondary" variant="tonal" rounded="lg">
+                    <v-icon>mdi-note-text-outline</v-icon>
+                  </v-avatar>
+                </div>
               </v-card>
             </v-col>
             <v-col cols="12" md="4" class="d-flex">
-              <v-card class="pa-3 card-backgoundcustom flex-grow-1" elevation="2" variant="text">
-                <div class="text-h5">{{ averageIntensity }}</div>
-                <div class="text-caption">Intensidad promedio</div>
+              <v-card class="pa-4 card-backgoundcustom flex-grow-1 progress-stat-card" elevation="2" variant="text">
+                <div class="d-flex align-center justify-space-between ga-3">
+                  <div>
+                    <div class="text-body-2 text-medium-emphasis">Intensidad</div>
+                    <div class="text-h4 font-weight-bold mt-1">{{ averageIntensity }}</div>
+                    <div class="text-caption text-medium-emphasis">Promedio registrado</div>
+                  </div>
+                  <v-avatar color="warning" variant="tonal" rounded="lg">
+                    <v-icon>mdi-pulse</v-icon>
+                  </v-avatar>
+                </div>
               </v-card>
             </v-col>
             <v-col cols="12" md="4" class="d-flex">
-              <v-card class="pa-3 card-backgoundcustom flex-grow-1" elevation="2" variant="text">
-                <div class="text-h5">{{ latestMood }}</div>
-                <div class="text-caption">Último estado</div>
+              <v-card class="pa-4 card-backgoundcustom flex-grow-1 progress-stat-card" elevation="2" variant="text">
+                <div class="d-flex align-center justify-space-between ga-3">
+                  <div>
+                    <div class="text-body-2 text-medium-emphasis">Último estado</div>
+                    <div class="text-h5 font-weight-bold mt-1">{{ latestMood }}</div>
+                    <div class="text-caption text-medium-emphasis">Registro reciente</div>
+                  </div>
+                  <v-avatar color="success" variant="tonal" rounded="lg">
+                    <v-icon>mdi-emoticon-outline</v-icon>
+                  </v-avatar>
+                </div>
               </v-card>
             </v-col>
           </v-row>
@@ -317,7 +387,9 @@
             elevation="2"
             variant="text"
           >
-            <v-card-title class="text-subtitle-1">Agregar registro</v-card-title>
+            <v-card-title class="text-subtitle-1 font-weight-bold px-0 pt-0">
+              Agregar registro
+            </v-card-title>
             <v-card-text>
               <v-alert
                 v-if="!activeTherapy"
@@ -335,6 +407,7 @@
                     :items="moodOptions"
                     label="Estado principal"
                     variant="outlined"
+                    density="comfortable"
                   />
                 </v-col>
                 <v-col cols="12" md="6">
@@ -346,6 +419,7 @@
                     chips
                     closable-chips
                     variant="outlined"
+                    density="comfortable"
                   />
                 </v-col>
                 <v-col cols="12" md="4">
@@ -387,6 +461,7 @@
                     label="Nota personal"
                     rows="3"
                     variant="outlined"
+                    density="comfortable"
                   />
                 </v-col>
               </v-row>
@@ -395,7 +470,7 @@
               <v-spacer />
               <v-btn
                 color="secondary"
-                variant="flat"
+                variant="tonal"
                 prepend-icon="mdi-content-save-outline"
                 :loading="savingCheckin"
                 :disabled="!canCreateCheckin"
@@ -455,8 +530,8 @@
       </v-card>
 
       <v-card class="pa-4 card-backgoundcustom" elevation="2" variant="text">
-        <v-card-title class="text-h5">
-          <v-icon size="small">mdi-calendar-check-outline</v-icon>
+        <v-card-title class="d-flex align-center ga-2 text-h6 font-weight-bold px-0 pt-0">
+          <v-icon color="secondary" size="small">mdi-calendar-check-outline</v-icon>
           Sesiones y citas
         </v-card-title>
         <v-card-text>
@@ -467,9 +542,9 @@
 
       <v-dialog v-model="goalProgressDialog" max-width="620">
         <v-card class="pa-4 card-backgoundcustom" elevation="2" variant="text">
-          <v-card-title class="text-h5">Actualizar objetivo</v-card-title>
+          <v-card-title class="text-h6 font-weight-bold px-0 pt-0">Actualizar objetivo</v-card-title>
           <v-card-text>
-            <p class="mb-4">{{ selectedGoal?.title }}</p>
+            <p class="mb-4 text-body-2 text-medium-emphasis">{{ selectedGoal?.title }}</p>
             <v-slider
               v-model="goalProgressForm.progress"
               label="Avance"
@@ -484,6 +559,7 @@
               label="Nota de avance"
               rows="3"
               variant="outlined"
+              density="comfortable"
             />
             <v-checkbox
               v-model="goalProgressForm.achieved"
@@ -498,7 +574,7 @@
             </v-btn>
             <v-btn
               color="secondary"
-              variant="flat"
+              variant="tonal"
               :loading="savingGoalProgress"
               @click="saveGoalProgress"
             >
@@ -1007,6 +1083,14 @@ async function saveGoalProgress() {
 </script>
 
 <style scoped>
+.progress-view {
+  max-width: 1180px;
+}
+
+.progress-stat-card {
+  min-height: 124px;
+}
+
 .goal-card {
   border-radius: 8px;
 }
@@ -1014,5 +1098,15 @@ async function saveGoalProgress() {
 .checkin-item {
   border: 1px solid rgba(var(--v-border-color), var(--v-border-opacity));
   border-radius: 8px;
+}
+
+@media (max-width: 600px) {
+  .progress-view {
+    padding-inline: 16px;
+  }
+
+  .progress-view :deep(.v-card-title) {
+    line-height: 1.25;
+  }
 }
 </style>
