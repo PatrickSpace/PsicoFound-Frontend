@@ -23,10 +23,10 @@
       </v-btn>
       -->
     </v-app-bar>
-    <v-main>
+    <v-main class="therapist-match-main safe-bottom-mobile">
       <v-alert
         v-if="isCrisisMode"
-        class="ma-6"
+        class="mx-auto mt-6 therapist-match-alert"
         color="error"
         variant="tonal"
         icon="mdi-alert-circle-outline"
@@ -39,7 +39,7 @@
       </v-alert>
       <v-alert
         v-if="errorMessage"
-        class="ma-6"
+        class="mx-auto mt-6 therapist-match-alert"
         color="error"
         variant="tonal"
         icon="mdi-alert-outline"
@@ -47,10 +47,24 @@
       >
         {{ errorMessage }}
       </v-alert>
+      <v-container class="therapist-match-header">
+        <div>
+          <p class="text-overline text-secondary mb-1">Recomendaciones</p>
+          <h1 class="text-h4 font-weight-bold theme-contrast-text">
+            Psicólogos afines a tu perfil
+          </h1>
+          <p class="text-body-1 text-medium-emphasis mt-2 mb-0">
+            Revisa las opciones sugeridas y agenda una primera cita cuando encuentres una buena conexión.
+          </p>
+        </div>
+      </v-container>
       <div v-if="loading" class="pa-6 d-flex justify-center">
-        <v-progress-circular indeterminate color="secondary" />
+        <v-card class="pa-6 card-backgoundcustom therapist-loading-card" elevation="2" variant="text">
+          <v-progress-circular indeterminate color="secondary" />
+          <span class="text-body-2 text-medium-emphasis">Buscando psicólogos compatibles...</span>
+        </v-card>
       </div>
-      <TerapeutaLista :terapeutas="therapists" />
+      <TerapeutaLista v-else :terapeutas="therapists" />
     </v-main>
   </v-app>
 </template>
@@ -99,3 +113,33 @@ onMounted(() => {
 });
 
 </script>
+
+<style scoped>
+.therapist-match-main {
+  padding-top: 24px;
+}
+
+.therapist-match-alert,
+.therapist-match-header {
+  max-width: 1120px;
+}
+
+.therapist-loading-card {
+  align-items: center;
+  display: flex;
+  gap: 16px;
+  justify-content: center;
+  max-width: 520px;
+  width: 100%;
+}
+
+@media (max-width: 600px) {
+  .therapist-match-main {
+    padding-top: 12px;
+  }
+
+  .therapist-match-header {
+    padding-inline: 16px;
+  }
+}
+</style>

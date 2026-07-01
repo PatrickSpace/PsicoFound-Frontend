@@ -6,9 +6,10 @@
           <v-card
             v-for="therapist in topTherapists"
             :key="therapist.id"
-            rounded="xl"
-            elevation="6"
+            rounded="lg"
+            elevation="2"
             class="therapist-card card-backgoundcustom"
+            variant="text"
           >
             <v-card-text class="pa-0">
               <v-row align="stretch" class="ma-0">
@@ -17,7 +18,7 @@
                   md="3"
                   lg="2"
                   xl="2"
-                  class="w-100 d-flex align-center justify-center px-4 py-6"
+                  class="therapist-media w-100 d-flex align-center justify-center px-4 py-6"
                   :style="{ background: backgroundStyle(therapist) }"
                 >
                   <div
@@ -35,7 +36,7 @@
                       </v-icon>
                     </v-avatar>
 
-                    <div class="d-md-none">
+                    <div class="d-md-none therapist-mobile-heading">
                       <div class="text-subtitle-1 font-weight-bold">
                         {{ therapist.nombre }}
                       </div>
@@ -47,6 +48,15 @@
                           >• {{ therapist.edad }} años</span
                         >
                       </div>
+                      <v-chip
+                        class="mt-2"
+                        size="x-small"
+                        color="warning"
+                        variant="tonal"
+                        prepend-icon="mdi-star-circle"
+                      >
+                        Recomendado
+                      </v-chip>
                     </div>
                   </div>
                 </v-col>
@@ -75,7 +85,7 @@
                     </v-chip>
                   </div>
 
-                  <div class="text-body-2 text-medium-emphasis mb-3">
+                  <div class="text-body-2 text-medium-emphasis mb-3 therapist-description">
                     {{ therapist.description }}
                   </div>
 
@@ -136,6 +146,7 @@
                         block
                         color="secondary"
                         rounded="lg"
+                        variant="tonal"
                         append-icon="mdi-arrow-right"
                         @click="openAppointmentDialog(therapist)"
                       >
@@ -234,6 +245,14 @@ function openAppointmentDialog(therapist) {
   overflow: hidden;
 }
 
+.therapist-media {
+  min-height: 180px;
+}
+
+.therapist-description {
+  line-height: 1.55;
+}
+
 @media (max-width: 600px) {
   .therapist-list-container {
     padding: 12px;
@@ -246,6 +265,10 @@ function openAppointmentDialog(therapist) {
 
   .therapist-card :deep(.v-col) {
     padding: 14px !important;
+  }
+
+  .therapist-media {
+    min-height: 148px;
   }
 
   .therapist-card :deep(.v-alert) {
