@@ -250,6 +250,7 @@ Dejar el MVP listo para pruebas reales.
 - [ ] Ejecutar tests de Functions.
 - [ ] Deploy de Functions si hubo cambios.
 - [ ] Deploy de reglas Firestore si hubo cambios.
+- [ ] Deploy de indices Firestore si hubo cambios.
 - [ ] Push a `main` para publicar en Vercel.
 
 ### Criterio De Salida
@@ -281,6 +282,7 @@ manuales no documentados.
 - [ ] Progreso y herramientas funcionan sin errores de permisos.
 - [ ] Admin puede habilitar psicologos.
 - [ ] Reglas Firestore publicadas.
+- [ ] Indices Firestore publicados.
 - [ ] Functions publicadas si cambiaron.
 - [ ] Build de frontend exitoso.
 - [ ] Vercel publica `main`.
