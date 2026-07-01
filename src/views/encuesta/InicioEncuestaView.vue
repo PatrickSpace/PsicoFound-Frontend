@@ -6,28 +6,38 @@
       color="transparent"
       :elevation="0"
     >
-      <v-app-bar-title class="theme-contrast-text">PsicoFound</v-app-bar-title>
+      <v-app-bar-title class="theme-contrast-text font-weight-bold">PsicoFound</v-app-bar-title>
       <v-spacer></v-spacer>
-      <v-btn text class="theme-contrast-text" to="/login" rounded="0" variant="tonal">
+      <v-btn class="theme-contrast-text" to="/login" variant="tonal">
         Iniciar sesión
       </v-btn>
-      <v-btn text class="theme-contrast-text" to="/registro">Registrarse</v-btn>
+      <v-btn class="theme-contrast-text" to="/registro" variant="text">
+        Registrarse
+      </v-btn>
     </v-app-bar>
 
     <v-main class="min-dvh-page safe-bottom-mobile">
       <v-container class="intro-container text-center">
         <div class="intro-copy">
+          <v-avatar
+            color="secondary"
+            variant="tonal"
+            rounded="lg"
+            size="64"
+            class="mb-5"
+          >
+            <v-icon size="32">mdi-chat-question-outline</v-icon>
+          </v-avatar>
           <h1 class="responsive-title-lg theme-contrast-text font-weight-bold">
-            Cuentanos mas sobre tí
+            Cuéntanos más sobre ti
           </h1>
           <p class="intro-description theme-contrast-text">
-            Te ayudaremos a elegir a un terapeuta a través de una breve
-            encuesta.
+            Te ayudaremos a encontrar psicólogos afines con una conversación breve y clara.
           </p>
           <v-btn
             to="encuesta"
-            rounded="0"
-            class="theme-contrast-text text-subtitle-1"
+            color="secondary"
+            class="text-subtitle-1"
             variant="tonal"
             append-icon="mdi-arrow-right"
             size="large"
@@ -79,5 +89,21 @@ export default {
   font-size: 0.95rem;
   line-height: 1.55;
   opacity: 0.86;
+}
+
+@media (max-width: 600px) {
+  .intro-container {
+    gap: 36px;
+    padding-block: 44px 20px;
+  }
+
+  .intro-description {
+    margin-bottom: 24px;
+  }
+
+  .intro-footnote {
+    font-size: 0.88rem;
+    padding-inline: 8px;
+  }
 }
 </style>
