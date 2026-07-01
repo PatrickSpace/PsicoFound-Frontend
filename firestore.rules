@@ -53,6 +53,41 @@ service cloud.firestore {
         );
     }
 
+    function incomingNotificationHasTherapy() {
+      return request.resource.data.metadata is map &&
+        request.resource.data.metadata.terapiaId is string &&
+        request.resource.data.metadata.terapiaId != "" &&
+        exists(
+          /databases/$(database)/documents/terapias/$(request.resource.data.metadata.terapiaId)
+        );
+    }
+
+    function incomingNotificationFromPatientToTherapist() {
+      return incomingNotificationHasTherapy() &&
+        get(
+          /databases/$(database)/documents/terapias/$(request.resource.data.metadata.terapiaId)
+        ).data.pacienteUid == request.auth.uid &&
+        request.resource.data.metadata.terapeutaId is string &&
+        exists(
+          /databases/$(database)/documents/therapists/$(request.resource.data.metadata.terapeutaId)
+        ) &&
+        get(
+          /databases/$(database)/documents/therapists/$(request.resource.data.metadata.terapeutaId)
+        ).data.uid == request.resource.data.recipientUid;
+    }
+
+    function incomingNotificationFromTherapistToPatient() {
+      return incomingNotificationHasTherapy() &&
+        assignedTherapist(
+          get(
+            /databases/$(database)/documents/terapias/$(request.resource.data.metadata.terapiaId)
+          ).data.terapeutaId
+        ) &&
+        get(
+          /databases/$(database)/documents/terapias/$(request.resource.data.metadata.terapiaId)
+        ).data.pacienteUid == request.resource.data.recipientUid;
+    }
+
     match /users/{uid} {
       allow read: if isOwner(uid) || isAdmin();
       allow create: if isOwner(uid) || isAdmin();
@@ -101,11 +136,17 @@ service cloud.firestore {
       allow create: if signedIn() &&
         request.resource.data.actorUid == request.auth.uid &&
         request.resource.data.recipientUid is string &&
-        request.resource.data.recipientUid != "";
+        request.resource.data.recipientUid != "" &&
+        (
+          incomingNotificationFromPatientToTherapist() ||
+          incomingNotificationFromTherapistToPatient() ||
+          isAdmin()
+        );
       allow update: if signedIn() &&
         resource.data.recipientUid == request.auth.uid &&
         request.resource.data.recipientUid == resource.data.recipientUid &&
-        request.resource.data.actorUid == resource.data.actorUid;
+        request.resource.data.actorUid == resource.data.actorUid &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(["readAt"]);
       allow delete: if false;
     }
 
