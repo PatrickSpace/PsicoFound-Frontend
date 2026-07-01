@@ -114,6 +114,21 @@
                   {{ message.error ? "No enviado" : "Enviando..." }}
                 </div>
               </div>
+              <div
+                v-if="message.role !== 'user' && getMessageOptions(message).length"
+                class="message-options"
+              >
+                <button
+                  v-for="option in getMessageOptions(message)"
+                  :key="`${message.id}-${option.label}-${option.value}`"
+                  type="button"
+                  class="message-option"
+                  :disabled="loading"
+                  @click="handleOptionClick(option)"
+                >
+                  {{ option.label }}
+                </button>
+              </div>
             </div>
           </div>
 
@@ -209,6 +224,13 @@ const welcomeMessage = {
   role: "assistant",
   text:
     "Hola, soy PsicoFound. Cuéntame qué tipo de apoyo buscas.",
+  suggestedOptions: [
+    { label: "Ansiedad", value: "Ansiedad", field: "temas" },
+    { label: "Depresión", value: "Depresión", field: "temas" },
+    { label: "Autoestima", value: "Problemas de autoestima", field: "temas" },
+    { label: "Pareja", value: "Problemas de pareja", field: "temas" },
+    { label: "Solo conversar", value: "Solo quiero conversar", field: "temas" },
+  ],
 };
 
 const visibleMessages = computed(() => {
@@ -349,6 +371,17 @@ async function handleSubmit() {
 
   draft.value = "";
 
+  await sendChatMessage(message);
+}
+
+async function handleOptionClick(option) {
+  const message = (option?.value || option?.label || "").toString().trim();
+
+  if (!message || loading.value) {
+    return;
+  }
+
+  draft.value = "";
   await sendChatMessage(message);
 }
 
@@ -499,6 +532,12 @@ function getMessageCreatedAt(message) {
 function goToRecommendations() {
   applyProfileToTerapiaStore(profile.value, terapiaStore);
   router.push("/elegirterapeuta");
+}
+
+function getMessageOptions(message) {
+  return Array.isArray(message?.suggestedOptions)
+    ? message.suggestedOptions.filter((option) => option?.label && option?.value)
+    : [];
 }
 
 function formatProfileValue(value) {
@@ -856,6 +895,54 @@ function notifyError(message) {
 
 :global(.v-theme--light) .message-status {
   color: rgba(23, 38, 34, 0.56);
+}
+
+.message-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  margin-top: 9px;
+}
+
+.message-option {
+  min-height: 30px;
+  padding: 6px 10px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 999px;
+  color: rgba(255, 255, 255, 0.86);
+  background: rgba(255, 255, 255, 0.06);
+  box-shadow: 0 8px 20px rgba(0, 18, 20, 0.12);
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 700;
+  line-height: 1.15;
+  transition:
+    background-color 0.18s ease,
+    border-color 0.18s ease,
+    color 0.18s ease,
+    transform 0.18s ease;
+}
+
+.message-option:hover:not(:disabled),
+.message-option:focus-visible:not(:disabled) {
+  border-color: rgba(var(--v-theme-secondary), 0.64);
+  color: rgb(var(--v-theme-on-secondary));
+  background: rgba(var(--v-theme-secondary), 0.7);
+  outline: none;
+  transform: translateY(-1px);
+}
+
+.message-option:disabled {
+  cursor: default;
+  opacity: 0.46;
+}
+
+:global(.v-theme--light) .message-option {
+  color: rgba(23, 38, 34, 0.78);
+  background: rgba(55, 111, 101, 0.08);
+  border-color: rgba(23, 63, 58, 0.12);
+  box-shadow: 0 8px 18px rgba(23, 63, 58, 0.08);
 }
 
 .composer-shell {

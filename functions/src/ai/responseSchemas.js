@@ -3,6 +3,17 @@ function buildProfileChatResponseSchema() {
     type: "OBJECT",
     properties: {
       reply: {type: "STRING"},
+      suggestedOptions: {
+        type: "ARRAY",
+        items: {
+          type: "OBJECT",
+          properties: {
+            label: {type: "STRING"},
+            value: {type: "STRING"},
+            field: {type: "STRING"},
+          },
+        },
+      },
       data: {
         type: "OBJECT",
         properties: {

@@ -45,6 +45,42 @@ const PROFILE_READY_TEXT = {
     "un espacio de escucha profunda, trabajar vinculos/familia, o una mezcla?",
   ].join(" "),
 };
+const PROFILE_OPTION_SETS = {
+  temas: [
+    {label: "Ansiedad", value: "Ansiedad"},
+    {label: "Depresión", value: "Depresión"},
+    {label: "Autoestima", value: "Problemas de autoestima"},
+    {label: "Pareja", value: "Problemas de pareja"},
+    {label: "Familia", value: "Problemas familiares"},
+    {label: "Laboral", value: "Problemas laborales"},
+    {label: "Solo conversar", value: "Solo quiero conversar"},
+  ],
+  modalidad: [
+    {label: "Online", value: "Online"},
+    {label: "Presencial", value: "Presencial"},
+    {label: "Híbrido", value: "Híbrido"},
+    {label: "Cualquier alternativa", value: "Me da igual"},
+  ],
+  preferenciaGenero: [
+    {label: "Mujer", value: "Femenino"},
+    {label: "Hombre", value: "Masculino"},
+    {label: "Cualquier alternativa", value: "Me da igual"},
+  ],
+  enfoque: [
+    {label: "Algo práctico", value: "Algo práctico con herramientas"},
+    {label: "Escucha profunda", value: "Un espacio de escucha profunda"},
+    {label: "Vínculos/familia", value: "Trabajar vínculos o familia"},
+    {label: "Mezcla flexible", value: "Una mezcla flexible"},
+    {label: "Cualquier alternativa", value: "Me da igual"},
+  ],
+  preferenciaEdad: [
+    {label: "18-25", value: "18-25"},
+    {label: "25-35", value: "25-35"},
+    {label: "35-45", value: "35-45"},
+    {label: "+45", value: "+45"},
+    {label: "Cualquier alternativa", value: "Me da igual"},
+  ],
+};
 
 async function getCurrentProfile(profileRef) {
   const profileSnap = await profileRef.get();
@@ -149,6 +185,19 @@ function getNextProfileQuestion(profile = {}) {
   return PROFILE_READY_TEXT[missingField] || "";
 }
 
+function getSuggestedOptionsForProfile(profile = {}) {
+  const missingField = getMissingProfileField(profile);
+
+  if (!missingField) {
+    return [];
+  }
+
+  return (PROFILE_OPTION_SETS[missingField] || []).map((option) => ({
+    ...option,
+    field: missingField,
+  }));
+}
+
 function getMissingProfileField(profile = {}) {
   if (profile.riesgoSuicida) {
     return "";
@@ -210,7 +259,9 @@ function isIndifferentValue(value) {
 module.exports = {
   PROFILE_DEFAULTS,
   finalizeProfileForMatching,
+  getMissingProfileField,
   getNextProfileQuestion,
+  getSuggestedOptionsForProfile,
   getCurrentProfile,
   isProfileComplete,
   sanitizeModelProfileData,

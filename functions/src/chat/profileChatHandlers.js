@@ -19,7 +19,9 @@ const {
 const {
   PROFILE_DEFAULTS,
   finalizeProfileForMatching,
+  getMissingProfileField,
   getNextProfileQuestion,
+  getSuggestedOptionsForProfile,
   getCurrentProfile,
   sanitizeModelProfileData,
 } = require("../profiles/profile");
@@ -104,6 +106,7 @@ async function sendProfileChatMessage(request) {
   );
   let cleanData;
   let reply;
+  let suggestedOptions = [];
 
   if (isLowInformationGreeting) {
     cleanData = {};
@@ -128,6 +131,7 @@ async function sendProfileChatMessage(request) {
     });
     cleanData = sanitizeModelProfileData(aiResult.data);
     reply = normalizeReply(aiResult.reply);
+    suggestedOptions = aiResult.suggestedOptions;
   }
 
   const validationResult = validateModelProfileData({
@@ -151,6 +155,10 @@ async function sendProfileChatMessage(request) {
     ...currentProfile,
     ...cleanData,
   });
+  suggestedOptions = getSafeSuggestedOptions(
+      suggestedOptions,
+      mergedProfile,
+  );
   const initialReplyLooksReady = replyLooksReady(reply);
 
   if (!mergedProfile.completado && initialReplyLooksReady) {
@@ -192,6 +200,7 @@ async function sendProfileChatMessage(request) {
     role: "assistant",
     text: reply,
     data: cleanData,
+    suggestedOptions,
     createdAt: admin.firestore.FieldValue.serverTimestamp(),
   });
 
@@ -274,6 +283,7 @@ async function sendProfileChatMessage(request) {
   return {
     reply,
     data: cleanData,
+    suggestedOptions,
     profile: mergedProfile,
     readyForRecommendations: mergedProfile.completado,
   };
@@ -396,13 +406,49 @@ function normalizeProfileChatAIResult(result = {}) {
     return {
       reply: "",
       data: {},
+      suggestedOptions: [],
     };
   }
 
   return {
     reply: (result.reply || "").toString(),
     data: result.data && typeof result.data === "object" ? result.data : {},
+    suggestedOptions: sanitizeSuggestedOptions(result.suggestedOptions),
   };
+}
+
+function getSafeSuggestedOptions(options = [], profile = {}) {
+  const sanitizedOptions = sanitizeSuggestedOptions(options);
+  const missingField = getMissingProfileField(profile);
+
+  if (
+    missingField &&
+    sanitizedOptions.length > 0 &&
+    sanitizedOptions.every((option) => option.field === missingField)
+  ) {
+    return sanitizedOptions;
+  }
+
+  return getSuggestedOptionsForProfile(profile);
+}
+
+function sanitizeSuggestedOptions(options = []) {
+  if (!Array.isArray(options)) {
+    return [];
+  }
+
+  return options
+      .map((option) => ({
+        label: sanitizeOptionText(option && option.label),
+        value: sanitizeOptionText(option && option.value),
+        field: sanitizeOptionText(option && option.field),
+      }))
+      .filter((option) => option.label && option.value)
+      .slice(0, 7);
+}
+
+function sanitizeOptionText(value = "") {
+  return (value || "").toString().trim().slice(0, 80);
 }
 
 function handleAIServiceError(error) {
