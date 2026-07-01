@@ -1,6 +1,6 @@
 <template>
   <v-data-table
-    class="mt-5 rounded-0"
+    class="therapists-table card-backgoundcustom"
     :headers="headers"
     :items="therapists"
     item-value="id"
@@ -13,7 +13,8 @@
         <v-chip
           v-for="especialidad in value"
           :key="especialidad"
-          color="blue"
+          color="secondary"
+          variant="tonal"
           size="small"
         >
           {{ especialidad }}
@@ -26,7 +27,8 @@
         <v-chip
           v-for="enfoque in value"
           :key="enfoque"
-          color="green"
+          color="info"
+          variant="tonal"
           size="small"
         >
           {{ enfoque }}
@@ -35,7 +37,7 @@
     </template>
 
     <template #item.modalidad="{ item }">
-      <v-chip color="deep-purple-accent-2" size="small">
+      <v-chip color="secondary" variant="tonal" size="small">
         {{ modalidadTexto(item) }}
       </v-chip>
     </template>
@@ -55,20 +57,26 @@
     </template>
 
     <template #item.activo="{ value }">
-      <v-chip :color="value ? 'green' : 'grey'" size="small" variant="tonal">
+      <v-chip :color="value ? 'success' : 'grey'" size="small" variant="tonal">
         {{ value ? "Activo" : "Inactivo" }}
       </v-chip>
     </template>
 
     <template #top>
-      <v-toolbar color="primary">
-        <v-toolbar-title>Psicologos activos</v-toolbar-title>
-        <v-divider class="mx-4" inset vertical></v-divider>
+      <v-toolbar class="px-2" color="transparent" density="comfortable">
+        <v-toolbar-title class="text-h6 font-weight-bold">
+          Psicólogos activos
+        </v-toolbar-title>
         <v-spacer></v-spacer>
 
-        <v-dialog v-model="dialog" max-width="900px" class="">
+        <v-dialog v-model="dialog" max-width="900px">
           <template #activator="{ props: activatorProps }">
-            <v-btn variant="tonal" color="white" v-bind="activatorProps">
+            <v-btn
+              color="secondary"
+              variant="tonal"
+              prepend-icon="mdi-account-plus-outline"
+              v-bind="activatorProps"
+            >
               Nuevo terapeuta
             </v-btn>
           </template>
@@ -277,10 +285,10 @@
 
             <v-card-actions>
               <v-spacer></v-spacer>
-              <v-btn color="blue-darken-1" variant="text" @click="close">
+              <v-btn color="secondary" variant="text" @click="close">
                 Cancelar
               </v-btn>
-              <v-btn color="blue-darken-1" variant="text" @click="save">
+              <v-btn color="secondary" variant="tonal" @click="save">
                 Guardar
               </v-btn>
             </v-card-actions>
@@ -294,12 +302,12 @@
             </v-card-title>
             <v-card-actions>
               <v-spacer></v-spacer>
-              <v-btn color="blue-darken-1" variant="text" @click="closeDelete">
+              <v-btn color="secondary" variant="text" @click="closeDelete">
                 Cancelar
               </v-btn>
               <v-btn
-                color="blue-darken-1"
-                variant="text"
+                color="error"
+                variant="tonal"
                 @click="deleteItemConfirm"
               >
                 Eliminar
@@ -312,21 +320,36 @@
     </template>
 
     <template #item.actions="{ item }">
-      <v-icon
-        color="blue-darken-2"
-        class="me-2"
+      <v-btn
+        icon="mdi-pencil"
+        color="secondary"
+        variant="text"
         size="small"
+        aria-label="Editar terapeuta"
         @click="editItem(item)"
-      >
-        mdi-pencil
-      </v-icon>
-      <v-icon color="red" size="small" @click="deleteItem(item)">
-        mdi-delete
-      </v-icon>
+      />
+      <v-btn
+        icon="mdi-delete-outline"
+        color="error"
+        variant="text"
+        size="small"
+        aria-label="Eliminar terapeuta"
+        @click="deleteItem(item)"
+      />
     </template>
 
     <template #no-data>
-      <v-btn color="primary" @click="initialize"> Reset </v-btn>
+      <v-empty-state
+        icon="mdi-account-search-outline"
+        headline="No hay psicólogos para mostrar"
+        text="Actualiza la tabla o registra un nuevo terapeuta."
+      >
+        <template #actions>
+          <v-btn color="secondary" variant="tonal" @click="initialize">
+            Actualizar
+          </v-btn>
+        </template>
+      </v-empty-state>
     </template>
   </v-data-table>
 </template>
@@ -670,3 +693,37 @@ export default {
   },
 };
 </script>
+
+<style scoped>
+.therapists-table {
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+:global(.v-theme--light) .therapists-table {
+  border-color: rgba(23, 63, 58, 0.12);
+}
+
+@media (max-width: 599px) {
+  .therapists-table :deep(.v-toolbar) {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 10px;
+    padding-bottom: 12px;
+    padding-top: 12px;
+  }
+
+  .therapists-table :deep(.v-toolbar__content) {
+    align-items: stretch;
+    flex-wrap: wrap;
+    height: auto !important;
+    row-gap: 10px;
+  }
+
+  .therapists-table :deep(.v-toolbar-title) {
+    flex-basis: 100%;
+    margin-inline-start: 0;
+  }
+}
+</style>
