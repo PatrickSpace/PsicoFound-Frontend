@@ -211,6 +211,36 @@ a {
   color: rgb(var(--v-theme-on-surface));
 }
 
+.v-data-table.card-backgoundcustom {
+  overflow: hidden;
+}
+
+.v-data-table.card-backgoundcustom :is(th) {
+  color: rgba(255, 255, 255, 0.78) !important;
+  font-weight: 700 !important;
+}
+
+.v-data-table.card-backgoundcustom :is(td) {
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.v-theme--light .v-data-table.card-backgoundcustom :is(th) {
+  background-color: rgba(18, 58, 53, 0.07) !important;
+  color: rgba(18, 33, 30, 0.76) !important;
+}
+
+.v-theme--light .v-data-table.card-backgoundcustom :is(td) {
+  color: rgba(18, 33, 30, 0.88);
+}
+
+.v-theme--light .v-data-table.card-backgoundcustom tbody tr:hover {
+  background-color: rgba(47, 102, 95, 0.06);
+}
+
+.v-theme--light .v-chip.v-chip--variant-tonal {
+  font-weight: 600;
+}
+
 .v-overlay.v-dialog .v-overlay__scrim {
   background:
     radial-gradient(circle at 50% 20%, rgba(74, 155, 167, 0.44), transparent 42%),
