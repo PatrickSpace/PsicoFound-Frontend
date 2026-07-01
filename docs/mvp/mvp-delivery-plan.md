@@ -113,14 +113,18 @@ Permitir que el psicologo gestione la sesion de punta a punta.
 
 ### Tareas
 
-- [ ] Verificar que la agenda liste citas de terapias asignadas.
-- [ ] Permitir editar modalidad, fecha, hora, ubicacion y link externo.
-- [ ] Confirmar cita desde agenda.
-- [ ] Reprogramar cita si esta pendiente o confirmada.
-- [ ] Agregar link de Zoom, Google Meet u otra herramienta.
-- [ ] Marcar sesion como realizada.
-- [ ] Registrar resumen compartido de la sesion.
-- [ ] Registrar eventos en historial longitudinal.
+- [x] Implementar lectura de citas desde terapias asignadas al psicologo.
+- [x] Permitir editar modalidad, fecha, hora, ubicacion y link externo.
+- [x] Confirmar cita desde agenda.
+- [x] Reprogramar cita si esta pendiente o confirmada.
+- [x] Hacer visible la accion de agregar o editar link externo.
+- [x] Agregar link de Zoom, Google Meet u otra herramienta.
+- [x] Marcar sesion como realizada.
+- [x] Registrar resumen compartido de la sesion.
+- [x] Registrar eventos en historial longitudinal.
+- [ ] Probar con psicologo real que la agenda liste citas de terapias asignadas.
+- [ ] Probar con psicologo real confirmacion, reprogramacion, link externo y sesion realizada.
+- [ ] Verificar desde paciente que el link externo aparezca despues de que el psicologo lo agregue.
 
 ### Criterio De Salida
 

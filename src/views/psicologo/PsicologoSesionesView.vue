@@ -132,21 +132,30 @@
               </template>
 
               <template #item.meetingUrl="{ item }">
-                <v-btn
-                  v-if="item.meetingUrl"
-                  :href="item.meetingUrl"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  size="small"
-                  color="secondary"
-                  variant="tonal"
-                  prepend-icon="mdi-video-outline"
-                >
-                  Abrir
-                </v-btn>
-                <v-chip v-else size="small" variant="tonal" color="warning">
-                  Pendiente
-                </v-chip>
+                <div class="meeting-actions">
+                  <v-btn
+                    v-if="item.meetingUrl"
+                    :href="item.meetingUrl"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    size="small"
+                    color="secondary"
+                    variant="tonal"
+                    prepend-icon="mdi-video-outline"
+                  >
+                    Abrir
+                  </v-btn>
+                  <v-btn
+                    size="small"
+                    :color="item.meetingUrl ? 'secondary' : 'warning'"
+                    variant="text"
+                    :prepend-icon="item.meetingUrl ? 'mdi-link-edit' : 'mdi-link-plus'"
+                    :disabled="item.estado === 'realizada'"
+                    @click="openMeetingLinkDialog(item)"
+                  >
+                    {{ item.meetingUrl ? "Editar link" : "Agregar link" }}
+                  </v-btn>
+                </div>
               </template>
 
               <template #item.actions="{ item }">
@@ -427,6 +436,10 @@ function openEditDialog(item) {
   dialog.value = true;
 }
 
+function openMeetingLinkDialog(item) {
+  openEditDialog(item);
+}
+
 async function handleConfirmAppointment(item) {
   await runAppointmentAction(
     () => confirmAppointment({ citaId: item.citaId, terapiaId: item.terapiaId }),
@@ -511,6 +524,13 @@ function handleDialogSaved() {
 
 .schedule-table {
   border-radius: 8px;
+}
+
+.meeting-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  align-items: center;
 }
 
 @media (max-width: 600px) {
