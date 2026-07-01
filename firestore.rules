@@ -55,9 +55,11 @@ service cloud.firestore {
 
     match /users/{uid} {
       allow read: if isOwner(uid) || isAdmin();
-      allow create: if isOwner(uid);
-      allow update: if isOwner(uid) &&
-        request.resource.data.rol == resource.data.rol;
+      allow create: if isOwner(uid) || isAdmin();
+      allow update: if isAdmin() || (
+        isOwner(uid) &&
+        request.resource.data.rol == resource.data.rol
+      );
       allow delete: if false;
     }
 
@@ -79,6 +81,18 @@ service cloud.firestore {
     match /therapists/{therapistId} {
       allow read: if signedIn();
       allow create, update, delete: if isAdmin();
+    }
+
+    match /psychologist_requests/{requestId} {
+      allow read: if isAdmin() || (
+        signedIn() &&
+        resource.data.userUid == request.auth.uid
+      );
+      allow create: if signedIn() &&
+        request.resource.data.userUid == request.auth.uid &&
+        request.resource.data.status == "pending";
+      allow update: if isAdmin();
+      allow delete: if false;
     }
 
     match /citas/{citaId} {

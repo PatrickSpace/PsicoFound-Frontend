@@ -16,6 +16,7 @@ import HerramientasView from "@/views/mainviews/HerramientasView.vue";
 import ConfiguracionView from "@/views/mainviews/ConfiguracionView.vue";
 import TerapiaDetailView from "@/views/terapias/TerapiaDetailView.vue";
 import PsicologoSesionesView from "@/views/psicologo/PsicologoSesionesView.vue";
+import PsychologistRequestsView from "@/views/admin/PsychologistRequestsView.vue";
 import { auth } from "@/plugins/Firebase/firebase";
 import { useAppContextStore } from "@/store/appContext";
 
@@ -128,6 +129,12 @@ const router = createRouter({
       name: "psicologo-sesiones",
       component: PsicologoSesionesView,
       meta: { modes: ["psychologist"] },
+    },
+    {
+      path: "/admin/solicitudes-psicologos",
+      name: "admin-psychologist-requests",
+      component: PsychologistRequestsView,
+      meta: { modes: ["admin"] },
     },
  
 ]});

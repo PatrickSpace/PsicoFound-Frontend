@@ -4,6 +4,7 @@ import {
   getDoc,
   getDocs,
   serverTimestamp,
+  setDoc,
   updateDoc,
 } from "firebase/firestore";
 import { db } from "@/plugins/Firebase/firestore";
@@ -41,6 +42,27 @@ export async function updateUserProfile(uid, data = {}) {
   };
 
   await updateDoc(userRef, payload);
+
+  return {
+    id: uid,
+    ...payload,
+  };
+}
+
+export async function updateUserProfessionalAccess(uid, data = {}) {
+  if (!uid) {
+    throw new Error("No se encontró el usuario a actualizar.");
+  }
+
+  const userRef = doc(db, USERS_COLLECTION, uid);
+  const payload = {
+    rol: data.rol || "psicologo",
+    professionalAccessStatus: data.professionalAccessStatus || "approved",
+    professionalProfileId: data.professionalProfileId || "",
+    updatedAt: serverTimestamp(),
+  };
+
+  await setDoc(userRef, payload, { merge: true });
 
   return {
     id: uid,

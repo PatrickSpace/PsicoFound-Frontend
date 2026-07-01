@@ -140,14 +140,17 @@ pueda aprobarlo.
 
 ### Tareas
 
-- [ ] Crear coleccion `psychologist_requests`.
-- [ ] Desde Configuracion, guardar solicitud de registro como psicologo.
-- [ ] Crear vista admin para solicitudes pendientes.
-- [ ] Permitir aprobar solicitud.
-- [ ] Al aprobar, crear o vincular perfil en `therapists`.
-- [ ] Actualizar `users/{uid}` con rol o permiso profesional.
-- [ ] Permitir alternar entre vista paciente y psicologo.
-- [ ] Permitir rechazar solicitud con motivo opcional.
+- [x] Crear coleccion `psychologist_requests`.
+- [x] Desde Configuracion, guardar solicitud de registro como psicologo.
+- [x] Crear vista admin para solicitudes pendientes.
+- [x] Permitir aprobar solicitud.
+- [x] Al aprobar, crear o vincular perfil en `therapists`.
+- [x] Actualizar `users/{uid}` con rol o permiso profesional.
+- [x] Permitir alternar entre vista paciente y psicologo.
+- [x] Permitir rechazar solicitud con motivo opcional.
+- [ ] Probar con usuario paciente real el envio de solicitud.
+- [ ] Probar con usuario admin real la aprobacion y rechazo.
+- [ ] Verificar que despues de aprobar aparezca la vista de psicologo sin reloguear.
 
 ### Criterio De Salida
 
@@ -165,7 +168,7 @@ Evitar errores de permisos y asegurar aislamiento de datos.
 - [ ] Probar reglas con usuario paciente.
 - [ ] Probar reglas con usuario psicologo.
 - [ ] Probar reglas con usuario admin.
-- [ ] Revisar reglas para `psychologist_requests`.
+- [x] Revisar reglas para `psychologist_requests`.
 - [ ] Revisar reglas para `therapists`.
 - [ ] Revisar reglas para `terapias`.
 - [ ] Revisar reglas para `citas`.

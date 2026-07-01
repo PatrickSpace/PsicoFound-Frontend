@@ -78,6 +78,11 @@ const navigationByMode = {
   admin: [
     { name: "Pacientes", icon: "mdi-account-group", link: "/pacientes" },
     { name: "Psicólogos", icon: "mdi-account-heart", link: "/psicologos" },
+    {
+      name: "Solicitudes",
+      icon: "mdi-account-clock-outline",
+      link: "/admin/solicitudes-psicologos",
+    },
   ],
 };
 

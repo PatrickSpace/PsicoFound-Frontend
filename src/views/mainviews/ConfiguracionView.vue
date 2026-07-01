@@ -174,6 +174,15 @@
                 </v-list>
               </template>
               <template v-else>
+                <v-alert
+                  v-if="psychologistRequest"
+                  class="mb-4"
+                  :color="requestStatusColor"
+                  variant="tonal"
+                  :icon="requestStatusIcon"
+                >
+                  {{ requestStatusText }}
+                </v-alert>
                 <p class="text-body-2 text-medium-emphasis mb-4">
                   Puedes solicitar habilitar un perfil profesional para atender pacientes desde PsicoFound.
                 </p>
@@ -181,6 +190,8 @@
                   color="secondary"
                   variant="tonal"
                   prepend-icon="mdi-account-plus-outline"
+                  :loading="loadingPsychologistRequest"
+                  :disabled="requestBlocksNewSubmission"
                   @click="showPsychologistRequest"
                 >
                   Registrarse como psicólogo
@@ -244,6 +255,130 @@
           </v-card>
         </v-col>
       </v-row>
+      <v-dialog v-model="psychologistRequestDialog" max-width="760">
+        <v-card class="pa-4 card-backgoundcustom" elevation="2" variant="text">
+          <v-card-title class="text-h6 font-weight-bold d-flex align-center ga-2 px-0 pt-0">
+            <v-icon color="secondary" size="small">mdi-account-tie-outline</v-icon>
+            Solicitud profesional
+          </v-card-title>
+          <v-card-text>
+            <v-divider class="mb-4"></v-divider>
+            <v-alert
+              v-if="psychologistRequestError"
+              class="mb-4"
+              color="error"
+              variant="tonal"
+              icon="mdi-alert-outline"
+            >
+              {{ psychologistRequestError }}
+            </v-alert>
+            <v-row>
+              <v-col cols="12" md="6">
+                <v-text-field
+                  v-model="psychologistRequestForm.professionalName"
+                  label="Nombre profesional"
+                  variant="outlined"
+                  density="comfortable"
+                />
+              </v-col>
+              <v-col cols="12" md="6">
+                <v-text-field
+                  v-model="psychologistRequestForm.licenseNumber"
+                  label="Número de colegiatura"
+                  placeholder="Opcional para revisión"
+                  variant="outlined"
+                  density="comfortable"
+                />
+              </v-col>
+              <v-col cols="12" md="6">
+                <v-combobox
+                  v-model="psychologistRequestForm.specialties"
+                  label="Especialidades"
+                  :items="specialtyOptions"
+                  chips
+                  multiple
+                  clearable
+                  variant="outlined"
+                  density="comfortable"
+                />
+              </v-col>
+              <v-col cols="12" md="6">
+                <v-combobox
+                  v-model="psychologistRequestForm.approaches"
+                  label="Enfoques"
+                  :items="approachOptions"
+                  chips
+                  multiple
+                  clearable
+                  variant="outlined"
+                  density="comfortable"
+                />
+              </v-col>
+              <v-col cols="12" md="6">
+                <v-combobox
+                  v-model="psychologistRequestForm.modalities"
+                  label="Modalidades"
+                  :items="modalityOptions"
+                  chips
+                  multiple
+                  clearable
+                  variant="outlined"
+                  density="comfortable"
+                />
+              </v-col>
+              <v-col cols="12" md="6">
+                <v-select
+                  v-model="psychologistRequestForm.gender"
+                  label="Género"
+                  :items="genderOptions"
+                  clearable
+                  variant="outlined"
+                  density="comfortable"
+                />
+              </v-col>
+              <v-col cols="12">
+                <v-textarea
+                  v-model="psychologistRequestForm.professionalSummary"
+                  label="Resumen profesional"
+                  rows="3"
+                  variant="outlined"
+                  density="comfortable"
+                />
+              </v-col>
+              <v-col cols="12">
+                <v-textarea
+                  v-model="psychologistRequestForm.motivation"
+                  label="Mensaje para revisión"
+                  rows="3"
+                  variant="outlined"
+                  density="comfortable"
+                />
+              </v-col>
+            </v-row>
+          </v-card-text>
+          <v-card-actions>
+            <v-spacer />
+            <v-btn
+              color="secondary"
+              variant="text"
+              :disabled="savingPsychologistRequest"
+              @click="psychologistRequestDialog = false"
+            >
+              Cancelar
+            </v-btn>
+            <v-btn
+              color="secondary"
+              variant="tonal"
+              prepend-icon="mdi-send-outline"
+              :loading="savingPsychologistRequest"
+              :disabled="!canSubmitPsychologistRequest"
+              @click="submitPsychologistRequest"
+            >
+              Enviar solicitud
+            </v-btn>
+          </v-card-actions>
+        </v-card>
+      </v-dialog>
     </v-container>
   </LayoutDefault>
 </template>
@@ -258,6 +393,10 @@ import { auth } from "@/plugins/Firebase/firebase";
 import { useAppContextStore } from "@/store/appContext";
 import { useAuthStore } from "@/store/auth";
 import { updateUserProfile } from "@/services/userService";
+import {
+  createPsychologistRequest,
+  getLatestPsychologistRequestByUser,
+} from "@/services/psychologistRequestService";
 import { useAppTheme } from "@/composables/useAppTheme";
 
 const router = useRouter();
@@ -268,12 +407,47 @@ const { appTheme } = useAppTheme();
 const savingProfile = ref(false);
 const profileError = ref("");
 const isEditingProfile = ref(false);
+const psychologistRequestDialog = ref(false);
+const savingPsychologistRequest = ref(false);
+const loadingPsychologistRequest = ref(false);
+const psychologistRequestError = ref("");
+const psychologistRequest = ref(null);
 
 const profileForm = reactive({
   nombre: "",
   fechaNacimiento: "",
   telefono: "",
 });
+
+const psychologistRequestForm = reactive({
+  professionalName: "",
+  licenseNumber: "",
+  specialties: [],
+  approaches: [],
+  modalities: ["Remoto"],
+  gender: "",
+  professionalSummary: "",
+  motivation: "",
+});
+
+const specialtyOptions = [
+  "Ansiedad",
+  "Depresión",
+  "Trauma",
+  "Autoestima",
+  "Pareja",
+  "Familia",
+  "Estrés laboral",
+];
+const approachOptions = [
+  "Cognitivo-Conductual",
+  "Humanista",
+  "Integrativo",
+  "Psicoanálisis",
+  "Terapia Familiar",
+];
+const modalityOptions = ["Remoto", "Presencial", "Híbrido"];
+const genderOptions = ["femenino", "masculino", "no especificado"];
 
 const activeMode = computed(
   () =>
@@ -285,6 +459,49 @@ const activeMode = computed(
 const canSaveProfile = computed(
   () => Boolean(currentUser.value?.uid) && profileForm.nombre.trim().length > 0
 );
+
+const canSubmitPsychologistRequest = computed(
+  () =>
+    Boolean(currentUser.value?.uid) &&
+    psychologistRequestForm.professionalName.trim().length > 0 &&
+    psychologistRequestForm.professionalSummary.trim().length > 0 &&
+    psychologistRequestForm.specialties.length > 0 &&
+    psychologistRequestForm.modalities.length > 0
+);
+
+const requestStatus = computed(() =>
+  (psychologistRequest.value?.status || "").toString().trim().toLowerCase()
+);
+
+const requestBlocksNewSubmission = computed(() =>
+  ["pending", "approved"].includes(requestStatus.value)
+);
+
+const requestStatusColor = computed(() => {
+  if (requestStatus.value === "approved") return "success";
+  if (requestStatus.value === "rejected") return "warning";
+  return "info";
+});
+
+const requestStatusIcon = computed(() => {
+  if (requestStatus.value === "approved") return "mdi-check-circle-outline";
+  if (requestStatus.value === "rejected") return "mdi-alert-circle-outline";
+  return "mdi-clock-outline";
+});
+
+const requestStatusText = computed(() => {
+  if (requestStatus.value === "approved") {
+    return "Tu solicitud profesional fue aprobada. Ya puedes alternar a la vista de psicólogo.";
+  }
+
+  if (requestStatus.value === "rejected") {
+    return psychologistRequest.value?.rejectionReason
+      ? `Tu solicitud fue rechazada: ${psychologistRequest.value.rejectionReason}`
+      : "Tu solicitud fue rechazada. Puedes enviar una nueva con información actualizada.";
+  }
+
+  return "Tu solicitud profesional está pendiente de revisión por un administrador.";
+});
 
 const patientProfileDetails = computed(() => [
   {
@@ -313,19 +530,22 @@ watch(
   { immediate: true }
 );
 
+watch(
+  () => currentUser.value?.uid,
+  () => {
+    loadPsychologistRequest();
+  },
+  { immediate: true }
+);
+
 function switchMode(mode) {
   appContext.setActiveMode(mode);
 }
 
 function showPsychologistRequest() {
-  window.dispatchEvent(
-    new CustomEvent("ui-success", {
-      detail: {
-        title: "Solicitud registrada",
-        message: "Pronto configuraremos el flujo para registrar psicólogos.",
-      },
-    })
-  );
+  psychologistRequestError.value = "";
+  resetPsychologistRequestForm();
+  psychologistRequestDialog.value = true;
 }
 
 function readableProfileValue(value) {
@@ -340,6 +560,90 @@ function resetProfileForm(profile = appContext.userProfile) {
     "";
   profileForm.fechaNacimiento = profile?.fechaNacimiento || "";
   profileForm.telefono = profile?.telefono || "";
+}
+
+function resetPsychologistRequestForm() {
+  psychologistRequestForm.professionalName =
+    appContext.userProfile?.nombre ||
+    currentUser.value?.displayName ||
+    userName.value ||
+    "";
+  psychologistRequestForm.licenseNumber = "";
+  psychologistRequestForm.specialties = [];
+  psychologistRequestForm.approaches = [];
+  psychologistRequestForm.modalities = ["Remoto"];
+  psychologistRequestForm.gender = "";
+  psychologistRequestForm.professionalSummary = "";
+  psychologistRequestForm.motivation = "";
+}
+
+async function loadPsychologistRequest() {
+  const uid = currentUser.value?.uid;
+
+  if (!uid) {
+    psychologistRequest.value = null;
+    return;
+  }
+
+  loadingPsychologistRequest.value = true;
+
+  try {
+    const latestRequest = await getLatestPsychologistRequestByUser(uid);
+    psychologistRequest.value = latestRequest;
+
+    if (
+      latestRequest?.status?.toString().trim().toLowerCase() === "approved" &&
+      !appContext.hasPsychologistAccess
+    ) {
+      await appContext.loadForUser(uid, { force: true });
+    }
+  } catch (error) {
+    console.error("Error loading psychologist request:", error);
+    psychologistRequest.value = null;
+  } finally {
+    loadingPsychologistRequest.value = false;
+  }
+}
+
+async function submitPsychologistRequest() {
+  if (!canSubmitPsychologistRequest.value || savingPsychologistRequest.value) {
+    return;
+  }
+
+  savingPsychologistRequest.value = true;
+  psychologistRequestError.value = "";
+
+  try {
+    psychologistRequest.value = await createPsychologistRequest({
+      userUid: currentUser.value.uid,
+      userName: appContext.userProfile?.nombre || userName.value || "",
+      userEmail: currentUser.value?.email || "",
+      professionalName: psychologistRequestForm.professionalName.trim(),
+      licenseNumber: psychologistRequestForm.licenseNumber.trim(),
+      professionalSummary: psychologistRequestForm.professionalSummary.trim(),
+      motivation: psychologistRequestForm.motivation.trim(),
+      specialties: psychologistRequestForm.specialties,
+      approaches: psychologistRequestForm.approaches,
+      modalities: psychologistRequestForm.modalities,
+      gender: psychologistRequestForm.gender,
+    });
+    psychologistRequestDialog.value = false;
+
+    window.dispatchEvent(
+      new CustomEvent("ui-success", {
+        detail: {
+          title: "Solicitud enviada",
+          message: "Un administrador podrá revisar tu solicitud profesional.",
+        },
+      })
+    );
+  } catch (error) {
+    console.error("Error creating psychologist request:", error);
+    psychologistRequestError.value =
+      error?.message || "No pudimos enviar tu solicitud.";
+  } finally {
+    savingPsychologistRequest.value = false;
+  }
 }
 
 function startProfileEdit() {
