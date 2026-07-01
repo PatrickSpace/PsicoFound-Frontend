@@ -161,8 +161,8 @@
 
           <v-empty-state
             v-if="topTherapists.length === 0"
-            headline="Aun no hay terapeutas para mostrar"
-            text="Realiza la busqueda o explora otras opciones para ver recomendaciones."
+            headline="Aún no hay terapeutas para mostrar"
+            text="Realiza la búsqueda o explora otras opciones para ver recomendaciones."
             icon="mdi-account-search-outline"
           ></v-empty-state>
         </div>

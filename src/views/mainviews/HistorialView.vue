@@ -44,8 +44,8 @@
 
           <v-empty-state
             v-else-if="historyEvents.length === 0"
-            headline="Aun no hay eventos longitudinales"
-            text="Cuando agendes, confirmes o completes sesiones, apareceran aqui como parte de tu proceso."
+            headline="Aún no hay eventos longitudinales"
+            text="Cuando agendes, confirmes o completes sesiones, aparecerán aquí como parte de tu proceso."
             icon="mdi-timeline-clock-outline"
           ></v-empty-state>
 
@@ -156,7 +156,7 @@ const isPsychologistMode = computed(
 const pageSubtitle = computed(() =>
   isPsychologistMode.value
     ? "Eventos relevantes de pacientes asignados registrados por la plataforma."
-    : "Eventos relevantes de tu proceso terapeutico registrados por la plataforma."
+    : "Eventos relevantes de tu proceso terapéutico registrados por la plataforma."
 );
 
 async function loadHistory() {

@@ -152,7 +152,7 @@
               {{
                 editableAppointment
                   ? "Puedes cambiar el horario de tu cita pendiente o confirmada."
-                  : "Aun no tienes una cita pendiente o confirmada para reprogramar."
+                  : "Aún no tienes una cita pendiente o confirmada para reprogramar."
               }}
             </v-list-item-subtitle>
             <template #append>

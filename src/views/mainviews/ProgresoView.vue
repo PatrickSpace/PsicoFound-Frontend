@@ -43,7 +43,7 @@
 
           <v-empty-state
             v-else-if="!profile"
-            headline="Aun no tienes perfil inicial"
+            headline="Aún no tienes perfil inicial"
             text="Completa la entrevista conversacional para generar una primera orientación no diagnóstica."
               icon="mdi-message-question-outline"
           >
@@ -65,7 +65,7 @@
                 Motivo y temas principales
               </div>
               <p class="text-body-2 text-medium-emphasis mb-4">
-                {{ profile.motivoConsulta || "Aun no se registró un motivo principal." }}
+                {{ profile.motivoConsulta || "Aún no se registró un motivo principal." }}
               </p>
               <div class="d-flex flex-wrap ga-2">
                 <v-chip

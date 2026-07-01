@@ -186,7 +186,7 @@ const form = reactive({
   meetingUrl: "",
 });
 
-const fallbackModalities = ["Remoto", "Presencial", "Hibrido"];
+const fallbackModalities = ["Remoto", "Presencial", "Híbrido"];
 const meetingProviderOptions = [
   { title: "Google Meet", value: "google_meet" },
   { title: "Zoom", value: "zoom" },
@@ -293,7 +293,7 @@ function normalizeDisplayModalidad(value) {
 
   if (normalized === "remoto") return "Remoto";
   if (normalized === "presencial") return "Presencial";
-  if (normalized === "hibrido") return "Hibrido";
+  if (normalized === "hibrido") return "Híbrido";
 
   return value || "";
 }
@@ -385,7 +385,7 @@ async function submitAppointment() {
     window.dispatchEvent(
       new CustomEvent("api-error", {
         detail: {
-          message: "Necesitas iniciar sesion para registrar una cita.",
+          message: "Necesitas iniciar sesión para registrar una cita.",
         },
       })
     );

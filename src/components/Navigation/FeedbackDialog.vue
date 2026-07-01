@@ -110,12 +110,12 @@ async function submitFeedback() {
   errorMessage.value = "";
 
   if (!form.observacion.trim()) {
-    errorMessage.value = "Escribe una observacion para enviar el feedback.";
+    errorMessage.value = "Escribe una observación para enviar el feedback.";
     return;
   }
 
   if (!currentUser.value?.uid) {
-    errorMessage.value = "Necesitas iniciar sesion para enviar feedback.";
+    errorMessage.value = "Necesitas iniciar sesión para enviar feedback.";
     return;
   }
 

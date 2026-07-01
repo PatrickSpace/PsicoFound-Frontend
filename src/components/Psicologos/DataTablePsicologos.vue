@@ -5,8 +5,8 @@
     :items="therapists"
     item-value="id"
     :loading="loading"
-    loading-text="Cargando psicologos..."
-    :no-data-text="loadingError || 'No hay psicologos para mostrar'"
+    loading-text="Cargando psicólogos..."
+    :no-data-text="loadingError || 'No hay psicólogos para mostrar'"
   >
     <template #item.especialidades="{ value }">
       <v-chip-group>
@@ -132,7 +132,7 @@
                   <v-col cols="12">
                     <v-textarea
                       v-model="editedItem.description"
-                      label="Descripcion profesional"
+                      label="Descripción profesional"
                       variant="outlined"
                       rows="2"
                       density="comfortable"
@@ -187,7 +187,7 @@
                   <v-col cols="12" md="4">
                     <v-select
                       v-model="editedItem.genero"
-                      label="Genero"
+                      label="Género"
                       variant="outlined"
                       clearable
                       :items="generosOptions"
@@ -404,7 +404,7 @@ const enfoquesOptions = [
 ];
 
 const generosOptions = ["femenino", "masculino"];
-const modalidadesOptions = ["Remoto", "Presencial", "Hibrido"];
+const modalidadesOptions = ["Remoto", "Presencial", "Híbrido"];
 
 export default {
   data: () => ({
@@ -414,7 +414,7 @@ export default {
       { title: "Nombre", align: "start", sortable: false, key: "nombre" },
       { title: "Especialidades", key: "especialidades", sortable: false },
       { title: "Enfoques", key: "enfoques", sortable: false },
-      { title: "Genero", key: "genero" },
+      { title: "Género", key: "genero" },
       { title: "Edad", key: "edad" },
       { title: "Modalidad", key: "modalidad", sortable: false },
       { title: "UID", key: "uid", sortable: false },
@@ -579,7 +579,7 @@ export default {
           this.clearLoadingTimeout();
           console.error("Error loading therapists:", error);
           this.therapists = [];
-          this.loadingError = "No se pudieron cargar los psicologos.";
+          this.loadingError = "No se pudieron cargar los psicólogos.";
           this.loading = false;
         }
       );
@@ -710,13 +710,13 @@ export default {
 
 <style scoped>
 .therapists-table {
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(var(--v-border-color), var(--v-border-opacity));
   border-radius: 8px;
   overflow: hidden;
 }
 
 :global(.v-theme--light) .therapists-table {
-  border-color: rgba(23, 63, 58, 0.12);
+  border-color: rgba(18, 58, 53, 0.16);
 }
 
 @media (max-width: 599px) {
