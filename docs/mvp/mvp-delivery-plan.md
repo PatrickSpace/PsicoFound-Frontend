@@ -198,8 +198,8 @@ no dicha por el usuario.
 - [ ] Probar preferencias en cualquier orden.
 - [ ] Probar caso "solo quiero conversar".
 - [ ] Probar caso de urgencia o crisis.
-- [ ] Confirmar que `perfil listo` solo aparece con criterios suficientes.
-- [ ] Confirmar que las recomendaciones usan el perfil guardado.
+- [x] Confirmar por test unitario que `perfil listo` solo aparece con criterios suficientes.
+- [x] Confirmar por test unitario que las recomendaciones usan criterios normalizados del perfil.
 - [ ] Revisar logs para asegurar que no exponen datos sensibles.
 
 ### Criterio De Salida
@@ -248,7 +248,7 @@ Dejar el MVP listo para pruebas reales.
 - [ ] Probar modo oscuro.
 - [ ] Probar modo claro.
 - [ ] Ejecutar `npm run build`.
-- [ ] Ejecutar tests de Functions.
+- [x] Ejecutar tests de Functions.
 - [ ] Deploy de Functions si hubo cambios.
 - [ ] Deploy de reglas Firestore si hubo cambios.
 - [ ] Deploy de indices Firestore si hubo cambios.
