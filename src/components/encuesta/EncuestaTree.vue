@@ -89,7 +89,7 @@
               <v-container class="mx-auto w-50 mt-5 text-center">
                 <v-combobox
                   v-model="edad"
-                  :items="['18-25', '25-35', '35-45', '+ 45']"
+                  :items="['25-35', '35-45', '+ 45']"
                 ></v-combobox>
                 <!--
                 <v-btn
@@ -190,10 +190,7 @@ function guardarCriteriosBusqueda() {
   terapiaStore.preferencia_edad_min = 0;
   terapiaStore.preferencia_edad_max = 0;
 
-  if (edad.value === "18-25") {
-    terapiaStore.preferencia_edad_min = 18;
-    terapiaStore.preferencia_edad_max = 25;
-  } else if (edad.value === "25-35") {
+  if (edad.value === "25-35") {
     terapiaStore.preferencia_edad_min = 25;
     terapiaStore.preferencia_edad_max = 35;
   } else if (edad.value === "35-45") {

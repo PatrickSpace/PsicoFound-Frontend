@@ -21,7 +21,7 @@
             <v-combobox class="mx-2" color="secondary" variant="outlined" clearable label="Modalidad"
               :items="['Online', 'Presencial', 'Hiibrido']"></v-combobox>
             <v-combobox class="mx-2" color="secondary" variant="outlined" clearable label="edad"
-              :items="['18-25', '25-35', '35-45', '+ 45']"></v-combobox>
+              :items="['25-35', '35-45', '+ 45']"></v-combobox>
           </v-col>
         </v-row>
       </v-form>

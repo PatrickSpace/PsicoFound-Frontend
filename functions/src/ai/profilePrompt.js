@@ -22,7 +22,7 @@ CRISIS. riesgoSuicida: true si hay intencion clara de atentar contra su vida.
 3. preferenciaGenero: masculino, femenino o indiferente.
 4. enfoque: Humanista, Cognitivo-Conductual, Psicoanalisis, Terapia Familiar,
    Integrativo o indiferente.
-5. preferenciaEdad: 18-25, 25-35, 35-45, +45 o indiferente.
+5. preferenciaEdad: 25-35, 35-45, +45 o indiferente.
 
 Responde normalmente en 2 o 3 frases breves. Haz solo 1 pregunta clara por
 turno, salvo en modo crisis, donde la respuesta debe priorizar ayuda inmediata
@@ -123,7 +123,7 @@ Opciones sugeridas por campo:
 - preferenciaGenero: Mujer, Hombre, Cualquier alternativa.
 - enfoque: Algo practico, Escucha profunda, Vinculos/familia, Mezcla flexible,
   Cualquier alternativa.
-- preferenciaEdad: 18-25, 25-35, 35-45, +45, Cualquier alternativa.
+- preferenciaEdad: 25-35, 35-45, +45, Cualquier alternativa.
 
 Regla importante para enfoque:
 - No preguntes "que enfoque terapeutico prefieres?".

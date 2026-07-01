@@ -74,7 +74,6 @@ const PROFILE_OPTION_SETS = {
     {label: "Cualquier alternativa", value: "Me da igual"},
   ],
   preferenciaEdad: [
-    {label: "18-25", value: "18-25"},
     {label: "25-35", value: "25-35"},
     {label: "35-45", value: "35-45"},
     {label: "+45", value: "+45"},

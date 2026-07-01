@@ -78,10 +78,7 @@ export const useTerapiaStore = defineStore("terapia", () => {
     preferencia_edad_min.value = 0
     preferencia_edad_max.value = 0
 
-    if (normalized === "18-25") {
-      preferencia_edad_min.value = 18
-      preferencia_edad_max.value = 25
-    } else if (normalized === "25-35") {
+    if (normalized === "25-35") {
       preferencia_edad_min.value = 25
       preferencia_edad_max.value = 35
     } else if (normalized === "35-45") {
