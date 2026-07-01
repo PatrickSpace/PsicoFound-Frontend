@@ -1,10 +1,11 @@
 <template>
   <LayoutDefault layout>
-    <v-container>
-      <div class="d-flex flex-column flex-md-row justify-space-between ga-4">
+    <v-container class="tools-view">
+      <div class="d-flex flex-column flex-md-row justify-space-between align-md-center ga-4 mb-6">
         <div>
-          <h1 class="text-h4">Herramientas terapéuticas</h1>
-          <p class="text-body-2 text-medium-emphasis mt-2 mb-0">
+          <p class="text-overline text-secondary mb-1">Recursos entre sesiones</p>
+          <h1 class="text-h4 font-weight-bold">Herramientas terapéuticas</h1>
+          <p class="text-body-1 text-medium-emphasis mt-2 mb-0">
             Ejercicios y recursos entre sesiones para sostener continuidad terapéutica.
           </p>
         </div>
@@ -13,13 +14,12 @@
           variant="tonal"
           prepend-icon="mdi-refresh"
           :loading="loading"
+          class="align-self-start align-self-md-center"
           @click="loadTools"
         >
           Actualizar
         </v-btn>
       </div>
-
-      <v-divider class="my-5 mx-auto"></v-divider>
 
       <v-alert
         v-if="errorMessage"
@@ -33,38 +33,53 @@
 
       <v-row class="mb-4" align="stretch">
         <v-col cols="12" md="4" class="d-flex">
-          <v-card class="pa-4 card-backgoundcustom flex-grow-1" elevation="2" variant="text">
-            <v-card-title class="text-h6">Asignados</v-card-title>
-            <v-card-text>
-              <div class="text-h4">{{ patientExercises.length }}</div>
-              <div class="text-body-2 text-medium-emphasis">Ejercicios totales</div>
-            </v-card-text>
+          <v-card class="pa-4 card-backgoundcustom flex-grow-1 tool-stat-card" elevation="2" variant="text">
+            <div class="d-flex align-center justify-space-between ga-3">
+              <div>
+                <div class="text-body-2 text-medium-emphasis">Asignados</div>
+                <div class="text-h4 font-weight-bold mt-1">{{ patientExercises.length }}</div>
+                <div class="text-caption text-medium-emphasis">Ejercicios totales</div>
+              </div>
+              <v-avatar color="secondary" variant="tonal" rounded="lg">
+                <v-icon>mdi-format-list-checks</v-icon>
+              </v-avatar>
+            </div>
           </v-card>
         </v-col>
         <v-col cols="12" md="4" class="d-flex">
-          <v-card class="pa-4 card-backgoundcustom flex-grow-1" elevation="2" variant="text">
-            <v-card-title class="text-h6">Pendientes</v-card-title>
-            <v-card-text>
-              <div class="text-h4">{{ pendingPatientExercises.length }}</div>
-              <div class="text-body-2 text-medium-emphasis">Por completar</div>
-            </v-card-text>
+          <v-card class="pa-4 card-backgoundcustom flex-grow-1 tool-stat-card" elevation="2" variant="text">
+            <div class="d-flex align-center justify-space-between ga-3">
+              <div>
+                <div class="text-body-2 text-medium-emphasis">Pendientes</div>
+                <div class="text-h4 font-weight-bold mt-1">{{ pendingPatientExercises.length }}</div>
+                <div class="text-caption text-medium-emphasis">Por completar</div>
+              </div>
+              <v-avatar color="warning" variant="tonal" rounded="lg">
+                <v-icon>mdi-timer-sand</v-icon>
+              </v-avatar>
+            </div>
           </v-card>
         </v-col>
         <v-col cols="12" md="4" class="d-flex">
-          <v-card class="pa-4 card-backgoundcustom flex-grow-1" elevation="2" variant="text">
-            <v-card-title class="text-h6">Completados</v-card-title>
-            <v-card-text>
-              <div class="text-h4">{{ completedPatientExercises.length }}</div>
-              <div class="text-body-2 text-medium-emphasis">Registrados en historial</div>
-            </v-card-text>
+          <v-card class="pa-4 card-backgoundcustom flex-grow-1 tool-stat-card" elevation="2" variant="text">
+            <div class="d-flex align-center justify-space-between ga-3">
+              <div>
+                <div class="text-body-2 text-medium-emphasis">Completados</div>
+                <div class="text-h4 font-weight-bold mt-1">{{ completedPatientExercises.length }}</div>
+                <div class="text-caption text-medium-emphasis">Registrados en historial</div>
+              </div>
+              <v-avatar color="success" variant="tonal" rounded="lg">
+                <v-icon>mdi-check-circle-outline</v-icon>
+              </v-avatar>
+            </div>
           </v-card>
         </v-col>
       </v-row>
 
       <v-card class="pa-4 mb-6 card-backgoundcustom" elevation="2" variant="text">
-        <v-card-title class="text-h5">
-          <v-icon size="small">mdi-toolbox-outline</v-icon>
-          Mis ejercicios
+        <v-card-title class="d-flex align-center ga-2 text-h6 font-weight-bold px-0 pt-0">
+          <v-icon color="secondary" size="small">mdi-toolbox-outline</v-icon>
+          Herramientas asignadas
         </v-card-title>
         <v-card-text>
           <v-divider class="mb-4"></v-divider>
@@ -85,31 +100,40 @@
               class="d-flex"
             >
               <v-card
-                class="exercise-card card-backgoundcustom flex-grow-1"
+                class="exercise-card card-backgoundcustom flex-grow-1 pa-4"
                 elevation="2"
                 variant="text"
               >
-                <v-card-title class="text-subtitle-1">
-                  {{ exercise.title }}
-                </v-card-title>
-                <v-card-subtitle>
-                  {{ exercise.category || "Seguimiento" }}
-                  <span v-if="exercise.dueDate">• hasta {{ exercise.dueDate }}</span>
-                </v-card-subtitle>
-                <v-card-text>
-                  <p class="mb-3">{{ exercise.instructions }}</p>
-                  <v-chip :color="exercise.status === 'completed' ? 'success' : 'warning'" size="small" variant="tonal">
+                <div class="d-flex flex-column flex-sm-row justify-space-between ga-3 mb-3">
+                  <div>
+                    <h2 class="text-subtitle-1 font-weight-bold mb-1">
+                      {{ exercise.title }}
+                    </h2>
+                    <div class="text-caption text-medium-emphasis">
+                      {{ exercise.category || "Seguimiento" }}
+                      <span v-if="exercise.dueDate">• hasta {{ exercise.dueDate }}</span>
+                    </div>
+                  </div>
+                  <v-chip
+                    :color="exercise.status === 'completed' ? 'success' : 'warning'"
+                    size="small"
+                    variant="tonal"
+                    class="align-self-start"
+                  >
                     {{ exercise.status === "completed" ? "Completado" : "Pendiente" }}
                   </v-chip>
+                </div>
+                <v-card-text class="pa-0">
+                  <p class="mb-3 text-body-2">{{ exercise.instructions }}</p>
                   <p v-if="exercise.patientNotes" class="text-caption text-medium-emphasis mt-3">
                     Nota: {{ exercise.patientNotes }}
                   </p>
                 </v-card-text>
-                <v-card-actions>
+                <v-card-actions class="px-0 pb-0 pt-4">
                   <v-btn
                     v-if="exercise.status !== 'completed'"
                     color="secondary"
-                    variant="flat"
+                    variant="tonal"
                     prepend-icon="mdi-check"
                     @click="openCompleteDialog(exercise)"
                   >
@@ -128,8 +152,8 @@
         elevation="2"
         variant="text"
       >
-        <v-card-title class="text-h5">
-          <v-icon size="small">mdi-clipboard-plus-outline</v-icon>
+        <v-card-title class="d-flex align-center ga-2 text-h6 font-weight-bold px-0 pt-0">
+          <v-icon color="secondary" size="small">mdi-clipboard-plus-outline</v-icon>
           Asignar ejercicio
         </v-card-title>
         <v-card-text>
@@ -143,6 +167,7 @@
                 item-value="value"
                 label="Paciente / terapia"
                 variant="outlined"
+                density="comfortable"
               />
             </v-col>
             <v-col cols="12" md="6">
@@ -150,6 +175,7 @@
                 v-model="assignment.title"
                 label="Título del ejercicio"
                 variant="outlined"
+                density="comfortable"
               />
             </v-col>
             <v-col cols="12" md="4">
@@ -158,6 +184,7 @@
                 :items="categoryOptions"
                 label="Categoría"
                 variant="outlined"
+                density="comfortable"
               />
             </v-col>
             <v-col cols="12" md="4">
@@ -166,6 +193,7 @@
                 label="Frecuencia sugerida"
                 variant="outlined"
                 placeholder="Ej. 3 veces por semana"
+                density="comfortable"
               />
             </v-col>
             <v-col cols="12" md="4">
@@ -174,6 +202,7 @@
                 label="Fecha límite"
                 type="date"
                 variant="outlined"
+                density="comfortable"
               />
             </v-col>
             <v-col cols="12">
@@ -182,6 +211,7 @@
                 label="Instrucciones"
                 rows="3"
                 variant="outlined"
+                density="comfortable"
               />
             </v-col>
           </v-row>
@@ -190,7 +220,7 @@
           <v-spacer />
           <v-btn
             color="secondary"
-            variant="flat"
+            variant="tonal"
             prepend-icon="mdi-send"
             :loading="savingAssignment"
             :disabled="!canAssignExercise"
@@ -203,9 +233,9 @@
 
       <v-dialog v-model="completeDialog" max-width="640">
         <v-card class="pa-4 card-backgoundcustom" elevation="2" variant="text">
-          <v-card-title class="text-h5">Completar ejercicio</v-card-title>
+          <v-card-title class="text-h6 font-weight-bold px-0 pt-0">Completar ejercicio</v-card-title>
           <v-card-text>
-            <p class="mb-4">
+            <p class="mb-4 text-body-2 text-medium-emphasis">
               {{ selectedExercise?.title }}
             </p>
             <v-textarea
@@ -213,6 +243,7 @@
               label="¿Qué observaste o aprendiste?"
               rows="3"
               variant="outlined"
+              density="comfortable"
             />
           </v-card-text>
           <v-card-actions>
@@ -222,7 +253,7 @@
             </v-btn>
             <v-btn
               color="secondary"
-              variant="flat"
+              variant="tonal"
               :loading="savingCompletion"
               @click="completeSelectedExercise"
             >
@@ -472,7 +503,25 @@ function notifyError(message) {
 </script>
 
 <style scoped>
+.tools-view {
+  max-width: 1180px;
+}
+
+.tool-stat-card {
+  min-height: 124px;
+}
+
 .exercise-card {
   border-radius: 8px;
+}
+
+@media (max-width: 600px) {
+  .tools-view {
+    padding-inline: 16px;
+  }
+
+  .tools-view :deep(.v-card-title) {
+    line-height: 1.25;
+  }
 }
 </style>
