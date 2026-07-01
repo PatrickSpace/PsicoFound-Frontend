@@ -1,10 +1,11 @@
 <template>
   <LayoutDefault layout>
-    <v-container>
-      <div class="d-flex flex-column flex-md-row justify-space-between ga-4">
+    <v-container class="schedule-view">
+      <div class="d-flex flex-column flex-md-row justify-space-between align-md-center ga-4 mb-6">
         <div>
-          <h1 class="text-h4">Agenda del psicólogo</h1>
-          <p class="text-body-2 text-medium-emphasis mt-2 mb-0">
+          <p class="text-overline text-secondary mb-1">Gestión de sesiones</p>
+          <h1 class="text-h4 font-weight-bold">Agenda del psicólogo</h1>
+          <p class="text-body-1 text-medium-emphasis mt-2 mb-0">
             Gestiona tus citas, confirma sesiones y agrega el enlace externo de videollamada.
           </p>
         </div>
@@ -13,13 +14,12 @@
           variant="tonal"
           prepend-icon="mdi-refresh"
           :loading="loading"
+          class="align-self-start align-self-md-center"
           @click="loadTherapistSchedule"
         >
           Actualizar
         </v-btn>
       </div>
-
-      <v-divider class="my-5 mx-auto"></v-divider>
 
       <v-alert
         v-if="errorMessage"
@@ -37,7 +37,9 @@
         elevation="2"
         variant="text"
       >
-        <v-card-title class="text-h5">Perfil de psicólogo no encontrado</v-card-title>
+        <v-card-title class="text-h6 font-weight-bold px-0 pt-0">
+          Perfil de psicólogo no encontrado
+        </v-card-title>
         <v-card-text>
           Tu usuario aún no está vinculado a un perfil de psicólogo activo. Un administrador debe asignar tu UID al registro del profesional.
         </v-card-text>
@@ -46,37 +48,52 @@
       <template v-else>
         <v-row class="mb-4" align="stretch">
           <v-col cols="12" md="4" class="d-flex">
-            <v-card class="pa-4 card-backgoundcustom flex-grow-1" elevation="2" variant="text">
-              <v-card-title class="text-h6">Citas próximas</v-card-title>
-              <v-card-text>
-                <div class="text-h4">{{ upcomingAppointments.length }}</div>
-                <div class="text-body-2 text-medium-emphasis">Pendientes o confirmadas</div>
-              </v-card-text>
+            <v-card class="pa-4 card-backgoundcustom flex-grow-1 schedule-stat-card" elevation="2" variant="text">
+              <div class="d-flex align-center justify-space-between ga-3">
+                <div>
+                  <div class="text-body-2 text-medium-emphasis">Citas próximas</div>
+                  <div class="text-h4 font-weight-bold mt-1">{{ upcomingAppointments.length }}</div>
+                  <div class="text-caption text-medium-emphasis">Pendientes o confirmadas</div>
+                </div>
+                <v-avatar color="secondary" variant="tonal" rounded="lg">
+                  <v-icon>mdi-calendar-clock</v-icon>
+                </v-avatar>
+              </div>
             </v-card>
           </v-col>
           <v-col cols="12" md="4" class="d-flex">
-            <v-card class="pa-4 card-backgoundcustom flex-grow-1" elevation="2" variant="text">
-              <v-card-title class="text-h6">Pacientes activos</v-card-title>
-              <v-card-text>
-                <div class="text-h4">{{ activePatientsCount }}</div>
-                <div class="text-body-2 text-medium-emphasis">Con terapia registrada</div>
-              </v-card-text>
+            <v-card class="pa-4 card-backgoundcustom flex-grow-1 schedule-stat-card" elevation="2" variant="text">
+              <div class="d-flex align-center justify-space-between ga-3">
+                <div>
+                  <div class="text-body-2 text-medium-emphasis">Pacientes activos</div>
+                  <div class="text-h4 font-weight-bold mt-1">{{ activePatientsCount }}</div>
+                  <div class="text-caption text-medium-emphasis">Con terapia registrada</div>
+                </div>
+                <v-avatar color="success" variant="tonal" rounded="lg">
+                  <v-icon>mdi-account-heart-outline</v-icon>
+                </v-avatar>
+              </div>
             </v-card>
           </v-col>
           <v-col cols="12" md="4" class="d-flex">
-            <v-card class="pa-4 card-backgoundcustom flex-grow-1" elevation="2" variant="text">
-              <v-card-title class="text-h6">Enlaces pendientes</v-card-title>
-              <v-card-text>
-                <div class="text-h4">{{ missingMeetingLinksCount }}</div>
-                <div class="text-body-2 text-medium-emphasis">Citas remotas sin URL</div>
-              </v-card-text>
+            <v-card class="pa-4 card-backgoundcustom flex-grow-1 schedule-stat-card" elevation="2" variant="text">
+              <div class="d-flex align-center justify-space-between ga-3">
+                <div>
+                  <div class="text-body-2 text-medium-emphasis">Enlaces pendientes</div>
+                  <div class="text-h4 font-weight-bold mt-1">{{ missingMeetingLinksCount }}</div>
+                  <div class="text-caption text-medium-emphasis">Citas remotas sin URL</div>
+                </div>
+                <v-avatar color="warning" variant="tonal" rounded="lg">
+                  <v-icon>mdi-link-variant-off</v-icon>
+                </v-avatar>
+              </div>
             </v-card>
           </v-col>
         </v-row>
 
         <v-card class="pa-4 card-backgoundcustom" elevation="2" variant="text">
-          <v-card-title class="text-h5">
-            <v-icon size="small">mdi-calendar-clock</v-icon>
+          <v-card-title class="d-flex align-center ga-2 text-h6 font-weight-bold px-0 pt-0">
+            <v-icon color="secondary" size="small">mdi-calendar-clock</v-icon>
             Sesiones asignadas
           </v-card-title>
           <v-card-text>
@@ -88,6 +105,8 @@
               prepend-inner-icon="mdi-magnify"
               label="Buscar por paciente, estado o fecha"
               class="mb-4"
+              variant="outlined"
+              density="comfortable"
             />
 
             <v-data-table
@@ -96,7 +115,7 @@
               :items-per-page="10"
               :loading="loading"
               :sort-by="[{ key: 'fechaOrden', order: 'asc' }]"
-              class="card-backgoundcustom"
+              class="card-backgoundcustom schedule-table"
             >
               <template #no-data>
                 <v-empty-state
@@ -135,7 +154,8 @@
                   <v-btn
                     icon
                     variant="text"
-                    color="blue"
+                    color="secondary"
+                    aria-label="Editar cita"
                     :disabled="item.estado === 'realizada'"
                     @click="openEditDialog(item)"
                   >
@@ -144,7 +164,8 @@
                   <v-btn
                     icon
                     variant="text"
-                    color="green"
+                    color="success"
+                    aria-label="Confirmar cita"
                     :disabled="item.estado === 'confirmada' || item.estado === 'realizada'"
                     @click="handleConfirmAppointment(item)"
                   >
@@ -153,7 +174,8 @@
                   <v-btn
                     icon
                     variant="text"
-                    color="deep-purple"
+                    color="primary"
+                    aria-label="Marcar como realizada"
                     :disabled="item.estado === 'realizada'"
                     @click="handleCompleteAppointment(item)"
                   >
@@ -163,6 +185,7 @@
                     icon
                     variant="text"
                     color="warning"
+                    aria-label="Regresar a pendiente"
                     :disabled="item.estado === 'pendiente'"
                     @click="handleResetAppointment(item)"
                   >
@@ -188,7 +211,7 @@
 
       <v-dialog v-model="completeDialog" max-width="640">
         <v-card class="pa-4 card-backgoundcustom" elevation="2" variant="text">
-          <v-card-title class="text-h5">Cerrar sesión</v-card-title>
+          <v-card-title class="text-h6 font-weight-bold px-0 pt-0">Cerrar sesión</v-card-title>
           <v-card-text>
             <p class="text-body-2 text-medium-emphasis mb-4">
               {{ completingAppointment?.pacienteNombre || "Paciente" }} ·
@@ -202,6 +225,7 @@
               variant="outlined"
               hint="Este resumen queda asociado al proceso y puede enriquecer el historial longitudinal."
               persistent-hint
+              density="comfortable"
             />
           </v-card-text>
           <v-card-actions>
@@ -211,7 +235,7 @@
             </v-btn>
             <v-btn
               color="secondary"
-              variant="flat"
+              variant="tonal"
               :loading="savingCompletion"
               prepend-icon="mdi-calendar-check"
               @click="saveAppointmentCompletion"
@@ -475,3 +499,27 @@ function handleDialogSaved() {
   loadTherapistSchedule();
 }
 </script>
+
+<style scoped>
+.schedule-view {
+  max-width: 1180px;
+}
+
+.schedule-stat-card {
+  min-height: 124px;
+}
+
+.schedule-table {
+  border-radius: 8px;
+}
+
+@media (max-width: 600px) {
+  .schedule-view {
+    padding-inline: 16px;
+  }
+
+  .schedule-view :deep(.v-card-title) {
+    line-height: 1.25;
+  }
+}
+</style>
