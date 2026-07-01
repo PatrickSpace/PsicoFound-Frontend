@@ -4,8 +4,11 @@
     max-width="560px"
     @update:model-value="emit('update:modelValue', $event)"
   >
-    <v-card class="ma-4">
-      <v-card-title class="text-h5">Dejar feedback</v-card-title>
+    <v-card class="ma-4 card-backgoundcustom" elevation="2" variant="text">
+      <v-card-title class="d-flex align-center ga-2 text-h6 font-weight-bold">
+        <v-icon color="secondary" size="small">mdi-message-alert-outline</v-icon>
+        Dejar feedback
+      </v-card-title>
       <v-divider class="mx-4"></v-divider>
 
       <v-card-text class="pt-6">
@@ -26,6 +29,7 @@
           item-title="label"
           item-value="value"
           class="mb-4"
+          density="comfortable"
         ></v-select>
 
         <v-textarea
@@ -34,13 +38,14 @@
           variant="outlined"
           rows="5"
           counter="500"
+          density="comfortable"
         ></v-textarea>
       </v-card-text>
 
-      <v-card-actions>
+      <v-card-actions class="px-6 pb-5 feedback-actions">
         <v-spacer></v-spacer>
         <v-btn variant="text" :disabled="saving" @click="closeDialog">Cancelar</v-btn>
-        <v-btn color="secondary" :loading="saving" @click="submitFeedback">
+        <v-btn color="secondary" variant="tonal" :loading="saving" @click="submitFeedback">
           Enviar feedback
         </v-btn>
       </v-card-actions>
@@ -135,3 +140,16 @@ async function submitFeedback() {
   }
 }
 </script>
+
+<style scoped>
+@media (max-width: 600px) {
+  .feedback-actions {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .feedback-actions :deep(.v-btn) {
+    flex: 1 1 100%;
+  }
+}
+</style>

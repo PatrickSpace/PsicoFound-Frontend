@@ -79,7 +79,7 @@
                 </v-chip>
                 <v-chip
                   v-if="profileTopics.length === 0"
-                  color="grey"
+                  color="secondary"
                   variant="tonal"
                   size="small"
                 >

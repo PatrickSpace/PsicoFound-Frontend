@@ -126,7 +126,7 @@
                   {{ item.activeTherapy.estado || "activo" }}
                 </div>
               </div>
-              <v-chip v-else size="small" color="grey" variant="tonal">
+              <v-chip v-else size="small" color="secondary" variant="tonal">
                 Sin terapia
               </v-chip>
             </template>

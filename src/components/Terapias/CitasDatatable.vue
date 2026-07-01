@@ -61,7 +61,7 @@
       >
         Abrir
       </v-btn>
-      <v-chip v-else size="small" variant="tonal" color="grey">
+      <v-chip v-else size="small" variant="tonal" color="secondary">
         Pendiente
       </v-chip>
     </template>
