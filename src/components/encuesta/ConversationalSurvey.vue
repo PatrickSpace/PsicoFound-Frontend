@@ -21,15 +21,43 @@
               Te haré unas preguntas para orientarte mejor.
             </span>
           </p>
-          <div
-            class="profile-status"
-            :class="{ 'is-ready': canViewRecommendations }"
+          <v-menu
+            open-on-hover
+            location="bottom start"
+            :close-on-content-click="false"
+            transition="fade-transition"
           >
-            <v-icon size="15">
-              {{ canViewRecommendations ? "mdi-check-circle-outline" : "mdi-progress-clock" }}
-            </v-icon>
-            <span>{{ canViewRecommendations ? "Perfil listo" : "Perfil en progreso" }}</span>
-          </div>
+            <template #activator="{ props }">
+              <div
+                v-bind="props"
+                class="profile-status"
+                :class="{ 'is-ready': canViewRecommendations }"
+                tabindex="0"
+              >
+                <v-icon size="15">
+                  {{ canViewRecommendations ? "mdi-check-circle-outline" : "mdi-progress-clock" }}
+                </v-icon>
+                <span>{{ canViewRecommendations ? "Perfil listo" : "Perfil en progreso" }}</span>
+              </div>
+            </template>
+
+            <div class="profile-popover">
+              <div class="profile-popover-title">Perfil registrado</div>
+              <div v-if="profileSummaryItems.length" class="profile-popover-list">
+                <div
+                  v-for="item in profileSummaryItems"
+                  :key="item.label"
+                  class="profile-popover-row"
+                >
+                  <span>{{ item.label }}</span>
+                  <strong>{{ item.value }}</strong>
+                </div>
+              </div>
+              <p v-else class="profile-popover-empty">
+                Aún no hay datos registrados.
+              </p>
+            </div>
+          </v-menu>
         </div>
 
         <div class="chat-header-actions">
@@ -201,6 +229,39 @@ const canViewRecommendations = computed(() => {
   }
 
   return isProfileReadyForRecommendations(profile.value);
+});
+const profileSummaryItems = computed(() => {
+  if (!activeSessionId.value || profile.value?.sessionId !== activeSessionId.value) {
+    return [];
+  }
+
+  const currentProfile = profile.value || {};
+  const items = [
+    ["Motivo", currentProfile.motivoConsulta],
+    ["Temas", currentProfile.temas],
+    ["Modalidad", currentProfile.modalidad],
+    ["Género", currentProfile.preferenciaGenero],
+    ["Enfoque", currentProfile.enfoque],
+    ["Edad", currentProfile.preferenciaEdad],
+    ["Urgencia", currentProfile.urgencia],
+    ["Malestar", currentProfile.nivelMalestar],
+    ["Observaciones", currentProfile.observaciones],
+  ];
+
+  if (currentProfile.soloConversar) {
+    items.unshift(["Tipo de apoyo", "Solo conversar"]);
+  }
+
+  if (currentProfile.riesgoSuicida) {
+    items.unshift(["Riesgo", "Requiere apoyo urgente"]);
+  }
+
+  return items
+    .map(([label, value]) => ({
+      label,
+      value: formatProfileValue(value),
+    }))
+    .filter((item) => item.value);
 });
 
 watch(
@@ -440,6 +501,18 @@ function goToRecommendations() {
   router.push("/elegirterapeuta");
 }
 
+function formatProfileValue(value) {
+  if (Array.isArray(value)) {
+    return value.filter(Boolean).join(", ");
+  }
+
+  if (typeof value === "boolean") {
+    return value ? "Sí" : "";
+  }
+
+  return (value || "").toString().trim();
+}
+
 async function scrollToBottom() {
   await nextTick();
 
@@ -573,6 +646,69 @@ function notifyError(message) {
 
 .profile-status.is-ready {
   color: rgb(var(--v-theme-success));
+}
+
+.profile-popover {
+  width: min(320px, calc(100vw - 32px));
+  padding: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 8px;
+  color: rgba(255, 255, 255, 0.88);
+  background: rgba(18, 39, 42, 0.96);
+  box-shadow: 0 18px 46px rgba(0, 18, 20, 0.34);
+  backdrop-filter: blur(16px);
+}
+
+:global(.v-theme--light) .profile-popover {
+  color: rgba(23, 38, 34, 0.88);
+  background: rgba(255, 255, 255, 0.96);
+  border-color: rgba(23, 63, 58, 0.12);
+  box-shadow: 0 18px 46px rgba(23, 63, 58, 0.16);
+}
+
+.profile-popover-title {
+  margin-bottom: 9px;
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+}
+
+.profile-popover-list {
+  display: grid;
+  gap: 7px;
+}
+
+.profile-popover-row {
+  display: grid;
+  grid-template-columns: 84px minmax(0, 1fr);
+  gap: 10px;
+  align-items: baseline;
+  font-size: 0.76rem;
+  line-height: 1.35;
+}
+
+.profile-popover-row span {
+  color: rgba(255, 255, 255, 0.58);
+}
+
+:global(.v-theme--light) .profile-popover-row span {
+  color: rgba(23, 38, 34, 0.56);
+}
+
+.profile-popover-row strong {
+  overflow-wrap: anywhere;
+  font-weight: 700;
+}
+
+.profile-popover-empty {
+  margin: 0;
+  color: rgba(255, 255, 255, 0.62);
+  font-size: 0.78rem;
+  line-height: 1.4;
+}
+
+:global(.v-theme--light) .profile-popover-empty {
+  color: rgba(23, 38, 34, 0.6);
 }
 
 .chat-header-actions {
