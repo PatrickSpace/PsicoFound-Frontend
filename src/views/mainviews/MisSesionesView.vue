@@ -1,22 +1,38 @@
 <template>
   <LayoutDefault layout>
-    <v-container>
-      <h1 class="text-h4">Mis sesiones</h1>
-      <v-divider class="my-5 mx-auto"></v-divider>
+    <v-container class="pa-0">
+      <div class="d-flex flex-column flex-md-row justify-space-between ga-4 mb-5">
+        <div>
+          <h1 class="text-h4 font-weight-bold">Mis sesiones</h1>
+          <p class="text-body-2 text-medium-emphasis mt-2 mb-0">
+            Revisa tu próxima cita, modalidad y acciones disponibles.
+          </p>
+        </div>
+        <v-btn
+          v-if="activeTherapy"
+          color="secondary"
+          variant="tonal"
+          prepend-icon="mdi-calendar-plus-outline"
+          class="align-self-start"
+          @click="dialog = true"
+        >
+          Agendar
+        </v-btn>
+      </div>
 
       <v-card
         v-if="!hasScheduledAppointments && activeTherapy"
-        class="pa-2 my-5 card-backgoundcustom"
+        class="pa-4 mb-5 card-backgoundcustom session-card"
         elevation="2"
         variant="text"
         @click="dialog = true"
       >
-        <v-card-title class="text-h5">
-          Agenda una sesión <v-icon size="small">mdi-open-in-new</v-icon>
+        <v-card-title class="text-h6 font-weight-bold d-flex align-center ga-2">
+          <v-icon color="secondary">mdi-calendar-plus-outline</v-icon>
+          Agenda una sesión
         </v-card-title>
         <v-card-text>
-          <v-divider></v-divider>
-          <v-list-item class="pt-5 px-0">
+          <v-list-item class="px-0">
             <v-list-item-title>
               {{
                 nextAppointment
@@ -25,36 +41,37 @@
               }}
             </v-list-item-title>
             <v-list-item-subtitle>
-              {{
-                nextAppointment
-                  ? "Haz click aquí para revisar la agenda de tu terapeuta y agendar una sesión"
-                  : "Haz click aquí para revisar la agenda de tu terapeuta y agendar una sesión"
-              }}
+              Revisa la agenda de tu terapeuta y elige un horario disponible.
             </v-list-item-subtitle>
+            <template #append>
+              <v-icon color="secondary">mdi-arrow-right</v-icon>
+            </template>
           </v-list-item>
         </v-card-text>
       </v-card>
 
-      <v-row v-if="hasScheduledAppointments" align="stretch">
+      <v-row v-if="hasScheduledAppointments" align="stretch" class="mb-5">
         <v-col cols="12" sm="12" md="6" class="d-flex">
           <v-card
-            class="pa-2 card-backgoundcustom flex-grow-1 d-flex flex-column"
+            class="pa-4 card-backgoundcustom flex-grow-1 d-flex flex-column session-card"
             elevation="2"
             variant="text"
           >
-            <v-card-title class="text-h5">
-              <v-icon size="small">mdi-calendar-clock</v-icon> Proxima sesión
+            <v-card-title class="text-h6 font-weight-bold d-flex align-center ga-2">
+              <v-icon color="secondary">mdi-calendar-clock</v-icon>
+              Próxima sesión
             </v-card-title>
-            <v-card-text>
-              <v-divider></v-divider>
-              <v-list-item class="w-150 mx-auto pt-5">
+            <v-card-text class="pt-2">
+              <v-list-item class="session-date px-0">
                 <template #prepend>
-                  <h4 class="appointment-day">{{ nextAppointmentDay }}</h4>
+                  <div class="session-day">
+                    {{ nextAppointmentDay }}
+                  </div>
                 </template>
-                <v-list-item-title class="pl-5">{{
-                  nextAppointmentMonth
-                }}</v-list-item-title>
-                <v-list-item-subtitle class="pl-5">
+                <v-list-item-title class="font-weight-bold text-capitalize">
+                  {{ nextAppointmentMonth }}
+                </v-list-item-title>
+                <v-list-item-subtitle>
                   {{ nextAppointmentYear }}
                   {{ nextAppointment?.hora ? `• ${nextAppointment.hora}` : "" }}
                 </v-list-item-subtitle>
@@ -65,17 +82,16 @@
 
         <v-col cols="12" sm="12" md="6" class="d-flex">
           <v-card
-            class="pa-2 card-backgoundcustom flex-grow-1 d-flex flex-column"
+            class="pa-4 card-backgoundcustom flex-grow-1 d-flex flex-column session-card"
             elevation="2"
             variant="text"
           >
-            <v-card-title class="text-h5">
-              <v-icon size="small">mdi-map-marker-radius</v-icon> Ubicación de
-              la sesión
+            <v-card-title class="text-h6 font-weight-bold d-flex align-center ga-2">
+              <v-icon color="secondary">mdi-map-marker-radius</v-icon>
+              Ubicación
             </v-card-title>
-            <v-card-text>
-              <v-divider></v-divider>
-              <v-list-item class="pt-5 px-0">
+            <v-card-text class="pt-2">
+              <v-list-item class="px-0">
                 <v-list-item-title>{{
                   nextAppointmentLocation
                 }}</v-list-item-title>
@@ -105,7 +121,7 @@
                     target="_blank"
                     rel="noopener noreferrer"
                     color="secondary"
-                    variant="flat"
+                    variant="tonal"
                     prepend-icon="mdi-open-in-new"
                     class="align-self-start"
                   >
@@ -119,18 +135,18 @@
       </v-row>
 
       <v-card
-        class="pa-2 my-5 card-backgoundcustom clickable-card"
+        class="pa-4 mb-5 card-backgoundcustom clickable-card session-card"
         :class="{ 'clickable-card--disabled': !editableAppointment }"
         elevation="2"
         variant="text"
         @click="openRescheduleDialog"
       >
-        <v-card-title class="text-h5">
-          ¿Cambio de planes? <v-icon size="small">mdi-book-edit</v-icon>
+        <v-card-title class="text-h6 font-weight-bold d-flex align-center ga-2">
+          <v-icon color="secondary">mdi-calendar-edit-outline</v-icon>
+          ¿Cambio de planes?
         </v-card-title>
         <v-card-text>
-          <v-divider></v-divider>
-          <v-list-item class="pt-5 px-0">
+          <v-list-item class="px-0">
             <v-list-item-title>Reprograma tu sesión</v-list-item-title>
             <v-list-item-subtitle>
               {{
@@ -139,6 +155,15 @@
                   : "Aun no tienes una cita pendiente o confirmada para reprogramar."
               }}
             </v-list-item-subtitle>
+            <template #append>
+              <v-chip
+                :color="editableAppointment ? 'secondary' : 'grey'"
+                size="small"
+                variant="tonal"
+              >
+                {{ editableAppointment ? "Disponible" : "No disponible" }}
+              </v-chip>
+            </template>
           </v-list-item>
         </v-card-text>
       </v-card>
@@ -146,25 +171,26 @@
       <v-row align="stretch">
         <v-col cols="12" sm="12" md="6" class="d-flex">
           <v-card
-            class="pa-2 card-backgoundcustom flex-grow-1 d-flex flex-column"
+            class="pa-4 card-backgoundcustom flex-grow-1 d-flex flex-column session-card"
             elevation="2"
             variant="text"
             to="/historial"
           >
-            <v-card-title class="text-h5">
-              <v-icon size="small">mdi-file-document-multiple</v-icon>
+            <v-card-title class="text-h6 font-weight-bold d-flex align-center ga-2">
+              <v-icon color="secondary">mdi-file-document-multiple</v-icon>
               Historial de sesiones
             </v-card-title>
             <v-card-text>
-              <v-divider></v-divider>
-              <v-list-item class="px-0 pt-5">
+              <v-list-item class="px-0">
                 <v-list-item-title
-                  >Revisa tu historial de terapias</v-list-item-title
+                  >Revisa tus sesiones anteriores</v-list-item-title
                 >
                 <v-list-item-subtitle>
-                  Podras encontrar las notas de las sesiones y herramientas
-                  aprendidas
+                  Consulta notas y herramientas aprendidas.
                 </v-list-item-subtitle>
+                <template #append>
+                  <v-icon color="secondary">mdi-arrow-right</v-icon>
+                </template>
               </v-list-item>
             </v-card-text>
           </v-card>
@@ -172,26 +198,29 @@
 
         <v-col cols="12" sm="12" md="6" class="d-flex">
           <v-card
-            class="pa-2 card-backgoundcustom flex-grow-1 d-flex flex-column clickable-card"
+            class="pa-4 card-backgoundcustom flex-grow-1 d-flex flex-column clickable-card session-card"
             :class="{ 'clickable-card--disabled': !activeTherapy?.id }"
             elevation="2"
             variant="text"
             @click="openActiveTherapy"
           >
-            <v-card-title class="text-h5">
-              <v-icon size="small">mdi-archive-edit</v-icon> Administra tu
-              terapia
+            <v-card-title class="text-h6 font-weight-bold d-flex align-center ga-2">
+              <v-icon color="secondary">mdi-archive-edit</v-icon>
+              Administra tu terapia
             </v-card-title>
             <v-card-text>
-              <v-divider></v-divider>
-              <v-list-item class="pt-5 px-0">
+              <v-list-item class="px-0">
                 <v-list-item-title
-                  >Podras cambiar los parametros de tu
-                  terapia</v-list-item-title
+                  >Gestiona tu proceso activo</v-list-item-title
                 >
                 <v-list-item-subtitle>
-                  Modifica objetivos, cambia de terapeuta, pausa tu terapia
+                  Modifica objetivos, terapeuta o estado de la terapia.
                 </v-list-item-subtitle>
+                <template #append>
+                  <v-icon :color="activeTherapy?.id ? 'secondary' : 'grey'">
+                    mdi-arrow-right
+                  </v-icon>
+                </template>
               </v-list-item>
             </v-card-text>
           </v-card>
@@ -392,6 +421,26 @@ watch(
 </script>
 
 <style scoped>
+.session-card {
+  min-height: 100%;
+}
+
+.session-day {
+  align-items: center;
+  border: 1px solid rgba(var(--v-theme-secondary), 0.34);
+  border-radius: 8px;
+  color: rgb(var(--v-theme-on-secondary));
+  display: inline-flex;
+  font-size: 2.4rem;
+  font-weight: 700;
+  height: 72px;
+  justify-content: center;
+  line-height: 1;
+  margin-right: 14px;
+  min-width: 72px;
+  background: rgba(var(--v-theme-secondary), 0.24);
+}
+
 .clickable-card {
   cursor: pointer;
   transition: transform 0.2s ease, box-shadow 0.2s ease, opacity 0.2s ease;
@@ -408,5 +457,27 @@ watch(
 
 .clickable-card--disabled:hover {
   transform: none;
+}
+
+@media (max-width: 599px) {
+  .session-card {
+    padding: 14px !important;
+  }
+
+  .session-card :deep(.v-card-title) {
+    font-size: 1rem !important;
+    line-height: 1.25;
+  }
+
+  .session-day {
+    font-size: 2rem;
+    height: 60px;
+    min-width: 60px;
+  }
+
+  .session-card :deep(.v-list-item__append) {
+    align-self: center;
+    margin-inline-start: 10px;
+  }
 }
 </style>
