@@ -1,10 +1,11 @@
 <template>
   <LayoutDefault layout>
-    <v-container>
-      <div class="d-flex flex-column flex-md-row justify-space-between ga-4">
+    <v-container class="settings-view">
+      <div class="d-flex flex-column flex-md-row justify-space-between align-md-center ga-4 mb-6">
         <div>
-          <h1 class="text-h4">Configuración</h1>
-          <p class="text-body-2 text-medium-emphasis mt-2 mb-0">
+          <p class="text-overline text-secondary mb-1">Cuenta y preferencias</p>
+          <h1 class="text-h4 font-weight-bold">Configuración</h1>
+          <p class="text-body-1 text-medium-emphasis mt-2 mb-0">
             Administra tu cuenta, preferencias y accesos dentro de PsicoFound.
           </p>
         </div>
@@ -19,14 +20,12 @@
         </v-chip>
       </div>
 
-      <v-divider class="my-5 mx-auto"></v-divider>
-
       <v-row align="stretch">
         <v-col cols="12" md="6" class="d-flex">
           <v-card class="pa-4 card-backgoundcustom flex-grow-1" elevation="2" variant="text">
-            <v-card-title class="text-h5 d-flex align-center justify-space-between ga-3">
+            <v-card-title class="text-h6 font-weight-bold d-flex align-center justify-space-between ga-3 px-0 pt-0">
               <span class="d-flex align-center ga-2">
-                <v-icon size="small">mdi-account-circle-outline</v-icon>
+                <v-icon color="secondary" size="small">mdi-account-circle-outline</v-icon>
                 Perfil de usuario
               </span>
               <v-btn
@@ -66,6 +65,7 @@
                       v-model="profileForm.nombre"
                       label="Nombre"
                       variant="outlined"
+                      density="comfortable"
                     />
                   </v-col>
                   <v-col cols="12">
@@ -74,6 +74,7 @@
                       label="Correo"
                       readonly
                       variant="outlined"
+                      density="comfortable"
                     />
                   </v-col>
                   <v-col cols="12" md="6">
@@ -82,6 +83,7 @@
                       label="Fecha de nacimiento"
                       type="date"
                       variant="outlined"
+                      density="comfortable"
                     />
                   </v-col>
                   <v-col cols="12" md="6">
@@ -90,6 +92,7 @@
                       label="Teléfono"
                       placeholder="Opcional"
                       variant="outlined"
+                      density="comfortable"
                     />
                   </v-col>
                 </v-row>
@@ -104,7 +107,7 @@
                   </v-btn>
                   <v-btn
                     color="secondary"
-                    variant="flat"
+                    variant="tonal"
                     prepend-icon="mdi-content-save-outline"
                     :loading="savingProfile"
                     :disabled="!canSaveProfile"
@@ -120,8 +123,8 @@
 
         <v-col cols="12" md="6" class="d-flex">
           <v-card class="pa-4 card-backgoundcustom flex-grow-1" elevation="2" variant="text">
-            <v-card-title class="text-h5">
-              <v-icon size="small">mdi-swap-horizontal</v-icon>
+            <v-card-title class="text-h6 font-weight-bold d-flex align-center ga-2 px-0 pt-0">
+              <v-icon color="secondary" size="small">mdi-swap-horizontal</v-icon>
               Vista y accesos
             </v-card-title>
             <v-card-text>
@@ -158,8 +161,8 @@
 
         <v-col cols="12" md="6" class="d-flex">
           <v-card class="pa-4 card-backgoundcustom flex-grow-1" elevation="2" variant="text">
-            <v-card-title class="text-h5">
-              <v-icon size="small">mdi-account-tie-outline</v-icon>
+            <v-card-title class="text-h6 font-weight-bold d-flex align-center ga-2 px-0 pt-0">
+              <v-icon color="secondary" size="small">mdi-account-tie-outline</v-icon>
               Perfil profesional
             </v-card-title>
             <v-card-text>
@@ -176,7 +179,7 @@
                 </p>
                 <v-btn
                   color="secondary"
-                  variant="flat"
+                  variant="tonal"
                   prepend-icon="mdi-account-plus-outline"
                   @click="showPsychologistRequest"
                 >
@@ -189,8 +192,8 @@
 
         <v-col cols="12" md="6" class="d-flex">
           <v-card class="pa-4 card-backgoundcustom flex-grow-1" elevation="2" variant="text">
-            <v-card-title class="text-h5">
-              <v-icon size="small">mdi-theme-light-dark</v-icon>
+            <v-card-title class="text-h6 font-weight-bold d-flex align-center ga-2 px-0 pt-0">
+              <v-icon color="secondary" size="small">mdi-theme-light-dark</v-icon>
               Apariencia
             </v-card-title>
             <v-card-text>
@@ -220,8 +223,8 @@
 
         <v-col cols="12" md="6" class="d-flex">
           <v-card class="pa-4 card-backgoundcustom flex-grow-1" elevation="2" variant="text">
-            <v-card-title class="text-h5">
-              <v-icon size="small">mdi-shield-lock-outline</v-icon>
+            <v-card-title class="text-h6 font-weight-bold d-flex align-center ga-2 px-0 pt-0">
+              <v-icon color="secondary" size="small">mdi-shield-lock-outline</v-icon>
               Seguridad
             </v-card-title>
             <v-card-text>
@@ -390,3 +393,19 @@ async function logout() {
   router.push("/login");
 }
 </script>
+
+<style scoped>
+.settings-view {
+  max-width: 1180px;
+}
+
+@media (max-width: 600px) {
+  .settings-view {
+    padding-inline: 16px;
+  }
+
+  .settings-view :deep(.v-card-title) {
+    line-height: 1.25;
+  }
+}
+</style>
