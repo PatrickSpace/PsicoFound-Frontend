@@ -57,7 +57,7 @@
     </template>
 
     <template #item.activo="{ value }">
-      <v-chip :color="value ? 'success' : 'grey'" size="small" variant="tonal">
+      <v-chip :color="value ? 'success' : 'secondary'" size="small" variant="tonal">
         {{ value ? "Activo" : "Inactivo" }}
       </v-chip>
     </template>
@@ -81,20 +81,22 @@
             </v-btn>
           </template>
 
-          <v-card class="pa-5">
-            <v-card-title>
-              <span class="text-h5">{{ formTitle }}</span>
+          <v-card class="pa-5 card-backgoundcustom" elevation="2" variant="text">
+            <v-card-title class="d-flex align-center ga-2 text-h6 font-weight-bold px-0 pt-0">
+              <v-icon color="secondary" size="small">mdi-account-heart-outline</v-icon>
+              <span>{{ formTitle }}</span>
             </v-card-title>
-            <v-divider class="mx-4"></v-divider>
+            <v-divider></v-divider>
 
             <v-card-text>
-              <v-container>
+              <v-container class="pa-0 pt-5">
                 <v-row>
                   <v-col cols="12" md="6">
                     <v-text-field
                       v-model="editedItem.nombre"
                       label="Nombre"
                       variant="outlined"
+                      density="comfortable"
                     ></v-text-field>
                   </v-col>
 
@@ -103,6 +105,7 @@
                       v-model="editedItem.avatar"
                       label="Avatar URL"
                       variant="outlined"
+                      density="comfortable"
                     ></v-text-field>
                   </v-col>
 
@@ -113,6 +116,7 @@
                       variant="outlined"
                       hint="Debe coincidir con el UID de Firebase Auth para habilitar su agenda."
                       persistent-hint
+                      density="comfortable"
                     ></v-text-field>
                   </v-col>
 
@@ -131,6 +135,7 @@
                       label="Descripcion profesional"
                       variant="outlined"
                       rows="2"
+                      density="comfortable"
                     ></v-textarea>
                   </v-col>
 
@@ -140,6 +145,7 @@
                       label="Mensaje para el paciente"
                       variant="outlined"
                       rows="2"
+                      density="comfortable"
                     ></v-textarea>
                   </v-col>
 
@@ -148,6 +154,7 @@
                       v-model="editedItem.direccion"
                       label="Dirección"
                       variant="outlined"
+                      density="comfortable"
                     ></v-text-field>
                   </v-col>
 
@@ -160,6 +167,7 @@
                       clearable
                       multiple
                       :items="especialidadesOptions"
+                      density="comfortable"
                     ></v-combobox>
                   </v-col>
 
@@ -172,6 +180,7 @@
                       clearable
                       multiple
                       :items="enfoquesOptions"
+                      density="comfortable"
                     ></v-combobox>
                   </v-col>
 
@@ -182,6 +191,7 @@
                       variant="outlined"
                       clearable
                       :items="generosOptions"
+                      density="comfortable"
                     ></v-select>
                   </v-col>
 
@@ -192,6 +202,7 @@
                       type="number"
                       min="18"
                       variant="outlined"
+                      density="comfortable"
                     ></v-text-field>
                   </v-col>
 
@@ -204,6 +215,7 @@
                       clearable
                       multiple
                       :items="modalidadesOptions"
+                      density="comfortable"
                     ></v-combobox>
                   </v-col>
 
@@ -216,6 +228,7 @@
                           label="Color inicial"
                           variant="outlined"
                           readonly
+                          density="comfortable"
                         >
                           <template #prepend-inner>
                             <v-avatar
@@ -227,7 +240,7 @@
                         </v-text-field>
                       </template>
 
-                      <v-card class="ma-5">
+                      <v-card class="ma-5 card-backgoundcustom" elevation="2" variant="text">
                         <v-color-picker
                           v-model="editedItem.colorInicio"
                           hide-inputs
@@ -246,6 +259,7 @@
                           label="Color final"
                           variant="outlined"
                           readonly
+                          density="comfortable"
                         >
                           <template #prepend-inner>
                             <v-avatar
@@ -257,7 +271,7 @@
                         </v-text-field>
                       </template>
 
-                      <v-card class="ma-5">
+                      <v-card class="ma-5 card-backgoundcustom" elevation="2" variant="text">
                         <v-color-picker
                           v-model="editedItem.colorFin"
                           hide-inputs
@@ -283,7 +297,7 @@
               </v-container>
             </v-card-text>
 
-            <v-card-actions>
+            <v-card-actions class="px-0 pb-0">
               <v-spacer></v-spacer>
               <v-btn color="secondary" variant="text" @click="close">
                 Cancelar
@@ -296,11 +310,11 @@
         </v-dialog>
 
         <v-dialog v-model="dialogDelete" max-width="500px">
-          <v-card class="ma-5">
-            <v-card-title class="text-h5">
+          <v-card class="ma-5 card-backgoundcustom" elevation="2" variant="text">
+            <v-card-title class="text-h6 font-weight-bold">
               ¿Seguro que deseas eliminar este terapeuta?
             </v-card-title>
-            <v-card-actions>
+            <v-card-actions class="px-6 pb-5">
               <v-spacer></v-spacer>
               <v-btn color="secondary" variant="text" @click="closeDelete">
                 Cancelar
