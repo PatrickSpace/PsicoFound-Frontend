@@ -55,6 +55,57 @@
             />
           </v-list>
         </v-menu>
+        <v-menu location="bottom end" width="360">
+          <template #activator="{ props }">
+            <v-badge
+              :content="unreadNotificationsCount"
+              :model-value="unreadNotificationsCount > 0"
+              color="secondary"
+              offset-x="4"
+              offset-y="4"
+            >
+              <v-btn
+                icon
+                v-bind="props"
+                class="nav-icon-btn"
+                aria-label="Notificaciones"
+                variant="text"
+              >
+                <v-icon>mdi-bell-outline</v-icon>
+              </v-btn>
+            </v-badge>
+          </template>
+          <v-card class="notifications-menu card-backgoundcustom" elevation="2" variant="text">
+            <v-card-title class="text-subtitle-1 font-weight-bold d-flex align-center ga-2">
+              <v-icon color="secondary" size="small">mdi-bell-outline</v-icon>
+              Notificaciones
+            </v-card-title>
+            <v-divider />
+            <v-list v-if="notifications.length" class="bg-transparent" density="comfortable">
+              <v-list-item
+                v-for="notification in notifications"
+                :key="notification.id"
+                :class="{ 'notification-unread': !notification.readAt }"
+                :title="notification.title"
+                :subtitle="notification.message"
+                @click="openNotification(notification)"
+              >
+                <template #prepend>
+                  <v-icon :color="!notification.readAt ? 'secondary' : undefined">
+                    {{ notificationIcon(notification.type) }}
+                  </v-icon>
+                </template>
+              </v-list-item>
+            </v-list>
+            <v-empty-state
+              v-else
+              class="py-6"
+              headline="Sin notificaciones"
+              text="Los avisos de citas aparecerán aquí."
+              icon="mdi-bell-check-outline"
+            />
+          </v-card>
+        </v-menu>
         <v-btn
           icon
           class="nav-icon-btn"
@@ -88,15 +139,25 @@
   </header>
 </template>
 <script setup>
-import { computed, ref } from "vue";
+import { computed, onBeforeUnmount, ref, watch } from "vue";
+import { storeToRefs } from "pinia";
 import { useRouter } from "vue-router";
 import FeedbackDialog from "@/components/Navigation/FeedbackDialog.vue";
 import { useAppContextStore } from "@/store/appContext";
+import { useAuthStore } from "@/store/auth";
+import {
+  markNotificationAsRead,
+  watchNotifications,
+} from "@/services/notificationService";
 
 const router = useRouter();
 const appContext = useAppContextStore();
+const authStore = useAuthStore();
+const { currentUser } = storeToRefs(authStore);
 const isFeedbackDialogOpen = ref(false);
 const showFeedbackSaved = ref(false);
+const notifications = ref([]);
+let unsubscribeNotifications = null;
 
 const activeMode = computed(
   () =>
@@ -104,6 +165,39 @@ const activeMode = computed(
       (mode) => mode.value === appContext.activeMode
     ) || null
 );
+
+const unreadNotificationsCount = computed(
+  () => notifications.value.filter((notification) => !notification.readAt).length
+);
+
+watch(
+  () => currentUser.value?.uid,
+  (uid) => {
+    unsubscribeNotifications?.();
+    notifications.value = [];
+
+    if (!uid) {
+      unsubscribeNotifications = null;
+      return;
+    }
+
+    unsubscribeNotifications = watchNotifications(
+      uid,
+      (items) => {
+        notifications.value = items;
+      },
+      (error) => {
+        console.error("Error loading notifications:", error);
+        notifications.value = [];
+      }
+    );
+  },
+  { immediate: true }
+);
+
+onBeforeUnmount(() => {
+  unsubscribeNotifications?.();
+});
 
 function switchMode(mode) {
   if (!mode || mode === appContext.activeMode) {
@@ -124,6 +218,32 @@ function defaultRouteForMode(mode) {
   }
 
   return "/dashboard";
+}
+
+async function openNotification(notification) {
+  if (!notification?.id) {
+    return;
+  }
+
+  try {
+    if (!notification.readAt) {
+      await markNotificationAsRead(notification.id);
+    }
+  } catch (error) {
+    console.error("Error marking notification as read:", error);
+  }
+
+  if (notification.route) {
+    router.push(notification.route);
+  }
+}
+
+function notificationIcon(type = "") {
+  if (type.includes("meeting_link")) return "mdi-video-outline";
+  if (type.includes("confirmed")) return "mdi-calendar-check-outline";
+  if (type.includes("completed")) return "mdi-check-circle-outline";
+  if (type.includes("rescheduled")) return "mdi-calendar-sync-outline";
+  return "mdi-calendar-clock-outline";
 }
 </script>
 
@@ -202,6 +322,15 @@ function defaultRouteForMode(mode) {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.notifications-menu {
+  max-height: min(70vh, 520px);
+  overflow-y: auto;
+}
+
+.notification-unread {
+  background: rgba(var(--v-theme-secondary), 0.08);
 }
 
 :global(.v-theme--light) .nav-title {

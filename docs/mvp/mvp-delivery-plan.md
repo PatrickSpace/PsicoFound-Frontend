@@ -173,6 +173,7 @@ Evitar errores de permisos y asegurar aislamiento de datos.
 - [ ] Revisar reglas para `terapias`.
 - [ ] Revisar reglas para `citas`.
 - [ ] Revisar reglas para `longitudinal_history`.
+- [x] Revisar reglas para `notifications`.
 - [ ] Revisar reglas para `therapy_goals`.
 - [ ] Revisar reglas para `exercises`.
 - [ ] Revisar reglas para `emotional_checkins`.
@@ -214,11 +215,16 @@ vista.
 
 ### Tareas
 
-- [ ] Avisar al psicologo cuando llega una nueva cita.
-- [ ] Avisar al paciente cuando la cita se confirma.
-- [ ] Avisar al paciente cuando se agrega link externo.
-- [ ] Avisar cuando una cita se marca como realizada.
-- [ ] Definir si el MVP usa solo notificaciones in-app o tambien FCM/email.
+- [x] Definir que el MVP usa notificaciones in-app persistentes.
+- [x] Crear coleccion `notifications`.
+- [x] Mostrar campana de notificaciones en la barra superior.
+- [x] Avisar al psicologo cuando llega una nueva cita.
+- [x] Avisar al paciente cuando la cita se confirma.
+- [x] Avisar al paciente cuando se agrega link externo.
+- [x] Avisar cuando una cita se marca como realizada.
+- [x] Avisar cuando una cita se reprograma.
+- [ ] Probar notificaciones con paciente real.
+- [ ] Probar notificaciones con psicologo real.
 
 ### Criterio De Salida
 

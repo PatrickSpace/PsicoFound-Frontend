@@ -9,6 +9,8 @@ import {
   replaceTherapyAppointments,
 } from "@/services/terapiaService";
 import { appendLongitudinalEvent } from "@/services/longitudinalHistoryService";
+import { createNotification } from "@/services/notificationService";
+import { getTherapistById } from "@/services/psicologoService";
 
 const APPOINTMENTS_COLLECTION = "citas";
 
@@ -68,6 +70,18 @@ export async function createAppointment(data = {}) {
     eventType: "appointment_created",
     title: "Cita agendada",
     summary: `Se agendó una cita con ${payload.terapeutaNombre || "el terapeuta"} para el ${payload.fecha || "fecha pendiente"}${payload.hora ? ` a las ${payload.hora}` : ""}.`,
+    appointment: {
+      ...payload,
+      citaId: docRef.id,
+      terapiaId: therapy.id,
+    },
+  });
+
+  await safelyNotifyTherapist({
+    therapistId: payload.terapeutaId,
+    type: "appointment_created",
+    title: "Nueva cita solicitada",
+    message: `${payload.pacienteNombre || "Un paciente"} agendó una cita para el ${payload.fecha || "fecha pendiente"}${payload.hora ? ` a las ${payload.hora}` : ""}.`,
     appointment: {
       ...payload,
       citaId: docRef.id,
@@ -138,6 +152,9 @@ export async function confirmAppointment({ citaId, terapiaId }) {
     eventType: "appointment_confirmed",
     eventTitle: "Cita confirmada",
     eventSummary: "La cita fue confirmada.",
+    notificationType: "appointment_confirmed",
+    notificationTitle: "Cita confirmada",
+    notificationMessage: "Tu psicólogo confirmó la cita.",
   });
 }
 
@@ -155,6 +172,9 @@ export async function markAppointmentAsCompleted({
     eventSummary: sessionSummary
       ? "La sesión fue marcada como realizada con resumen compartido."
       : "La sesión fue marcada como realizada.",
+    notificationType: "appointment_completed",
+    notificationTitle: "Sesión realizada",
+    notificationMessage: "Tu psicólogo marcó la sesión como realizada.",
     extraFields: {
       sessionSummary,
       completedAt: serverTimestamp(),
@@ -201,6 +221,7 @@ export async function updateAppointment({
   const nextStatus = dateOrTimeChanged
     ? "pendiente"
     : currentAppointment?.estado || "pendiente";
+  const meetingLinkChanged = meetingUrl !== currentAppointment?.meetingUrl;
 
   const appointmentRef = doc(db, APPOINTMENTS_COLLECTION, citaId);
   await updateDoc(appointmentRef, {
@@ -237,17 +258,17 @@ export async function updateAppointment({
   await safelyAppendAppointmentEvent({
     eventType: dateOrTimeChanged
       ? "appointment_rescheduled"
-      : meetingUrl !== currentAppointment?.meetingUrl
+      : meetingLinkChanged
         ? "appointment_meeting_link_updated"
         : "appointment_updated",
     title: dateOrTimeChanged
       ? "Cita reprogramada"
-      : meetingUrl !== currentAppointment?.meetingUrl
+      : meetingLinkChanged
         ? "Enlace de sesión actualizado"
         : "Cita actualizada",
     summary: dateOrTimeChanged
       ? `La cita fue reprogramada para el ${fecha || "fecha pendiente"}${hora ? ` a las ${hora}` : ""}.`
-      : meetingUrl !== currentAppointment?.meetingUrl
+      : meetingLinkChanged
         ? "Se actualizó el enlace externo de la sesión."
         : "Se actualizaron los datos de la cita.",
     appointment: {
@@ -265,6 +286,22 @@ export async function updateAppointment({
       pacienteUid: therapy?.pacienteUid,
       terapeutaNombre: therapy?.terapeutaNombre,
     },
+  });
+
+  await safelyNotifyAppointmentUpdate({
+    therapy,
+    appointment: {
+      ...currentAppointment,
+      citaId,
+      terapiaId,
+      fecha,
+      hora,
+      modalidad: modalidad || "",
+      meetingUrl: meetingUrl || "",
+      estado: nextStatus,
+    },
+    dateOrTimeChanged,
+    meetingLinkChanged,
   });
 
   return {
@@ -289,6 +326,9 @@ async function updateAppointmentStatus({
   eventType,
   eventTitle,
   eventSummary,
+  notificationType = "",
+  notificationTitle = "",
+  notificationMessage = "",
   extraFields = {},
   extraNestedFields = {},
 }) {
@@ -332,6 +372,114 @@ async function updateAppointmentStatus({
       terapeutaNombre: therapy?.terapeutaNombre,
     },
   });
+
+  if (notificationType) {
+    await safelyNotifyPatient({
+      type: notificationType,
+      title: notificationTitle,
+      message: notificationMessage,
+      appointment: {
+        ...currentAppointment,
+        citaId,
+        terapiaId,
+        estado,
+        ...extraNestedFields,
+        pacienteUid: therapy?.pacienteUid,
+        terapeutaId: therapy?.terapeutaId,
+      },
+    });
+  }
+}
+
+async function safelyNotifyAppointmentUpdate({
+  therapy,
+  appointment,
+  dateOrTimeChanged,
+  meetingLinkChanged,
+}) {
+  const actorUid = auth.currentUser?.uid || "";
+
+  if (actorUid && actorUid === therapy?.pacienteUid) {
+    await safelyNotifyTherapist({
+      therapistId: therapy?.terapeutaId,
+      type: dateOrTimeChanged ? "appointment_rescheduled" : "appointment_updated",
+      title: dateOrTimeChanged ? "Cita reprogramada" : "Cita actualizada",
+      message: `${therapy?.pacienteNombre || "Un paciente"} actualizó una cita.`,
+      appointment,
+    });
+    return;
+  }
+
+  if (dateOrTimeChanged) {
+    await safelyNotifyPatient({
+      type: "appointment_rescheduled",
+      title: "Cita reprogramada",
+      message: `Tu cita fue reprogramada para el ${appointment.fecha || "fecha pendiente"}${appointment.hora ? ` a las ${appointment.hora}` : ""}.`,
+      appointment: {
+        ...appointment,
+        pacienteUid: therapy?.pacienteUid,
+        terapeutaId: therapy?.terapeutaId,
+      },
+    });
+    return;
+  }
+
+  if (meetingLinkChanged && appointment.meetingUrl) {
+    await safelyNotifyPatient({
+      type: "appointment_meeting_link_updated",
+      title: "Enlace de sesión disponible",
+      message: "Tu psicólogo agregó o actualizó el enlace externo de la sesión.",
+      appointment: {
+        ...appointment,
+        pacienteUid: therapy?.pacienteUid,
+        terapeutaId: therapy?.terapeutaId,
+      },
+    });
+  }
+}
+
+async function safelyNotifyPatient({ type, title, message, appointment }) {
+  try {
+    await createNotification({
+      recipientUid: appointment?.pacienteUid,
+      type,
+      title,
+      message,
+      route: "/sesiones",
+      metadata: {
+        citaId: appointment?.citaId,
+        terapiaId: appointment?.terapiaId,
+        terapeutaId: appointment?.terapeutaId,
+        appointmentStatus: appointment?.estado,
+        hasMeetingUrl: Boolean(appointment?.meetingUrl),
+      },
+    });
+  } catch (error) {
+    console.warn("Could not create patient notification:", error);
+  }
+}
+
+async function safelyNotifyTherapist({ therapistId, type, title, message, appointment }) {
+  try {
+    const therapist = await getTherapistById(therapistId);
+
+    await createNotification({
+      recipientUid: therapist?.uid,
+      type,
+      title,
+      message,
+      route: "/psicologo/sesiones",
+      metadata: {
+        citaId: appointment?.citaId,
+        terapiaId: appointment?.terapiaId,
+        terapeutaId: therapistId,
+        appointmentStatus: appointment?.estado,
+        hasMeetingUrl: Boolean(appointment?.meetingUrl),
+      },
+    });
+  } catch (error) {
+    console.warn("Could not create therapist notification:", error);
+  }
 }
 
 async function safelyAppendAppointmentEvent({
