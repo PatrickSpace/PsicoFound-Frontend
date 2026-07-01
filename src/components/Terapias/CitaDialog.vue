@@ -395,8 +395,10 @@ async function submitAppointment() {
   saving.value = true;
 
   try {
+    let savedAppointment = null;
+
     if (props.citaId) {
-      await updateAppointment({
+      savedAppointment = await updateAppointment({
         citaId: props.citaId,
         terapiaId: props.terapiaId || "",
         fecha: form.fecha,
@@ -408,7 +410,7 @@ async function submitAppointment() {
         meetingUrl: isRemote.value ? form.meetingUrl.trim() : "",
       });
     } else {
-      await createAppointment({
+      savedAppointment = await createAppointment({
         terapiaId: props.terapiaId || "",
         usuarioId: currentUser.value.uid,
         terapeutaId: props.terapeutaId,
@@ -433,15 +435,15 @@ async function submitAppointment() {
           title: props.citaId ? "Cita actualizada" : "Cita registrada",
           message: props.citaId
             ? `La cita con ${props.terapeutaNombre} fue actualizada correctamente.`
-            : `La cita con ${props.terapeutaNombre} fue guardada correctamente.`,
+            : `Tu cita con ${props.terapeutaNombre} fue guardada. El psicólogo podrá confirmar y agregar el enlace de la sesión.`,
         },
       })
     );
 
-    emit("saved");
+    emit("saved", savedAppointment);
     emit("update:modelValue", false);
     if (props.redirectOnSave) {
-      router.push("/dashboard");
+      router.push("/sesiones");
     }
   } catch (error) {
     console.error("Error registrando cita:", error);

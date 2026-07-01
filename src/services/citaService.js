@@ -13,28 +13,7 @@ import { appendLongitudinalEvent } from "@/services/longitudinalHistoryService";
 const APPOINTMENTS_COLLECTION = "citas";
 
 export async function createAppointment(data = {}) {
-  if (!data.terapiaId && data.pacienteUid) {
-    const activeTherapy = await getActiveTherapyByPatient(data.pacienteUid);
-
-    if (activeTherapy) {
-      throw new Error(
-        "Ya tienes una terapia activa. Debes pausarla o cancelarla antes de crear una nueva."
-      );
-    }
-  }
-
-  const therapy = data.terapiaId
-    ? { id: data.terapiaId }
-    : await createTherapy({
-        usuarioId: data.usuarioId || data.pacienteUid,
-        pacienteUid: data.pacienteUid,
-        pacienteNombre: data.pacienteNombre,
-        pacienteEmail: data.pacienteEmail,
-        terapeutaId: data.terapeutaId,
-        terapeutaNombre: data.terapeutaNombre,
-        modalidad: data.modalidad,
-        estado: "activo",
-      });
+  const therapy = await resolveAppointmentTherapy(data);
 
   if (therapy.id) {
     const currentTherapy = await getTherapyById(therapy.id);
@@ -98,8 +77,46 @@ export async function createAppointment(data = {}) {
 
   return {
     id: docRef.id,
+    terapiaId: therapy.id,
     ...payload,
   };
+}
+
+async function resolveAppointmentTherapy(data = {}) {
+  if (data.terapiaId) {
+    return { id: data.terapiaId };
+  }
+
+  if (!data.pacienteUid) {
+    throw new Error("Missing pacienteUid");
+  }
+
+  const activeTherapy = await getActiveTherapyByPatient(data.pacienteUid);
+
+  if (activeTherapy) {
+    const sameTherapist =
+      (activeTherapy.terapeutaId || "").toString() ===
+      (data.terapeutaId || "").toString();
+
+    if (sameTherapist) {
+      return activeTherapy;
+    }
+
+    throw new Error(
+      "Ya tienes una terapia activa. Debes pausarla o cancelarla antes de iniciar una nueva con otro psicólogo."
+    );
+  }
+
+  return createTherapy({
+    usuarioId: data.usuarioId || data.pacienteUid,
+    pacienteUid: data.pacienteUid,
+    pacienteNombre: data.pacienteNombre,
+    pacienteEmail: data.pacienteEmail,
+    terapeutaId: data.terapeutaId,
+    terapeutaNombre: data.terapeutaNombre,
+    modalidad: data.modalidad,
+    estado: "activo",
+  });
 }
 
 export async function confirmAppointment({ citaId, terapiaId }) {
@@ -249,6 +266,20 @@ export async function updateAppointment({
       terapeutaNombre: therapy?.terapeutaNombre,
     },
   });
+
+  return {
+    id: citaId,
+    citaId,
+    terapiaId,
+    fecha,
+    hora,
+    notas: notas || "",
+    modalidad: modalidad || "",
+    ubicacion: ubicacion || "",
+    meetingProvider: meetingProvider || "",
+    meetingUrl: meetingUrl || "",
+    estado: nextStatus,
+  };
 }
 
 async function updateAppointmentStatus({

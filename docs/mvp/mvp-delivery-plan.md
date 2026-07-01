@@ -85,12 +85,13 @@ sin pago.
 
 ### Tareas
 
-- [ ] Revisar `CitaDialog` cuando se abre desde recomendaciones.
-- [ ] Si no existe terapia activa con el terapeuta seleccionado, crear terapia.
-- [ ] Asociar la cita a la terapia correcta.
-- [ ] Evitar mas de una cita pendiente o confirmada por terapia.
-- [ ] Mostrar confirmacion clara despues de agendar.
-- [ ] Asegurar que `/sesiones` muestre la cita creada.
+- [x] Revisar `CitaDialog` cuando se abre desde recomendaciones.
+- [x] Si no existe terapia activa con el terapeuta seleccionado, crear terapia.
+- [x] Asociar la cita a la terapia correcta.
+- [x] Evitar mas de una cita pendiente o confirmada por terapia.
+- [x] Mostrar confirmacion clara despues de agendar.
+- [x] Redirigir a `/sesiones` despues de agendar.
+- [ ] Asegurar con usuario real que `/sesiones` muestre la cita creada.
 - [ ] Asegurar que `/terapiadetail` muestre la cita asociada.
 
 ### Criterio De Salida
