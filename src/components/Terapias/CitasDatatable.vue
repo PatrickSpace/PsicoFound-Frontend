@@ -1,10 +1,11 @@
 <template>
-  <v-row>
+  <v-row class="appointments-toolbar mb-2" align="center">
     <v-col cols="12" md="6">
       <v-btn
-        size="x-large"
+        color="secondary"
         prepend-icon="mdi-plus"
         variant="tonal"
+        class="appointments-action"
         :disabled="!activeTherapy"
         @click="openAppointmentDialog"
       >
@@ -19,6 +20,8 @@
         prepend-inner-icon="mdi-magnify"
         label="Buscar citas"
         class="w-100"
+        variant="outlined"
+        density="comfortable"
       />
     </v-col>
   </v-row>
@@ -26,7 +29,7 @@
   <v-data-table
     :headers="headers"
     :items="filteredItems"
-    class="card-backgoundcustom"
+    class="card-backgoundcustom appointments-table"
     :items-per-page="10"
     :loading="loading"
     :sort-by="[{ key: 'fechaOrden', order: 'desc' }]"
@@ -74,7 +77,8 @@
         <v-btn
           icon
           variant="text"
-          color="blue"
+          color="secondary"
+          aria-label="Editar cita"
           :disabled="item.estado === 'realizada'"
           @click="openEditDialog(item)"
         >
@@ -83,7 +87,8 @@
         <v-btn
           icon
           variant="text"
-          color="green"
+          color="success"
+          aria-label="Confirmar cita"
           :disabled="item.estado === 'confirmada' || item.estado === 'realizada'"
           @click="handleConfirmAppointment(item)"
         >
@@ -92,7 +97,8 @@
         <v-btn
           icon
           variant="text"
-          color="deep-purple"
+          color="primary"
+          aria-label="Marcar cita como realizada"
           :disabled="item.estado === 'realizada'"
           @click="handleCompleteAppointment(item)"
         >
@@ -102,6 +108,7 @@
           icon
           variant="text"
           color="warning"
+          aria-label="Volver cita a pendiente"
           :disabled="item.estado === 'pendiente'"
           @click="handleResetAppointment(item)"
         >
@@ -192,10 +199,10 @@ const activeTherapy = computed(() =>
 function statusColor(status) {
   const normalized = (status || "").toString().trim().toLowerCase();
 
-  if (normalized === "confirmada") return "green";
-  if (normalized === "cancelada") return "red";
+  if (normalized === "confirmada") return "success";
+  if (normalized === "cancelada") return "error";
   if (normalized === "realizada" || normalized === "completada") return "primary";
-  return "orange";
+  return "warning";
 }
 
 function buildSortableDate(fecha, hora) {
@@ -382,3 +389,15 @@ watch(
   { immediate: true }
 );
 </script>
+
+<style scoped>
+.appointments-table {
+  border-radius: 8px;
+}
+
+@media (max-width: 600px) {
+  .appointments-action {
+    width: 100%;
+  }
+}
+</style>

@@ -5,14 +5,17 @@
     max-width="700px"
     @update:model-value="emit('update:modelValue', $event)"
   >
-    <v-card class="appointment-card ma-5">
-      <v-card-title class="text-h5">Agendar cita</v-card-title>
+    <v-card class="appointment-card card-backgoundcustom ma-5" elevation="2" variant="text">
+      <v-card-title class="d-flex align-center ga-2 text-h6 font-weight-bold">
+        <v-icon color="secondary" size="small">mdi-calendar-plus-outline</v-icon>
+        {{ citaId ? "Editar cita" : "Agendar cita" }}
+      </v-card-title>
       <v-divider class="mx-4"></v-divider>
       <v-card-text class="pt-6">
-        <v-container>
+        <v-container class="pa-0">
           <v-row>
             <v-col cols="12">
-              <div class="text-subtitle-1 font-weight-medium">
+              <div class="text-subtitle-1 font-weight-bold">
                 Terapeuta: {{ terapeutaNombre || "No definido" }}
               </div>
               <div class="text-body-2 text-medium-emphasis">
@@ -26,6 +29,7 @@
                 label="Fecha"
                 type="date"
                 variant="outlined"
+                density="comfortable"
               ></v-text-field>
             </v-col>
 
@@ -35,6 +39,7 @@
                 label="Hora"
                 type="time"
                 variant="outlined"
+                density="comfortable"
               ></v-text-field>
             </v-col>
 
@@ -45,6 +50,7 @@
                 variant="outlined"
                 readonly
                 :loading="loadingTherapist || loadingTherapy"
+                density="comfortable"
               ></v-text-field>
             </v-col>
 
@@ -56,6 +62,7 @@
                 :readonly="isRemote"
                 :hint="isRemote ? 'La cita se registrará como terapia online.' : 'Puedes ajustar la dirección si hace falta.'"
                 persistent-hint
+                density="comfortable"
               ></v-text-field>
             </v-col>
 
@@ -71,6 +78,7 @@
                 :disabled="!isRemote"
                 :hint="isRemote ? 'Opcional. El psicólogo puede completarlo luego.' : 'Disponible para citas remotas.'"
                 persistent-hint
+                density="comfortable"
               ></v-select>
             </v-col>
 
@@ -85,6 +93,7 @@
                 :rules="[r.optionalUrl]"
                 :hint="isRemote ? 'Opcional al agendar. El paciente lo verá cuando esté disponible.' : 'Solo aplica a modalidad remota.'"
                 persistent-hint
+                density="comfortable"
               ></v-text-field>
             </v-col>
 
@@ -94,16 +103,18 @@
                 label="Notas para la cita"
                 variant="outlined"
                 rows="3"
+                density="comfortable"
               ></v-textarea>
             </v-col>
           </v-row>
         </v-container>
       </v-card-text>
-      <v-card-actions class="appointment-actions">
+      <v-card-actions class="appointment-actions px-6 pb-5">
         <v-spacer></v-spacer>
         <v-btn variant="text" @click="emit('update:modelValue', false)">Cancelar</v-btn>
         <v-btn
           color="secondary"
+          variant="tonal"
           :loading="saving"
           :disabled="!form.fecha || !form.hora || !form.modalidad || !form.ubicacion || !terapeutaId"
           @click="submitAppointment"

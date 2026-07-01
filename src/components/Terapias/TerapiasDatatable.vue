@@ -1,10 +1,11 @@
 <template>
-  <v-row>
+  <v-row class="therapies-toolbar mb-2" align="center">
     <v-col cols="12" md="6">
       <v-btn
-        size="x-large"
+        color="secondary"
         prepend-icon="mdi-plus"
         variant="tonal"
+        class="therapies-action"
         @click="handleNewTherapy"
       >
         Iniciar una nueva terapia
@@ -18,6 +19,8 @@
         prepend-inner-icon="mdi-magnify"
         label="Buscar terapias"
         class="w-100"
+        variant="outlined"
+        density="comfortable"
       />
     </v-col>
   </v-row>
@@ -25,17 +28,39 @@
   <v-data-table
     :headers="headers"
     :items="filteredItems"
-    class="card-backgoundcustom"
+    class="card-backgoundcustom therapies-table"
     :items-per-page="10"
     :loading="loading"
   >
+    <template #no-data>
+      <v-empty-state
+        headline="No hay terapias registradas"
+        text="Cuando inicies un proceso terapéutico, aparecerá en esta lista."
+        icon="mdi-account-heart-outline"
+      ></v-empty-state>
+    </template>
+
+    <template #item.estado="{ value }">
+      <v-chip :color="statusColor(value)" size="small" variant="tonal">
+        {{ value || "activo" }}
+      </v-chip>
+    </template>
+
     <template #item.problemas="{ item }">
       {{ Array.isArray(item.problemas) ? item.problemas.join(", ") : item.problemas }}
     </template>
 
     <template #item.actions="{ item }">
       <div class="d-flex ga-2">
-        <v-icon icon="mdi-list-box" @click="itemdetail(item.id)"></v-icon>
+        <v-btn
+          icon
+          variant="text"
+          color="secondary"
+          aria-label="Ver detalle de terapia"
+          @click="itemdetail(item.id)"
+        >
+          <v-icon icon="mdi-list-box-outline"></v-icon>
+        </v-btn>
       </div>
     </template>
   </v-data-table>
@@ -104,6 +129,18 @@ function formatDate(value) {
   if (Number.isNaN(date.getTime())) return "No definida";
 
   return date.toLocaleDateString("es-PE");
+}
+
+function statusColor(status) {
+  const normalized = (status || "").toString().trim().toLowerCase();
+
+  if (normalized === "activo") return "success";
+  if (normalized === "pausa") return "warning";
+  if (normalized === "cancelada" || normalized === "finalizado") {
+    return "error";
+  }
+
+  return "secondary";
 }
 
 function normalizeTherapy(item) {
@@ -175,3 +212,15 @@ watch(
   { immediate: true }
 );
 </script>
+
+<style scoped>
+.therapies-table {
+  border-radius: 8px;
+}
+
+@media (max-width: 600px) {
+  .therapies-action {
+    width: 100%;
+  }
+}
+</style>
