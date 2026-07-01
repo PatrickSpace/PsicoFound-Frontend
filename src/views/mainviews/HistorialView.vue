@@ -1,9 +1,9 @@
 <template>
   <LayoutDefault layout>
-    <v-container>
+    <v-container class="pa-0">
       <div class="d-flex flex-column flex-md-row justify-space-between ga-4">
         <div>
-          <h1 class="text-h4">Historial longitudinal</h1>
+          <h1 class="text-h4 font-weight-bold">Historial longitudinal</h1>
           <p class="text-body-2 text-medium-emphasis mt-2 mb-0">
             {{ pageSubtitle }}
           </p>
@@ -13,17 +13,16 @@
           variant="tonal"
           prepend-icon="mdi-refresh"
           :loading="loadingHistory"
+          class="align-self-start"
           @click="loadHistory"
         >
           Actualizar
         </v-btn>
       </div>
 
-      <v-divider class="my-5 mx-auto"></v-divider>
-
       <v-alert
         v-if="historyError"
-        class="mb-5"
+        class="my-5"
         color="error"
         variant="tonal"
         icon="mdi-alert-outline"
@@ -31,9 +30,9 @@
         {{ historyError }}
       </v-alert>
 
-      <v-card class="pa-4 card-backgoundcustom" elevation="2" variant="text">
-        <v-card-title class="text-h5">
-          <v-icon size="small">mdi-timeline-text-outline</v-icon>
+      <v-card class="pa-4 mt-5 card-backgoundcustom" elevation="2" variant="text">
+        <v-card-title class="text-h6 font-weight-bold d-flex align-center ga-2">
+          <v-icon color="secondary">mdi-timeline-text-outline</v-icon>
           Línea de tiempo
         </v-card-title>
         <v-card-text>
@@ -50,7 +49,7 @@
             icon="mdi-timeline-clock-outline"
           ></v-empty-state>
 
-          <v-timeline v-else side="end" density="compact">
+          <v-timeline v-else class="history-timeline" side="end" density="compact">
             <v-timeline-item
               v-for="event in historyEvents"
               :key="event.id"
@@ -58,14 +57,14 @@
               size="small"
             >
               <v-card
-                class="history-event-card card-backgoundcustom"
+                class="history-event-card card-backgoundcustom pa-1"
                 elevation="2"
                 variant="text"
               >
-                <v-card-title class="text-subtitle-1">
+                <v-card-title class="text-subtitle-1 font-weight-bold">
                   {{ event.title || eventLabel(event.eventType) }}
                 </v-card-title>
-                <v-card-subtitle>
+                <v-card-subtitle class="text-medium-emphasis">
                   {{ formatEventDate(event.occurredAt) }}
                 </v-card-subtitle>
                 <v-card-text>
@@ -92,7 +91,7 @@
                     <v-chip
                       v-if="event.metadata?.fecha"
                       size="small"
-                      color="white"
+                      color="info"
                       variant="tonal"
                     >
                       {{ event.metadata.fecha }}
@@ -110,7 +109,10 @@
       </v-card>
 
       <v-card class="pa-4 mt-6 card-backgoundcustom" elevation="2" variant="text">
-        <v-card-title class="text-h5">Terapias registradas</v-card-title>
+        <v-card-title class="text-h6 font-weight-bold d-flex align-center ga-2">
+          <v-icon color="secondary">mdi-clipboard-text-clock-outline</v-icon>
+          Terapias registradas
+        </v-card-title>
         <v-card-text>
           <v-divider class="mb-4"></v-divider>
           <TerapiasDatatable v-if="!isPsychologistMode" />
@@ -257,13 +259,13 @@ function eventLabel(eventType) {
 }
 
 function eventColor(eventType) {
-  if (eventType === "appointment_completed") return "primary";
-  if (eventType === "appointment_confirmed") return "green";
+  if (eventType === "appointment_completed") return "success";
+  if (eventType === "appointment_confirmed") return "success";
   if (eventType === "appointment_meeting_link_updated") return "secondary";
   if (eventType === "appointment_rescheduled") return "warning";
   if (eventType === "exercise_completed") return "success";
-  if (eventType === "emotional_checkin_created") return "pink";
-  return "blue";
+  if (eventType === "emotional_checkin_created") return "info";
+  return "secondary";
 }
 
 watch(
@@ -278,5 +280,20 @@ watch(
 <style scoped>
 .history-event-card {
   border-radius: 8px;
+}
+
+@media (max-width: 599px) {
+  .history-timeline :deep(.v-timeline-item__body) {
+    padding-inline-start: 10px;
+  }
+
+  .history-event-card :deep(.v-card-title) {
+    font-size: 0.98rem;
+    line-height: 1.28;
+  }
+
+  .history-event-card :deep(.v-card-text) {
+    font-size: 0.88rem;
+  }
 }
 </style>
