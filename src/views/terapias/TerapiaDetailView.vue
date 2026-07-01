@@ -56,6 +56,7 @@
             <v-card-text>
               <v-divider class="mb-4"></v-divider>
               <v-btn
+                v-if="canCreateAppointment"
                 block
                 color="secondary"
                 variant="tonal"
@@ -66,9 +67,10 @@
                 Agendar cita
               </v-btn>
               <div class="text-caption text-medium-emphasis mt-3">
-                Solo puedes agendar nuevas citas cuando la terapia está en estado activo.
+                {{ appointmentActionHint }}
               </div>
               <v-btn
+                v-if="canChangeTherapyStatus"
                 block
                 class="mt-4"
                 color="warning"
@@ -80,6 +82,7 @@
                 Poner en pausa
               </v-btn>
               <v-btn
+                v-if="canChangeTherapyStatus"
                 block
                 class="mt-3"
                 color="success"
@@ -91,6 +94,7 @@
                 Reactivar terapia
               </v-btn>
               <v-btn
+                v-if="canChangeTherapyStatus"
                 block
                 class="mt-3"
                 color="error"
@@ -168,6 +172,9 @@
         :terapia-id="therapy?.id || ''"
         :terapeuta-id="therapy?.terapeutaId || ''"
         :terapeuta-nombre="therapy?.terapeutaNombre || ''"
+        :paciente-uid="therapy?.pacienteUid || ''"
+        :paciente-nombre="therapy?.pacienteNombre || ''"
+        :paciente-email="therapy?.pacienteEmail || ''"
         @saved="loadTherapy"
       />
     </v-container>
@@ -181,8 +188,11 @@ import { useRoute, useRouter } from "vue-router";
 import LayoutDefault from "@/components/Layout/Layoutmain.vue";
 import CitaDialog from "@/components/Terapias/CitaDialog.vue";
 import { useAuthStore } from "@/store/auth";
+import { useAppContextStore } from "@/store/appContext";
+import { getTherapistByUserUid } from "@/services/psicologoService";
 import {
   getActiveTherapyByPatient,
+  getTherapyById,
   getTherapyByIdForPatient,
   updateTherapyStatus,
 } from "@/services/terapiaService";
@@ -190,6 +200,7 @@ import {
 const route = useRoute();
 const router = useRouter();
 const authStore = useAuthStore();
+const appContext = useAppContextStore();
 const { currentUser } = storeToRefs(authStore);
 const therapy = ref(null);
 const dialog = ref(false);
@@ -211,6 +222,21 @@ const formattedCreationDate = computed(() => {
 
 const normalizedTherapyStatus = computed(() =>
   (therapy.value?.estado || "").toString().trim().toLowerCase()
+);
+
+const isPatientMode = computed(() => appContext.activeMode === "patient");
+const isPsychologistMode = computed(() => appContext.activeMode === "psychologist");
+const isAdminMode = computed(() => appContext.activeMode === "admin");
+const canCreateAppointment = computed(
+  () => isPatientMode.value && normalizedTherapyStatus.value === "activo"
+);
+const canChangeTherapyStatus = computed(
+  () => isPatientMode.value && Boolean(therapy.value?.id)
+);
+const appointmentActionHint = computed(() =>
+  canCreateAppointment.value
+    ? "Solo puedes agendar nuevas citas cuando la terapia está en estado activo."
+    : "La agenda de nuevas citas está disponible desde la vista del paciente."
 );
 
 const appointmentItems = computed(() =>
@@ -235,17 +261,22 @@ function statusColor(status) {
 }
 
 async function loadTherapy() {
-  const pacienteUid = currentUser.value?.uid;
+  const uid = currentUser.value?.uid;
   let therapyId = route.query.id?.toString() || "";
 
-  if (!pacienteUid) {
+  if (!uid) {
     therapy.value = null;
     return;
   }
 
   try {
     if (!therapyId) {
-      const activeTherapy = await getActiveTherapyByPatient(pacienteUid);
+      if (!isPatientMode.value) {
+        router.replace("/pacientes");
+        return;
+      }
+
+      const activeTherapy = await getActiveTherapyByPatient(uid);
 
       if (!activeTherapy?.id) {
         router.replace("/sesiones");
@@ -256,15 +287,48 @@ async function loadTherapy() {
       await router.replace({ path: "/terapiadetail", query: { id: therapyId } });
     }
 
-    therapy.value = await getTherapyByIdForPatient(therapyId, pacienteUid);
+    therapy.value = await loadTherapyForActiveMode(therapyId, uid);
 
     if (!therapy.value) {
-      router.replace("/dashboard");
+      router.replace(defaultRouteForMode(appContext.activeMode));
     }
   } catch (error) {
     console.error("Error loading therapy detail:", error);
     therapy.value = null;
   }
+}
+
+async function loadTherapyForActiveMode(therapyId, uid) {
+  if (isPatientMode.value) {
+    return getTherapyByIdForPatient(therapyId, uid);
+  }
+
+  const selectedTherapy = await getTherapyById(therapyId);
+
+  if (!selectedTherapy) {
+    return null;
+  }
+
+  if (isAdminMode.value) {
+    return selectedTherapy;
+  }
+
+  if (isPsychologistMode.value) {
+    const therapist = await getTherapistByUserUid(uid);
+    return therapist?.id && selectedTherapy.terapeutaId === therapist.id
+      ? selectedTherapy
+      : null;
+  }
+
+  return null;
+}
+
+function defaultRouteForMode(mode) {
+  if (mode === "psychologist" || mode === "admin") {
+    return "/pacientes";
+  }
+
+  return "/dashboard";
 }
 
 async function changeTherapyStatus(estado) {
@@ -302,7 +366,7 @@ async function changeTherapyStatus(estado) {
 }
 
 watch(
-  [() => route.query.id, () => currentUser.value?.uid],
+  [() => route.query.id, () => currentUser.value?.uid, () => appContext.activeMode],
   () => {
     loadTherapy();
   },

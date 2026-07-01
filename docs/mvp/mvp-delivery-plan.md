@@ -122,6 +122,7 @@ Permitir que el psicologo gestione la sesion de punta a punta.
 - [x] Marcar sesion como realizada.
 - [x] Registrar resumen compartido de la sesion.
 - [x] Registrar eventos en historial longitudinal.
+- [x] Permitir abrir detalle de terapia desde Pacientes en modo psicologo/admin.
 - [ ] Probar con psicologo real que la agenda liste citas de terapias asignadas.
 - [ ] Probar con psicologo real confirmacion, reprogramacion, link externo y sesion realizada.
 - [ ] Verificar desde paciente que el link externo aparezca despues de que el psicologo lo agregue.

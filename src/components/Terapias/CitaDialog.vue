@@ -148,6 +148,18 @@ const props = defineProps({
     type: String,
     default: "",
   },
+  pacienteUid: {
+    type: String,
+    default: "",
+  },
+  pacienteNombre: {
+    type: String,
+    default: "",
+  },
+  pacienteEmail: {
+    type: String,
+    default: "",
+  },
   terapiaId: {
     type: String,
     default: "",
@@ -410,14 +422,15 @@ async function submitAppointment() {
         meetingUrl: isRemote.value ? form.meetingUrl.trim() : "",
       });
     } else {
+      const appointmentPatientUid = props.pacienteUid || currentUser.value.uid;
       savedAppointment = await createAppointment({
         terapiaId: props.terapiaId || "",
-        usuarioId: currentUser.value.uid,
+        usuarioId: appointmentPatientUid,
         terapeutaId: props.terapeutaId,
         terapeutaNombre: props.terapeutaNombre,
-        pacienteUid: currentUser.value.uid,
-        pacienteNombre: userName.value || "Usuario",
-        pacienteEmail: currentUser.value?.email || "",
+        pacienteUid: appointmentPatientUid,
+        pacienteNombre: props.pacienteNombre || userName.value || "Usuario",
+        pacienteEmail: props.pacienteEmail || currentUser.value?.email || "",
         fecha: form.fecha,
         hora: form.hora,
         notas: form.notas,
