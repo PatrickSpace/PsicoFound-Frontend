@@ -89,6 +89,7 @@ sin pago.
 - [x] Si no existe terapia activa con el terapeuta seleccionado, crear terapia.
 - [x] Asociar la cita a la terapia correcta.
 - [x] Evitar mas de una cita pendiente o confirmada por terapia.
+- [x] Evitar que el paciente ingrese o sobrescriba el link externo de sesion.
 - [x] Mostrar confirmacion clara despues de agendar.
 - [x] Redirigir a `/sesiones` despues de agendar.
 - [ ] Asegurar con usuario real que `/sesiones` muestre la cita creada.
@@ -119,6 +120,7 @@ Permitir que el psicologo gestione la sesion de punta a punta.
 - [x] Reprogramar cita si esta pendiente o confirmada.
 - [x] Hacer visible la accion de agregar o editar link externo.
 - [x] Agregar link de Zoom, Google Meet u otra herramienta.
+- [x] Mantener el link externo como responsabilidad de psicologo/admin.
 - [x] Marcar sesion como realizada.
 - [x] Registrar resumen compartido de la sesion.
 - [x] Registrar eventos en historial longitudinal.

@@ -75,8 +75,8 @@
                 label="Herramienta de videollamada"
                 variant="outlined"
                 clearable
-                :disabled="!isRemote"
-                :hint="isRemote ? 'Opcional. El psicólogo puede completarlo luego.' : 'Disponible para citas remotas.'"
+                :disabled="!isRemote || !canEditMeetingLink"
+                :hint="meetingProviderHint"
                 persistent-hint
                 density="comfortable"
               ></v-select>
@@ -89,9 +89,9 @@
                 placeholder="https://meet.google.com/... o https://zoom.us/..."
                 variant="outlined"
                 clearable
-                :disabled="!isRemote"
-                :rules="[r.optionalUrl]"
-                :hint="isRemote ? 'Opcional al agendar. El paciente lo verá cuando esté disponible.' : 'Solo aplica a modalidad remota.'"
+                :disabled="!isRemote || !canEditMeetingLink"
+                :rules="[validateMeetingUrl]"
+                :hint="meetingUrlHint"
                 persistent-hint
                 density="comfortable"
               ></v-text-field>
@@ -131,6 +131,7 @@ import { computed, reactive, ref, watch } from "vue";
 import { storeToRefs } from "pinia";
 import { useRouter } from "vue-router";
 import { useAuthStore } from "@/store/auth";
+import { useAppContextStore } from "@/store/appContext";
 import { createAppointment, updateAppointment } from "@/services/citaService";
 import { getTherapistById } from "@/services/psicologoService";
 import { getTherapyById } from "@/services/terapiaService";
@@ -182,6 +183,7 @@ const emit = defineEmits(["update:modelValue", "saved"]);
 
 const router = useRouter();
 const authStore = useAuthStore();
+const appContext = useAppContextStore();
 const { currentUser, userName } = storeToRefs(authStore);
 const saving = ref(false);
 const loadingTherapist = ref(false);
@@ -223,7 +225,54 @@ const r = {
   },
 };
 
+function validateMeetingUrl(value) {
+  if (!canEditMeetingLink.value) {
+    return true;
+  }
+
+  return r.optionalUrl(value);
+}
+
 const isRemote = computed(() => normalizeModalidad(form.modalidad) === "remoto");
+const canEditMeetingLink = computed(() =>
+  ["psychologist", "admin"].includes(appContext.activeMode)
+);
+const meetingProviderHint = computed(() => {
+  if (!isRemote.value) {
+    return "Disponible para citas remotas.";
+  }
+
+  return canEditMeetingLink.value
+    ? "El paciente verá la herramienta cuando esté disponible."
+    : "El psicólogo completará la herramienta antes de la sesión.";
+});
+const meetingUrlHint = computed(() => {
+  if (!isRemote.value) {
+    return "Solo aplica a modalidad remota.";
+  }
+
+  return canEditMeetingLink.value
+    ? "El paciente verá el enlace cuando esté disponible."
+    : "El psicólogo agregará el enlace de Zoom, Google Meet u otra herramienta.";
+});
+const meetingProviderForSave = computed(() => {
+  if (!isRemote.value) {
+    return "";
+  }
+
+  return canEditMeetingLink.value
+    ? form.meetingProvider
+    : props.initialAppointment?.meetingProvider || "";
+});
+const meetingUrlForSave = computed(() => {
+  if (!isRemote.value) {
+    return "";
+  }
+
+  return canEditMeetingLink.value
+    ? form.meetingUrl.trim()
+    : props.initialAppointment?.meetingUrl || "";
+});
 
 watch(
   () => props.modelValue,
@@ -380,7 +429,7 @@ async function submitAppointment() {
     return;
   }
 
-  const meetingUrlValidation = r.optionalUrl(form.meetingUrl);
+  const meetingUrlValidation = validateMeetingUrl(form.meetingUrl);
 
   if (meetingUrlValidation !== true) {
     window.dispatchEvent(
@@ -418,8 +467,8 @@ async function submitAppointment() {
         notas: form.notas,
         modalidad: normalizeDisplayModalidad(form.modalidad),
         ubicacion: form.ubicacion,
-        meetingProvider: isRemote.value ? form.meetingProvider : "",
-        meetingUrl: isRemote.value ? form.meetingUrl.trim() : "",
+        meetingProvider: meetingProviderForSave.value,
+        meetingUrl: meetingUrlForSave.value,
       });
     } else {
       const appointmentPatientUid = props.pacienteUid || currentUser.value.uid;
@@ -436,8 +485,8 @@ async function submitAppointment() {
         notas: form.notas,
         modalidad: normalizeDisplayModalidad(form.modalidad),
         ubicacion: form.ubicacion,
-        meetingProvider: isRemote.value ? form.meetingProvider : "",
-        meetingUrl: isRemote.value ? form.meetingUrl.trim() : "",
+        meetingProvider: meetingProviderForSave.value,
+        meetingUrl: meetingUrlForSave.value,
         estado: "pendiente",
       });
     }
