@@ -241,6 +241,28 @@ a {
   font-weight: 600;
 }
 
+.v-empty-state {
+  color: rgba(255, 255, 255, 0.88);
+}
+
+.v-empty-state .v-empty-state__headline {
+  font-weight: 700;
+  letter-spacing: 0;
+}
+
+.v-empty-state .v-empty-state__text {
+  color: rgba(255, 255, 255, 0.68);
+  line-height: 1.55;
+}
+
+.v-theme--light .v-empty-state {
+  color: rgb(var(--v-theme-on-surface));
+}
+
+.v-theme--light .v-empty-state .v-empty-state__text {
+  color: rgba(18, 33, 30, 0.66);
+}
+
 .v-overlay.v-dialog .v-overlay__scrim {
   background:
     radial-gradient(circle at 50% 20%, rgba(74, 155, 167, 0.44), transparent 42%),
@@ -348,6 +370,19 @@ a {
 
   .appointment-day {
     font-size: 2.25rem;
+  }
+
+  .v-empty-state {
+    padding-inline: 12px;
+  }
+
+  .v-empty-state .v-empty-state__headline {
+    font-size: 1.35rem;
+    line-height: 1.25;
+  }
+
+  .v-empty-state .v-empty-state__text {
+    font-size: 0.92rem;
   }
 }
 
