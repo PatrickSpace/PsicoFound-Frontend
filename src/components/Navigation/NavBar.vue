@@ -148,9 +148,9 @@ function defaultRouteForMode(mode) {
 }
 
 :global(.v-theme--light) .app-top-nav {
-  background: rgba(255, 255, 255, 0.84);
-  border-bottom: 1px solid rgba(23, 63, 58, 0.1);
-  box-shadow: 0 10px 30px rgba(23, 63, 58, 0.08);
+  background: rgba(248, 251, 249, 0.88);
+  border-bottom: 1px solid rgba(18, 58, 53, 0.14);
+  box-shadow: 0 10px 30px rgba(18, 58, 53, 0.1);
 }
 
 .app-top-nav::after {

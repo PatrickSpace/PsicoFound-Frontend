@@ -102,9 +102,9 @@ const navItemCount = computed(() =>
 }
 
 :global(.v-theme--light) .bottom-nav-mobile {
-  background: rgba(255, 255, 255, 0.9) !important;
-  border-top-color: rgba(23, 63, 58, 0.12);
-  box-shadow: 0 -12px 32px rgba(23, 63, 58, 0.08);
+  background: rgba(248, 251, 249, 0.92) !important;
+  border-top-color: rgba(18, 58, 53, 0.14);
+  box-shadow: 0 -12px 32px rgba(18, 58, 53, 0.1);
 }
 
 .bottom-nav-mobile :deep(.v-bottom-navigation__content) {

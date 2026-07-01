@@ -102,8 +102,8 @@ a {
 
 .v-theme--light .bg-diagonal {
   background:
-    radial-gradient(circle at 86% 12%, rgba(110, 158, 148, 0.16), transparent 34%),
-    linear-gradient(180deg, #fbfcfb 0%, #f2f7f4 100%) !important;
+    radial-gradient(circle at 86% 12%, rgba(47, 102, 95, 0.12), transparent 34%),
+    linear-gradient(180deg, #fbfcfb 0%, #edf4f1 100%) !important;
 }
 
 .screen {
@@ -137,13 +137,13 @@ a {
 
 .v-theme--light .screen::before {
   background:
-    radial-gradient(circle at 84% 16%, rgba(110, 158, 148, 0.18), transparent 32%),
-    radial-gradient(circle at 18% 92%, rgba(23, 63, 58, 0.08), transparent 34%),
+    radial-gradient(circle at 84% 16%, rgba(47, 102, 95, 0.14), transparent 30%),
+    radial-gradient(circle at 16% 92%, rgba(18, 58, 53, 0.08), transparent 32%),
     linear-gradient(
       180deg,
-      #fbfcfb 0%,
-      #f5f8f6 48%,
-      #edf4f1 100%
+      #f8fbf9 0%,
+      #eef4f1 48%,
+      #e6efeb 100%
     );
 }
 
@@ -160,35 +160,36 @@ a {
 }
 
 .v-theme--light .card-backgoundcustom {
-  background-color: rgba(255, 255, 255, 0.92) !important;
-  border: 1px solid rgba(23, 63, 58, 0.12);
+  background-color: rgba(255, 255, 255, 0.96) !important;
+  border: 1px solid rgba(18, 58, 53, 0.16);
   box-shadow:
-    0 1px 2px rgba(23, 63, 58, 0.06),
-    0 18px 48px rgba(23, 63, 58, 0.1) !important;
+    0 1px 2px rgba(18, 58, 53, 0.08),
+    0 18px 44px rgba(18, 58, 53, 0.12) !important;
   color: rgb(var(--v-theme-on-surface));
 }
 
 .v-theme--light .text-medium-emphasis {
-  color: rgba(23, 38, 34, 0.68) !important;
+  color: rgba(18, 33, 30, 0.7) !important;
 }
 
 .v-theme--light .v-divider {
   opacity: 1;
-  border-color: rgba(23, 63, 58, 0.12) !important;
+  border-color: rgba(18, 58, 53, 0.14) !important;
 }
 
 .v-theme--light .v-alert.v-alert--variant-tonal {
-  background-color: rgba(55, 111, 101, 0.1) !important;
+  background-color: rgba(47, 102, 95, 0.12) !important;
   color: rgb(var(--v-theme-on-surface)) !important;
 }
 
 .v-theme--light .v-btn--variant-tonal {
-  background-color: rgba(55, 111, 101, 0.11);
+  background-color: rgba(47, 102, 95, 0.14);
+  color: rgb(var(--v-theme-secondary));
 }
 
 .v-theme--light .v-btn-toggle {
-  background-color: rgba(23, 63, 58, 0.08);
-  border: 1px solid rgba(23, 63, 58, 0.1);
+  background-color: rgba(18, 58, 53, 0.08);
+  border: 1px solid rgba(18, 58, 53, 0.14);
 }
 
 .v-theme--light .v-list.bg-transparent {
@@ -196,17 +197,18 @@ a {
 }
 
 .v-theme--light .v-list-item-title {
-  color: rgba(23, 38, 34, 0.9);
+  color: rgba(18, 33, 30, 0.92);
   font-weight: 600;
 }
 
 .v-theme--light .v-list-item-subtitle {
-  color: rgba(23, 38, 34, 0.62);
+  color: rgba(18, 33, 30, 0.64);
   opacity: 1;
 }
 
 .v-theme--light .v-field {
-  background-color: rgba(255, 255, 255, 0.72);
+  background-color: rgba(255, 255, 255, 0.88);
+  color: rgb(var(--v-theme-on-surface));
 }
 
 .v-overlay.v-dialog .v-overlay__scrim {
@@ -219,8 +221,8 @@ a {
 
 .v-theme--light .v-overlay.v-dialog .v-overlay__scrim {
   background:
-    radial-gradient(circle at 50% 20%, rgba(110, 158, 148, 0.2), transparent 42%),
-    linear-gradient(220deg, rgba(245, 248, 246, 0.9), rgba(237, 244, 241, 0.86)) !important;
+    radial-gradient(circle at 50% 20%, rgba(47, 102, 95, 0.18), transparent 42%),
+    linear-gradient(220deg, rgba(238, 244, 241, 0.92), rgba(230, 239, 235, 0.9)) !important;
 }
 
 .v-overlay.v-dialog .v-overlay__content > .v-card {
@@ -233,8 +235,8 @@ a {
 .v-theme--light .v-overlay.v-dialog .v-overlay__content > .v-card {
   background:
     linear-gradient(145deg, rgba(255, 255, 255, 0.99), rgba(250, 252, 251, 0.99)) !important;
-  border-color: rgba(23, 63, 58, 0.14);
-  box-shadow: 0 22px 64px rgba(23, 63, 58, 0.16) !important;
+  border-color: rgba(18, 58, 53, 0.18);
+  box-shadow: 0 22px 64px rgba(18, 58, 53, 0.18) !important;
 }
 
 .appointment-day {
@@ -251,8 +253,8 @@ a {
 
 .v-theme--light .auth-page {
   background:
-    radial-gradient(circle at 86% 12%, rgba(110, 158, 148, 0.16), transparent 34%),
-    linear-gradient(180deg, #fbfcfb 0%, #f2f7f4 100%);
+    radial-gradient(circle at 86% 12%, rgba(47, 102, 95, 0.12), transparent 34%),
+    linear-gradient(180deg, #fbfcfb 0%, #edf4f1 100%);
 }
 
 .auth-image {
