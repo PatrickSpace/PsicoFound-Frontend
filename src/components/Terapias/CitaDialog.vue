@@ -535,6 +535,67 @@ async function submitAppointment() {
 </script>
 
 <style scoped>
+.appointment-card {
+  color: rgba(255, 255, 255, 0.94);
+}
+
+.appointment-card :deep(.v-card-title),
+.appointment-card :deep(.text-subtitle-1),
+.appointment-card :deep(.v-field__input),
+.appointment-card :deep(.v-text-field input),
+.appointment-card :deep(textarea) {
+  color: rgba(255, 255, 255, 0.94) !important;
+}
+
+.appointment-card :deep(.text-medium-emphasis),
+.appointment-card :deep(.v-label),
+.appointment-card :deep(.v-field-label),
+.appointment-card :deep(.v-messages__message) {
+  color: rgba(255, 255, 255, 0.72) !important;
+  opacity: 1;
+}
+
+.appointment-card :deep(.v-field) {
+  background-color: rgba(255, 255, 255, 0.06);
+  color: rgba(255, 255, 255, 0.94);
+}
+
+.appointment-card :deep(.v-field__outline) {
+  color: rgba(210, 244, 241, 0.34);
+}
+
+.appointment-card :deep(.v-alert) {
+  background-color: rgba(95, 128, 123, 0.24) !important;
+  color: rgba(255, 255, 255, 0.88) !important;
+}
+
+:global(.v-theme--light) .appointment-card {
+  color: rgb(var(--v-theme-on-surface));
+}
+
+:global(.v-theme--light) .appointment-card :deep(.v-card-title),
+:global(.v-theme--light) .appointment-card :deep(.text-subtitle-1),
+:global(.v-theme--light) .appointment-card :deep(.v-field__input),
+:global(.v-theme--light) .appointment-card :deep(.v-text-field input),
+:global(.v-theme--light) .appointment-card :deep(textarea) {
+  color: rgba(18, 33, 30, 0.92) !important;
+}
+
+:global(.v-theme--light) .appointment-card :deep(.text-medium-emphasis),
+:global(.v-theme--light) .appointment-card :deep(.v-label),
+:global(.v-theme--light) .appointment-card :deep(.v-field-label),
+:global(.v-theme--light) .appointment-card :deep(.v-messages__message) {
+  color: rgba(18, 33, 30, 0.68) !important;
+}
+
+:global(.v-theme--light) .appointment-card :deep(.v-field) {
+  background-color: rgba(255, 255, 255, 0.88);
+}
+
+:global(.v-theme--light) .appointment-card :deep(.v-field__outline) {
+  color: rgba(18, 58, 53, 0.28);
+}
+
 @media (max-width: 600px) {
   .appointment-dialog :deep(.v-overlay__content) {
     width: calc(100% - 20px) !important;
