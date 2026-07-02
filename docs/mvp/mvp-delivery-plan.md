@@ -89,6 +89,8 @@ sin pago.
 ### Tareas
 
 - [x] Revisar `CitaDialog` cuando se abre desde recomendaciones.
+- [x] Mostrar al paciente solo horarios abiertos por el psicologo.
+- [x] Bloquear el bloque de 1 hora cuando el paciente agenda.
 - [x] Si no existe terapia activa con el terapeuta seleccionado, crear terapia.
 - [x] Asociar la cita a la terapia correcta.
 - [x] Evitar mas de una cita pendiente o confirmada por terapia.
@@ -118,6 +120,7 @@ Permitir que el psicologo gestione la sesion de punta a punta.
 ### Tareas
 
 - [x] Implementar lectura de citas desde terapias asignadas al psicologo.
+- [x] Permitir que el psicologo abra bloques disponibles de 1 hora.
 - [x] Permitir editar modalidad, fecha, hora, ubicacion y link externo.
 - [x] Confirmar cita desde agenda.
 - [x] Reprogramar cita si esta pendiente o confirmada.

@@ -8,7 +8,7 @@
     <v-card class="appointment-card card-backgoundcustom ma-5" elevation="2" variant="text">
       <v-card-title class="d-flex align-center ga-2 text-h6 font-weight-bold">
         <v-icon color="secondary" size="small">mdi-calendar-plus-outline</v-icon>
-        {{ citaId ? "Editar cita" : "Agendar cita" }}
+        {{ showAvailabilityPicker ? "Solicita una cita" : citaId ? "Editar cita" : "Agendar cita" }}
       </v-card-title>
       <v-divider class="mx-4"></v-divider>
       <v-card-text class="pt-6">
@@ -19,11 +19,101 @@
                 Terapeuta: {{ terapeutaNombre || "No definido" }}
               </div>
               <div class="text-body-2 text-medium-emphasis">
-                {{ citaId ? "Actualiza la fecha y hora de la cita." : "Completa la fecha y hora para registrar la cita." }}
+                {{
+                  showAvailabilityPicker
+                    ? "Elige uno de los horarios que el psicólogo abrió en su agenda."
+                    : citaId
+                      ? "Actualiza la fecha y hora de la cita."
+                      : "Completa la fecha y hora para registrar la cita."
+                }}
               </div>
             </v-col>
 
-            <v-col cols="12" md="6">
+            <v-col v-if="showAvailabilityPicker" cols="12">
+              <div class="appointment-therapist-card">
+                <v-avatar color="secondary" variant="tonal" size="48">
+                  <v-icon>mdi-account-heart-outline</v-icon>
+                </v-avatar>
+                <div class="flex-grow-1">
+                  <div class="text-caption text-medium-emphasis">
+                    Psicólogo
+                  </div>
+                  <div class="text-subtitle-1 font-weight-bold">
+                    {{ terapeutaNombre || therapist?.nombre || "Psicólogo asignado" }}
+                  </div>
+                </div>
+                <v-chip color="secondary" variant="tonal" size="small">
+                  60 min
+                </v-chip>
+              </div>
+            </v-col>
+
+            <v-col v-if="showAvailabilityPicker" cols="12">
+              <div class="availability-filter">
+                <v-btn-toggle
+                  v-model="availabilityRange"
+                  color="secondary"
+                  divided
+                  mandatory
+                  variant="outlined"
+                >
+                  <v-btn value="week">Esta semana</v-btn>
+                  <v-btn value="month">Este mes</v-btn>
+                  <v-btn value="next">Próximo mes</v-btn>
+                </v-btn-toggle>
+              </div>
+
+              <v-alert
+                v-if="availabilityError"
+                class="mt-4"
+                color="error"
+                variant="tonal"
+                icon="mdi-alert-outline"
+              >
+                {{ availabilityError }}
+              </v-alert>
+
+              <div v-if="loadingAvailability" class="availability-loading">
+                <v-progress-circular indeterminate color="secondary" />
+                <span>Buscando horarios disponibles...</span>
+              </div>
+
+              <v-empty-state
+                v-else-if="filteredAvailabilityGroups.length === 0"
+                headline="No hay horarios disponibles"
+                text="El psicólogo aún no abrió bloques para este periodo. Puedes revisar más tarde."
+                icon="mdi-calendar-search-outline"
+              ></v-empty-state>
+
+              <div v-else class="availability-days">
+                <section
+                  v-for="group in filteredAvailabilityGroups"
+                  :key="group.date"
+                  class="availability-day"
+                >
+                  <div class="availability-day__header">
+                    <strong>{{ group.weekday }}</strong>
+                    <v-icon size="small">mdi-calendar-blank-outline</v-icon>
+                    <span>{{ group.displayDate }}</span>
+                  </div>
+                  <div class="availability-slots">
+                    <button
+                      v-for="slot in group.slots"
+                      :key="slot.id"
+                      type="button"
+                      class="availability-slot"
+                      :class="{ 'availability-slot--selected': selectedSlotId === slot.id }"
+                      @click="selectAvailabilitySlot(slot)"
+                    >
+                      <span class="availability-slot__radio"></span>
+                      <span>{{ slot.startTime }} hs</span>
+                    </button>
+                  </div>
+                </section>
+              </div>
+            </v-col>
+
+            <v-col v-if="!showAvailabilityPicker" cols="12" md="6">
               <v-text-field
                 v-model="form.fecha"
                 label="Fecha"
@@ -33,7 +123,7 @@
               ></v-text-field>
             </v-col>
 
-            <v-col cols="12" md="6">
+            <v-col v-if="!showAvailabilityPicker" cols="12" md="6">
               <v-text-field
                 v-model="form.hora"
                 label="Hora"
@@ -127,10 +217,10 @@
           color="secondary"
           variant="tonal"
           :loading="saving"
-          :disabled="!form.fecha || !form.hora || !form.modalidad || !form.ubicacion || !terapeutaId"
+          :disabled="!canSubmitAppointment"
           @click="submitAppointment"
         >
-          {{ citaId ? "Guardar cambios" : "Registrar cita" }}
+          {{ showAvailabilityPicker ? "Siguiente paso" : citaId ? "Guardar cambios" : "Registrar cita" }}
         </v-btn>
       </v-card-actions>
     </v-card>
@@ -144,6 +234,7 @@ import { useRouter } from "vue-router";
 import { useAuthStore } from "@/store/auth";
 import { useAppContextStore } from "@/store/appContext";
 import { createAppointment, updateAppointment } from "@/services/citaService";
+import { getAvailableSlotsByTherapist } from "@/services/availabilityService";
 import { getTherapistById } from "@/services/psicologoService";
 import { getTherapyById } from "@/services/terapiaService";
 
@@ -199,8 +290,13 @@ const { currentUser, userName } = storeToRefs(authStore);
 const saving = ref(false);
 const loadingTherapist = ref(false);
 const loadingTherapy = ref(false);
+const loadingAvailability = ref(false);
+const availabilityError = ref("");
 const therapist = ref(null);
 const therapy = ref(null);
+const availabilitySlots = ref([]);
+const selectedSlotId = ref("");
+const availabilityRange = ref("month");
 const form = reactive({
   fecha: "",
   hora: "",
@@ -248,6 +344,51 @@ const isRemote = computed(() => normalizeModalidad(form.modalidad) === "remoto")
 const canEditMeetingLink = computed(() =>
   ["psychologist", "admin"].includes(appContext.activeMode)
 );
+const showAvailabilityPicker = computed(() => !canEditMeetingLink.value);
+const filteredAvailabilitySlots = computed(() => {
+  const now = new Date();
+  const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const start = rangeStartDate(availabilityRange.value, startOfToday);
+  const end = rangeEndDate(availabilityRange.value, startOfToday);
+
+  return availabilitySlots.value.filter((slot) => {
+    const slotDate = parseDateOnly(slot.date);
+
+    return slotDate && slotDate >= start && slotDate <= end;
+  });
+});
+const filteredAvailabilityGroups = computed(() => {
+  const groups = new Map();
+
+  filteredAvailabilitySlots.value.forEach((slot) => {
+    if (!groups.has(slot.date)) {
+      groups.set(slot.date, {
+        date: slot.date,
+        weekday: formatWeekday(slot.date),
+        displayDate: formatDisplayDate(slot.date),
+        slots: [],
+      });
+    }
+
+    groups.get(slot.date).slots.push(slot);
+  });
+
+  return [...groups.values()].map((group) => ({
+    ...group,
+    slots: group.slots.sort((a, b) => a.startTime.localeCompare(b.startTime)),
+  }));
+});
+const canSubmitAppointment = computed(() => {
+  if (!props.terapeutaId || !form.modalidad || !form.ubicacion) {
+    return false;
+  }
+
+  if (showAvailabilityPicker.value) {
+    return Boolean(selectedSlotId.value);
+  }
+
+  return Boolean(form.fecha && form.hora);
+});
 const meetingProviderHint = computed(() => {
   if (!isRemote.value) {
     return "Disponible para citas remotas.";
@@ -302,6 +443,11 @@ watch(
         defaultLocationForModalidad(form.modalidad);
       form.meetingProvider = props.initialAppointment?.meetingProvider || "";
       form.meetingUrl = props.initialAppointment?.meetingUrl || "";
+      selectedSlotId.value = props.initialAppointment?.availabilitySlotId || "";
+
+      if (showAvailabilityPicker.value) {
+        await loadAvailabilitySlots();
+      }
     }
   }
 );
@@ -435,8 +581,53 @@ async function loadSources() {
   await Promise.all([loadTherapist(), loadTherapy()]);
 }
 
+async function loadAvailabilitySlots() {
+  if (!props.terapeutaId) {
+    availabilitySlots.value = [];
+    return;
+  }
+
+  loadingAvailability.value = true;
+  availabilityError.value = "";
+
+  try {
+    availabilitySlots.value = await getAvailableSlotsByTherapist(props.terapeutaId);
+
+    if (!selectedSlotId.value && availabilitySlots.value.length === 1) {
+      selectAvailabilitySlot(availabilitySlots.value[0]);
+    } else if (selectedSlotId.value) {
+      const currentSlot = availabilitySlots.value.find(
+        (slot) => slot.id === selectedSlotId.value
+      );
+
+      if (currentSlot) {
+        applySlotToForm(currentSlot);
+      }
+    }
+  } catch (error) {
+    console.error("Error loading therapist availability:", error);
+    availabilitySlots.value = [];
+    availabilityError.value =
+      error?.message || "No pudimos cargar los horarios disponibles.";
+  } finally {
+    loadingAvailability.value = false;
+  }
+}
+
+function selectAvailabilitySlot(slot) {
+  selectedSlotId.value = slot.id;
+  applySlotToForm(slot);
+}
+
+function applySlotToForm(slot) {
+  form.fecha = slot.date || "";
+  form.hora = slot.startTime || "";
+  form.modalidad = normalizeDisplayModalidad(slot.modality || slot.modalidad || form.modalidad);
+  form.ubicacion = slot.location || defaultLocationForModalidad(form.modalidad);
+}
+
 async function submitAppointment() {
-  if (!props.terapeutaId || !form.fecha || !form.hora || !form.modalidad || !form.ubicacion) {
+  if (!canSubmitAppointment.value) {
     return;
   }
 
@@ -480,6 +671,7 @@ async function submitAppointment() {
         ubicacion: form.ubicacion,
         meetingProvider: meetingProviderForSave.value,
         meetingUrl: meetingUrlForSave.value,
+        availabilitySlotId: selectedSlotId.value,
       });
     } else {
       const appointmentPatientUid = props.pacienteUid || currentUser.value.uid;
@@ -498,6 +690,7 @@ async function submitAppointment() {
         ubicacion: form.ubicacion,
         meetingProvider: meetingProviderForSave.value,
         meetingUrl: meetingUrlForSave.value,
+        availabilitySlotId: selectedSlotId.value,
         estado: "pendiente",
       });
     }
@@ -531,6 +724,64 @@ async function submitAppointment() {
   } finally {
     saving.value = false;
   }
+}
+
+function parseDateOnly(value) {
+  if (!value) {
+    return null;
+  }
+
+  const parsed = new Date(`${value}T00:00`);
+  return Number.isNaN(parsed.getTime()) ? null : parsed;
+}
+
+function rangeEndDate(range, startDate) {
+  const end = new Date(startDate);
+
+  if (range === "week") {
+    end.setDate(end.getDate() + 7);
+    return end;
+  }
+
+  if (range === "next") {
+    return new Date(end.getFullYear(), end.getMonth() + 2, 0);
+  }
+
+  return new Date(end.getFullYear(), end.getMonth() + 1, 0);
+}
+
+function rangeStartDate(range, startDate) {
+  if (range === "next") {
+    return new Date(startDate.getFullYear(), startDate.getMonth() + 1, 1);
+  }
+
+  return startDate;
+}
+
+function formatWeekday(date) {
+  const parsed = parseDateOnly(date);
+
+  if (!parsed) {
+    return "Fecha";
+  }
+
+  return new Intl.DateTimeFormat("es", { weekday: "long" })
+    .format(parsed)
+    .replace(/^\w/, (letter) => letter.toUpperCase());
+}
+
+function formatDisplayDate(date) {
+  const parsed = parseDateOnly(date);
+
+  if (!parsed) {
+    return date || "";
+  }
+
+  return new Intl.DateTimeFormat("es-PE", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  }).format(parsed);
 }
 </script>
 
@@ -569,6 +820,108 @@ async function submitAppointment() {
   color: rgba(255, 255, 255, 0.88) !important;
 }
 
+.appointment-therapist-card {
+  align-items: center;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(210, 244, 241, 0.16);
+  border-radius: 14px;
+  display: flex;
+  gap: 14px;
+  padding: 14px;
+}
+
+.availability-filter {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 18px;
+}
+
+.availability-filter :deep(.v-btn-toggle) {
+  border-radius: 14px;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 4px;
+}
+
+.availability-filter :deep(.v-btn) {
+  border-radius: 12px !important;
+  min-width: 120px;
+}
+
+.availability-loading {
+  align-items: center;
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  padding: 28px 0;
+}
+
+.availability-days {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.availability-day {
+  border-top: 1px solid rgba(210, 244, 241, 0.16);
+  padding-top: 18px;
+}
+
+.availability-day__header {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.availability-slots {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.availability-slot {
+  align-items: center;
+  background: transparent;
+  border: 1px solid rgba(210, 244, 241, 0.18);
+  border-radius: 999px;
+  color: rgba(255, 255, 255, 0.88);
+  cursor: pointer;
+  display: inline-flex;
+  gap: 9px;
+  min-height: 40px;
+  padding: 8px 14px;
+  transition:
+    background-color 0.2s ease,
+    border-color 0.2s ease,
+    color 0.2s ease;
+}
+
+.availability-slot:hover,
+.availability-slot--selected {
+  background: rgba(95, 128, 123, 0.28);
+  border-color: rgba(158, 198, 189, 0.76);
+  color: rgba(255, 255, 255, 0.96);
+}
+
+.availability-slot__radio {
+  border: 2px solid currentColor;
+  border-radius: 50%;
+  display: inline-block;
+  height: 16px;
+  position: relative;
+  width: 16px;
+}
+
+.availability-slot--selected .availability-slot__radio::after {
+  background: currentColor;
+  border-radius: 50%;
+  content: "";
+  inset: 3px;
+  position: absolute;
+}
+
 :global(.v-theme--light) .appointment-card {
   color: rgb(var(--v-theme-on-surface));
 }
@@ -594,6 +947,27 @@ async function submitAppointment() {
 
 :global(.v-theme--light) .appointment-card :deep(.v-field__outline) {
   color: rgba(18, 58, 53, 0.28);
+}
+
+:global(.v-theme--light) .appointment-therapist-card {
+  background: rgba(255, 255, 255, 0.9);
+  border-color: rgba(18, 58, 53, 0.14);
+}
+
+:global(.v-theme--light) .availability-day {
+  border-top-color: rgba(18, 58, 53, 0.14);
+}
+
+:global(.v-theme--light) .availability-slot {
+  border-color: rgba(18, 58, 53, 0.22);
+  color: rgba(18, 33, 30, 0.82);
+}
+
+:global(.v-theme--light) .availability-slot:hover,
+:global(.v-theme--light) .availability-slot--selected {
+  background: rgba(47, 102, 95, 0.12);
+  border-color: rgba(47, 102, 95, 0.58);
+  color: rgba(18, 58, 53, 0.94);
 }
 
 @media (max-width: 600px) {
@@ -623,6 +997,30 @@ async function submitAppointment() {
 
   .appointment-actions :deep(.v-btn) {
     flex: 1 1 100%;
+  }
+
+  .availability-filter {
+    justify-content: flex-start;
+  }
+
+  .availability-filter :deep(.v-btn-toggle) {
+    width: 100%;
+  }
+
+  .availability-filter :deep(.v-btn) {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+
+  .availability-slots {
+    flex-wrap: nowrap;
+    margin-inline: -12px;
+    overflow-x: auto;
+    padding: 0 12px 4px;
+  }
+
+  .availability-slot {
+    flex: 0 0 auto;
   }
 }
 </style>

@@ -1,4 +1,12 @@
-import { addDoc, collection, doc, serverTimestamp, updateDoc } from "firebase/firestore";
+import {
+  addDoc,
+  collection,
+  doc,
+  getDoc,
+  runTransaction,
+  serverTimestamp,
+  updateDoc,
+} from "firebase/firestore";
 import { auth } from "@/plugins/Firebase/firebase";
 import { db } from "@/plugins/Firebase/firestore";
 import {
@@ -13,9 +21,13 @@ import { createNotification } from "@/services/notificationService";
 import { getTherapistById } from "@/services/psicologoService";
 
 const APPOINTMENTS_COLLECTION = "citas";
+const AVAILABILITY_COLLECTION = "therapist_availability";
 
 export async function createAppointment(data = {}) {
-  const therapy = await resolveAppointmentTherapy(data);
+  const appointmentData = data.availabilitySlotId
+    ? await hydrateAppointmentDataFromSlot(data)
+    : data;
+  const therapy = await resolveAppointmentTherapy(appointmentData);
 
   if (therapy.id) {
     const currentTherapy = await getTherapyById(therapy.id);
@@ -33,23 +45,26 @@ export async function createAppointment(data = {}) {
 
   const payload = {
     terapiaId: therapy.id,
-    terapeutaId: data.terapeutaId || "",
-    terapeutaNombre: data.terapeutaNombre || "",
-    pacienteUid: data.pacienteUid || "demo-user",
-    pacienteNombre: data.pacienteNombre || "Usuario demo",
-    pacienteEmail: data.pacienteEmail || "",
-    fecha: data.fecha || "",
-    hora: data.hora || "",
-    notas: data.notas || "",
-    modalidad: data.modalidad || "",
-    ubicacion: data.ubicacion || "",
-    meetingProvider: data.meetingProvider || "",
-    meetingUrl: data.meetingUrl || "",
-    estado: data.estado || "pendiente",
+    terapeutaId: appointmentData.terapeutaId || "",
+    terapeutaNombre: appointmentData.terapeutaNombre || "",
+    pacienteUid: appointmentData.pacienteUid || "demo-user",
+    pacienteNombre: appointmentData.pacienteNombre || "Usuario demo",
+    pacienteEmail: appointmentData.pacienteEmail || "",
+    fecha: appointmentData.fecha || "",
+    hora: appointmentData.hora || "",
+    notas: appointmentData.notas || "",
+    modalidad: appointmentData.modalidad || "",
+    ubicacion: appointmentData.ubicacion || "",
+    meetingProvider: appointmentData.meetingProvider || "",
+    meetingUrl: appointmentData.meetingUrl || "",
+    availabilitySlotId: appointmentData.availabilitySlotId || "",
+    estado: appointmentData.estado || "pendiente",
     createdAt: serverTimestamp(),
   };
 
-  const docRef = await addDoc(collection(db, APPOINTMENTS_COLLECTION), payload);
+  const docRef = appointmentData.availabilitySlotId
+    ? await createAppointmentFromAvailabilitySlot(payload)
+    : await addDoc(collection(db, APPOINTMENTS_COLLECTION), payload);
 
   await appendAppointmentToTherapy(therapy.id, {
     citaId: docRef.id,
@@ -64,6 +79,7 @@ export async function createAppointment(data = {}) {
     ubicacion: payload.ubicacion,
     meetingProvider: payload.meetingProvider,
     meetingUrl: payload.meetingUrl,
+    availabilitySlotId: payload.availabilitySlotId,
   });
 
   await safelyAppendAppointmentEvent({
@@ -207,6 +223,7 @@ export async function updateAppointment({
   ubicacion,
   meetingProvider,
   meetingUrl,
+  availabilitySlotId = "",
 }) {
   if (!citaId || !terapiaId) {
     throw new Error("Missing citaId or terapiaId");
@@ -216,8 +233,27 @@ export async function updateAppointment({
   const currentAppointment = (Array.isArray(therapy?.citas) ? therapy.citas : []).find(
     (cita) => cita.citaId === citaId
   );
+  const slotChangeRequested =
+    availabilitySlotId &&
+    availabilitySlotId !== (currentAppointment?.availabilitySlotId || "");
+  const nextSchedule = slotChangeRequested
+      ? await reserveSlotForExistingAppointment({
+        slotId: availabilitySlotId,
+        previousSlotId: currentAppointment?.availabilitySlotId || "",
+        citaId,
+        pacienteUid: therapy?.pacienteUid,
+        terapeutaId: therapy?.terapeutaId,
+      })
+    : {
+        fecha,
+        hora,
+        modalidad,
+        ubicacion,
+        availabilitySlotId: currentAppointment?.availabilitySlotId || availabilitySlotId || "",
+      };
   const dateOrTimeChanged =
-    currentAppointment?.fecha !== fecha || currentAppointment?.hora !== hora;
+    currentAppointment?.fecha !== nextSchedule.fecha ||
+    currentAppointment?.hora !== nextSchedule.hora;
   const nextStatus = dateOrTimeChanged
     ? "pendiente"
     : currentAppointment?.estado || "pendiente";
@@ -225,14 +261,15 @@ export async function updateAppointment({
 
   const appointmentRef = doc(db, APPOINTMENTS_COLLECTION, citaId);
   await updateDoc(appointmentRef, {
-    fecha,
-    hora,
+    fecha: nextSchedule.fecha,
+    hora: nextSchedule.hora,
     notas: notas || "",
-    modalidad: modalidad || "",
-    ubicacion: ubicacion || "",
+    modalidad: nextSchedule.modalidad || "",
+    ubicacion: nextSchedule.ubicacion || "",
     meetingProvider: meetingProvider || "",
     meetingUrl: meetingUrl || "",
     meetingUrlUpdatedAt: meetingUrl ? serverTimestamp() : null,
+    availabilitySlotId: nextSchedule.availabilitySlotId || "",
     estado: nextStatus,
   });
 
@@ -240,14 +277,15 @@ export async function updateAppointment({
     cita.citaId === citaId
       ? {
           ...cita,
-          fecha,
-          hora,
+          fecha: nextSchedule.fecha,
+          hora: nextSchedule.hora,
           notas: notas || "",
-          modalidad: modalidad || "",
-          ubicacion: ubicacion || "",
+          modalidad: nextSchedule.modalidad || "",
+          ubicacion: nextSchedule.ubicacion || "",
           meetingProvider: meetingProvider || "",
           meetingUrl: meetingUrl || "",
           meetingUrlUpdatedAt: meetingUrl ? new Date().toISOString() : "",
+          availabilitySlotId: nextSchedule.availabilitySlotId || "",
           estado: nextStatus,
         }
       : cita
@@ -267,7 +305,7 @@ export async function updateAppointment({
         ? "Enlace de sesión actualizado"
         : "Cita actualizada",
     summary: dateOrTimeChanged
-      ? `La cita fue reprogramada para el ${fecha || "fecha pendiente"}${hora ? ` a las ${hora}` : ""}.`
+      ? `La cita fue reprogramada para el ${nextSchedule.fecha || "fecha pendiente"}${nextSchedule.hora ? ` a las ${nextSchedule.hora}` : ""}.`
       : meetingLinkChanged
         ? "Se actualizó el enlace externo de la sesión."
         : "Se actualizaron los datos de la cita.",
@@ -275,11 +313,11 @@ export async function updateAppointment({
       ...currentAppointment,
       citaId,
       terapiaId,
-      fecha,
-      hora,
+      fecha: nextSchedule.fecha,
+      hora: nextSchedule.hora,
       notas: notas || "",
-      modalidad: modalidad || "",
-      ubicacion: ubicacion || "",
+      modalidad: nextSchedule.modalidad || "",
+      ubicacion: nextSchedule.ubicacion || "",
       meetingProvider: meetingProvider || "",
       meetingUrl: meetingUrl || "",
       estado: nextStatus,
@@ -294,9 +332,9 @@ export async function updateAppointment({
       ...currentAppointment,
       citaId,
       terapiaId,
-      fecha,
-      hora,
-      modalidad: modalidad || "",
+      fecha: nextSchedule.fecha,
+      hora: nextSchedule.hora,
+      modalidad: nextSchedule.modalidad || "",
       meetingUrl: meetingUrl || "",
       estado: nextStatus,
     },
@@ -308,15 +346,142 @@ export async function updateAppointment({
     id: citaId,
     citaId,
     terapiaId,
-    fecha,
-    hora,
+    fecha: nextSchedule.fecha,
+    hora: nextSchedule.hora,
     notas: notas || "",
-    modalidad: modalidad || "",
-    ubicacion: ubicacion || "",
+    modalidad: nextSchedule.modalidad || "",
+    ubicacion: nextSchedule.ubicacion || "",
     meetingProvider: meetingProvider || "",
     meetingUrl: meetingUrl || "",
+    availabilitySlotId: nextSchedule.availabilitySlotId || "",
     estado: nextStatus,
   };
+}
+
+async function hydrateAppointmentDataFromSlot(data = {}) {
+  const slotRef = doc(db, AVAILABILITY_COLLECTION, data.availabilitySlotId);
+  const slotSnapshot = await getDoc(slotRef);
+
+  if (!slotSnapshot.exists()) {
+    throw new Error("Este horario ya no está disponible.");
+  }
+
+  const slot = slotSnapshot.data();
+
+  if ((slot.therapistId || "") !== (data.terapeutaId || "")) {
+    throw new Error("El horario no pertenece a este psicólogo.");
+  }
+
+  return {
+    ...data,
+    fecha: slot.date || data.fecha || "",
+    hora: slot.startTime || data.hora || "",
+    modalidad: slot.modality || data.modalidad || "",
+    ubicacion: slot.location || data.ubicacion || "",
+  };
+}
+
+async function createAppointmentFromAvailabilitySlot(payload) {
+  const appointmentRef = doc(collection(db, APPOINTMENTS_COLLECTION));
+  const slotRef = doc(db, AVAILABILITY_COLLECTION, payload.availabilitySlotId);
+
+  await runTransaction(db, async (transaction) => {
+    const slotSnapshot = await transaction.get(slotRef);
+
+    if (!slotSnapshot.exists()) {
+      throw new Error("Este horario ya no está disponible.");
+    }
+
+    const slot = slotSnapshot.data();
+    const status = (slot.status || "").toString().trim().toLowerCase();
+
+    if (status !== "available") {
+      throw new Error("Este horario ya fue reservado. Elige otro bloque.");
+    }
+
+    if ((slot.therapistId || "") !== (payload.terapeutaId || "")) {
+      throw new Error("El horario no pertenece a este psicólogo.");
+    }
+
+    payload.fecha = slot.date || payload.fecha;
+    payload.hora = slot.startTime || payload.hora;
+    payload.modalidad = slot.modality || payload.modalidad;
+    payload.ubicacion = slot.location || payload.ubicacion;
+
+    transaction.set(appointmentRef, payload);
+    transaction.update(slotRef, {
+      status: "booked",
+      bookedBy: payload.pacienteUid,
+      appointmentId: appointmentRef.id,
+      updatedAt: serverTimestamp(),
+    });
+  });
+
+  return appointmentRef;
+}
+
+async function reserveSlotForExistingAppointment({
+  slotId,
+  previousSlotId = "",
+  citaId,
+  pacienteUid,
+  terapeutaId,
+}) {
+  const slotRef = doc(db, AVAILABILITY_COLLECTION, slotId);
+  const previousSlotRef =
+    previousSlotId && previousSlotId !== slotId
+      ? doc(db, AVAILABILITY_COLLECTION, previousSlotId)
+      : null;
+
+  return runTransaction(db, async (transaction) => {
+    const slotSnapshot = await transaction.get(slotRef);
+    const previousSlotSnapshot = previousSlotRef
+      ? await transaction.get(previousSlotRef)
+      : null;
+
+    if (!slotSnapshot.exists()) {
+      throw new Error("Este horario ya no está disponible.");
+    }
+
+    const slot = slotSnapshot.data();
+    const status = (slot.status || "").toString().trim().toLowerCase();
+
+    if (status !== "available") {
+      throw new Error("Este horario ya fue reservado. Elige otro bloque.");
+    }
+
+    if ((slot.therapistId || "") !== (terapeutaId || "")) {
+      throw new Error("El horario no pertenece a este psicólogo.");
+    }
+
+    transaction.update(slotRef, {
+      status: "booked",
+      bookedBy: pacienteUid || "",
+      appointmentId: citaId,
+      updatedAt: serverTimestamp(),
+    });
+
+    if (
+      previousSlotRef &&
+      previousSlotSnapshot?.exists() &&
+      previousSlotSnapshot.data().appointmentId === citaId
+    ) {
+      transaction.update(previousSlotRef, {
+        status: "available",
+        bookedBy: "",
+        appointmentId: "",
+        updatedAt: serverTimestamp(),
+      });
+    }
+
+    return {
+      fecha: slot.date || "",
+      hora: slot.startTime || "",
+      modalidad: slot.modality || "",
+      ubicacion: slot.location || "",
+      availabilitySlotId: slotId,
+    };
+  });
 }
 
 async function updateAppointmentStatus({

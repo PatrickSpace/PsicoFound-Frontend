@@ -91,6 +91,105 @@
           </v-col>
         </v-row>
 
+        <v-card class="pa-4 mb-5 card-backgoundcustom" elevation="2" variant="text">
+          <v-card-title class="d-flex align-center ga-2 text-h6 font-weight-bold px-0 pt-0">
+            <v-icon color="secondary" size="small">mdi-calendar-plus-outline</v-icon>
+            Abrir horarios disponibles
+          </v-card-title>
+          <v-card-text>
+            <v-divider class="mb-4"></v-divider>
+            <v-row align="start">
+              <v-col cols="12" md="3">
+                <v-text-field
+                  v-model="availabilityForm.date"
+                  label="Fecha"
+                  type="date"
+                  variant="outlined"
+                  density="comfortable"
+                />
+              </v-col>
+              <v-col cols="12" md="3">
+                <v-text-field
+                  v-model="availabilityForm.startTime"
+                  label="Hora de inicio"
+                  type="time"
+                  variant="outlined"
+                  density="comfortable"
+                  hint="Duración fija: 1 hora"
+                  persistent-hint
+                />
+              </v-col>
+              <v-col cols="12" md="3">
+                <v-select
+                  v-model="availabilityForm.modality"
+                  :items="modalityOptions"
+                  label="Modalidad"
+                  variant="outlined"
+                  density="comfortable"
+                />
+              </v-col>
+              <v-col cols="12" md="3">
+                <v-text-field
+                  v-model="availabilityForm.location"
+                  label="Ubicación"
+                  variant="outlined"
+                  density="comfortable"
+                  :disabled="isAvailabilityRemote"
+                  :hint="isAvailabilityRemote ? 'Se registrará como Terapia Online' : 'Dirección o sede'"
+                  persistent-hint
+                />
+              </v-col>
+            </v-row>
+            <div class="d-flex flex-column flex-md-row justify-space-between ga-3 mt-2">
+              <div class="text-body-2 text-medium-emphasis">
+                Los pacientes solo podrán elegir bloques disponibles. Al reservarse, el bloque queda ocupado.
+              </div>
+              <v-btn
+                color="secondary"
+                variant="tonal"
+                prepend-icon="mdi-calendar-plus"
+                :loading="savingAvailability"
+                :disabled="!availabilityForm.date || !availabilityForm.startTime"
+                @click="saveAvailabilitySlot"
+              >
+                Abrir bloque
+              </v-btn>
+            </div>
+
+            <v-divider class="my-4"></v-divider>
+
+            <div class="availability-slot-list">
+              <v-chip
+                v-for="slot in upcomingAvailabilitySlots"
+                :key="slot.id"
+                :color="slot.status === 'available' ? 'secondary' : 'grey'"
+                variant="tonal"
+                class="availability-chip"
+              >
+                <v-icon start size="small">
+                  {{ slot.status === "available" ? "mdi-calendar-clock" : "mdi-lock-outline" }}
+                </v-icon>
+                {{ formatAvailabilitySlot(slot) }}
+                <v-btn
+                  v-if="slot.status === 'available'"
+                  icon="mdi-close"
+                  variant="text"
+                  size="x-small"
+                  class="ml-1"
+                  aria-label="Cerrar bloque disponible"
+                  @click.stop="handleCloseAvailabilitySlot(slot)"
+                />
+              </v-chip>
+              <span
+                v-if="!loadingAvailability && upcomingAvailabilitySlots.length === 0"
+                class="text-body-2 text-medium-emphasis"
+              >
+                Aún no tienes horarios abiertos.
+              </span>
+            </div>
+          </v-card-text>
+        </v-card>
+
         <v-card class="pa-4 card-backgoundcustom" elevation="2" variant="text">
           <v-card-title class="d-flex align-center ga-2 text-h6 font-weight-bold px-0 pt-0">
             <v-icon color="secondary" size="small">mdi-calendar-clock</v-icon>
@@ -291,6 +390,11 @@ import {
   markAppointmentAsCompleted,
   resetAppointmentToPending,
 } from "@/services/citaService";
+import {
+  closeAvailabilitySlot,
+  createAvailabilitySlot,
+  getAvailabilityByTherapist,
+} from "@/services/availabilityService";
 
 const authStore = useAuthStore();
 const { currentUser } = storeToRefs(authStore);
@@ -301,6 +405,15 @@ const errorMessage = ref("");
 const search = ref("");
 const dialog = ref(false);
 const editingAppointment = ref(null);
+const availabilitySlots = ref([]);
+const loadingAvailability = ref(false);
+const savingAvailability = ref(false);
+const availabilityForm = ref({
+  date: "",
+  startTime: "",
+  modality: "Remoto",
+  location: "",
+});
 const completeDialog = ref(false);
 const completingAppointment = ref(null);
 const sessionSummary = ref("");
@@ -315,6 +428,7 @@ const headers = [
   { title: "Sesión online", value: "meetingUrl", sortable: false },
   { title: "Acciones", key: "actions", sortable: false },
 ];
+const modalityOptions = ["Remoto", "Presencial", "Híbrido"];
 
 const appointments = computed(() =>
   therapies.value.flatMap((therapy) =>
@@ -377,6 +491,18 @@ const missingMeetingLinksCount = computed(() =>
     (appointment) => isRemote(appointment.modalidad) && !appointment.meetingUrl
   ).length
 );
+const isAvailabilityRemote = computed(() => isRemote(availabilityForm.value.modality));
+const upcomingAvailabilitySlots = computed(() => {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  return availabilitySlots.value
+    .filter((slot) => {
+      const parsed = parseDateOnly(slot.date);
+      return parsed && parsed >= today && slot.status !== "closed";
+    })
+    .slice(0, 18);
+});
 
 watch(
   () => currentUser.value?.uid,
@@ -424,17 +550,84 @@ async function loadTherapistSchedule() {
 
   try {
     therapist.value = await getTherapistByUserUid(uid);
-    therapies.value = therapist.value?.id
-      ? await getTherapiesByTherapist(therapist.value.id)
-      : [];
+    if (therapist.value?.id) {
+      loadingAvailability.value = true;
+      const [therapistTherapies, therapistAvailability] = await Promise.all([
+        getTherapiesByTherapist(therapist.value.id),
+        getAvailabilityByTherapist(therapist.value.id),
+      ]);
+      therapies.value = therapistTherapies;
+      availabilitySlots.value = therapistAvailability;
+    } else {
+      therapies.value = [];
+      availabilitySlots.value = [];
+    }
   } catch (error) {
     console.error("Error loading therapist schedule:", error);
     errorMessage.value =
       error?.message || "No pudimos cargar la agenda del psicólogo.";
     therapist.value = null;
     therapies.value = [];
+    availabilitySlots.value = [];
   } finally {
     loading.value = false;
+    loadingAvailability.value = false;
+  }
+}
+
+async function saveAvailabilitySlot() {
+  if (!therapist.value?.id || savingAvailability.value) {
+    return;
+  }
+
+  savingAvailability.value = true;
+
+  try {
+    await createAvailabilitySlot({
+      therapistId: therapist.value.id,
+      date: availabilityForm.value.date,
+      startTime: availabilityForm.value.startTime,
+      modality: availabilityForm.value.modality,
+      location: availabilityForm.value.location,
+    });
+    availabilityForm.value.startTime = "";
+    availabilityForm.value.location = "";
+    await loadTherapistSchedule();
+    window.dispatchEvent(
+      new CustomEvent("ui-success", {
+        detail: {
+          title: "Horario abierto",
+          message: "El bloque ya está disponible para tus pacientes.",
+        },
+      })
+    );
+  } catch (error) {
+    console.error("Error creating availability slot:", error);
+    window.dispatchEvent(
+      new CustomEvent("api-error", {
+        detail: {
+          message: error?.message || "No se pudo abrir el horario.",
+        },
+      })
+    );
+  } finally {
+    savingAvailability.value = false;
+  }
+}
+
+async function handleCloseAvailabilitySlot(slot) {
+  try {
+    await closeAvailabilitySlot(slot.id);
+    await loadTherapistSchedule();
+  } catch (error) {
+    console.error("Error closing availability slot:", error);
+    window.dispatchEvent(
+      new CustomEvent("api-error", {
+        detail: {
+          message: error?.message || "No se pudo cerrar el bloque.",
+        },
+      })
+    );
   }
 }
 
@@ -531,6 +724,28 @@ function handleDialogSaved() {
   editingAppointment.value = null;
   loadTherapistSchedule();
 }
+
+function parseDateOnly(value) {
+  if (!value) {
+    return null;
+  }
+
+  const parsed = new Date(`${value}T00:00`);
+  return Number.isNaN(parsed.getTime()) ? null : parsed;
+}
+
+function formatAvailabilitySlot(slot) {
+  const parsed = parseDateOnly(slot.date);
+  const date = parsed
+    ? new Intl.DateTimeFormat("es-PE", {
+        weekday: "short",
+        day: "2-digit",
+        month: "2-digit",
+      }).format(parsed)
+    : slot.date;
+
+  return `${date} · ${slot.startTime}-${slot.endTime} · ${slot.modality}`;
+}
 </script>
 
 <style scoped>
@@ -551,6 +766,17 @@ function handleDialogSaved() {
   flex-wrap: wrap;
   gap: 4px;
   align-items: center;
+}
+
+.availability-slot-list {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.availability-chip {
+  min-height: 34px;
 }
 
 @media (max-width: 600px) {
