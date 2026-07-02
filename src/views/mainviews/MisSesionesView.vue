@@ -206,15 +206,15 @@
           >
             <v-card-title class="text-h6 font-weight-bold d-flex align-center ga-2">
               <v-icon color="secondary">mdi-archive-edit</v-icon>
-              Administra tu terapia
+              Ver tu proceso
             </v-card-title>
             <v-card-text>
               <v-list-item class="px-0">
                 <v-list-item-title
-                  >Gestiona tu proceso activo</v-list-item-title
+                  >Consulta tu terapia activa</v-list-item-title
                 >
                 <v-list-item-subtitle>
-                  Modifica objetivos, terapeuta o estado de la terapia.
+                  Revisa objetivos, sesiones y seguimiento asociado.
                 </v-list-item-subtitle>
                 <template #append>
                   <v-icon :color="activeTherapy?.id ? 'secondary' : 'grey'">

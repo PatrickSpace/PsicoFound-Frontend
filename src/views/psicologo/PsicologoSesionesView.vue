@@ -160,46 +160,66 @@
 
               <template #item.actions="{ item }">
                 <div class="d-flex ga-1">
-                  <v-btn
-                    icon
-                    variant="text"
-                    color="secondary"
-                    aria-label="Editar cita"
-                    :disabled="item.estado === 'realizada'"
-                    @click="openEditDialog(item)"
-                  >
-                    <v-icon>mdi-pencil</v-icon>
-                  </v-btn>
-                  <v-btn
-                    icon
-                    variant="text"
-                    color="success"
-                    aria-label="Confirmar cita"
-                    :disabled="item.estado === 'confirmada' || item.estado === 'realizada'"
-                    @click="handleConfirmAppointment(item)"
-                  >
-                    <v-icon>mdi-check-circle</v-icon>
-                  </v-btn>
-                  <v-btn
-                    icon
-                    variant="text"
-                    color="primary"
-                    aria-label="Marcar como realizada"
-                    :disabled="item.estado === 'realizada'"
-                    @click="handleCompleteAppointment(item)"
-                  >
-                    <v-icon>mdi-calendar-check</v-icon>
-                  </v-btn>
-                  <v-btn
-                    icon
-                    variant="text"
-                    color="warning"
-                    aria-label="Regresar a pendiente"
-                    :disabled="item.estado === 'pendiente'"
-                    @click="handleResetAppointment(item)"
-                  >
-                    <v-icon>mdi-refresh</v-icon>
-                  </v-btn>
+                  <v-tooltip text="Editar fecha, modalidad o enlace">
+                    <template #activator="{ props: tooltipProps }">
+                      <v-btn
+                        v-bind="tooltipProps"
+                        icon
+                        variant="text"
+                        color="secondary"
+                        aria-label="Editar cita"
+                        :disabled="item.estado === 'realizada'"
+                        @click="openEditDialog(item)"
+                      >
+                        <v-icon>mdi-pencil</v-icon>
+                      </v-btn>
+                    </template>
+                  </v-tooltip>
+                  <v-tooltip text="Confirmar cita">
+                    <template #activator="{ props: tooltipProps }">
+                      <v-btn
+                        v-bind="tooltipProps"
+                        icon
+                        variant="text"
+                        color="success"
+                        aria-label="Confirmar cita"
+                        :disabled="item.estado === 'confirmada' || item.estado === 'realizada'"
+                        @click="handleConfirmAppointment(item)"
+                      >
+                        <v-icon>mdi-check-circle</v-icon>
+                      </v-btn>
+                    </template>
+                  </v-tooltip>
+                  <v-tooltip text="Marcar sesión como realizada">
+                    <template #activator="{ props: tooltipProps }">
+                      <v-btn
+                        v-bind="tooltipProps"
+                        icon
+                        variant="text"
+                        color="primary"
+                        aria-label="Marcar como realizada"
+                        :disabled="item.estado === 'realizada'"
+                        @click="handleCompleteAppointment(item)"
+                      >
+                        <v-icon>mdi-calendar-check</v-icon>
+                      </v-btn>
+                    </template>
+                  </v-tooltip>
+                  <v-tooltip text="Regresar cita a pendiente">
+                    <template #activator="{ props: tooltipProps }">
+                      <v-btn
+                        v-bind="tooltipProps"
+                        icon
+                        variant="text"
+                        color="warning"
+                        aria-label="Regresar a pendiente"
+                        :disabled="item.estado === 'pendiente'"
+                        @click="handleResetAppointment(item)"
+                      >
+                        <v-icon>mdi-refresh</v-icon>
+                      </v-btn>
+                    </template>
+                  </v-tooltip>
                 </div>
               </template>
             </v-data-table>

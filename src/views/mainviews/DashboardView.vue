@@ -9,8 +9,8 @@
           <v-card-item>
             <v-card-title class="text-h5"> Tu progreso </v-card-title>
             <v-card-subtitle>
-              Te felicitamos por seguir con tu terapia, aqui tienes algunos datos
-              relevantes:
+              Te felicitamos por seguir con tu terapia, aquí tienes un resumen
+              de tu proceso:
             </v-card-subtitle>
           </v-card-item>
           <v-card-text class="pb-0">
@@ -36,9 +36,15 @@
             </v-row>
             <v-divider></v-divider>
             <v-card-actions class="my-2">
-              <v-btn color="" class="px-3" rounded="sm" variant="text"
-                >Mas infromación</v-btn
+              <v-btn
+                color="secondary"
+                class="px-3"
+                rounded="sm"
+                variant="text"
+                to="/progreso"
               >
+                Ver progreso
+              </v-btn>
             </v-card-actions>
           </v-card-text>
         </v-card>
@@ -160,9 +166,9 @@
         elevation="2"
       >
         <v-card-item>
-          <v-card-title class="text-h5">Aun no tienes una cita</v-card-title>
+          <v-card-title class="text-h5">Aún no tienes una cita</v-card-title>
           <v-card-subtitle>
-            Encuentra un terapeuta para iniciar tu proceso y agendar tu primera sesion.
+            Cuéntanos qué estás buscando para sugerirte psicólogos afines y agendar tu primera sesión.
           </v-card-subtitle>
         </v-card-item>
         <v-card-text class="pt-6">

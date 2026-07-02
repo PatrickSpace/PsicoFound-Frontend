@@ -47,6 +47,9 @@ Firestore manualmente:
 11. Las reglas de Firestore protegen datos por rol.
 12. El flujo funciona en desktop y movil.
 
+El analisis UX por journey queda documentado en
+`docs/mvp/ux-journey-analysis.md`.
+
 ## Roles MVP
 
 ### Paciente
@@ -247,6 +250,7 @@ Dejar el MVP listo para pruebas reales.
 - [ ] Crear al menos 5 psicologos con perfiles completos.
 - [ ] Probar flujo completo en desktop.
 - [ ] Probar flujo completo en mobile.
+- [x] Documentar journeys UX separados para paciente y psicologo.
 - [ ] Probar modo oscuro.
 - [ ] Probar modo claro.
 - [ ] Ejecutar `npm run build`.

@@ -66,7 +66,7 @@
               ></v-text-field>
             </v-col>
 
-            <v-col cols="12" md="6">
+            <v-col v-if="canEditMeetingLink" cols="12" md="6">
               <v-select
                 v-model="form.meetingProvider"
                 :items="meetingProviderOptions"
@@ -82,7 +82,7 @@
               ></v-select>
             </v-col>
 
-            <v-col cols="12" md="6">
+            <v-col v-if="canEditMeetingLink" cols="12" md="6">
               <v-text-field
                 v-model="form.meetingUrl"
                 label="URL de la sesión"
@@ -95,6 +95,17 @@
                 persistent-hint
                 density="comfortable"
               ></v-text-field>
+            </v-col>
+
+            <v-col v-else-if="isRemote" cols="12">
+              <v-alert
+                color="info"
+                variant="tonal"
+                icon="mdi-video-outline"
+                density="comfortable"
+              >
+                El psicólogo agregará el enlace de Zoom, Google Meet u otra herramienta cuando confirme la sesión.
+              </v-alert>
             </v-col>
 
             <v-col cols="12">
