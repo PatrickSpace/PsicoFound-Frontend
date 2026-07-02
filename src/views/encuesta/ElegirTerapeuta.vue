@@ -139,7 +139,7 @@ onMounted(() => {
 
   .therapist-match-header {
     padding-inline: 16px;
-    padding-top: 24px;
+    padding-top: 52px;
   }
 }
 </style>
