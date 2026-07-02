@@ -49,7 +49,6 @@
       </v-alert>
       <v-container class="therapist-match-header">
         <div>
-          <p class="text-overline text-secondary mb-1">Recomendaciones</p>
           <h1 class="text-h4 font-weight-bold theme-contrast-text">
             Psicólogos afines a tu perfil
           </h1>
@@ -140,6 +139,7 @@ onMounted(() => {
 
   .therapist-match-header {
     padding-inline: 16px;
+    padding-top: 24px;
   }
 }
 </style>
