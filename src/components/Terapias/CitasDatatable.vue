@@ -89,7 +89,8 @@
           variant="text"
           color="success"
           aria-label="Confirmar cita"
-          :disabled="item.estado === 'confirmada' || item.estado === 'realizada'"
+          :loading="isActionLoading(item, 'confirm')"
+          :disabled="isRowBusy(item) || item.estado === 'confirmada' || item.estado === 'realizada'"
           @click="handleConfirmAppointment(item)"
         >
           <v-icon>mdi-check-circle</v-icon>
@@ -99,7 +100,8 @@
           variant="text"
           color="primary"
           aria-label="Marcar cita como realizada"
-          :disabled="item.estado === 'realizada'"
+          :loading="isActionLoading(item, 'complete')"
+          :disabled="isRowBusy(item) || item.estado === 'realizada'"
           @click="handleCompleteAppointment(item)"
         >
           <v-icon>mdi-calendar-check</v-icon>
@@ -109,7 +111,8 @@
           variant="text"
           color="warning"
           aria-label="Volver cita a pendiente"
-          :disabled="item.estado === 'pendiente'"
+          :loading="isActionLoading(item, 'reset')"
+          :disabled="isRowBusy(item) || item.estado === 'pendiente'"
           @click="handleResetAppointment(item)"
         >
           <v-icon>mdi-refresh</v-icon>
@@ -157,6 +160,7 @@ const therapies = ref([]);
 const dialog = ref(false);
 const editingAppointment = ref(null);
 const dialogTherapy = ref(null);
+const rowAction = ref({ id: "", type: "" });
 
 const headers = [
   { title: "Fecha", key: "fechaOrden", value: "fecha" },
@@ -295,6 +299,9 @@ function openEditDialog(item) {
 }
 
 async function handleConfirmAppointment(item) {
+  if (isRowBusy(item)) return;
+  setRowAction(item, "confirm");
+
   try {
     await confirmAppointment({
       citaId: item.citaId,
@@ -320,10 +327,15 @@ async function handleConfirmAppointment(item) {
         },
       })
     );
+  } finally {
+    clearRowAction();
   }
 }
 
 async function handleCompleteAppointment(item) {
+  if (isRowBusy(item)) return;
+  setRowAction(item, "complete");
+
   try {
     await markAppointmentAsCompleted({
       citaId: item.citaId,
@@ -349,10 +361,15 @@ async function handleCompleteAppointment(item) {
         },
       })
     );
+  } finally {
+    clearRowAction();
   }
 }
 
 async function handleResetAppointment(item) {
+  if (isRowBusy(item)) return;
+  setRowAction(item, "reset");
+
   try {
     await resetAppointmentToPending({
       citaId: item.citaId,
@@ -378,7 +395,32 @@ async function handleResetAppointment(item) {
         },
       })
     );
+  } finally {
+    clearRowAction();
   }
+}
+
+function actionRowId(item) {
+  return item.citaId || item.id || "";
+}
+
+function isActionLoading(item, type) {
+  return rowAction.value.id === actionRowId(item) && rowAction.value.type === type;
+}
+
+function isRowBusy(item) {
+  return rowAction.value.id === actionRowId(item);
+}
+
+function setRowAction(item, type) {
+  rowAction.value = {
+    id: actionRowId(item),
+    type,
+  };
+}
+
+function clearRowAction() {
+  rowAction.value = { id: "", type: "" };
 }
 
 watch(

@@ -95,6 +95,15 @@
                     {{ notificationIcon(notification.type) }}
                   </v-icon>
                 </template>
+                <template #append>
+                  <v-progress-circular
+                    v-if="openingNotificationId === notification.id"
+                    indeterminate
+                    color="secondary"
+                    size="18"
+                    width="2"
+                  />
+                </template>
               </v-list-item>
             </v-list>
             <v-empty-state
@@ -157,6 +166,7 @@ const { currentUser } = storeToRefs(authStore);
 const isFeedbackDialogOpen = ref(false);
 const showFeedbackSaved = ref(false);
 const notifications = ref([]);
+const openingNotificationId = ref("");
 let unsubscribeNotifications = null;
 
 const activeMode = computed(
@@ -221,20 +231,30 @@ function defaultRouteForMode(mode) {
 }
 
 async function openNotification(notification) {
-  if (!notification?.id) {
+  if (!notification?.id || openingNotificationId.value) {
     return;
   }
+
+  openingNotificationId.value = notification.id;
 
   try {
     if (!notification.readAt) {
       await markNotificationAsRead(notification.id);
     }
+    if (notification.route) {
+      await router.push(notification.route);
+    }
   } catch (error) {
     console.error("Error marking notification as read:", error);
-  }
-
-  if (notification.route) {
-    router.push(notification.route);
+    window.dispatchEvent(
+      new CustomEvent("api-error", {
+        detail: {
+          message: "No se pudo abrir la notificación.",
+        },
+      })
+    );
+  } finally {
+    openingNotificationId.value = "";
   }
 }
 

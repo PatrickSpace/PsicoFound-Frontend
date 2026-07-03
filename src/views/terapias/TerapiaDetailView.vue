@@ -76,7 +76,8 @@
                 color="warning"
                 variant="tonal"
                 prepend-icon="mdi-pause-circle"
-                :disabled="normalizedTherapyStatus !== 'activo' || changingStatus"
+                :loading="changingStatus === 'pausa'"
+                :disabled="normalizedTherapyStatus !== 'activo' || Boolean(changingStatus)"
                 @click="changeTherapyStatus('pausa')"
               >
                 Poner en pausa
@@ -88,7 +89,8 @@
                 color="success"
                 variant="tonal"
                 prepend-icon="mdi-play-circle"
-                :disabled="!['pausa', 'cancelada'].includes(normalizedTherapyStatus) || changingStatus"
+                :loading="changingStatus === 'activo'"
+                :disabled="!['pausa', 'cancelada'].includes(normalizedTherapyStatus) || Boolean(changingStatus)"
                 @click="changeTherapyStatus('activo')"
               >
                 Reactivar terapia
@@ -100,7 +102,8 @@
                 color="error"
                 variant="tonal"
                 prepend-icon="mdi-cancel"
-                :disabled="normalizedTherapyStatus === 'cancelada' || changingStatus"
+                :loading="changingStatus === 'cancelada'"
+                :disabled="normalizedTherapyStatus === 'cancelada' || Boolean(changingStatus)"
                 @click="changeTherapyStatus('cancelada')"
               >
                 Cancelar terapia
@@ -204,7 +207,7 @@ const appContext = useAppContextStore();
 const { currentUser } = storeToRefs(authStore);
 const therapy = ref(null);
 const dialog = ref(false);
-const changingStatus = ref(false);
+const changingStatus = ref("");
 const appointmentHeaders = [
   { title: "Fecha", value: "fecha" },
   { title: "Hora", value: "hora" },
@@ -332,11 +335,11 @@ function defaultRouteForMode(mode) {
 }
 
 async function changeTherapyStatus(estado) {
-  if (!therapy.value?.id) {
+  if (!therapy.value?.id || changingStatus.value) {
     return;
   }
 
-  changingStatus.value = true;
+  changingStatus.value = estado;
 
   try {
     await updateTherapyStatus(therapy.value.id, estado);
@@ -361,7 +364,7 @@ async function changeTherapyStatus(estado) {
       })
     );
   } finally {
-    changingStatus.value = false;
+    changingStatus.value = "";
   }
 }
 

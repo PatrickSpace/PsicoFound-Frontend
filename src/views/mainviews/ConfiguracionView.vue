@@ -247,6 +247,8 @@
                 color="error"
                 variant="tonal"
                 prepend-icon="mdi-logout"
+                :loading="loggingOut"
+                :disabled="loggingOut"
                 @click="logout"
               >
                 Cerrar sesión
@@ -410,6 +412,7 @@ const isEditingProfile = ref(false);
 const psychologistRequestDialog = ref(false);
 const savingPsychologistRequest = ref(false);
 const loadingPsychologistRequest = ref(false);
+const loggingOut = ref(false);
 const psychologistRequestError = ref("");
 const psychologistRequest = ref(null);
 
@@ -693,8 +696,27 @@ async function saveProfile() {
 }
 
 async function logout() {
-  await signOut(auth);
-  router.push("/login");
+  if (loggingOut.value) {
+    return;
+  }
+
+  loggingOut.value = true;
+
+  try {
+    await signOut(auth);
+    await router.push("/login");
+  } catch (error) {
+    console.error("Error signing out:", error);
+    window.dispatchEvent(
+      new CustomEvent("api-error", {
+        detail: {
+          message: error?.message || "No se pudo cerrar la sesión.",
+        },
+      })
+    );
+  } finally {
+    loggingOut.value = false;
+  }
 }
 </script>
 

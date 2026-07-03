@@ -177,6 +177,8 @@
                   size="x-small"
                   class="ml-1"
                   aria-label="Cerrar bloque disponible"
+                  :loading="availabilityActionId === slot.id"
+                  :disabled="Boolean(availabilityActionId)"
                   @click.stop="handleCloseAvailabilitySlot(slot)"
                 />
               </v-chip>
@@ -282,7 +284,8 @@
                         variant="text"
                         color="success"
                         aria-label="Confirmar cita"
-                        :disabled="item.estado === 'confirmada' || item.estado === 'realizada'"
+                        :loading="isAppointmentActionLoading(item, 'confirm')"
+                        :disabled="isAppointmentBusy(item) || item.estado === 'confirmada' || item.estado === 'realizada'"
                         @click="handleConfirmAppointment(item)"
                       >
                         <v-icon>mdi-check-circle</v-icon>
@@ -297,7 +300,8 @@
                         variant="text"
                         color="primary"
                         aria-label="Marcar como realizada"
-                        :disabled="item.estado === 'realizada'"
+                        :loading="isAppointmentActionLoading(item, 'complete')"
+                        :disabled="isAppointmentBusy(item) || item.estado === 'realizada'"
                         @click="handleCompleteAppointment(item)"
                       >
                         <v-icon>mdi-calendar-check</v-icon>
@@ -312,7 +316,8 @@
                         variant="text"
                         color="warning"
                         aria-label="Regresar a pendiente"
-                        :disabled="item.estado === 'pendiente'"
+                        :loading="isAppointmentActionLoading(item, 'reset')"
+                        :disabled="isAppointmentBusy(item) || item.estado === 'pendiente'"
                         @click="handleResetAppointment(item)"
                       >
                         <v-icon>mdi-refresh</v-icon>
@@ -408,6 +413,8 @@ const editingAppointment = ref(null);
 const availabilitySlots = ref([]);
 const loadingAvailability = ref(false);
 const savingAvailability = ref(false);
+const availabilityActionId = ref("");
+const appointmentAction = ref({ id: "", type: "" });
 const availabilityForm = ref({
   date: "",
   startTime: "",
@@ -616,6 +623,12 @@ async function saveAvailabilitySlot() {
 }
 
 async function handleCloseAvailabilitySlot(slot) {
+  if (availabilityActionId.value) {
+    return;
+  }
+
+  availabilityActionId.value = slot.id;
+
   try {
     await closeAvailabilitySlot(slot.id);
     await loadTherapistSchedule();
@@ -628,6 +641,8 @@ async function handleCloseAvailabilitySlot(slot) {
         },
       })
     );
+  } finally {
+    availabilityActionId.value = "";
   }
 }
 
@@ -654,6 +669,9 @@ function openMeetingLinkDialog(item) {
 }
 
 async function handleConfirmAppointment(item) {
+  if (isAppointmentBusy(item)) return;
+  setAppointmentAction(item, "confirm");
+
   await runAppointmentAction(
     () => confirmAppointment({ citaId: item.citaId, terapiaId: item.terapiaId }),
     "Cita confirmada",
@@ -662,6 +680,8 @@ async function handleConfirmAppointment(item) {
 }
 
 function handleCompleteAppointment(item) {
+  if (isAppointmentBusy(item)) return;
+
   completingAppointment.value = item;
   sessionSummary.value = item.sessionSummary || "";
   completeDialog.value = true;
@@ -673,25 +693,35 @@ async function saveAppointmentCompletion() {
   }
 
   savingCompletion.value = true;
+  setAppointmentAction(completingAppointment.value, "complete");
 
-  await runAppointmentAction(
-    () =>
-      markAppointmentAsCompleted({
-        citaId: completingAppointment.value.citaId,
-        terapiaId: completingAppointment.value.terapiaId,
-        sessionSummary: sessionSummary.value.trim(),
-      }),
-    "Sesión realizada",
-    "La sesión fue marcada como realizada."
-  );
+  try {
+    const completed = await runAppointmentAction(
+      () =>
+        markAppointmentAsCompleted({
+          citaId: completingAppointment.value.citaId,
+          terapiaId: completingAppointment.value.terapiaId,
+          sessionSummary: sessionSummary.value.trim(),
+        }),
+      "Sesión realizada",
+      "La sesión fue marcada como realizada."
+    );
 
-  completeDialog.value = false;
-  completingAppointment.value = null;
-  sessionSummary.value = "";
-  savingCompletion.value = false;
+    if (completed) {
+      completeDialog.value = false;
+      completingAppointment.value = null;
+      sessionSummary.value = "";
+    }
+  } finally {
+    savingCompletion.value = false;
+    clearAppointmentAction();
+  }
 }
 
 async function handleResetAppointment(item) {
+  if (isAppointmentBusy(item)) return;
+  setAppointmentAction(item, "reset");
+
   await runAppointmentAction(
     () => resetAppointmentToPending({ citaId: item.citaId, terapiaId: item.terapiaId }),
     "Cita actualizada",
@@ -708,6 +738,7 @@ async function runAppointmentAction(action, title, message) {
       })
     );
     await loadTherapistSchedule();
+    return true;
   } catch (error) {
     console.error("Error updating therapist appointment:", error);
     window.dispatchEvent(
@@ -717,6 +748,11 @@ async function runAppointmentAction(action, title, message) {
         },
       })
     );
+    return false;
+  } finally {
+    if (!savingCompletion.value) {
+      clearAppointmentAction();
+    }
   }
 }
 
@@ -745,6 +781,32 @@ function formatAvailabilitySlot(slot) {
     : slot.date;
 
   return `${date} · ${slot.startTime}-${slot.endTime} · ${slot.modality}`;
+}
+
+function appointmentRowId(item) {
+  return item?.citaId || item?.id || "";
+}
+
+function isAppointmentActionLoading(item, type) {
+  return (
+    appointmentAction.value.id === appointmentRowId(item) &&
+    appointmentAction.value.type === type
+  );
+}
+
+function isAppointmentBusy(item) {
+  return appointmentAction.value.id === appointmentRowId(item);
+}
+
+function setAppointmentAction(item, type) {
+  appointmentAction.value = {
+    id: appointmentRowId(item),
+    type,
+  };
+}
+
+function clearAppointmentAction() {
+  appointmentAction.value = { id: "", type: "" };
 }
 </script>
 

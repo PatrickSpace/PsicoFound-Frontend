@@ -299,10 +299,16 @@
 
             <v-card-actions class="px-0 pb-0">
               <v-spacer></v-spacer>
-              <v-btn color="secondary" variant="text" @click="close">
+              <v-btn color="secondary" variant="text" :disabled="saving" @click="close">
                 Cancelar
               </v-btn>
-              <v-btn color="secondary" variant="tonal" @click="save">
+              <v-btn
+                color="secondary"
+                variant="tonal"
+                :loading="saving"
+                :disabled="saving"
+                @click="save"
+              >
                 Guardar
               </v-btn>
             </v-card-actions>
@@ -316,12 +322,14 @@
             </v-card-title>
             <v-card-actions class="px-6 pb-5">
               <v-spacer></v-spacer>
-              <v-btn color="secondary" variant="text" @click="closeDelete">
+              <v-btn color="secondary" variant="text" :disabled="deleting" @click="closeDelete">
                 Cancelar
               </v-btn>
               <v-btn
                 color="error"
                 variant="tonal"
+                :loading="deleting"
+                :disabled="deleting"
                 @click="deleteItemConfirm"
               >
                 Eliminar
@@ -423,6 +431,8 @@ export default {
     ],
     therapists: [],
     loading: false,
+    saving: false,
+    deleting: false,
     loadingError: "",
     loadingTimeoutId: null,
     unsubscribeTherapists: null,
@@ -630,6 +640,12 @@ export default {
     },
 
     async confirmDelete() {
+      if (this.deleting) {
+        return;
+      }
+
+      this.deleting = true;
+
       try {
         if (this.editedItem.id) {
           await deleteTherapist(this.editedItem.id);
@@ -638,7 +654,15 @@ export default {
         this.therapists.splice(this.editedIndex, 1);
       } catch (error) {
         console.error("Error deleting therapist:", error);
+        window.dispatchEvent(
+          new CustomEvent("api-error", {
+            detail: {
+              message: error?.message || "No se pudo eliminar el psicólogo.",
+            },
+          })
+        );
       } finally {
+        this.deleting = false;
         this.closeDelete();
       }
     },
@@ -676,6 +700,10 @@ export default {
     },
 
     async save() {
+      if (this.saving) {
+        return;
+      }
+
       const payload = {
         ...this.editedItem,
         uid: this.editedItem.uid || "ejemplo",
@@ -685,6 +713,8 @@ export default {
         gradient: this.buildGradient(this.editedItem),
         activo: this.editedItem.activo ?? true,
       };
+
+      this.saving = true;
 
       try {
         if (this.editedIndex > -1 && this.editedItem.id) {
@@ -699,7 +729,16 @@ export default {
         }
       } catch (error) {
         console.error("Error saving therapist:", error);
+        window.dispatchEvent(
+          new CustomEvent("api-error", {
+            detail: {
+              message: error?.message || "No se pudo guardar el psicólogo.",
+            },
+          })
+        );
         return;
+      } finally {
+        this.saving = false;
       }
 
       this.close();
