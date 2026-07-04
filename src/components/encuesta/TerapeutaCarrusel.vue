@@ -67,7 +67,7 @@
     v-model="dialog"
     max-width="1100"
     persistent
-    scrim="rgba(31, 65, 70, 0.86)"
+    scrim="rgba(var(--v-theme-brand-primary), 0.86)"
   >
     <v-card class="dialog-root pa-0" v-if="selectedTherapist">
       <!-- Header: month + navigation + close -->
@@ -267,7 +267,7 @@ const selectedSlot = ref(null)
   width: 100%;
   text-align: center;
   padding: 10px 0;
-  background-color: rgba(0, 0, 0, 0.7);
+  background-color: rgba(var(--v-theme-background-primary), 0.7);
 }
 
 .dialog-root {
@@ -276,8 +276,8 @@ const selectedSlot = ref(null)
 }
 
 .dialog-header {
-  background: linear-gradient(135deg, #2f6f78, #183f44);
-  color: white;
+  background: linear-gradient(135deg, rgb(var(--v-theme-secondary)), rgb(var(--v-theme-primary)));
+  color: rgb(var(--v-theme-on-secondary));
 }
 
 .day-pill {

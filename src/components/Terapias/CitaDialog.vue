@@ -865,13 +865,13 @@ function formatDisplayDate(date) {
 
 <style scoped>
 .appointment-card {
-  color: rgba(255, 255, 255, 0.94);
+  color: rgba(var(--v-theme-text-primary), 0.94);
   overflow: hidden;
 }
 
 .appointment-topbar {
   align-items: center;
-  border-bottom: 1px solid rgba(210, 244, 241, 0.14);
+  border-bottom: 1px solid rgba(var(--v-theme-border-subtle), 0.14);
   display: grid;
   grid-template-columns: 44px 1fr 44px;
   min-height: 68px;
@@ -894,35 +894,35 @@ function formatDisplayDate(date) {
 .appointment-card :deep(.v-field__input),
 .appointment-card :deep(.v-text-field input),
 .appointment-card :deep(textarea) {
-  color: rgba(255, 255, 255, 0.94) !important;
+  color: rgba(var(--v-theme-text-primary), 0.94) !important;
 }
 
 .appointment-card :deep(.text-medium-emphasis),
 .appointment-card :deep(.v-label),
 .appointment-card :deep(.v-field-label),
 .appointment-card :deep(.v-messages__message) {
-  color: rgba(255, 255, 255, 0.72) !important;
+  color: rgba(var(--v-theme-text-secondary), 0.72) !important;
   opacity: 1;
 }
 
 .appointment-card :deep(.v-field) {
-  background-color: rgba(255, 255, 255, 0.06);
-  color: rgba(255, 255, 255, 0.94);
+  background-color: rgba(var(--v-theme-surface-glass), 0.18);
+  color: rgba(var(--v-theme-text-primary), 0.94);
 }
 
 .appointment-card :deep(.v-field__outline) {
-  color: rgba(210, 244, 241, 0.34);
+  color: rgba(var(--v-theme-border-subtle), 0.34);
 }
 
 .appointment-card :deep(.v-alert) {
-  background-color: rgba(95, 128, 123, 0.24) !important;
-  color: rgba(255, 255, 255, 0.88) !important;
+  background-color: rgba(var(--v-theme-brand-secondary), 0.24) !important;
+  color: rgba(var(--v-theme-text-primary), 0.88) !important;
 }
 
 .appointment-therapist-card {
   align-items: center;
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid rgba(210, 244, 241, 0.16);
+  background: rgba(var(--v-theme-surface-glass), 0.18);
+  border: 1px solid rgba(var(--v-theme-border-subtle), 0.16);
   border-radius: 16px;
   display: flex;
   gap: 14px;
@@ -936,7 +936,7 @@ function formatDisplayDate(date) {
 
 .appointment-therapist-card__meta {
   align-items: center;
-  color: rgba(255, 255, 255, 0.68);
+  color: rgba(var(--v-theme-text-secondary), 0.68);
   display: inline-flex;
   font-size: 0.86rem;
   gap: 5px;
@@ -945,8 +945,8 @@ function formatDisplayDate(date) {
 
 .appointment-location-card {
   align-items: center;
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(210, 244, 241, 0.28);
+  background: rgba(var(--v-theme-surface-glass), 0.12);
+  border: 1px solid rgba(var(--v-theme-border-subtle), 0.28);
   border-radius: 12px;
   display: flex;
   justify-content: space-between;
@@ -965,10 +965,10 @@ function formatDisplayDate(date) {
 
 .availability-range {
   align-items: center;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(210, 244, 241, 0.14);
+  background: rgba(var(--v-theme-surface-glass), 0.14);
+  border: 1px solid rgba(var(--v-theme-border-subtle), 0.14);
   border-radius: 16px;
-  color: rgba(255, 255, 255, 0.76);
+  color: rgba(var(--v-theme-text-primary), 0.76);
   cursor: pointer;
   display: inline-flex;
   flex: 1 0 auto;
@@ -1002,7 +1002,7 @@ function formatDisplayDate(date) {
 }
 
 .availability-day {
-  border-top: 1px solid rgba(210, 244, 241, 0.16);
+  border-top: 1px solid rgba(var(--v-theme-border-subtle), 0.16);
   padding: 24px 0;
 }
 
@@ -1026,9 +1026,9 @@ function formatDisplayDate(date) {
   align-items: center;
   background: transparent;
   border: 0;
-  border-right: 1px solid rgba(210, 244, 241, 0.18);
+  border-right: 1px solid rgba(var(--v-theme-border-subtle), 0.18);
   border-radius: 0;
-  color: rgba(255, 255, 255, 0.88);
+  color: rgba(var(--v-theme-text-primary), 0.88);
   cursor: pointer;
   display: inline-flex;
   gap: 9px;
@@ -1044,9 +1044,9 @@ function formatDisplayDate(date) {
 
 .availability-slot:hover,
 .availability-slot--selected {
-  background: rgba(95, 128, 123, 0.18);
-  border-color: rgba(210, 244, 241, 0.26);
-  color: rgba(255, 255, 255, 0.96);
+  background: rgba(var(--v-theme-brand-secondary), 0.18);
+  border-color: rgba(var(--v-theme-border-subtle), 0.26);
+  color: rgba(var(--v-theme-text-primary), 0.96);
 }
 
 .availability-slot__radio {
@@ -1071,7 +1071,7 @@ function formatDisplayDate(date) {
 }
 
 :global(.v-theme--light) .appointment-topbar {
-  border-bottom-color: rgba(18, 58, 53, 0.14);
+  border-bottom-color: rgba(var(--v-theme-border-subtle), 0.14);
 }
 
 :global(.v-theme--light) .appointment-card :deep(.v-card-title),
@@ -1079,64 +1079,64 @@ function formatDisplayDate(date) {
 :global(.v-theme--light) .appointment-card :deep(.v-field__input),
 :global(.v-theme--light) .appointment-card :deep(.v-text-field input),
 :global(.v-theme--light) .appointment-card :deep(textarea) {
-  color: rgba(18, 33, 30, 0.92) !important;
+  color: rgba(var(--v-theme-text-primary), 0.92) !important;
 }
 
 :global(.v-theme--light) .appointment-card :deep(.text-medium-emphasis),
 :global(.v-theme--light) .appointment-card :deep(.v-label),
 :global(.v-theme--light) .appointment-card :deep(.v-field-label),
 :global(.v-theme--light) .appointment-card :deep(.v-messages__message) {
-  color: rgba(18, 33, 30, 0.68) !important;
+  color: rgba(var(--v-theme-text-secondary), 0.68) !important;
 }
 
 :global(.v-theme--light) .appointment-card :deep(.v-field) {
-  background-color: rgba(255, 255, 255, 0.88);
+  background-color: rgba(var(--v-theme-surface-glass), 0.46);
 }
 
 :global(.v-theme--light) .appointment-card :deep(.v-field__outline) {
-  color: rgba(18, 58, 53, 0.28);
+  color: rgba(var(--v-theme-border-subtle), 0.28);
 }
 
 :global(.v-theme--light) .appointment-therapist-card {
-  background: rgba(255, 255, 255, 0.9);
-  border-color: rgba(18, 58, 53, 0.14);
+  background: rgba(var(--v-theme-surface-glass), 0.72);
+  border-color: rgba(var(--v-theme-border-subtle), 0.14);
 }
 
 :global(.v-theme--light) .appointment-therapist-card__meta {
-  color: rgba(18, 33, 30, 0.62);
+  color: rgba(var(--v-theme-text-secondary), 0.62);
 }
 
 :global(.v-theme--light) .appointment-location-card {
-  background: rgba(255, 255, 255, 0.84);
-  border-color: rgba(18, 58, 53, 0.24);
+  background: rgba(var(--v-theme-surface-glass), 0.64);
+  border-color: rgba(var(--v-theme-border-subtle), 0.24);
 }
 
 :global(.v-theme--light) .availability-range {
-  background: rgba(255, 255, 255, 0.72);
-  border-color: rgba(18, 58, 53, 0.12);
-  color: rgba(18, 33, 30, 0.68);
+  background: rgba(var(--v-theme-surface-glass), 0.62);
+  border-color: rgba(var(--v-theme-border-subtle), 0.12);
+  color: rgba(var(--v-theme-text-primary), 0.68);
 }
 
 :global(.v-theme--light) .availability-range--selected {
-  background: rgba(47, 102, 95, 0.12);
-  border-color: rgba(47, 102, 95, 0.48);
+  background: rgba(var(--v-theme-brand-secondary), 0.12);
+  border-color: rgba(var(--v-theme-brand-secondary), 0.48);
   color: rgb(var(--v-theme-secondary));
 }
 
 :global(.v-theme--light) .availability-day {
-  border-top-color: rgba(18, 58, 53, 0.14);
+  border-top-color: rgba(var(--v-theme-border-subtle), 0.14);
 }
 
 :global(.v-theme--light) .availability-slot {
-  border-color: rgba(18, 58, 53, 0.16);
-  color: rgba(18, 33, 30, 0.82);
+  border-color: rgba(var(--v-theme-border-subtle), 0.16);
+  color: rgba(var(--v-theme-text-primary), 0.82);
 }
 
 :global(.v-theme--light) .availability-slot:hover,
 :global(.v-theme--light) .availability-slot--selected {
-  background: rgba(47, 102, 95, 0.12);
-  border-color: rgba(47, 102, 95, 0.58);
-  color: rgba(18, 58, 53, 0.94);
+  background: rgba(var(--v-theme-brand-secondary), 0.12);
+  border-color: rgba(var(--v-theme-brand-secondary), 0.58);
+  color: rgba(var(--v-theme-brand-primary), 0.94);
 }
 
 @media (max-width: 600px) {
@@ -1175,7 +1175,7 @@ function formatDisplayDate(date) {
   }
 
   .appointment-actions {
-    border-top: 1px solid rgba(210, 244, 241, 0.12);
+    border-top: 1px solid rgba(var(--v-theme-border-subtle), 0.12);
     flex-wrap: wrap;
     gap: 8px;
     padding-top: 14px;

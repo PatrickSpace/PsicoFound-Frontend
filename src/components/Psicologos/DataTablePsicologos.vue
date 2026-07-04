@@ -388,6 +388,7 @@ import {
   TABLE_LOADING_TIMEOUT_MS,
   notifyTableLoadingTimeout,
 } from "@/utils/tableLoadingTimeout";
+import { defaultTherapistGradientStops } from "@/plugins/theme/tokens";
 
 const especialidadesOptions = [
   "Abuso de sustancias",
@@ -413,6 +414,8 @@ const enfoquesOptions = [
 
 const generosOptions = ["femenino", "masculino"];
 const modalidadesOptions = ["Remoto", "Presencial", "Híbrido"];
+const defaultGradientStart = defaultTherapistGradientStops.start;
+const defaultGradientEnd = defaultTherapistGradientStops.end;
 
 export default {
   data: () => ({
@@ -450,8 +453,8 @@ export default {
       genero: "",
       edad: null,
       modalidades: [],
-      colorInicio: "#FF7A7A",
-      colorFin: "#6B8DF0",
+      colorInicio: defaultGradientStart,
+      colorFin: defaultGradientEnd,
       gradient: "",
       activo: true,
     },
@@ -468,8 +471,8 @@ export default {
       genero: "",
       edad: null,
       modalidades: [],
-      colorInicio: "#FF7A7A",
-      colorFin: "#6B8DF0",
+      colorInicio: defaultGradientStart,
+      colorFin: defaultGradientEnd,
       gradient: "",
       activo: true,
     },
@@ -539,8 +542,8 @@ export default {
 
     extractGradientColors(gradient) {
       const fallback = {
-        start: "#FF7A7A",
-        end: "#6B8DF0",
+        start: defaultGradientStart,
+        end: defaultGradientEnd,
       };
 
       if (!gradient || typeof gradient !== "string") {
@@ -675,8 +678,8 @@ export default {
           especialidades: [],
           enfoques: [],
           modalidades: [],
-          colorInicio: "#FF7A7A",
-          colorFin: "#6B8DF0",
+          colorInicio: defaultGradientStart,
+          colorFin: defaultGradientEnd,
           activo: true,
         };
         this.editedIndex = -1;
@@ -691,8 +694,8 @@ export default {
           especialidades: [],
           enfoques: [],
           modalidades: [],
-          colorInicio: "#FF7A7A",
-          colorFin: "#6B8DF0",
+          colorInicio: defaultGradientStart,
+          colorFin: defaultGradientEnd,
           activo: true,
         };
         this.editedIndex = -1;
@@ -755,7 +758,7 @@ export default {
 }
 
 :global(.v-theme--light) .therapists-table {
-  border-color: rgba(18, 58, 53, 0.16);
+  border-color: rgba(var(--v-theme-border-subtle), 0.16);
 }
 
 @media (max-width: 599px) {

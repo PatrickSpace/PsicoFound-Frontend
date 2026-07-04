@@ -92,11 +92,11 @@ const navItemCount = computed(() =>
   background:
     linear-gradient(
       0deg,
-      rgba(3, 7, 7, 0.78) 0%,
-      rgba(3, 7, 7, 0.48) 78%,
-      rgba(3, 7, 7, 0) 100%
+      rgba(var(--v-theme-background-primary), 0.78) 0%,
+      rgba(var(--v-theme-background-primary), 0.48) 78%,
+      rgba(var(--v-theme-background-primary), 0) 100%
     ) !important;
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  border-top: 1px solid rgba(var(--v-theme-border-subtle), 0.08);
   height: calc(72px + env(safe-area-inset-bottom)) !important;
   left: 0 !important;
   max-width: 100vw;
@@ -107,9 +107,9 @@ const navItemCount = computed(() =>
 }
 
 :global(.v-theme--light) .bottom-nav-mobile {
-  background: rgba(248, 251, 249, 0.92) !important;
-  border-top-color: rgba(18, 58, 53, 0.14);
-  box-shadow: 0 -12px 32px rgba(18, 58, 53, 0.1);
+  background: rgba(var(--v-theme-surface-glass), 0.78) !important;
+  border-top-color: rgba(var(--v-theme-border-subtle), 0.14);
+  box-shadow: var(--pf-shadow-sm);
 }
 
 .bottom-nav-mobile :deep(.v-bottom-navigation__content) {
@@ -155,11 +155,11 @@ const navItemCount = computed(() =>
 }
 
 .bottom-nav-menu {
-  background-color: rgba(18, 44, 47, 0.98) !important;
+  background-color: rgba(var(--v-theme-surface-elevated), 0.98) !important;
 }
 
 :global(.v-theme--light) .bottom-nav-menu {
-  background-color: rgba(248, 251, 250, 0.98) !important;
+  background-color: rgba(var(--v-theme-surface-elevated), 0.98) !important;
 }
 
 @media (max-width: 380px) {

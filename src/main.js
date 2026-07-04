@@ -4,13 +4,15 @@ import { createApp } from "vue";
 import App from "./App.vue";
 import router from "./router";
 import apiClient from "./plugins/axios";
-import vuetify from "./plugins/vuetify";
+import vuetify, { applyDesignTokenCssVars } from "./plugins/vuetify";
 import { createPinia } from "pinia";
 import "./plugins/Firebase/firebase";
 import { useAuthStore } from "@/store/auth";
 
 const app = createApp(App);
 const pinia = createPinia();
+
+applyDesignTokenCssVars();
 
 app.use(pinia);
 app.use(router);

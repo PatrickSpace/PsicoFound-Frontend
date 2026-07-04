@@ -108,12 +108,12 @@ const activeMode = computed(
   background:
     linear-gradient(
       90deg,
-      rgba(255, 255, 255, 0.72) 0%,
-      rgba(255, 255, 255, 0.52) 74%,
-      rgba(255, 255, 255, 0) 100%
+      rgba(var(--v-theme-surface-glass), 0.72) 0%,
+      rgba(var(--v-theme-surface-glass), 0.52) 74%,
+      rgba(var(--v-theme-surface-glass), 0) 100%
     );
-  border-right: 1px solid rgba(23, 63, 58, 0.08);
-  box-shadow: 16px 0 42px rgba(23, 63, 58, 0.06);
+  border-right: 1px solid rgba(var(--v-theme-border-subtle), 0.08);
+  box-shadow: var(--pf-shadow-sm);
 }
 
 .mode-summary {
@@ -126,15 +126,15 @@ const activeMode = computed(
 }
 
 .nav-list :deep(.v-list-item--active) {
-  background-color: rgba(255, 255, 255, 0.12);
+  background-color: rgba(var(--v-theme-surface-active), 0.12);
 }
 
 :global(.v-theme--light) .nav-list :deep(.v-list-item--active) {
-  background-color: rgba(55, 111, 101, 0.12);
+  background-color: rgba(var(--v-theme-surface-active), 0.12);
   color: rgb(var(--v-theme-primary));
 }
 
 :global(.v-theme--light) .nav-list :deep(.v-list-item) {
-  color: rgba(23, 38, 34, 0.78);
+  color: rgba(var(--v-theme-text-primary), 0.78);
 }
 </style>

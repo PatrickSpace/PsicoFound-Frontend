@@ -41,11 +41,11 @@ import ConversationalSurvey from "@/components/encuesta/ConversationalSurvey.vue
 }
 
 .survey-page {
-  background: rgba(18, 39, 42, 0.82) !important;
+  background: rgba(var(--v-theme-surface-glass), 0.28) !important;
 }
 
 :global(.v-theme--light) .survey-page {
-  background: rgba(255, 255, 255, 0.88) !important;
+  background: rgba(var(--v-theme-surface-glass), 0.72) !important;
 }
 
 @media (max-width: 720px) {

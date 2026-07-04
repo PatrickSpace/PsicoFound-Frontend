@@ -12,6 +12,7 @@ import {
 import { db } from "@/plugins/Firebase/firestore";
 import { createTherapist } from "@/services/psicologoService";
 import { updateUserProfessionalAccess } from "@/services/userService";
+import { defaultTherapistGradient } from "@/plugins/theme/tokens";
 
 const REQUESTS_COLLECTION = "psychologist_requests";
 
@@ -87,7 +88,7 @@ export async function approvePsychologistRequest(request) {
     enfoques: request.approaches || [],
     genero: request.gender || "",
     modalidades: request.modalities || [],
-    gradient: "linear-gradient(to bottom right, #6f8f89, #314d49)",
+    gradient: defaultTherapistGradient,
     activo: true,
   });
 

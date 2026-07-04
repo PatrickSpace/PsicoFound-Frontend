@@ -273,9 +273,9 @@ function notificationIcon(type = "") {
   background:
     linear-gradient(
       180deg,
-      rgba(3, 7, 7, 0.72) 0%,
-      rgba(3, 7, 7, 0.42) 72%,
-      rgba(3, 7, 7, 0) 100%
+      rgba(var(--v-theme-background-primary), 0.72) 0%,
+      rgba(var(--v-theme-background-primary), 0.42) 72%,
+      rgba(var(--v-theme-background-primary), 0) 100%
     );
   left: 0;
   min-height: 64px;
@@ -288,13 +288,13 @@ function notificationIcon(type = "") {
 }
 
 :global(.v-theme--light) .app-top-nav {
-  background: rgba(248, 251, 249, 0.88);
-  border-bottom: 1px solid rgba(18, 58, 53, 0.14);
-  box-shadow: 0 10px 30px rgba(18, 58, 53, 0.1);
+  background: rgba(var(--v-theme-surface-glass), 0.72);
+  border-bottom: 1px solid rgba(var(--v-theme-border-subtle), 0.14);
+  box-shadow: var(--pf-shadow-sm);
 }
 
 .app-top-nav::after {
-  background: rgba(255, 255, 255, 0.08);
+  background: rgba(var(--v-theme-border-subtle), 0.08);
   bottom: 0;
   content: "";
   height: 1px;
@@ -354,13 +354,13 @@ function notificationIcon(type = "") {
 }
 
 :global(.v-theme--light) .nav-title {
-  color: rgb(var(--v-theme-on-background));
+  color: rgb(var(--v-theme-text-primary));
   font-weight: 600;
 }
 
 .nav-icon-btn {
   background: transparent !important;
-  color: rgb(var(--v-theme-on-background));
+  color: rgb(var(--v-theme-text-primary));
   flex: 0 0 44px;
   height: 44px;
   width: 44px;

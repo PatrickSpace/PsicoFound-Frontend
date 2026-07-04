@@ -1,5 +1,6 @@
 import { defineStore } from "pinia";
 import { ref } from "vue";
+import { therapistGradients } from "@/plugins/theme/tokens";
 
 export const useTerapiaStore = defineStore("terapia", () => {
   // criterios de búsqueda (estado)
@@ -226,7 +227,7 @@ const terapeutasEjemplo = [
     description: "Trabaja con técnicas humanistas y cognitivo-conductuales para ansiedad y depresión.",
     mensaje: "Mi enfoque combina escucha empática y herramientas prácticas para recuperar equilibrio.",
     avatar: "https://randomuser.me/api/portraits/women/45.jpg",
-    gradient: "linear-gradient(to bottom right, #FF7A7A, #6B8DF0)"
+    gradient: therapistGradients[0]
   },
   {
     id: 2,
@@ -239,7 +240,7 @@ const terapeutasEjemplo = [
     description: "Especialista en procesos de trauma y fortalecimiento de la autoestima.",
     mensaje: "Acompaño procesos profundos con respeto y trabajo reflexivo.",
     avatar: "https://randomuser.me/api/portraits/men/32.jpg",
-    gradient: "linear-gradient(to bottom right, #CE2121, #D7CF05)"
+    gradient: therapistGradients[1]
   },
   {
     id: 3,
@@ -252,7 +253,7 @@ const terapeutasEjemplo = [
     description: "Terapia familiar y de pareja con enfoque humanista y práctico.",
     mensaje: "Trabajo desde la conexión y la comunicación consciente entre las personas.",
     avatar: "https://randomuser.me/api/portraits/women/55.jpg",
-    gradient: "linear-gradient(to bottom right, #2E36FF, #0BE6A4)"
+    gradient: therapistGradients[2]
   },
   {
     id: 4,
@@ -265,7 +266,7 @@ const terapeutasEjemplo = [
     description: "Intervención en adicciones y depresión con técnicas integrativas.",
     mensaje: "Mi objetivo es ofrecer rutas concretas hacia la recuperación y bienestar.",
     avatar: "https://randomuser.me/api/portraits/men/47.jpg",
-    gradient: "linear-gradient(to bottom right, #41E6C8, #134335)"
+    gradient: therapistGradients[3]
   },
   {
     id: 5,
@@ -278,7 +279,7 @@ const terapeutasEjemplo = [
     description: "Ayudo a gestionar estrés laboral y hábitos con herramientas CBT.",
     mensaje: "Juntos diseñamos pasos prácticos para mejorar tu rendimiento y bienestar.",
     avatar: "https://randomuser.me/api/portraits/women/22.jpg",
-    gradient: "linear-gradient(to bottom right, #FFB86B, #FF6B9A)"
+    gradient: therapistGradients[4]
   },
   {
     id: 6,
@@ -291,7 +292,7 @@ const terapeutasEjemplo = [
     description: "Especializado en dinámicas familiares y acompañamiento a largo plazo.",
     mensaje: "Creo en la resiliencia y en reconstruir vínculos saludables.",
     avatar: "https://randomuser.me/api/portraits/men/15.jpg",
-    gradient: "linear-gradient(to bottom right, #3F34C0, #CE2121)"
+    gradient: therapistGradients[5]
   },
   {
     id: 7,
@@ -304,7 +305,7 @@ const terapeutasEjemplo = [
     description: "Enfoque integrativo para procesos de identidad y manejo emocional.",
     mensaje: "Acompaño desde la autenticidad para encontrar sentido y claridad.",
     avatar: "https://randomuser.me/api/portraits/women/12.jpg",
-    gradient: "linear-gradient(to bottom right, #FF6B6B, #6C5BFF)"
+    gradient: therapistGradients[6]
   },
   {
     id: 8,
@@ -317,7 +318,7 @@ const terapeutasEjemplo = [
     description: "Combina enfoques para abordar depresión y conflictos de pareja.",
     mensaje: "Trabajo en comprender patrones y crear alternativas sostenibles.",
     avatar: "https://randomuser.me/api/portraits/men/5.jpg",
-    gradient: "linear-gradient(to bottom right, #2E86AB, #9B59B6)"
+    gradient: therapistGradients[7]
   },
   {
     id: 9,
@@ -330,7 +331,7 @@ const terapeutasEjemplo = [
     description: "Terapia breve centrada en habilidades sociales y autoimagen.",
     mensaje: "Pequeños cambios sostenidos generan grandes mejoras en la vida diaria.",
     avatar: "https://randomuser.me/api/portraits/women/68.jpg",
-    gradient: "linear-gradient(to bottom right, #FF9A8D, #FEC163)"
+    gradient: therapistGradients[8]
   },
   {
     id: 10,
@@ -343,6 +344,6 @@ const terapeutasEjemplo = [
     description: "Ayuda a mejorar productividad y hábitos desde la psicología aplicada.",
     mensaje: "Diseñamos estrategias para recuperar foco y equilibrio profesional.",
     avatar: "https://randomuser.me/api/portraits/men/21.jpg",
-    gradient: "linear-gradient(to bottom right, #134E5E, #71B280)"
+    gradient: therapistGradients[9]
   }
 ];
