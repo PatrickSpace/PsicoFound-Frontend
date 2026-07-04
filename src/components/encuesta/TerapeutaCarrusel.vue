@@ -16,13 +16,11 @@
         @click="handleCardClick(index)"
       >
         <v-card
-          :style="{ background: therapist.gradient }"
-          class="pa-5 h-75 d-flex flex-column align-center justify-center elevation-10"
-          style="width: 100%"
+          class="carousel-therapist-card pa-5 h-75 w-100 d-flex flex-column align-center justify-center elevation-10"
         >
           <v-avatar
             size="xl"
-            class="mb-4 border-white border-lg border-opacity-75"
+            class="carousel-avatar mb-4 border-lg border-opacity-75"
           >
             <img :src="therapist.avatar" alt="avatar" />
           </v-avatar>
@@ -253,6 +251,16 @@ const selectedSlot = ref(null)
 
 .center {
   transform: scale(1.1);
+}
+
+.carousel-therapist-card {
+  background:
+    radial-gradient(circle at 78% 16%, rgba(var(--v-theme-brand-accent), 0.34), transparent 38%),
+    linear-gradient(135deg, rgb(var(--v-theme-primary)), rgb(var(--v-theme-secondary)));
+}
+
+.carousel-avatar {
+  border-color: rgba(var(--v-theme-border-subtle), 0.75) !important;
 }
 
 .right1 {

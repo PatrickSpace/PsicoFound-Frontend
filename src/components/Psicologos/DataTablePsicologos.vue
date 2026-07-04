@@ -286,7 +286,6 @@
                       class="d-flex align-center justify-center gradient-preview"
                       rounded="lg"
                       height="100%"
-                      :style="{ background: buildGradient(editedItem) }"
                     >
                       <v-card-text class="text-center">
                         Vista previa del gradiente
@@ -562,10 +561,6 @@ export default {
       };
     },
 
-    buildGradient(item) {
-      return `linear-gradient(to bottom right, ${item.colorInicio}, ${item.colorFin})`;
-    },
-
     initialize() {
       this.loading = true;
       this.loadingError = "";
@@ -758,6 +753,9 @@ export default {
 }
 
 .gradient-preview {
+  background:
+    radial-gradient(circle at 80% 10%, rgba(var(--v-theme-brand-accent), 0.32), transparent 34%),
+    linear-gradient(135deg, rgb(var(--v-theme-primary)), rgb(var(--v-theme-secondary)));
   color: rgb(var(--v-theme-on-secondary));
 }
 

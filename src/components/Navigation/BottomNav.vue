@@ -1,8 +1,8 @@
 <template>
   <v-bottom-navigation
     class="bottom-nav-mobile bg-transparent d-lg-none"
+    :class="`bottom-nav-mobile--${navItemCount}`"
     grow
-    :style="{ '--bottom-nav-count': navItemCount }"
   >
     <v-btn
       v-for="(item, i) in primaryItems"
@@ -114,9 +114,28 @@ const navItemCount = computed(() =>
 
 .bottom-nav-mobile :deep(.v-bottom-navigation__content) {
   display: grid;
-  grid-template-columns: repeat(var(--bottom-nav-count), minmax(0, 1fr));
   height: 72px;
   width: 100%;
+}
+
+.bottom-nav-mobile--1 :deep(.v-bottom-navigation__content) {
+  grid-template-columns: repeat(1, minmax(0, 1fr));
+}
+
+.bottom-nav-mobile--2 :deep(.v-bottom-navigation__content) {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.bottom-nav-mobile--3 :deep(.v-bottom-navigation__content) {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.bottom-nav-mobile--4 :deep(.v-bottom-navigation__content) {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.bottom-nav-mobile--5 :deep(.v-bottom-navigation__content) {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
 }
 
 .bottom-nav-mobile :deep(.v-btn) {

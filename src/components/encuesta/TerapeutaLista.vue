@@ -19,7 +19,6 @@
                   lg="2"
                   xl="2"
                   class="therapist-media w-100 d-flex align-center justify-center px-4 py-6"
-                  :style="{ background: backgroundStyle(therapist) }"
                 >
                   <div
                     class="d-flex flex-column flex-md-row align-center justify-center ga-3 w-100"
@@ -194,13 +193,6 @@ const topTherapists = computed(() =>
 const dialog = ref(false);
 const selectedTherapist = ref(null);
 
-function backgroundStyle(therapist) {
-  return (
-    therapist.gradient ||
-    "linear-gradient(135deg, rgb(var(--v-theme-primary)), rgb(var(--v-theme-secondary)))"
-  );
-}
-
 function modalidadesTexto(therapist) {
   if (
     Array.isArray(therapist.modalidades) &&
@@ -237,6 +229,12 @@ function openAppointmentDialog(therapist) {
 </script>
 
 <style scoped>
+.therapist-media {
+  background:
+    radial-gradient(circle at 80% 12%, rgba(var(--v-theme-brand-accent), 0.36), transparent 36%),
+    linear-gradient(135deg, rgb(var(--v-theme-primary)), rgb(var(--v-theme-secondary)));
+}
+
 .therapist-list-container {
   padding-block: 24px;
 }

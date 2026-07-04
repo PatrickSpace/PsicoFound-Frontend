@@ -2,8 +2,7 @@
 
   <div>
     <v-row class="h-screen ma-0">
-      <v-col class="bg-image d-md-flex d-sm-none d-none" cols="6"
-        :style="{ backgroundImage: `url(${bgHomeImage})` }"></v-col>
+      <v-col class="bg-image d-md-flex d-sm-none d-none" cols="6"></v-col>
       <v-col class="bg-diagonal h-auto">
         <v-row>
           <v-col cols="1" xs="1"></v-col>
@@ -51,11 +50,9 @@
   </div>
 
 </template>
-<script setup>
-import bgHomeImage from "@/assets/img/bg-home.jpg";
-</script>
 <style scoped>
 .bg-image {
+  background-image: url("@/assets/img/bg-home.jpg");
   background-size: cover;
   background-repeat: no-repeat;
   background-position-y: bottom;
