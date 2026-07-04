@@ -2,44 +2,58 @@
   <v-dialog
     :model-value="modelValue"
     class="appointment-dialog"
-    max-width="700px"
+    max-width="640px"
+    scrollable
     @update:model-value="emit('update:modelValue', $event)"
   >
     <v-card class="appointment-card card-backgoundcustom ma-5" elevation="2" variant="text">
-      <v-card-title class="d-flex align-center ga-2 text-h6 font-weight-bold">
-        <v-icon color="secondary" size="small">mdi-calendar-plus-outline</v-icon>
-        {{ showAvailabilityPicker ? "Solicita una cita" : citaId ? "Editar cita" : "Agendar cita" }}
-      </v-card-title>
-      <v-divider class="mx-4"></v-divider>
-      <v-card-text class="pt-6">
+      <div class="appointment-topbar">
+        <v-btn
+          icon="mdi-arrow-left"
+          variant="text"
+          color="secondary"
+          aria-label="Volver"
+          @click="emit('update:modelValue', false)"
+        />
+        <div class="appointment-topbar__title">
+          {{ appointmentDialogTitle }}
+        </div>
+        <v-btn
+          icon="mdi-close"
+          variant="text"
+          color="secondary"
+          aria-label="Cerrar"
+          @click="emit('update:modelValue', false)"
+        />
+      </div>
+
+      <v-card-text class="appointment-body">
         <v-container class="pa-0">
           <v-row>
-            <v-col cols="12">
+            <v-col v-if="!showAvailabilityPicker" cols="12">
               <div class="text-subtitle-1 font-weight-bold">
                 Terapeuta: {{ terapeutaNombre || "No definido" }}
               </div>
               <div class="text-body-2 text-medium-emphasis">
-                {{
-                  showAvailabilityPicker
-                    ? "Elige uno de los horarios que el psicólogo abrió en su agenda."
-                    : citaId
-                      ? "Actualiza la fecha y hora de la cita."
-                      : "Completa la fecha y hora para registrar la cita."
-                }}
+                {{ citaId ? "Actualiza la fecha y hora de la cita." : "Completa la fecha y hora para registrar la cita." }}
               </div>
             </v-col>
 
             <v-col v-if="showAvailabilityPicker" cols="12">
               <div class="appointment-therapist-card">
-                <v-avatar color="secondary" variant="tonal" size="48">
-                  <v-icon>mdi-account-heart-outline</v-icon>
+                <v-avatar class="appointment-therapist-card__avatar" size="58">
+                  <v-icon size="34">mdi-account-heart-outline</v-icon>
                 </v-avatar>
                 <div class="flex-grow-1">
                   <div class="text-caption text-medium-emphasis">
-                    Psicólogo
+                    {{ therapistSpecialty }}
                   </div>
                   <div class="text-subtitle-1 font-weight-bold">
                     {{ terapeutaNombre || therapist?.nombre || "Psicólogo asignado" }}
+                  </div>
+                  <div class="appointment-therapist-card__meta">
+                    <v-icon size="16">mdi-clock-outline</v-icon>
+                    Bloques de 60 min
                   </div>
                 </div>
                 <v-chip color="secondary" variant="tonal" size="small">
@@ -49,18 +63,34 @@
             </v-col>
 
             <v-col v-if="showAvailabilityPicker" cols="12">
+              <div class="appointment-location-card">
+                <div>
+                  <div class="text-subtitle-1 font-weight-bold">
+                    {{ selectedSlotLocation }}
+                  </div>
+                  <div class="text-body-2 text-medium-emphasis">
+                    {{ selectedSlotModalityLabel }}
+                  </div>
+                </div>
+                <v-icon color="secondary">mdi-chevron-down</v-icon>
+              </div>
+            </v-col>
+
+            <v-col v-if="showAvailabilityPicker" cols="12">
               <div class="availability-filter">
-                <v-btn-toggle
-                  v-model="availabilityRange"
-                  color="secondary"
-                  divided
-                  mandatory
-                  variant="outlined"
+                <button
+                  v-for="option in availabilityRangeOptions"
+                  :key="option.value"
+                  type="button"
+                  class="availability-range"
+                  :class="{ 'availability-range--selected': availabilityRange === option.value }"
+                  @click="availabilityRange = option.value"
                 >
-                  <v-btn value="week">Esta semana</v-btn>
-                  <v-btn value="month">Este mes</v-btn>
-                  <v-btn value="next">Próximo mes</v-btn>
-                </v-btn-toggle>
+                  {{ option.title }}
+                  <v-icon v-if="availabilityRange === option.value" size="18">
+                    mdi-close
+                  </v-icon>
+                </button>
               </div>
 
               <v-alert
@@ -133,7 +163,7 @@
               ></v-text-field>
             </v-col>
 
-            <v-col cols="12" md="6">
+            <v-col v-if="!showAvailabilityPicker" cols="12" md="6">
               <v-text-field
                 :model-value="form.modalidad"
                 label="Modalidad"
@@ -144,7 +174,7 @@
               ></v-text-field>
             </v-col>
 
-            <v-col cols="12" md="6">
+            <v-col v-if="!showAvailabilityPicker" cols="12" md="6">
               <v-text-field
                 v-model="form.ubicacion"
                 label="Ubicación"
@@ -201,9 +231,9 @@
             <v-col cols="12">
               <v-textarea
                 v-model="form.notas"
-                label="Notas para la cita"
+                :label="showAvailabilityPicker ? 'Notas para el psicólogo' : 'Notas para la cita'"
                 variant="outlined"
-                rows="3"
+                :rows="showAvailabilityPicker ? 2 : 3"
                 density="comfortable"
               ></v-textarea>
             </v-col>
@@ -211,11 +241,10 @@
         </v-container>
       </v-card-text>
       <v-card-actions class="appointment-actions px-6 pb-5">
-        <v-spacer></v-spacer>
-        <v-btn variant="text" @click="emit('update:modelValue', false)">Cancelar</v-btn>
         <v-btn
           color="secondary"
           variant="tonal"
+          block
           :loading="saving"
           :disabled="!canSubmitAppointment"
           @click="submitAppointment"
@@ -308,6 +337,11 @@ const form = reactive({
 });
 
 const fallbackModalities = ["Remoto", "Presencial", "Híbrido"];
+const availabilityRangeOptions = [
+  { title: "Esta semana", value: "week" },
+  { title: "Este mes", value: "month" },
+  { title: "Próximo mes", value: "next" },
+];
 const meetingProviderOptions = [
   { title: "Google Meet", value: "google_meet" },
   { title: "Zoom", value: "zoom" },
@@ -345,6 +379,50 @@ const canEditMeetingLink = computed(() =>
   ["psychologist", "admin"].includes(appContext.activeMode)
 );
 const showAvailabilityPicker = computed(() => !canEditMeetingLink.value);
+const appointmentDialogTitle = computed(() => {
+  if (!showAvailabilityPicker.value) {
+    return props.citaId ? "Editar cita" : "Agendar cita";
+  }
+
+  const modality = normalizeModalidad(form.modalidad);
+  if (modality === "presencial") return "Solicita una cita presencial";
+  if (modality === "remoto") return "Solicita una cita online";
+  if (modality === "hibrido") return "Solicita una cita";
+
+  return "Solicita una cita";
+});
+const selectedSlot = computed(() =>
+  availabilitySlots.value.find((slot) => slot.id === selectedSlotId.value) || null
+);
+const selectedSlotLocation = computed(() => {
+  const slotLocation = selectedSlot.value?.location || form.ubicacion;
+
+  if (slotLocation) {
+    return slotLocation;
+  }
+
+  if (isRemote.value) {
+    return "Terapia Online";
+  }
+
+  return "Ubicación por confirmar";
+});
+const selectedSlotModalityLabel = computed(() => {
+  const modality = normalizeDisplayModalidad(
+    selectedSlot.value?.modality || selectedSlot.value?.modalidad || form.modalidad
+  );
+
+  return modality ? `Modalidad ${modality.toLowerCase()}` : "Elige un horario disponible";
+});
+const therapistSpecialty = computed(() => {
+  const rawSpecialty =
+    therapist.value?.especialidad ||
+    therapist.value?.especialidades?.[0] ||
+    therapist.value?.enfoques?.[0] ||
+    "Psicología";
+
+  return rawSpecialty;
+});
 const filteredAvailabilitySlots = computed(() => {
   const now = new Date();
   const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
@@ -788,6 +866,27 @@ function formatDisplayDate(date) {
 <style scoped>
 .appointment-card {
   color: rgba(255, 255, 255, 0.94);
+  overflow: hidden;
+}
+
+.appointment-topbar {
+  align-items: center;
+  border-bottom: 1px solid rgba(210, 244, 241, 0.14);
+  display: grid;
+  grid-template-columns: 44px 1fr 44px;
+  min-height: 68px;
+  padding: 10px 16px;
+}
+
+.appointment-topbar__title {
+  font-size: 1.05rem;
+  font-weight: 800;
+  letter-spacing: 0;
+  text-align: center;
+}
+
+.appointment-body {
+  padding: 18px 24px 10px !important;
 }
 
 .appointment-card :deep(.v-card-title),
@@ -824,28 +923,68 @@ function formatDisplayDate(date) {
   align-items: center;
   background: rgba(255, 255, 255, 0.06);
   border: 1px solid rgba(210, 244, 241, 0.16);
-  border-radius: 14px;
+  border-radius: 16px;
   display: flex;
   gap: 14px;
-  padding: 14px;
+  padding: 16px;
+}
+
+.appointment-therapist-card__avatar {
+  background: rgba(var(--v-theme-secondary), 0.24);
+  color: rgb(var(--v-theme-on-secondary));
+}
+
+.appointment-therapist-card__meta {
+  align-items: center;
+  color: rgba(255, 255, 255, 0.68);
+  display: inline-flex;
+  font-size: 0.86rem;
+  gap: 5px;
+  margin-top: 4px;
+}
+
+.appointment-location-card {
+  align-items: center;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(210, 244, 241, 0.28);
+  border-radius: 12px;
+  display: flex;
+  justify-content: space-between;
+  min-height: 64px;
+  padding: 12px 16px;
 }
 
 .availability-filter {
   display: flex;
-  justify-content: center;
-  margin-bottom: 18px;
+  gap: 12px;
+  justify-content: space-between;
+  margin-bottom: 24px;
+  overflow-x: auto;
+  padding-bottom: 2px;
 }
 
-.availability-filter :deep(.v-btn-toggle) {
-  border-radius: 14px;
-  flex-wrap: wrap;
+.availability-range {
+  align-items: center;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(210, 244, 241, 0.14);
+  border-radius: 16px;
+  color: rgba(255, 255, 255, 0.76);
+  cursor: pointer;
+  display: inline-flex;
+  flex: 1 0 auto;
+  font: inherit;
+  font-weight: 700;
   gap: 8px;
-  padding: 4px;
+  justify-content: center;
+  min-height: 52px;
+  min-width: 132px;
+  padding: 0 16px;
 }
 
-.availability-filter :deep(.v-btn) {
-  border-radius: 12px !important;
-  min-width: 120px;
+.availability-range--selected {
+  background: rgba(var(--v-theme-secondary), 0.18);
+  border-color: rgba(var(--v-theme-secondary), 0.62);
+  color: rgb(var(--v-theme-accent));
 }
 
 .availability-loading {
@@ -859,12 +998,12 @@ function formatDisplayDate(date) {
 .availability-days {
   display: flex;
   flex-direction: column;
-  gap: 18px;
+  gap: 0;
 }
 
 .availability-day {
   border-top: 1px solid rgba(210, 244, 241, 0.16);
-  padding-top: 18px;
+  padding: 24px 0;
 }
 
 .availability-day__header {
@@ -872,26 +1011,31 @@ function formatDisplayDate(date) {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
-  margin-bottom: 14px;
+  margin-bottom: 18px;
+  font-size: 1.08rem;
 }
 
 .availability-slots {
   display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  padding-bottom: 4px;
 }
 
 .availability-slot {
   align-items: center;
   background: transparent;
-  border: 1px solid rgba(210, 244, 241, 0.18);
-  border-radius: 999px;
+  border: 0;
+  border-right: 1px solid rgba(210, 244, 241, 0.18);
+  border-radius: 0;
   color: rgba(255, 255, 255, 0.88);
   cursor: pointer;
   display: inline-flex;
   gap: 9px;
+  justify-content: center;
   min-height: 40px;
-  padding: 8px 14px;
+  min-width: 116px;
+  padding: 8px 18px;
   transition:
     background-color 0.2s ease,
     border-color 0.2s ease,
@@ -900,8 +1044,8 @@ function formatDisplayDate(date) {
 
 .availability-slot:hover,
 .availability-slot--selected {
-  background: rgba(95, 128, 123, 0.28);
-  border-color: rgba(158, 198, 189, 0.76);
+  background: rgba(95, 128, 123, 0.18);
+  border-color: rgba(210, 244, 241, 0.26);
   color: rgba(255, 255, 255, 0.96);
 }
 
@@ -924,6 +1068,10 @@ function formatDisplayDate(date) {
 
 :global(.v-theme--light) .appointment-card {
   color: rgb(var(--v-theme-on-surface));
+}
+
+:global(.v-theme--light) .appointment-topbar {
+  border-bottom-color: rgba(18, 58, 53, 0.14);
 }
 
 :global(.v-theme--light) .appointment-card :deep(.v-card-title),
@@ -954,12 +1102,33 @@ function formatDisplayDate(date) {
   border-color: rgba(18, 58, 53, 0.14);
 }
 
+:global(.v-theme--light) .appointment-therapist-card__meta {
+  color: rgba(18, 33, 30, 0.62);
+}
+
+:global(.v-theme--light) .appointment-location-card {
+  background: rgba(255, 255, 255, 0.84);
+  border-color: rgba(18, 58, 53, 0.24);
+}
+
+:global(.v-theme--light) .availability-range {
+  background: rgba(255, 255, 255, 0.72);
+  border-color: rgba(18, 58, 53, 0.12);
+  color: rgba(18, 33, 30, 0.68);
+}
+
+:global(.v-theme--light) .availability-range--selected {
+  background: rgba(47, 102, 95, 0.12);
+  border-color: rgba(47, 102, 95, 0.48);
+  color: rgb(var(--v-theme-secondary));
+}
+
 :global(.v-theme--light) .availability-day {
   border-top-color: rgba(18, 58, 53, 0.14);
 }
 
 :global(.v-theme--light) .availability-slot {
-  border-color: rgba(18, 58, 53, 0.22);
+  border-color: rgba(18, 58, 53, 0.16);
   color: rgba(18, 33, 30, 0.82);
 }
 
@@ -986,13 +1155,30 @@ function formatDisplayDate(date) {
     line-height: 1.25;
   }
 
-  .appointment-card :deep(.v-card-text) {
-    padding-inline: 12px;
+  .appointment-topbar {
+    min-height: 60px;
+    padding-inline: 8px;
+  }
+
+  .appointment-topbar__title {
+    font-size: 0.98rem;
+  }
+
+  .appointment-body {
+    padding-inline: 14px !important;
+  }
+
+  .appointment-therapist-card {
+    align-items: flex-start;
+    gap: 12px;
+    padding: 14px;
   }
 
   .appointment-actions {
+    border-top: 1px solid rgba(210, 244, 241, 0.12);
     flex-wrap: wrap;
     gap: 8px;
+    padding-top: 14px;
   }
 
   .appointment-actions :deep(.v-btn) {
@@ -1001,22 +1187,17 @@ function formatDisplayDate(date) {
 
   .availability-filter {
     justify-content: flex-start;
+    margin-inline: -2px;
   }
 
-  .availability-filter :deep(.v-btn-toggle) {
-    width: 100%;
-  }
-
-  .availability-filter :deep(.v-btn) {
-    flex: 1 1 auto;
-    min-width: 0;
+  .availability-range {
+    min-width: 126px;
   }
 
   .availability-slots {
-    flex-wrap: nowrap;
-    margin-inline: -12px;
+    margin-inline: -14px;
     overflow-x: auto;
-    padding: 0 12px 4px;
+    padding: 0 14px 4px;
   }
 
   .availability-slot {

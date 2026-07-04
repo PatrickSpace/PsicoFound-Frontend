@@ -142,7 +142,7 @@
             </v-row>
             <div class="d-flex flex-column flex-md-row justify-space-between ga-3 mt-2">
               <div class="text-body-2 text-medium-emphasis">
-                Los pacientes solo podrán elegir bloques disponibles. Al reservarse, el bloque queda ocupado.
+                Cada bloque dura 1 hora. Los pacientes solo podrán elegir horarios abiertos y, al reservarse, el bloque quedará ocupado.
               </div>
               <v-btn
                 color="secondary"
