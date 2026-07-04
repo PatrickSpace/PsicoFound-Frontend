@@ -86,28 +86,32 @@ a {
 
 .v-theme--light {
   --pf-app-gradient:
-    radial-gradient(circle at 84% 16%, rgba(var(--v-theme-brand-secondary), 0.24), transparent 30%),
-    radial-gradient(circle at 16% 92%, rgba(var(--v-theme-brand-primary), 0.14), transparent 32%),
+    radial-gradient(circle at 82% 14%, rgba(var(--v-theme-brand-secondary), 0.2), transparent 34%),
+    radial-gradient(circle at 14% 92%, rgba(var(--v-theme-brand-accent), 0.12), transparent 30%),
     linear-gradient(
       180deg,
-      rgb(var(--v-theme-background-overlay)) 0%,
-      rgb(var(--v-theme-background-primary)) 48%,
+      rgba(var(--v-theme-background-overlay), 0.58) 0%,
+      rgb(var(--v-theme-background-primary)) 42%,
       rgb(var(--v-theme-background-secondary)) 100%
     );
   --pf-auth-gradient:
-    radial-gradient(circle at 86% 12%, rgba(var(--v-theme-brand-secondary), 0.2), transparent 34%),
-    linear-gradient(180deg, rgb(var(--v-theme-background-overlay)) 0%, rgb(var(--v-theme-background-primary)) 100%);
+    radial-gradient(circle at 84% 14%, rgba(var(--v-theme-brand-secondary), 0.18), transparent 34%),
+    linear-gradient(180deg, rgba(var(--v-theme-background-overlay), 0.64) 0%, rgb(var(--v-theme-background-primary)) 100%);
   --pf-overlay-gradient:
-    radial-gradient(circle at 50% 20%, rgba(var(--v-theme-brand-secondary), 0.22), transparent 42%),
-    linear-gradient(220deg, rgba(var(--v-theme-background-overlay), 0.92), rgba(var(--v-theme-background-primary), 0.9));
-  --pf-surface-glass-alpha: 0.72;
+    radial-gradient(circle at 50% 12%, rgba(var(--v-theme-brand-secondary), 0.16), transparent 38%),
+    linear-gradient(220deg, rgba(var(--v-theme-background-primary), 0.92), rgba(var(--v-theme-background-secondary), 0.86));
+  --pf-shadow-xs: 0 1px 2px rgba(33, 52, 47, 0.06);
+  --pf-shadow-sm: 0 12px 28px rgba(33, 52, 47, 0.1);
+  --pf-shadow-md: 0 18px 42px rgba(33, 52, 47, 0.12);
+  --pf-shadow-lg: 0 26px 64px rgba(33, 52, 47, 0.16);
+  --pf-surface-glass-alpha: 0.96;
   --pf-surface-field-alpha: 0;
-  --pf-surface-elevated-alpha: 0.86;
-  --pf-border-subtle-alpha: 0.14;
-  --pf-border-default-alpha: 0.22;
-  --pf-text-primary-alpha: 0.92;
-  --pf-text-secondary-alpha: 0.68;
-  --pf-table-header-alpha: 0.76;
+  --pf-surface-elevated-alpha: 0.98;
+  --pf-border-subtle-alpha: 0.46;
+  --pf-border-default-alpha: 0.58;
+  --pf-text-primary-alpha: 0.94;
+  --pf-text-secondary-alpha: 0.74;
+  --pf-table-header-alpha: 0.78;
   --pf-table-cell-alpha: 0.88;
 }
 
@@ -193,6 +197,11 @@ a {
   -webkit-backdrop-filter: blur(var(--pf-blur-md));
 }
 
+.v-theme--light .card-backgoundcustom {
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
 .text-medium-emphasis,
 .v-theme--light .text-medium-emphasis {
   color: rgba(var(--v-theme-text-secondary), var(--pf-text-secondary-alpha)) !important;
@@ -206,7 +215,7 @@ a {
 
 .v-alert.v-alert--variant-tonal,
 .v-theme--light .v-alert.v-alert--variant-tonal {
-  background-color: rgba(var(--v-theme-info), var(--pf-opacity-medium)) !important;
+  background-color: rgba(var(--v-theme-brand-secondary), 0.12) !important;
   color: rgb(var(--v-theme-text-primary)) !important;
 }
 
@@ -308,6 +317,9 @@ a {
 
 .v-theme--light .v-chip.v-chip--variant-tonal {
   font-weight: 600;
+  background-color: transparent !important;
+  border: 1px solid rgba(var(--v-theme-border-subtle), var(--pf-border-subtle-alpha));
+  color: rgb(var(--v-theme-secondary)) !important;
 }
 
 .v-empty-state {
@@ -335,6 +347,11 @@ a {
   border: 1px solid rgba(var(--v-theme-border-default), var(--pf-border-subtle-alpha));
   box-shadow: var(--pf-shadow-lg) !important;
   backdrop-filter: blur(var(--pf-blur-lg));
+}
+
+.v-theme--light .v-overlay.v-dialog .v-overlay__content > .v-card {
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
 }
 
 .appointment-day {

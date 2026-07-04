@@ -1,14 +1,14 @@
 import { designTokens, tokenGroups } from "./tokens";
 
 const { colors } = designTokens;
-const { background, borders, brand, semantic, surfaces, typography } = tokenGroups;
+const { background, borders, semantic, surfaces, typography } = tokenGroups;
 
 export const lightTheme = {
   dark: false,
   colors: {
-    primary: colors.brand.primary,
-    secondary: colors.brand.secondary,
-    accent: colors.brand.accent,
+    primary: colors.brandLight.primary,
+    secondary: colors.brandLight.secondary,
+    accent: colors.brandLight.accent,
     surface: colors.surfaces.primaryLight,
     background: colors.background.primaryLight,
     info: semantic.info,
@@ -41,8 +41,8 @@ export const lightTheme = {
     "text-disabled": typography["text-disabled"].light,
     "text-placeholder": typography["text-placeholder"].light,
     "text-inverse": typography["text-inverse"].light,
-    "brand-primary": brand["brand-primary"],
-    "brand-secondary": brand["brand-secondary"],
-    "brand-accent": brand["brand-accent"],
+    "brand-primary": colors.brandLight.primary,
+    "brand-secondary": colors.brandLight.secondary,
+    "brand-accent": colors.brandLight.accent,
   },
 };

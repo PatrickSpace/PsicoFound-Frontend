@@ -604,11 +604,12 @@ function notifyError(message) {
 }
 
 :global(.v-theme--light) .chat-layout {
-  --chat-surface: rgba(var(--v-theme-surface-glass), 0.72);
+  --chat-surface: rgba(var(--v-theme-surface-glass), 0.96);
 
   background: var(--chat-surface);
-  border-color: rgba(var(--v-theme-border-subtle), 0.12);
+  border-color: rgba(var(--v-theme-border-subtle), var(--pf-border-subtle-alpha));
   box-shadow: var(--pf-shadow-md);
+  backdrop-filter: none;
 }
 
 .chat-header {
@@ -675,10 +676,10 @@ function notifyError(message) {
 }
 
 :global(.v-theme--light) .profile-status {
-  color: rgba(var(--v-theme-text-secondary), 0.62);
-  background: rgba(var(--v-theme-surface-glass), 0.5);
-  border-color: rgba(var(--v-theme-border-subtle), 0.08);
-  box-shadow: var(--pf-shadow-xs);
+  color: rgb(var(--v-theme-accent));
+  background: transparent;
+  border-color: rgba(var(--v-theme-accent), 0.26);
+  box-shadow: none;
 }
 
 .profile-status.is-ready {
@@ -698,9 +699,10 @@ function notifyError(message) {
 
 :global(.v-theme--light) .profile-popover {
   color: rgba(var(--v-theme-text-primary), 0.88);
-  background: rgba(var(--v-theme-surface-elevated), 0.96);
-  border-color: rgba(var(--v-theme-border-subtle), 0.12);
+  background: rgba(var(--v-theme-surface-elevated), 0.98);
+  border-color: rgba(var(--v-theme-border-subtle), var(--pf-border-subtle-alpha));
   box-shadow: var(--pf-shadow-md);
+  backdrop-filter: none;
 }
 
 .profile-popover-title {
@@ -852,8 +854,8 @@ function notifyError(message) {
 }
 
 :global(.v-theme--light) .message-bubble {
-  background: rgba(var(--v-theme-surface-hover), 0.06);
-  border-color: rgba(var(--v-theme-border-subtle), 0.08);
+  background: rgba(var(--v-theme-surface-secondary), 0.68);
+  border-color: rgba(var(--v-theme-border-subtle), 0.34);
 }
 
 .message-row.is-user .message-bubble {
@@ -960,9 +962,9 @@ function notifyError(message) {
 }
 
 :global(.v-theme--light) .composer-shell {
-  background: rgba(var(--v-theme-surface-glass), 0.72);
-  border-color: rgba(var(--v-theme-border-subtle), 0.14);
-  box-shadow: var(--pf-shadow-sm);
+  background: transparent;
+  border-color: rgba(var(--v-theme-border-subtle), var(--pf-border-subtle-alpha));
+  box-shadow: none;
 }
 
 .composer {

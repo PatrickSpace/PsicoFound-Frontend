@@ -1071,7 +1071,7 @@ function formatDisplayDate(date) {
 }
 
 :global(.v-theme--light) .appointment-topbar {
-  border-bottom-color: rgba(var(--v-theme-border-subtle), 0.14);
+  border-bottom-color: rgba(var(--v-theme-border-subtle), var(--pf-border-subtle-alpha));
 }
 
 :global(.v-theme--light) .appointment-card :deep(.v-card-title),
@@ -1094,12 +1094,12 @@ function formatDisplayDate(date) {
 }
 
 :global(.v-theme--light) .appointment-card :deep(.v-field__outline) {
-  color: rgba(var(--v-theme-border-subtle), 0.28);
+  color: rgba(var(--v-theme-border-subtle), var(--pf-border-default-alpha));
 }
 
 :global(.v-theme--light) .appointment-therapist-card {
-  background: rgba(var(--v-theme-surface-glass), 0.72);
-  border-color: rgba(var(--v-theme-border-subtle), 0.14);
+  background: rgba(var(--v-theme-surface-glass), 0.98);
+  border-color: rgba(var(--v-theme-border-subtle), var(--pf-border-subtle-alpha));
 }
 
 :global(.v-theme--light) .appointment-therapist-card__meta {
@@ -1107,14 +1107,14 @@ function formatDisplayDate(date) {
 }
 
 :global(.v-theme--light) .appointment-location-card {
-  background: rgba(var(--v-theme-surface-glass), 0.64);
-  border-color: rgba(var(--v-theme-border-subtle), 0.24);
+  background: rgba(var(--v-theme-surface-glass), 0.98);
+  border-color: rgba(var(--v-theme-border-subtle), var(--pf-border-subtle-alpha));
 }
 
 :global(.v-theme--light) .availability-range {
   background: transparent;
-  border-color: rgba(var(--v-theme-border-subtle), 0.12);
-  color: rgba(var(--v-theme-text-primary), 0.68);
+  border-color: rgba(var(--v-theme-border-subtle), var(--pf-border-subtle-alpha));
+  color: rgba(var(--v-theme-text-primary), 0.72);
 }
 
 :global(.v-theme--light) .availability-range--selected {
