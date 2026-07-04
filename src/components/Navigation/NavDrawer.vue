@@ -105,15 +105,9 @@ const activeMode = computed(
 }
 
 :global(.v-theme--light) .nav-drawer-content {
-  background:
-    linear-gradient(
-      90deg,
-      rgba(var(--v-theme-surface-glass), 0.72) 0%,
-      rgba(var(--v-theme-surface-glass), 0.52) 74%,
-      rgba(var(--v-theme-surface-glass), 0) 100%
-    );
+  background: transparent;
   border-right: 1px solid rgba(var(--v-theme-border-subtle), 0.08);
-  box-shadow: var(--pf-shadow-sm);
+  box-shadow: none;
 }
 
 .mode-summary {
@@ -130,7 +124,7 @@ const activeMode = computed(
 }
 
 :global(.v-theme--light) .nav-list :deep(.v-list-item--active) {
-  background-color: rgba(var(--v-theme-surface-active), 0.12);
+  background-color: transparent;
   color: rgb(var(--v-theme-primary));
 }
 

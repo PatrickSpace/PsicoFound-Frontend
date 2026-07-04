@@ -288,9 +288,9 @@ function notificationIcon(type = "") {
 }
 
 :global(.v-theme--light) .app-top-nav {
-  background: rgba(var(--v-theme-surface-glass), 0.72);
+  background: transparent;
   border-bottom: 1px solid rgba(var(--v-theme-border-subtle), 0.14);
-  box-shadow: var(--pf-shadow-sm);
+  box-shadow: none;
 }
 
 .app-top-nav::after {

@@ -1090,7 +1090,7 @@ function formatDisplayDate(date) {
 }
 
 :global(.v-theme--light) .appointment-card :deep(.v-field) {
-  background-color: rgba(var(--v-theme-surface-glass), 0.46);
+  background-color: transparent;
 }
 
 :global(.v-theme--light) .appointment-card :deep(.v-field__outline) {
@@ -1112,13 +1112,13 @@ function formatDisplayDate(date) {
 }
 
 :global(.v-theme--light) .availability-range {
-  background: rgba(var(--v-theme-surface-glass), 0.62);
+  background: transparent;
   border-color: rgba(var(--v-theme-border-subtle), 0.12);
   color: rgba(var(--v-theme-text-primary), 0.68);
 }
 
 :global(.v-theme--light) .availability-range--selected {
-  background: rgba(var(--v-theme-brand-secondary), 0.12);
+  background: transparent;
   border-color: rgba(var(--v-theme-brand-secondary), 0.48);
   color: rgb(var(--v-theme-secondary));
 }
@@ -1134,7 +1134,7 @@ function formatDisplayDate(date) {
 
 :global(.v-theme--light) .availability-slot:hover,
 :global(.v-theme--light) .availability-slot--selected {
-  background: rgba(var(--v-theme-brand-secondary), 0.12);
+  background: transparent;
   border-color: rgba(var(--v-theme-brand-secondary), 0.58);
   color: rgba(var(--v-theme-brand-primary), 0.94);
 }

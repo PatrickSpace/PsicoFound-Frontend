@@ -938,9 +938,15 @@ function notifyError(message) {
 
 :global(.v-theme--light) .message-option {
   color: rgba(var(--v-theme-text-primary), 0.78);
-  background: rgba(var(--v-theme-surface-hover), 0.08);
+  background: transparent;
   border-color: rgba(var(--v-theme-border-subtle), 0.12);
-  box-shadow: var(--pf-shadow-xs);
+  box-shadow: none;
+}
+
+:global(.v-theme--light) .message-option:hover:not(:disabled),
+:global(.v-theme--light) .message-option:focus-visible:not(:disabled) {
+  background: transparent;
+  color: rgb(var(--v-theme-secondary));
 }
 
 .composer-shell {

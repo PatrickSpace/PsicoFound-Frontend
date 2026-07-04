@@ -101,7 +101,7 @@ a {
     radial-gradient(circle at 50% 20%, rgba(var(--v-theme-brand-secondary), 0.22), transparent 42%),
     linear-gradient(220deg, rgba(var(--v-theme-background-overlay), 0.92), rgba(var(--v-theme-background-primary), 0.9));
   --pf-surface-glass-alpha: 0.72;
-  --pf-surface-field-alpha: 0.3;
+  --pf-surface-field-alpha: 0;
   --pf-surface-elevated-alpha: 0.86;
   --pf-border-subtle-alpha: 0.14;
   --pf-border-default-alpha: 0.22;
@@ -228,6 +228,31 @@ a {
 .v-theme--light .v-btn.theme-contrast-text.v-btn--variant-tonal {
   background-color: rgba(var(--v-theme-surface-glass), var(--pf-surface-field-alpha)) !important;
   border-color: rgba(var(--v-theme-border-subtle), var(--pf-border-subtle-alpha));
+}
+
+.v-theme--light
+  :is(
+    .v-btn,
+    .v-btn--variant-tonal,
+    .v-btn-toggle,
+    .v-field,
+    .v-list,
+    .v-list-item,
+    .v-selection-control,
+    .v-input
+  ) {
+  background-color: transparent !important;
+  background-image: none !important;
+}
+
+.v-theme--light :is(.v-btn__overlay, .v-btn__underlay, .v-field__overlay) {
+  background-color: transparent !important;
+  opacity: 0 !important;
+}
+
+.v-theme--light .v-list {
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
 }
 
 .v-btn-toggle,
@@ -373,6 +398,12 @@ a {
 .v-btn.bg-facebook :is(.v-btn__content, .v-btn__prepend, .v-btn__append),
 .v-btn.bg-apple :is(.v-btn__content, .v-btn__prepend, .v-btn__append) {
   color: inherit !important;
+}
+
+.v-theme--light :is(.bg-google, .bg-facebook, .bg-apple) {
+  background: transparent !important;
+  background-color: transparent !important;
+  color: rgb(var(--v-theme-text-primary)) !important;
 }
 
 .bg-facebook {

@@ -107,9 +107,9 @@ const navItemCount = computed(() =>
 }
 
 :global(.v-theme--light) .bottom-nav-mobile {
-  background: rgba(var(--v-theme-surface-glass), 0.78) !important;
+  background: transparent !important;
   border-top-color: rgba(var(--v-theme-border-subtle), 0.14);
-  box-shadow: var(--pf-shadow-sm);
+  box-shadow: none;
 }
 
 .bottom-nav-mobile :deep(.v-bottom-navigation__content) {
@@ -178,7 +178,7 @@ const navItemCount = computed(() =>
 }
 
 :global(.v-theme--light) .bottom-nav-menu {
-  background-color: rgba(var(--v-theme-surface-elevated), 0.98) !important;
+  background-color: transparent !important;
 }
 
 @media (max-width: 380px) {
