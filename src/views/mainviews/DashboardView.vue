@@ -144,7 +144,7 @@
                 <v-list-item class="dashboard-list-item pt-5">
                   <template v-slot:prepend>
                     <v-avatar
-                      color="white"
+                      color="surface-glass"
                       image="https://avataaars.io/?avatarStyle=Transparent&topType=ShortHairShortCurly&accessoriesType=Prescription02&hairColor=Black&facialHairType=Blank&clotheType=Hoodie&clotheColor=White&eyeType=Default&eyebrowType=DefaultNatural&mouthType=Default&skinColor=Light"
                     ></v-avatar>
                   </template>

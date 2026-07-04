@@ -101,7 +101,7 @@ a {
     radial-gradient(circle at 50% 20%, rgba(var(--v-theme-brand-secondary), 0.22), transparent 42%),
     linear-gradient(220deg, rgba(var(--v-theme-background-overlay), 0.92), rgba(var(--v-theme-background-primary), 0.9));
   --pf-surface-glass-alpha: 0.72;
-  --pf-surface-field-alpha: 0.46;
+  --pf-surface-field-alpha: 0.3;
   --pf-surface-elevated-alpha: 0.86;
   --pf-border-subtle-alpha: 0.14;
   --pf-border-default-alpha: 0.22;
@@ -212,8 +212,22 @@ a {
 
 .v-btn--variant-tonal,
 .v-theme--light .v-btn--variant-tonal {
-  background-color: rgba(var(--v-theme-brand-secondary), var(--pf-opacity-medium));
-  color: rgb(var(--v-theme-secondary));
+  background-color: rgba(var(--v-theme-surface-glass), var(--pf-surface-field-alpha)) !important;
+  border: 1px solid rgba(var(--v-theme-border-subtle), var(--pf-border-subtle-alpha));
+  color: rgb(var(--v-theme-text-primary));
+  backdrop-filter: blur(var(--pf-blur-sm));
+}
+
+.v-btn.theme-contrast-text.v-btn--variant-text,
+.v-theme--light .v-btn.theme-contrast-text.v-btn--variant-text {
+  background-color: transparent !important;
+  border-color: transparent !important;
+}
+
+.v-btn.theme-contrast-text.v-btn--variant-tonal,
+.v-theme--light .v-btn.theme-contrast-text.v-btn--variant-tonal {
+  background-color: rgba(var(--v-theme-surface-glass), var(--pf-surface-field-alpha)) !important;
+  border-color: rgba(var(--v-theme-border-subtle), var(--pf-border-subtle-alpha));
 }
 
 .v-btn-toggle,
@@ -345,7 +359,20 @@ a {
     90deg,
     rgba(var(--pf-social-google), 1) 0%,
     transparent 65%
-  );
+  ) !important;
+  color: rgb(var(--v-theme-on-secondary)) !important;
+}
+
+.v-btn.bg-google,
+.v-btn.bg-facebook,
+.v-btn.bg-apple {
+  color: rgb(var(--v-theme-on-secondary)) !important;
+}
+
+.v-btn.bg-google :is(.v-btn__content, .v-btn__prepend, .v-btn__append),
+.v-btn.bg-facebook :is(.v-btn__content, .v-btn__prepend, .v-btn__append),
+.v-btn.bg-apple :is(.v-btn__content, .v-btn__prepend, .v-btn__append) {
+  color: inherit !important;
 }
 
 .bg-facebook {
@@ -353,7 +380,8 @@ a {
     90deg,
     rgb(var(--pf-social-facebook)) 0%,
     transparent 65%
-  );
+  ) !important;
+  color: rgb(var(--v-theme-on-secondary)) !important;
 }
 
 .bg-apple {
@@ -361,7 +389,8 @@ a {
     90deg,
     rgb(var(--pf-social-apple)) 0%,
     transparent 65%
-  );
+  ) !important;
+  color: rgb(var(--v-theme-on-secondary)) !important;
 }
 
 @media (max-width: 600px) {

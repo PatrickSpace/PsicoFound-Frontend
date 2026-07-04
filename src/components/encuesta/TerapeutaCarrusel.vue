@@ -56,8 +56,8 @@
     </div>
   </v-container>
 
-  <!-- Footer 
-  <p class="footerchoose position-fixed bottom-0 text-white">
+  <!-- Footer
+  <p class="footerchoose position-fixed bottom-0">
     {{ therapists[currentIndex].mensaje}}
   </p>
   -->

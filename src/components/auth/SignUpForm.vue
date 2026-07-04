@@ -39,7 +39,7 @@
 
   <v-btn
     block
-    class="my-5 text-white bg-google text-left"
+    class="my-5 bg-google text-left"
     elevation="4"
     variant="tonal"
     size="large"

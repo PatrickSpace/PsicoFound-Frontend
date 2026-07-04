@@ -283,7 +283,7 @@
 
                   <v-col cols="12" md="4">
                     <v-card
-                      class="d-flex align-center justify-center text-white"
+                      class="d-flex align-center justify-center gradient-preview"
                       rounded="lg"
                       height="100%"
                       :style="{ background: buildGradient(editedItem) }"
@@ -755,6 +755,10 @@ export default {
   border: 1px solid rgba(var(--v-border-color), var(--v-border-opacity));
   border-radius: 8px;
   overflow: hidden;
+}
+
+.gradient-preview {
+  color: rgb(var(--v-theme-on-secondary));
 }
 
 :global(.v-theme--light) .therapists-table {

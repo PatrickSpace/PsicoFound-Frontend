@@ -11,6 +11,7 @@ import {
   defaultTherapistGradientStops,
   designTokenCssVars,
   designTokens,
+  tokenGroups,
   therapistGradients,
 } from "./tokens";
 
@@ -41,6 +42,7 @@ export {
   defaultTherapistGradient,
   defaultTherapistGradientStops,
   designTokens,
+  tokenGroups,
   therapistGradients,
 };
 export default vuetify;

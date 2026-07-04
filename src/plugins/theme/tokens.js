@@ -11,9 +11,9 @@ const palette = {
   sage: "#5F807B",
   sageSoft: "#6F8F89",
   mint: "#9EC6BD",
-  mist: "#E4F0EC",
-  mistDeep: "#C9DED8",
-  cloud: "#F5FAF7",
+  mist: "#D7E7E2",
+  mistDeep: "#BFD8D0",
+  cloud: "#EAF4F0",
   success: "#6E927B",
   warning: "#B49A66",
   error: "#C36F7F",
@@ -108,6 +108,137 @@ export const designTokens = {
     md: "16px",
     lg: "24px",
     xl: "32px",
+  },
+};
+
+export const tokenGroups = {
+  background: {
+    "background-primary": {
+      dark: designTokens.colors.background.primaryDark,
+      light: designTokens.colors.background.primaryLight,
+    },
+    "background-secondary": {
+      dark: designTokens.colors.background.secondaryDark,
+      light: designTokens.colors.background.secondaryLight,
+    },
+    "background-gradient": {
+      dark: designTokens.colors.brand.primary,
+      light: designTokens.colors.brand.secondary,
+    },
+    "background-overlay": {
+      dark: designTokens.colors.background.overlayDark,
+      light: designTokens.colors.background.overlayLight,
+    },
+  },
+  surfaces: {
+    "surface-glass": {
+      dark: designTokens.colors.surfaces.glassDark,
+      light: designTokens.colors.surfaces.glassLight,
+    },
+    "surface-primary": {
+      dark: designTokens.colors.surfaces.primaryDark,
+      light: designTokens.colors.surfaces.primaryLight,
+    },
+    "surface-secondary": {
+      dark: designTokens.colors.surfaces.secondaryDark,
+      light: designTokens.colors.surfaces.secondaryLight,
+    },
+    "surface-elevated": {
+      dark: designTokens.colors.surfaces.elevatedDark,
+      light: designTokens.colors.surfaces.elevatedLight,
+    },
+    "surface-hover": {
+      dark: designTokens.colors.surfaces.hoverDark,
+      light: designTokens.colors.surfaces.hoverLight,
+    },
+    "surface-active": {
+      dark: designTokens.colors.surfaces.activeDark,
+      light: designTokens.colors.surfaces.activeLight,
+    },
+    "surface-disabled": {
+      dark: designTokens.colors.surfaces.disabledDark,
+      light: designTokens.colors.surfaces.disabledLight,
+    },
+  },
+  borders: {
+    "border-subtle": {
+      dark: designTokens.colors.borders.subtleDark,
+      light: designTokens.colors.borders.subtleLight,
+    },
+    "border-default": {
+      dark: designTokens.colors.borders.defaultDark,
+      light: designTokens.colors.borders.defaultLight,
+    },
+    "border-focus": {
+      dark: designTokens.colors.borders.focusDark,
+      light: designTokens.colors.borders.focusLight,
+    },
+    "border-success": designTokens.colors.semantic.success,
+    "border-warning": designTokens.colors.semantic.warning,
+    "border-error": designTokens.colors.semantic.error,
+  },
+  typography: {
+    "text-primary": {
+      dark: designTokens.colors.text.primaryDark,
+      light: designTokens.colors.text.primaryLight,
+    },
+    "text-secondary": {
+      dark: designTokens.colors.text.secondaryDark,
+      light: designTokens.colors.text.secondaryLight,
+    },
+    "text-disabled": {
+      dark: designTokens.colors.text.disabledDark,
+      light: designTokens.colors.text.disabledLight,
+    },
+    "text-placeholder": {
+      dark: designTokens.colors.text.placeholderDark,
+      light: designTokens.colors.text.placeholderLight,
+    },
+    "text-inverse": {
+      dark: designTokens.colors.text.inverseDark,
+      light: designTokens.colors.text.inverseLight,
+    },
+  },
+  brand: {
+    "brand-primary": designTokens.colors.brand.primary,
+    "brand-secondary": designTokens.colors.brand.secondary,
+    "brand-accent": designTokens.colors.brand.accent,
+  },
+  semantic: {
+    success: designTokens.colors.semantic.success,
+    warning: designTokens.colors.semantic.warning,
+    error: designTokens.colors.semantic.error,
+    info: designTokens.colors.semantic.info,
+  },
+  shadows: {
+    "shadow-xs": designTokens.shadows.xs,
+    "shadow-sm": designTokens.shadows.sm,
+    "shadow-md": designTokens.shadows.md,
+    "shadow-lg": designTokens.shadows.lg,
+  },
+  radius: {
+    "radius-sm": designTokens.radius.sm,
+    "radius-md": designTokens.radius.md,
+    "radius-lg": designTokens.radius.lg,
+    "radius-xl": designTokens.radius.xl,
+    "radius-pill": designTokens.radius.pill,
+  },
+  blur: {
+    "blur-sm": designTokens.blur.sm,
+    "blur-md": designTokens.blur.md,
+    "blur-lg": designTokens.blur.lg,
+  },
+  opacity: {
+    "opacity-low": designTokens.opacity.low,
+    "opacity-medium": designTokens.opacity.medium,
+    "opacity-high": designTokens.opacity.high,
+  },
+  spacing: {
+    "spacing-xs": designTokens.spacing.xs,
+    "spacing-sm": designTokens.spacing.sm,
+    "spacing-md": designTokens.spacing.md,
+    "spacing-lg": designTokens.spacing.lg,
+    "spacing-xl": designTokens.spacing.xl,
   },
 };
 

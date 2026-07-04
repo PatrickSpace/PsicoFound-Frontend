@@ -4,5 +4,6 @@ export {
   defaultTherapistGradientStops,
   default,
   designTokens,
+  tokenGroups,
   therapistGradients,
 } from "./theme";
