@@ -6,7 +6,7 @@
           <p class="text-overline text-secondary mb-1">Cuenta y preferencias</p>
           <h1 class="text-h4 font-weight-bold">Configuración</h1>
           <p class="text-body-1 text-medium-emphasis mt-2 mb-0">
-            Administra tu cuenta, preferencias y accesos dentro de PsicoFound.
+            Administra tu cuenta, preferencias y accesos dentro de Lurems.
           </p>
         </div>
         <v-chip
@@ -184,7 +184,7 @@
                   {{ requestStatusText }}
                 </v-alert>
                 <p class="text-body-2 text-medium-emphasis mb-4">
-                  Puedes solicitar habilitar un perfil profesional para atender pacientes desde PsicoFound.
+                  Puedes solicitar habilitar un perfil profesional para atender pacientes desde Lurems.
                 </p>
                 <v-btn
                   color="secondary"
@@ -197,37 +197,6 @@
                   Registrarse como psicólogo
                 </v-btn>
               </template>
-            </v-card-text>
-          </v-card>
-        </v-col>
-
-        <v-col cols="12" md="6" class="d-flex">
-          <v-card class="pa-4 card-backgoundcustom flex-grow-1" elevation="2" variant="text">
-            <v-card-title class="text-h6 font-weight-bold d-flex align-center ga-2 px-0 pt-0">
-              <v-icon color="secondary" size="small">mdi-theme-light-dark</v-icon>
-              Apariencia
-            </v-card-title>
-            <v-card-text>
-              <v-divider class="mb-4"></v-divider>
-              <p class="text-body-2 text-medium-emphasis mb-4">
-                Elige cómo quieres ver PsicoFound en este dispositivo.
-              </p>
-              <v-btn-toggle
-                v-model="appTheme"
-                color="secondary"
-                mandatory
-                rounded="lg"
-                variant="tonal"
-              >
-                <v-btn value="dark">
-                  <v-icon start>mdi-weather-night</v-icon>
-                  Oscuro
-                </v-btn>
-                <v-btn value="light">
-                  <v-icon start>mdi-white-balance-sunny</v-icon>
-                  Claro
-                </v-btn>
-              </v-btn-toggle>
             </v-card-text>
           </v-card>
         </v-col>
@@ -399,13 +368,11 @@ import {
   createPsychologistRequest,
   getLatestPsychologistRequestByUser,
 } from "@/services/psychologistRequestService";
-import { useAppTheme } from "@/composables/useAppTheme";
 
 const router = useRouter();
 const authStore = useAuthStore();
 const appContext = useAppContextStore();
 const { currentUser, userName } = storeToRefs(authStore);
-const { appTheme } = useAppTheme();
 const savingProfile = ref(false);
 const profileError = ref("");
 const isEditingProfile = ref(false);

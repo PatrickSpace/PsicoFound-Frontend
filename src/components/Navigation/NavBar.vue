@@ -1,7 +1,13 @@
 <template>
   <header class="app-top-nav">
     <div class="app-top-nav__content">
-      <div class="nav-title">PsicoFound</div>
+      <RouterLink class="nav-brand" to="/dashboard" aria-label="Ir al inicio de Lurems">
+        <img
+          src="/brand/lurems-isotipo-transparent.png"
+          alt="Lurems"
+          class="nav-brand__image"
+        />
+      </RouterLink>
       <v-spacer />
       <div class="nav-actions">
         <v-chip
@@ -150,7 +156,7 @@
 <script setup>
 import { computed, onBeforeUnmount, ref, watch } from "vue";
 import { storeToRefs } from "pinia";
-import { useRouter } from "vue-router";
+import { RouterLink, useRouter } from "vue-router";
 import FeedbackDialog from "@/components/Navigation/FeedbackDialog.vue";
 import { useAppContextStore } from "@/store/appContext";
 import { useAuthStore } from "@/store/auth";
@@ -269,14 +275,9 @@ function notificationIcon(type = "") {
 
 <style scoped>
 .app-top-nav {
-  backdrop-filter: blur(16px);
-  background:
-    linear-gradient(
-      180deg,
-      rgba(var(--v-theme-background-primary), 0.72) 0%,
-      rgba(var(--v-theme-background-primary), 0.42) 72%,
-      rgba(var(--v-theme-background-primary), 0) 100%
-    );
+  background: rgba(var(--v-theme-surface), 0.96);
+  border-bottom: 1px solid rgb(var(--v-theme-border-subtle));
+  box-shadow: var(--pf-shadow-xs);
   left: 0;
   min-height: 64px;
   padding-top: 0;
@@ -288,23 +289,8 @@ function notificationIcon(type = "") {
 }
 
 :global(.v-theme--light) .app-top-nav {
-  background: transparent;
-  border-bottom: 1px solid rgba(var(--v-theme-border-subtle), 0.14);
-  box-shadow: none;
-}
-
-.app-top-nav::after {
-  background: rgba(var(--v-theme-border-subtle), 0.08);
-  bottom: 0;
-  content: "";
-  height: 1px;
-  left: 12px;
-  position: absolute;
-  right: 12px;
-}
-
-:global(.v-theme--light) .app-top-nav::after {
-  background: transparent;
+  background: rgba(var(--v-theme-surface), 0.96);
+  border-bottom-color: rgb(var(--v-theme-border-subtle));
 }
 
 .app-top-nav__content {
@@ -333,15 +319,19 @@ function notificationIcon(type = "") {
   justify-content: flex-end;
 }
 
-.nav-title {
+.nav-brand {
+  align-items: center;
+  display: flex;
   flex: 1 1 auto;
-  font-size: 1.35rem;
-  font-weight: 500;
-  line-height: 1;
   min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+}
+
+.nav-brand__image {
+  display: block;
+  height: 40px;
+  object-fit: contain;
+  object-position: left center;
+  width: 54px;
 }
 
 .notifications-menu {
@@ -351,11 +341,6 @@ function notificationIcon(type = "") {
 
 .notification-unread {
   background: rgba(var(--v-theme-secondary), 0.08);
-}
-
-:global(.v-theme--light) .nav-title {
-  color: rgb(var(--v-theme-text-primary));
-  font-weight: 600;
 }
 
 .nav-icon-btn {
@@ -371,6 +356,11 @@ function notificationIcon(type = "") {
   opacity: 0 !important;
 }
 
+.nav-icon-btn :deep(.v-icon) {
+  color: rgb(var(--v-theme-text-primary)) !important;
+  opacity: 1;
+}
+
 @media (max-width: 600px) {
   .app-top-nav {
     min-height: 64px;
@@ -382,8 +372,9 @@ function notificationIcon(type = "") {
     padding-inline: 12px;
   }
 
-  .nav-title {
-    font-size: 1.18rem !important;
+  .nav-brand__image {
+    height: 36px;
+    width: 48px;
   }
 
   :deep(.v-btn--icon) {

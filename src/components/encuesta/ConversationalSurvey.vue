@@ -106,7 +106,7 @@
             </div>
             <div class="message-stack">
               <div class="message-author">
-                {{ message.role === "user" ? "Tú" : "PsicoFound" }}
+                {{ message.role === "user" ? "Tú" : "Lurems" }}
               </div>
               <div class="message-bubble">
                 <p class="message-text">{{ message.text }}</p>
@@ -137,7 +137,7 @@
               <v-icon size="18">mdi-heart-outline</v-icon>
             </div>
             <div class="message-stack">
-              <div class="message-author">PsicoFound</div>
+              <div class="message-author">Lurems</div>
               <div class="message-bubble typing-bubble">
                 <div class="typing-dots" aria-label="Pensando">
                   <span></span>
@@ -223,7 +223,7 @@ const welcomeMessage = {
   id: "welcome",
   role: "assistant",
   text:
-    "Hola, soy PsicoFound. Cuéntame qué tipo de apoyo buscas.",
+    "Hola, soy Lurems. Cuéntame qué tipo de apoyo buscas.",
   suggestedOptions: [
     { label: "Ansiedad", value: "Ansiedad", field: "temas" },
     { label: "Depresión", value: "Depresión", field: "temas" },
@@ -589,27 +589,25 @@ function notifyError(message) {
 }
 
 .chat-layout {
-  --chat-surface: rgba(var(--v-theme-surface-glass), 0.28);
+  --chat-surface: rgb(var(--v-theme-surface));
 
   display: grid;
   grid-template-rows: auto minmax(0, 1fr) auto auto;
   height: 100%;
   min-height: 0;
   overflow: hidden;
-  border: 1px solid rgba(var(--v-theme-border-subtle), 0.12);
-  border-radius: 8px;
+  border: 1px solid rgb(var(--v-theme-border-subtle));
+  border-radius: 16px;
   background: var(--chat-surface);
+  color: rgb(var(--v-theme-text-primary));
   box-shadow: var(--pf-shadow-lg);
-  backdrop-filter: blur(var(--pf-blur-md));
 }
 
 :global(.v-theme--light) .chat-layout {
-  --chat-surface: rgba(var(--v-theme-surface-glass), 0.96);
-
+  --chat-surface: rgb(var(--v-theme-surface));
   background: var(--chat-surface);
-  border-color: rgba(var(--v-theme-border-subtle), var(--pf-border-subtle-alpha));
-  box-shadow: var(--pf-shadow-md);
-  backdrop-filter: none;
+  border-color: rgb(var(--v-theme-border-subtle));
+  box-shadow: var(--pf-shadow-sm);
 }
 
 .chat-header {
@@ -632,9 +630,13 @@ function notifyError(message) {
   height: 48px;
   border-radius: 8px;
   color: rgb(var(--v-theme-on-secondary));
-  background:
-    linear-gradient(135deg, rgb(var(--v-theme-secondary)), rgb(var(--v-theme-primary)));
+  background: rgb(var(--v-theme-primary));
   box-shadow: var(--pf-shadow-sm);
+}
+
+.assistant-mark .v-icon {
+  color: rgb(var(--v-theme-on-primary)) !important;
+  opacity: 1;
 }
 
 .chat-heading {
@@ -676,10 +678,9 @@ function notifyError(message) {
 }
 
 :global(.v-theme--light) .profile-status {
-  color: rgb(var(--v-theme-accent));
-  background: transparent;
-  border-color: rgba(var(--v-theme-accent), 0.26);
-  box-shadow: none;
+  color: var(--color-primary-dark);
+  background: var(--color-primary-soft);
+  border-color: color-mix(in srgb, var(--color-primary) 28%, transparent);
 }
 
 .profile-status.is-ready {
@@ -849,13 +850,13 @@ function notifyError(message) {
 .message-bubble {
   padding: 13px 15px;
   border-radius: 8px;
-  background: rgba(var(--v-theme-border-subtle), 0.08);
-  border: 1px solid rgba(var(--v-theme-border-subtle), 0.08);
+  background: rgb(var(--v-theme-background-secondary));
+  border: 1px solid rgb(var(--v-theme-border-subtle));
 }
 
 :global(.v-theme--light) .message-bubble {
-  background: rgba(var(--v-theme-surface-secondary), 0.68);
-  border-color: rgba(var(--v-theme-border-subtle), 0.34);
+  background: rgb(var(--v-theme-background-secondary));
+  border-color: rgb(var(--v-theme-border-subtle));
 }
 
 .message-row.is-user .message-bubble {
@@ -881,6 +882,7 @@ function notifyError(message) {
 }
 
 .message-text {
+  color: rgb(var(--v-theme-text-primary));
   margin: 0;
   white-space: pre-wrap;
   line-height: 1.55;
@@ -907,11 +909,11 @@ function notifyError(message) {
 .message-option {
   min-height: 30px;
   padding: 6px 10px;
-  border: 1px solid rgba(var(--v-theme-border-subtle), 0.12);
+  border: 1.5px solid color-mix(in srgb, var(--color-primary) 30%, transparent);
   border-radius: 999px;
-  color: rgba(var(--v-theme-text-primary), 0.86);
-  background: rgba(var(--v-theme-surface-glass), 0.18);
-  box-shadow: var(--pf-shadow-xs);
+  color: var(--color-primary-dark);
+  background: var(--color-button-secondary-bg);
+  box-shadow: none;
   cursor: pointer;
   font: inherit;
   font-size: 0.78rem;
@@ -926,9 +928,9 @@ function notifyError(message) {
 
 .message-option:hover:not(:disabled),
 .message-option:focus-visible:not(:disabled) {
-  border-color: rgba(var(--v-theme-secondary), 0.64);
-  color: rgb(var(--v-theme-on-secondary));
-  background: rgba(var(--v-theme-secondary), 0.7);
+  border-color: color-mix(in srgb, var(--color-primary) 52%, transparent);
+  color: var(--color-primary-dark);
+  background: var(--color-button-secondary-hover);
   outline: none;
   transform: translateY(-1px);
 }
@@ -939,16 +941,26 @@ function notifyError(message) {
 }
 
 :global(.v-theme--light) .message-option {
-  color: rgba(var(--v-theme-text-primary), 0.78);
-  background: transparent;
-  border-color: rgba(var(--v-theme-border-subtle), 0.12);
-  box-shadow: none;
+  color: var(--color-primary-dark);
+  background: var(--color-button-secondary-bg);
+  border-color: color-mix(in srgb, var(--color-primary) 28%, transparent);
 }
 
 :global(.v-theme--light) .message-option:hover:not(:disabled),
 :global(.v-theme--light) .message-option:focus-visible:not(:disabled) {
-  background: transparent;
-  color: rgb(var(--v-theme-secondary));
+  background: var(--color-button-secondary-hover);
+  color: var(--color-primary-dark);
+}
+
+:global(.v-theme--dark) .message-option {
+  color: rgb(var(--v-theme-text-primary));
+  border-color: rgba(var(--v-theme-border-subtle), 0.28);
+}
+
+:global(.v-theme--dark) .message-option:hover:not(:disabled),
+:global(.v-theme--dark) .message-option:focus-visible:not(:disabled) {
+  color: rgb(var(--v-theme-text-primary));
+  border-color: rgba(var(--v-theme-border-default), 0.48);
 }
 
 .composer-shell {
@@ -957,14 +969,14 @@ function notifyError(message) {
   padding: 10px 12px 9px;
   border: 1px solid rgba(var(--v-theme-border-subtle), 0.12);
   border-radius: 8px;
-  background: rgba(var(--v-theme-background-primary), 0.26);
+  background: rgb(var(--v-theme-surface));
   box-shadow: var(--pf-shadow-sm);
 }
 
 :global(.v-theme--light) .composer-shell {
-  background: transparent;
-  border-color: rgba(var(--v-theme-border-subtle), var(--pf-border-subtle-alpha));
-  box-shadow: none;
+  background: rgb(var(--v-theme-surface));
+  border-color: rgb(var(--v-theme-border-subtle));
+  box-shadow: var(--pf-shadow-xs);
 }
 
 .composer {
@@ -979,6 +991,15 @@ function notifyError(message) {
   padding-bottom: 8px;
   min-height: 42px;
   mask-image: none;
+}
+
+.composer :deep(textarea) {
+  color: rgb(var(--v-theme-text-primary));
+}
+
+.composer :deep(textarea::placeholder) {
+  color: rgb(var(--v-theme-text-secondary));
+  opacity: 0.82;
 }
 
 .send-button {

@@ -1,5 +1,9 @@
 <template>
-  <div class="screen layout-shell">
+  <div
+    class="screen layout-shell"
+    :data-user-role="appContext.activeMode"
+    data-theme="light"
+  >
     <NavBar />
     <NavDrawer />
     <v-progress-linear

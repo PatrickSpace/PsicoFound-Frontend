@@ -102,11 +102,13 @@ const activeMode = computed(
 .nav-drawer-content {
   justify-content: center;
   padding-inline: 40px 32px;
+  background: rgb(var(--v-theme-surface));
+  border-right: 1px solid rgb(var(--v-theme-border-subtle));
 }
 
 :global(.v-theme--light) .nav-drawer-content {
-  background: transparent;
-  border-right: 1px solid rgba(var(--v-theme-border-subtle), 0.08);
+  background: rgb(var(--v-theme-surface));
+  border-right-color: rgb(var(--v-theme-border-subtle));
   box-shadow: none;
 }
 
@@ -120,15 +122,27 @@ const activeMode = computed(
 }
 
 .nav-list :deep(.v-list-item--active) {
-  background-color: rgba(var(--v-theme-surface-active), 0.12);
+  background-color: var(--color-primary-soft) !important;
+  color: var(--color-primary-dark) !important;
 }
 
 :global(.v-theme--light) .nav-list :deep(.v-list-item--active) {
-  background-color: transparent;
-  color: rgb(var(--v-theme-primary));
+  background-color: var(--color-primary-soft) !important;
+  color: var(--color-primary-dark) !important;
 }
 
 :global(.v-theme--light) .nav-list :deep(.v-list-item) {
-  color: rgba(var(--v-theme-text-primary), 0.78);
+  color: rgb(var(--v-theme-text-secondary));
+}
+
+.nav-list :deep(.v-list-item .v-icon),
+.nav-list :deep(.v-list-item p) {
+  color: currentColor !important;
+  opacity: 1;
+}
+
+.nav-list :deep(.v-list-item--active .v-list-item__overlay) {
+  background: transparent !important;
+  opacity: 0 !important;
 }
 </style>

@@ -1,6 +1,6 @@
 <template>
   <Analytics />
-  <v-app>
+  <v-app :data-user-role="appContext.activeMode" data-theme="light">
     <!-- Contenido principal -->
     <RouterView />
 
@@ -44,8 +44,10 @@ import { ref, onMounted, onBeforeUnmount } from "vue";
 import { RouterView } from "vue-router";
 import { Analytics } from "@vercel/analytics/vue";
 import { useAppTheme } from "@/composables/useAppTheme";
+import { useAppContextStore } from "@/store/appContext";
 
 const { initializeAppTheme } = useAppTheme();
+const appContext = useAppContextStore();
 initializeAppTheme();
 
 // Estado del snackbar global

@@ -88,15 +88,9 @@ const navItemCount = computed(() =>
 </script>
 <style scoped>
 .bottom-nav-mobile {
-  backdrop-filter: blur(16px);
-  background:
-    linear-gradient(
-      0deg,
-      rgba(var(--v-theme-background-primary), 0.78) 0%,
-      rgba(var(--v-theme-background-primary), 0.48) 78%,
-      rgba(var(--v-theme-background-primary), 0) 100%
-    ) !important;
-  border-top: 1px solid rgba(var(--v-theme-border-subtle), 0.08);
+  background: rgba(var(--v-theme-surface), 0.98) !important;
+  border-top: 1px solid rgb(var(--v-theme-border-subtle));
+  box-shadow: 0 -4px 16px rgba(26, 58, 56, 0.06);
   height: calc(72px + env(safe-area-inset-bottom)) !important;
   left: 0 !important;
   max-width: 100vw;
@@ -107,9 +101,8 @@ const navItemCount = computed(() =>
 }
 
 :global(.v-theme--light) .bottom-nav-mobile {
-  background: transparent !important;
-  border-top-color: rgba(var(--v-theme-border-subtle), 0.14);
-  box-shadow: none;
+  background: rgba(var(--v-theme-surface), 0.98) !important;
+  border-top-color: rgb(var(--v-theme-border-subtle));
 }
 
 .bottom-nav-mobile :deep(.v-bottom-navigation__content) {
@@ -152,7 +145,8 @@ const navItemCount = computed(() =>
 }
 
 .bottom-nav-mobile :deep(.v-btn--selected) {
-  color: rgb(var(--v-theme-secondary));
+  color: var(--color-primary-dark);
+  background: var(--color-primary-soft) !important;
 }
 
 .bottom-nav-mobile :deep(.v-btn__content) {
@@ -162,6 +156,18 @@ const navItemCount = computed(() =>
   justify-content: center;
   min-width: 0;
   width: 100%;
+  color: rgb(var(--v-theme-text-secondary));
+  opacity: 0.9;
+}
+
+.bottom-nav-mobile :deep(.v-btn--selected .v-btn__content) {
+  color: var(--color-primary-dark);
+  opacity: 1;
+}
+
+.bottom-nav-mobile :deep(.v-btn--selected .v-icon) {
+  color: var(--color-primary-dark);
+  opacity: 1;
 }
 
 .bottom-nav-mobile :deep(span) {
@@ -178,7 +184,7 @@ const navItemCount = computed(() =>
 }
 
 :global(.v-theme--light) .bottom-nav-menu {
-  background-color: transparent !important;
+  background-color: rgb(var(--v-theme-surface)) !important;
 }
 
 @media (max-width: 380px) {

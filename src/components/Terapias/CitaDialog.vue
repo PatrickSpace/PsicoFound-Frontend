@@ -890,28 +890,14 @@ function formatDisplayDate(date) {
 }
 
 .appointment-card :deep(.v-card-title),
-.appointment-card :deep(.text-subtitle-1),
-.appointment-card :deep(.v-field__input),
-.appointment-card :deep(.v-text-field input),
-.appointment-card :deep(textarea) {
+.appointment-card :deep(.text-subtitle-1) {
   color: rgba(var(--v-theme-text-primary), 0.94) !important;
 }
 
 .appointment-card :deep(.text-medium-emphasis),
-.appointment-card :deep(.v-label),
-.appointment-card :deep(.v-field-label),
 .appointment-card :deep(.v-messages__message) {
   color: rgba(var(--v-theme-text-secondary), 0.72) !important;
   opacity: 1;
-}
-
-.appointment-card :deep(.v-field) {
-  background-color: rgba(var(--v-theme-surface-glass), 0.18);
-  color: rgba(var(--v-theme-text-primary), 0.94);
-}
-
-.appointment-card :deep(.v-field__outline) {
-  color: rgba(var(--v-theme-border-subtle), 0.34);
 }
 
 .appointment-card :deep(.v-alert) {
@@ -965,10 +951,10 @@ function formatDisplayDate(date) {
 
 .availability-range {
   align-items: center;
-  background: rgba(var(--v-theme-surface-glass), 0.14);
-  border: 1px solid rgba(var(--v-theme-border-subtle), 0.14);
-  border-radius: 16px;
-  color: rgba(var(--v-theme-text-primary), 0.76);
+  background: var(--color-button-secondary-bg);
+  border: 1.5px solid color-mix(in srgb, var(--color-primary) 26%, transparent);
+  border-radius: 12px;
+  color: var(--color-primary-dark);
   cursor: pointer;
   display: inline-flex;
   flex: 1 0 auto;
@@ -979,12 +965,25 @@ function formatDisplayDate(date) {
   min-height: 52px;
   min-width: 132px;
   padding: 0 16px;
+  transition:
+    background-color 0.18s ease,
+    border-color 0.18s ease,
+    color 0.18s ease,
+    transform 0.18s ease;
 }
 
 .availability-range--selected {
-  background: rgba(var(--v-theme-secondary), 0.18);
-  border-color: rgba(var(--v-theme-secondary), 0.62);
-  color: rgb(var(--v-theme-accent));
+  background: var(--color-primary-soft);
+  border-color: color-mix(in srgb, var(--color-primary) 52%, transparent);
+  color: var(--color-primary-dark);
+}
+
+.availability-range:hover,
+.availability-range:focus-visible {
+  background: var(--color-primary-soft);
+  border-color: color-mix(in srgb, var(--color-primary) 52%, transparent);
+  outline: none;
+  transform: translateY(-1px);
 }
 
 .availability-loading {
@@ -1025,10 +1024,9 @@ function formatDisplayDate(date) {
 .availability-slot {
   align-items: center;
   background: transparent;
-  border: 0;
-  border-right: 1px solid rgba(var(--v-theme-border-subtle), 0.18);
-  border-radius: 0;
-  color: rgba(var(--v-theme-text-primary), 0.88);
+  border: 1px solid transparent;
+  border-radius: 10px;
+  color: rgb(var(--v-theme-text-primary));
   cursor: pointer;
   display: inline-flex;
   gap: 9px;
@@ -1043,10 +1041,12 @@ function formatDisplayDate(date) {
 }
 
 .availability-slot:hover,
+.availability-slot:focus-visible,
 .availability-slot--selected {
-  background: rgba(var(--v-theme-brand-secondary), 0.18);
-  border-color: rgba(var(--v-theme-border-subtle), 0.26);
-  color: rgba(var(--v-theme-text-primary), 0.96);
+  background: var(--color-button-secondary-hover);
+  border-color: color-mix(in srgb, var(--color-primary) 42%, transparent);
+  color: var(--color-primary-dark);
+  outline: none;
 }
 
 .availability-slot__radio {
@@ -1075,26 +1075,13 @@ function formatDisplayDate(date) {
 }
 
 :global(.v-theme--light) .appointment-card :deep(.v-card-title),
-:global(.v-theme--light) .appointment-card :deep(.text-subtitle-1),
-:global(.v-theme--light) .appointment-card :deep(.v-field__input),
-:global(.v-theme--light) .appointment-card :deep(.v-text-field input),
-:global(.v-theme--light) .appointment-card :deep(textarea) {
+:global(.v-theme--light) .appointment-card :deep(.text-subtitle-1) {
   color: rgba(var(--v-theme-text-primary), 0.92) !important;
 }
 
 :global(.v-theme--light) .appointment-card :deep(.text-medium-emphasis),
-:global(.v-theme--light) .appointment-card :deep(.v-label),
-:global(.v-theme--light) .appointment-card :deep(.v-field-label),
 :global(.v-theme--light) .appointment-card :deep(.v-messages__message) {
   color: rgba(var(--v-theme-text-secondary), 0.68) !important;
-}
-
-:global(.v-theme--light) .appointment-card :deep(.v-field) {
-  background-color: transparent;
-}
-
-:global(.v-theme--light) .appointment-card :deep(.v-field__outline) {
-  color: rgba(var(--v-theme-border-subtle), var(--pf-border-default-alpha));
 }
 
 :global(.v-theme--light) .appointment-therapist-card {
@@ -1112,15 +1099,15 @@ function formatDisplayDate(date) {
 }
 
 :global(.v-theme--light) .availability-range {
-  background: transparent;
-  border-color: rgba(var(--v-theme-border-subtle), var(--pf-border-subtle-alpha));
-  color: rgba(var(--v-theme-text-primary), 0.72);
+  background: var(--color-button-secondary-bg);
+  border-color: color-mix(in srgb, var(--color-primary) 26%, transparent);
+  color: var(--color-primary-dark);
 }
 
 :global(.v-theme--light) .availability-range--selected {
-  background: transparent;
-  border-color: rgba(var(--v-theme-brand-secondary), 0.48);
-  color: rgb(var(--v-theme-secondary));
+  background: var(--color-primary-soft);
+  border-color: color-mix(in srgb, var(--color-primary) 52%, transparent);
+  color: var(--color-primary-dark);
 }
 
 :global(.v-theme--light) .availability-day {
@@ -1128,15 +1115,31 @@ function formatDisplayDate(date) {
 }
 
 :global(.v-theme--light) .availability-slot {
-  border-color: rgba(var(--v-theme-border-subtle), 0.16);
-  color: rgba(var(--v-theme-text-primary), 0.82);
+  border-color: transparent;
+  color: rgb(var(--v-theme-text-primary));
 }
 
 :global(.v-theme--light) .availability-slot:hover,
 :global(.v-theme--light) .availability-slot--selected {
-  background: transparent;
-  border-color: rgba(var(--v-theme-brand-secondary), 0.58);
-  color: rgba(var(--v-theme-brand-primary), 0.94);
+  background: var(--color-button-secondary-hover);
+  border-color: color-mix(in srgb, var(--color-primary) 42%, transparent);
+  color: var(--color-primary-dark);
+}
+
+:global(.v-theme--dark) .availability-range,
+:global(.v-theme--dark) .availability-slot {
+  color: rgb(var(--v-theme-text-primary));
+  border-color: rgba(var(--v-theme-border-subtle), 0.28);
+}
+
+:global(.v-theme--dark) .availability-range:hover,
+:global(.v-theme--dark) .availability-range:focus-visible,
+:global(.v-theme--dark) .availability-range--selected,
+:global(.v-theme--dark) .availability-slot:hover,
+:global(.v-theme--dark) .availability-slot:focus-visible,
+:global(.v-theme--dark) .availability-slot--selected {
+  color: rgb(var(--v-theme-text-primary));
+  border-color: rgba(var(--v-theme-border-default), 0.48);
 }
 
 @media (max-width: 600px) {

@@ -24,7 +24,7 @@ export function applyDesignTokenCssVars(target = document.documentElement) {
 const vuetify = createVuetify({
   components,
   theme: {
-    defaultTheme: "dark",
+    defaultTheme: "light",
     themes: {
       dark: darkTheme,
       light: lightTheme,
@@ -35,6 +35,46 @@ const vuetify = createVuetify({
     defaultSet: "mdi",
     aliases,
     sets: { mdi },
+  },
+  defaults: {
+    VBtn: {
+      rounded: "lg",
+      elevation: 0,
+    },
+    VCard: {
+      rounded: "lg",
+      elevation: 0,
+    },
+    VTextField: {
+      variant: "solo-filled",
+      density: "comfortable",
+      flat: true,
+    },
+    VTextarea: {
+      variant: "solo-filled",
+      density: "comfortable",
+      flat: true,
+    },
+    VSelect: {
+      variant: "solo-filled",
+      density: "comfortable",
+      flat: true,
+    },
+    VAutocomplete: {
+      variant: "solo-filled",
+      density: "comfortable",
+      flat: true,
+    },
+    VCombobox: {
+      variant: "solo-filled",
+      density: "comfortable",
+      flat: true,
+    },
+    VFileInput: {
+      variant: "solo-filled",
+      density: "comfortable",
+      flat: true,
+    },
   },
 });
 

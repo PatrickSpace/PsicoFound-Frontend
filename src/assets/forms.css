@@ -1,0 +1,233 @@
+/* Lurems form controls layer.
+   Keep field styling here so future design-system changes stay centralized. */
+
+:root {
+  --pf-field-bg: #f6fbfb;
+  --pf-field-bg-hover: #f0f8f7;
+  --pf-field-bg-focus: #ffffff;
+  --pf-field-border: #9eddd5;
+  --pf-field-border-hover: #72cbbf;
+  --pf-field-border-focus: #45a99a;
+  --pf-field-label: #1a3a38;
+  --pf-field-text: #1a3a38;
+  --pf-field-placeholder: #819b97;
+  --pf-field-helper: #426460;
+  --pf-field-error: #e64f55;
+  --pf-field-error-bg: #fff7f7;
+  --pf-field-success: #3f9a75;
+  --pf-field-success-bg: #effaf5;
+  --pf-field-disabled-bg: #eef6f4;
+  --pf-field-disabled-text: #8aa7a3;
+  --pf-field-radius: 16px;
+  --pf-field-border-width: 2px;
+  --pf-field-min-height: 58px;
+  --pf-field-floating-input-padding-top: 15px;
+  --pf-field-floating-input-padding-bottom: 2px;
+}
+
+.v-theme--dark {
+  --pf-field-bg: rgba(var(--v-theme-surface-glass), 0.34);
+  --pf-field-bg-hover: rgba(var(--v-theme-surface-hover), 0.3);
+  --pf-field-bg-focus: rgba(var(--v-theme-surface-elevated), 0.72);
+  --pf-field-border: rgba(var(--v-theme-border-subtle), 0.44);
+  --pf-field-border-hover: rgba(var(--v-theme-border-default), 0.62);
+  --pf-field-border-focus: rgb(var(--v-theme-brand-secondary));
+  --pf-field-label: rgb(var(--v-theme-text-primary));
+  --pf-field-text: rgb(var(--v-theme-text-primary));
+  --pf-field-placeholder: rgba(var(--v-theme-text-secondary), 0.72);
+  --pf-field-helper: rgba(var(--v-theme-text-secondary), 0.76);
+  --pf-field-error-bg: rgba(var(--v-theme-error), 0.1);
+  --pf-field-success-bg: rgba(var(--v-theme-success), 0.12);
+  --pf-field-disabled-bg: rgba(var(--v-theme-surface-disabled), 0.14);
+  --pf-field-disabled-text: rgba(var(--v-theme-text-disabled), 0.86);
+}
+
+:is(.v-text-field, .v-textarea, .v-select, .v-autocomplete, .v-combobox, .v-file-input) {
+  color: var(--pf-field-text);
+  font-family: "Poppins", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+:is(.v-text-field, .v-textarea, .v-select, .v-autocomplete, .v-combobox, .v-file-input) .v-field:not(.v-field--variant-plain) {
+  min-height: var(--pf-field-min-height);
+  border: var(--pf-field-border-width) solid var(--pf-field-border);
+  border-radius: var(--pf-field-radius);
+  background: var(--pf-field-bg) !important;
+  color: var(--pf-field-text);
+  box-shadow: none !important;
+  transition:
+    background-color 0.18s ease,
+    border-color 0.18s ease,
+    box-shadow 0.18s ease;
+}
+
+:is(.v-text-field, .v-textarea, .v-select, .v-autocomplete, .v-combobox, .v-file-input) .v-field:not(.v-field--variant-plain):hover {
+  background: var(--pf-field-bg-hover) !important;
+  border-color: var(--pf-field-border-hover);
+}
+
+:is(.v-text-field, .v-textarea, .v-select, .v-autocomplete, .v-combobox, .v-file-input) .v-field.v-field--focused:not(.v-field--variant-plain) {
+  background: var(--pf-field-bg-focus) !important;
+  border-color: var(--pf-field-border-focus);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--pf-field-border-focus) 18%, transparent) !important;
+}
+
+:is(.v-text-field, .v-textarea, .v-select, .v-autocomplete, .v-combobox, .v-file-input) .v-field__overlay,
+:is(.v-text-field, .v-textarea, .v-select, .v-autocomplete, .v-combobox, .v-file-input) .v-field__outline,
+:is(.v-text-field, .v-textarea, .v-select, .v-autocomplete, .v-combobox, .v-file-input) .v-field__underlay {
+  background: transparent !important;
+  border: 0 !important;
+  color: transparent !important;
+  opacity: 0 !important;
+}
+
+:is(.v-text-field, .v-textarea, .v-select, .v-autocomplete, .v-combobox, .v-file-input) .v-field__input {
+  min-height: calc(var(--pf-field-min-height) - 4px);
+  padding: 16px 18px;
+  color: var(--pf-field-text);
+  font-size: 0.98rem;
+  font-weight: 500;
+  letter-spacing: 0;
+  line-height: 1.35;
+  mask-image: none;
+}
+
+:is(.v-text-field, .v-select, .v-autocomplete, .v-combobox, .v-file-input) .v-field:is(.v-field--active, .v-field--dirty, .v-field--focused):not(.v-field--variant-plain) .v-field__input {
+  padding-top: var(--pf-field-floating-input-padding-top);
+  padding-bottom: var(--pf-field-floating-input-padding-bottom);
+}
+
+.v-textarea .v-field:not(.v-field--variant-plain) .v-field__input {
+  align-items: flex-start;
+  min-height: 112px;
+  padding-top: 28px;
+  padding-bottom: 12px;
+}
+
+:is(.v-text-field, .v-textarea, .v-select, .v-autocomplete, .v-combobox, .v-file-input) :is(input, textarea) {
+  color: var(--pf-field-text) !important;
+  font-weight: 500;
+}
+
+:is(.v-text-field, .v-textarea, .v-select, .v-autocomplete, .v-combobox, .v-file-input) :is(input, textarea)::placeholder {
+  color: var(--pf-field-placeholder) !important;
+  opacity: 1;
+}
+
+:is(.v-text-field, .v-textarea, .v-select, .v-autocomplete, .v-combobox, .v-file-input) :is(.v-field-label, .v-label) {
+  color: var(--pf-field-label) !important;
+  font-weight: 700;
+  letter-spacing: 0;
+  opacity: 1;
+}
+
+:is(.v-text-field, .v-textarea, .v-select, .v-autocomplete, .v-combobox, .v-file-input) .v-field-label--floating {
+  transform-origin: left center;
+  font-size: 0.78rem;
+}
+
+.v-input__details {
+  min-height: 22px;
+  padding-inline: 2px;
+  padding-top: 6px;
+}
+
+.v-messages__message,
+.v-input__details {
+  color: var(--pf-field-helper) !important;
+  font-size: 0.78rem;
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+.v-input--error :is(.v-field:not(.v-field--variant-plain), .v-field:not(.v-field--variant-plain):hover, .v-field.v-field--focused:not(.v-field--variant-plain)) {
+  background: var(--pf-field-error-bg) !important;
+  border-color: var(--pf-field-error);
+  box-shadow: none !important;
+}
+
+.v-input--error :is(.v-field-label, .v-label, .v-messages__message, .v-input__details, .v-icon) {
+  color: var(--pf-field-error) !important;
+}
+
+:is(.v-input.text-success, .v-input.pf-field--success) .v-field:not(.v-field--variant-plain) {
+  background: var(--pf-field-success-bg) !important;
+  border-color: var(--pf-field-success);
+}
+
+:is(.v-input.text-success, .v-input.pf-field--success) :is(.v-field-label, .v-label, .v-messages__message, .v-input__details, .v-icon) {
+  color: var(--pf-field-success) !important;
+}
+
+.v-input--disabled {
+  opacity: 1;
+}
+
+.v-input--disabled .v-field:not(.v-field--variant-plain) {
+  background: var(--pf-field-disabled-bg) !important;
+  border-color: transparent;
+  color: var(--pf-field-disabled-text);
+}
+
+.v-input--disabled :is(.v-field__input, input, textarea, .v-label, .v-field-label, .v-icon) {
+  color: var(--pf-field-disabled-text) !important;
+  opacity: 1;
+}
+
+:is(.v-select, .v-autocomplete, .v-combobox) .v-field__append-inner,
+:is(.v-text-field, .v-textarea, .v-file-input) .v-field__prepend-inner,
+:is(.v-text-field, .v-textarea, .v-file-input) .v-field__append-inner {
+  color: var(--pf-field-placeholder);
+  opacity: 1;
+}
+
+.v-menu > .v-overlay__content > .v-list,
+.v-overlay-container .v-list {
+  border: 1px solid rgb(var(--v-theme-border-subtle));
+  border-radius: 14px;
+  background: rgb(var(--v-theme-surface)) !important;
+  box-shadow: var(--pf-shadow-md);
+}
+
+.v-selection-control {
+  color: var(--pf-field-text);
+}
+
+.v-selection-control .v-label {
+  color: var(--pf-field-text) !important;
+  font-weight: 600;
+  opacity: 1;
+}
+
+.v-selection-control .v-selection-control__input {
+  color: var(--color-primary);
+}
+
+.v-switch .v-selection-control__input {
+  color: var(--color-primary);
+}
+
+.composer :is(.v-textarea, .v-text-field) .v-field.v-field--variant-plain {
+  min-height: 42px;
+  background: transparent !important;
+  border: 0;
+  box-shadow: none !important;
+}
+
+.composer :is(.v-textarea, .v-text-field) .v-field.v-field--variant-plain .v-field__input {
+  min-height: 42px;
+  padding: 8px 0;
+}
+
+@media (max-width: 600px) {
+  :root {
+    --pf-field-radius: 14px;
+    --pf-field-min-height: 54px;
+    --pf-field-floating-input-padding-top: 15px;
+    --pf-field-floating-input-padding-bottom: 0;
+  }
+
+  :is(.v-text-field, .v-textarea, .v-select, .v-autocomplete, .v-combobox, .v-file-input) .v-field__input {
+    padding-inline: 15px;
+    font-size: 0.94rem;
+  }
+}

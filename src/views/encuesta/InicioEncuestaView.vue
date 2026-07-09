@@ -6,7 +6,13 @@
       color="transparent"
       :elevation="0"
     >
-      <v-app-bar-title class="theme-contrast-text font-weight-bold">PsicoFound</v-app-bar-title>
+      <v-app-bar-title>
+        <img
+          src="/brand/lurems-isotipo-transparent.png"
+          alt="Lurems"
+          class="intro-logo"
+        />
+      </v-app-bar-title>
       <v-spacer></v-spacer>
       <v-btn class="theme-contrast-text" to="/login" variant="tonal">
         Iniciar sesión
@@ -47,7 +53,7 @@
         </div>
 
         <p class="intro-footnote theme-contrast-text">
-          Si ya elegiste a un terapeuta registrado en PsicoFound puedes
+          Si ya elegiste a un terapeuta registrado en Lurems puedes
           realizar una búsqueda desde tu cuenta.
         </p>
       </v-container>
@@ -70,6 +76,14 @@ export default {
   justify-content: center;
   gap: 48px;
   padding-block: 56px 24px;
+}
+
+.intro-logo {
+  display: block;
+  height: 40px;
+  object-fit: contain;
+  object-position: left center;
+  width: 54px;
 }
 
 .intro-copy {

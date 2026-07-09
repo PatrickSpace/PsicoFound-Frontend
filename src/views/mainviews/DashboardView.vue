@@ -4,7 +4,13 @@
       <h1 class="text-h4">Bienvenido, {{ username }}</h1>
       <v-divider class="my-5 mx-auto"></v-divider>
 
-      <template v-if="activeTherapy">
+      <v-skeleton-loader
+        v-if="!therapiesReady"
+        class="card-backgoundcustom"
+        type="heading, paragraph, actions"
+      />
+
+      <template v-else-if="activeTherapy">
         <v-card class="pa-2 card-backgoundcustom" elevation="2">
           <v-card-item>
             <v-card-title class="text-h5"> Tu progreso </v-card-title>
