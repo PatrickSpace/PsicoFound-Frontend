@@ -3,6 +3,7 @@
     <v-form v-model="valid" @submit.prevent="LogIn()">
       <v-container class="px-0">
         <v-text-field
+        class="bg-transparent"
           v-model="form.usuario"
           label="Correo"
           placeholder="Correo electronico"
@@ -11,6 +12,7 @@
           clearable
         />
         <v-text-field
+        class="bg-transparent"
           v-model="form.password"
           label="Contraseña"
           type="password"
@@ -20,9 +22,8 @@
         />
         <v-btn
           block
-          class="my-5 bg-transparent"
+          class="my-5"
           elevation="4"
-          variant="tonal"
           size="large"
           type="submit"
           :disabled="!valid || loading"
@@ -38,9 +39,9 @@
     <v-divider></v-divider>
     <v-btn
       block
-      class="my-5 bg-google text-left"
+      class="my-5 text-left"
+      id="google-login-button"
       elevation="4"
-      variant="tonal"
       size="large"
       @click="LoginGoogle()"
       :loading="loadingGoogle"
@@ -52,7 +53,12 @@
     </v-btn>
   </div>
 </template>
-
+<style scoped>
+#google-login-button{
+  background-color: #d82518 !important;
+  color: white;
+}
+</style>
 <script setup>
 import { reactive, ref } from "vue";
 import { auth } from "@/plugins/Firebase/firebase";
