@@ -165,6 +165,11 @@ router.beforeEach(async (to) => {
       allowedModes.length > 0 &&
       !allowedModes.includes(appContext.activeMode)
     ) {
+      if (allowedModes.includes("admin") && appContext.isAdmin) {
+        appContext.setActiveMode("admin");
+        return;
+      }
+
       return defaultRouteForMode(appContext.activeMode);
     }
   }

@@ -51,6 +51,12 @@ const appContext = useAppContextStore();
 const route = useRoute();
 const isOverflowOpen = ref(false);
 
+const adminRequestsItem = {
+  name: "Solic.",
+  icon: "mdi-account-clock-outline",
+  link: "/admin/solicitudes-psicologos",
+};
+
 const navigationByMode = {
   patient: [
     { name: "Inicio", icon: "mdi-view-dashboard-outline", link: "/dashboard" },
@@ -77,17 +83,23 @@ const navigationByMode = {
   admin: [
     { name: "Pacientes", icon: "mdi-account-group", link: "/pacientes" },
     { name: "Psicólogos", icon: "mdi-account-heart", link: "/psicologos" },
-    {
-      name: "Solic.",
-      icon: "mdi-account-clock-outline",
-      link: "/admin/solicitudes-psicologos",
-    },
+    adminRequestsItem,
   ],
 };
 
-const items = computed(
-  () => navigationByMode[appContext.activeMode] || navigationByMode.patient
-);
+const items = computed(() => {
+  const baseItems =
+    navigationByMode[appContext.activeMode] || navigationByMode.patient;
+
+  if (
+    !appContext.isAdmin ||
+    baseItems.some((item) => item.link === adminRequestsItem.link)
+  ) {
+    return baseItems;
+  }
+
+  return [...baseItems, adminRequestsItem];
+});
 
 const primaryItems = computed(() => items.value.slice(0, 3));
 const overflowItems = computed(() => items.value.slice(3));
