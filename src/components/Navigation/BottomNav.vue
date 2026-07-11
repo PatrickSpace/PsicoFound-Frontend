@@ -133,9 +133,11 @@ onBeforeUnmount(() => {
 </script>
 <style scoped>
 .bottom-nav-mobile {
-  background: rgba(var(--v-theme-surface), 0.98) !important;
-  border-top: 1px solid rgb(var(--v-theme-border-subtle));
-  box-shadow: 0 -4px 16px rgba(26, 58, 56, 0.06);
+  background: var(--pf-floating-surface) !important;
+  border-top: 1px solid var(--pf-floating-border);
+  box-shadow: 0 -10px 30px rgba(26, 58, 56, 0.08);
+  backdrop-filter: blur(var(--pf-floating-blur)) saturate(1.08);
+  -webkit-backdrop-filter: blur(var(--pf-floating-blur)) saturate(1.08);
   height: calc(72px + env(safe-area-inset-bottom)) !important;
   left: 0 !important;
   max-width: 100vw;
@@ -146,8 +148,8 @@ onBeforeUnmount(() => {
 }
 
 :global(.v-theme--light) .bottom-nav-mobile {
-  background: rgba(var(--v-theme-surface), 0.98) !important;
-  border-top-color: rgb(var(--v-theme-border-subtle));
+  background: var(--pf-floating-surface) !important;
+  border-top-color: var(--pf-floating-border);
 }
 
 .bottom-nav-mobile :deep(.v-bottom-navigation__content) {
@@ -191,7 +193,7 @@ onBeforeUnmount(() => {
 
 .bottom-nav-mobile :deep(.v-btn--selected) {
   color: var(--color-primary-dark);
-  background: var(--color-primary-soft) !important;
+  background: rgba(var(--v-theme-surface-active), 0.12) !important;
 }
 
 .bottom-nav-mobile :deep(.v-btn__content) {
@@ -236,12 +238,12 @@ onBeforeUnmount(() => {
   z-index: 2400;
   min-width: 152px;
   padding: 10px;
-  border: 1px solid rgba(69, 169, 154, 0.2);
+  border: 1px solid var(--pf-floating-border);
   border-radius: 20px;
-  background: rgba(255, 255, 255, 0.48);
-  box-shadow: 0 16px 38px rgba(26, 58, 56, 0.14);
-  backdrop-filter: blur(8px) saturate(1.06);
-  -webkit-backdrop-filter: blur(8px) saturate(1.06);
+  background: var(--pf-floating-surface);
+  box-shadow: var(--pf-floating-shadow);
+  backdrop-filter: blur(var(--pf-floating-blur)) saturate(1.08);
+  -webkit-backdrop-filter: blur(var(--pf-floating-blur)) saturate(1.08);
 }
 
 :global(.v-theme--dark) :global(.bottom-nav-popover) {
