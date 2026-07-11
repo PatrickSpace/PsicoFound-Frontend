@@ -1,9 +1,9 @@
 :root,
 [data-theme="light"] {
   --pf-overlay-scrim:
-    radial-gradient(circle at 18% 10%, rgba(194, 232, 227, 0.42), transparent 34%),
-    linear-gradient(180deg, rgba(232, 244, 242, 0.72), rgba(26, 58, 56, 0.3));
-  --pf-overlay-blur: 22px;
+    radial-gradient(circle at 18% 10%, rgba(194, 232, 227, 0.24), transparent 36%),
+    linear-gradient(180deg, rgba(69, 169, 154, 0.22), rgba(26, 58, 56, 0.34));
+  --pf-overlay-blur: 16px;
   --pf-overlay-saturate: 1.12;
   --pf-floating-surface: rgba(255, 255, 255, 0.5);
   --pf-floating-border: rgba(69, 169, 154, 0.18);
