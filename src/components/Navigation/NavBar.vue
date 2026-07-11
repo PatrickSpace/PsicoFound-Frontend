@@ -187,9 +187,17 @@ function notificationIcon(type = "") {
 
 <style scoped>
 .app-top-nav {
-  background: transparent;
+  background:
+    linear-gradient(
+      180deg,
+      rgba(255, 255, 255, 0.58) 0%,
+      rgba(255, 255, 255, 0.34) 64%,
+      rgba(255, 255, 255, 0) 100%
+    );
+  backdrop-filter: blur(var(--pf-floating-blur, 14px)) saturate(1.08);
   border-bottom: 0;
   box-shadow: none;
+  -webkit-backdrop-filter: blur(var(--pf-floating-blur, 14px)) saturate(1.08);
   left: 0;
   min-height: 64px;
   padding-top: 0;
@@ -201,7 +209,23 @@ function notificationIcon(type = "") {
 }
 
 :global(.v-theme--light) .app-top-nav {
-  background: transparent;
+  background:
+    linear-gradient(
+      180deg,
+      rgba(255, 255, 255, 0.58) 0%,
+      rgba(255, 255, 255, 0.34) 64%,
+      rgba(255, 255, 255, 0) 100%
+    );
+}
+
+:global(.v-theme--dark) .app-top-nav {
+  background:
+    linear-gradient(
+      180deg,
+      rgba(18, 36, 34, 0.52) 0%,
+      rgba(18, 36, 34, 0.28) 64%,
+      rgba(18, 36, 34, 0) 100%
+    );
 }
 
 .app-top-nav__content {

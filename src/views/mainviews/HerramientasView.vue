@@ -153,12 +153,35 @@
         elevation="2"
         variant="text"
       >
-        <v-card-title class="d-flex align-center ga-2 text-h6 font-weight-bold px-0 pt-0">
-          <v-icon color="secondary" size="small">mdi-clipboard-plus-outline</v-icon>
-          Asignar ejercicio
-        </v-card-title>
-        <v-card-text>
-          <v-divider class="mb-4"></v-divider>
+        <div class="d-flex flex-column flex-md-row align-md-center justify-space-between ga-3">
+          <div>
+            <div class="d-flex align-center ga-2 mb-1">
+              <v-icon color="secondary" size="small">mdi-clipboard-plus-outline</v-icon>
+              <h2 class="text-h6 font-weight-bold mb-0">Asignar ejercicio</h2>
+            </div>
+            <p class="text-body-2 text-medium-emphasis mb-0">
+              Envía una herramienta terapéutica a un paciente con terapia activa.
+            </p>
+          </div>
+          <v-btn
+            color="secondary"
+            variant="tonal"
+            prepend-icon="mdi-send"
+            :disabled="therapistTherapies.length === 0"
+            @click="assignmentDialog = true"
+            class="pf-btn-secondary align-self-start align-self-md-center"
+          >
+            Asignar ejercicio
+          </v-btn>
+        </div>
+      </v-card>
+
+      <v-dialog v-model="assignmentDialog" class="bg-transparent" max-width="760">
+        <v-card class="pa-4 card-backgoundcustom" elevation="2" variant="text">
+          <v-card-title class="text-h6 font-weight-bold px-0 pt-0">
+            Asignar ejercicio
+          </v-card-title>
+          <v-card-text>
           <v-row>
             <v-col cols="12" md="6">
               <v-select
@@ -216,22 +239,31 @@
               />
             </v-col>
           </v-row>
-        </v-card-text>
-        <v-card-actions>
-          <v-spacer />
-          <v-btn
-            color="secondary"
-            variant="tonal"
-            prepend-icon="mdi-send"
-            :loading="savingAssignment"
-            :disabled="!canAssignExercise"
-            @click="assignExercise"
-
-        class="pf-btn-secondary">
-            Asignar
-          </v-btn>
-        </v-card-actions>
-      </v-card>
+          </v-card-text>
+          <v-card-actions>
+            <v-spacer />
+            <v-btn
+              variant="text"
+              :disabled="savingAssignment"
+              @click="assignmentDialog = false"
+              class="pf-btn-ghost"
+            >
+              Cancelar
+            </v-btn>
+            <v-btn
+              color="secondary"
+              variant="tonal"
+              prepend-icon="mdi-send"
+              :loading="savingAssignment"
+              :disabled="!canAssignExercise"
+              @click="assignExercise"
+              class="pf-btn-secondary"
+            >
+              Asignar
+            </v-btn>
+          </v-card-actions>
+        </v-card>
+      </v-dialog>
 
       <v-dialog v-model="completeDialog" class="bg-transparent" max-width="640">
         <v-card class="pa-4 card-backgoundcustom" elevation="2" variant="text">
@@ -298,6 +330,7 @@ const patientExercises = ref([]);
 const therapistExercises = ref([]);
 const savingAssignment = ref(false);
 const savingCompletion = ref(false);
+const assignmentDialog = ref(false);
 const completeDialog = ref(false);
 const selectedExercise = ref(null);
 const completionNotes = ref("");
@@ -435,6 +468,7 @@ async function assignExercise() {
     );
 
     resetAssignment();
+    assignmentDialog.value = false;
     await loadTools();
   } catch (error) {
     console.error("Error assigning exercise:", error);

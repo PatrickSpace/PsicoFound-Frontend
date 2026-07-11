@@ -39,7 +39,6 @@
                 Perfil de usuario
               </span>
               <v-btn
-                v-if="!isEditingProfile"
                 icon="mdi-pencil-outline"
                 size="small"
                 variant="text"
@@ -59,77 +58,14 @@
               >
                 {{ profileError }}
               </v-alert>
-              <template v-if="!isEditingProfile">
-                <v-list class="bg-transparent" density="compact">
-                  <v-list-item
-                    v-for="item in patientProfileDetails"
-                    :key="item.title"
-                    :title="item.title"
-                    :subtitle="item.subtitle"
-                  />
-                </v-list>
-              </template>
-              <template v-else>
-                <v-row>
-                  <v-col cols="12">
-                    <v-text-field
-                      v-model="profileForm.nombre"
-                      label="Nombre"
-                      variant="outlined"
-                      density="comfortable"
-                    />
-                  </v-col>
-                  <v-col cols="12">
-                    <v-text-field
-                      :model-value="currentUser?.email || ''"
-                      label="Correo"
-                      readonly
-                      variant="outlined"
-                      density="comfortable"
-                    />
-                  </v-col>
-                  <v-col cols="12" md="6">
-                    <v-text-field
-                      v-model="profileForm.fechaNacimiento"
-                      label="Fecha de nacimiento"
-                      type="date"
-                      variant="outlined"
-                      density="comfortable"
-                    />
-                  </v-col>
-                  <v-col cols="12" md="6">
-                    <v-text-field
-                      v-model="profileForm.telefono"
-                      label="Teléfono"
-                      placeholder="Opcional"
-                      variant="outlined"
-                      density="comfortable"
-                    />
-                  </v-col>
-                </v-row>
-                <div class="d-flex justify-end ga-2">
-                  <v-btn
-                    color="secondary"
-                    variant="text"
-                    :disabled="savingProfile"
-                    @click="cancelProfileEdit"
-                    class="pf-btn-ghost"
-                  >
-                    Cancelar
-                  </v-btn>
-                  <v-btn
-                    color="secondary"
-                    variant="tonal"
-                    prepend-icon="mdi-content-save-outline"
-                    :loading="savingProfile"
-                    :disabled="!canSaveProfile"
-                    @click="saveProfile"
-                    class="pf-btn-secondary"
-                  >
-                    Guardar cambios
-                  </v-btn>
-                </div>
-              </template>
+              <v-list class="bg-transparent" density="compact">
+                <v-list-item
+                  v-for="item in patientProfileDetails"
+                  :key="item.title"
+                  :title="item.title"
+                  :subtitle="item.subtitle"
+                />
+              </v-list>
             </v-card-text>
           </v-card>
         </v-col>
@@ -280,6 +216,96 @@
           </v-card>
         </v-col>
       </v-row>
+
+      <v-dialog
+        v-model="isEditingProfile"
+        max-width="680"
+        class="bg-transparent"
+      >
+        <v-card class="pa-4 card-backgoundcustom" elevation="2" variant="text">
+          <v-card-title
+            class="text-h6 font-weight-bold d-flex align-center ga-2 px-0 pt-0"
+          >
+            <v-icon color="secondary" size="small"
+              >mdi-account-circle-outline</v-icon
+            >
+            Editar perfil
+          </v-card-title>
+          <v-card-text>
+            <v-divider class="mb-4"></v-divider>
+            <v-alert
+              v-if="profileError"
+              class="mb-4"
+              color="error"
+              variant="tonal"
+              icon="mdi-alert-outline"
+            >
+              {{ profileError }}
+            </v-alert>
+            <v-row>
+              <v-col cols="12">
+                <v-text-field
+                  v-model="profileForm.nombre"
+                  label="Nombre"
+                  variant="outlined"
+                  density="comfortable"
+                />
+              </v-col>
+              <v-col cols="12">
+                <v-text-field
+                  :model-value="currentUser?.email || ''"
+                  label="Correo"
+                  readonly
+                  variant="outlined"
+                  density="comfortable"
+                />
+              </v-col>
+              <v-col cols="12" md="6">
+                <v-text-field
+                  v-model="profileForm.fechaNacimiento"
+                  label="Fecha de nacimiento"
+                  type="date"
+                  variant="outlined"
+                  density="comfortable"
+                />
+              </v-col>
+              <v-col cols="12" md="6">
+                <v-text-field
+                  v-model="profileForm.telefono"
+                  label="Teléfono"
+                  placeholder="Opcional"
+                  variant="outlined"
+                  density="comfortable"
+                />
+              </v-col>
+            </v-row>
+          </v-card-text>
+          <v-card-actions>
+            <v-spacer />
+            <v-btn
+              color="secondary"
+              variant="text"
+              :disabled="savingProfile"
+              @click="cancelProfileEdit"
+              class="pf-btn-ghost"
+            >
+              Cancelar
+            </v-btn>
+            <v-btn
+              color="secondary"
+              variant="tonal"
+              prepend-icon="mdi-content-save-outline"
+              :loading="savingProfile"
+              :disabled="!canSaveProfile"
+              @click="saveProfile"
+              class="pf-btn-secondary"
+            >
+              Guardar cambios
+            </v-btn>
+          </v-card-actions>
+        </v-card>
+      </v-dialog>
+
       <v-dialog
         v-model="psychologistRequestDialog"
         max-width="760"

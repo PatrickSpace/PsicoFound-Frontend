@@ -242,10 +242,43 @@
           </v-row>
 
           <v-card class="pa-4 mt-4 card-backgoundcustom" elevation="2" variant="text">
-            <v-card-title class="text-subtitle-1 font-weight-bold px-0 pt-0">
-              Crear objetivo
-            </v-card-title>
-            <v-card-text>
+            <div class="d-flex flex-column flex-md-row align-md-center justify-space-between ga-3">
+              <div>
+                <h3 class="text-subtitle-1 font-weight-bold mb-1">Crear objetivo</h3>
+                <p class="text-body-2 text-medium-emphasis mb-0">
+                  Registra una meta de seguimiento para medir el avance terapéutico.
+                </p>
+              </div>
+              <v-btn
+                color="secondary"
+                variant="tonal"
+                prepend-icon="mdi-plus"
+                :disabled="!canOpenGoalDialog"
+                @click="goalDialog = true"
+                class="pf-btn-secondary align-self-start align-self-md-center"
+              >
+                Crear objetivo
+              </v-btn>
+            </div>
+            <v-alert
+              v-if="!therapist && !activeTherapy"
+              class="mt-4 mb-0"
+              color="warning"
+              variant="tonal"
+              icon="mdi-information-outline"
+            >
+              Necesitas una terapia activa para crear objetivos de seguimiento.
+            </v-alert>
+          </v-card>
+        </v-card-text>
+      </v-card>
+
+      <v-dialog v-model="goalDialog" class="bg-transparent" max-width="760">
+        <v-card class="pa-4 card-backgoundcustom" elevation="2" variant="text">
+          <v-card-title class="text-h6 font-weight-bold px-0 pt-0">
+            Crear objetivo
+          </v-card-title>
+          <v-card-text>
               <v-alert
                 v-if="!therapist && !activeTherapy"
                 class="mb-4"
@@ -302,24 +335,31 @@
                   />
                 </v-col>
               </v-row>
-            </v-card-text>
-            <v-card-actions>
-              <v-spacer />
-              <v-btn
-                color="secondary"
-                variant="tonal"
-                prepend-icon="mdi-plus"
-                :loading="savingGoal"
-                :disabled="!canCreateGoal"
-                @click="saveGoal"
-
-        class="pf-btn-secondary">
-                Crear objetivo
-              </v-btn>
-            </v-card-actions>
-          </v-card>
-        </v-card-text>
-      </v-card>
+          </v-card-text>
+          <v-card-actions>
+            <v-spacer />
+            <v-btn
+              variant="text"
+              :disabled="savingGoal"
+              @click="goalDialog = false"
+              class="pf-btn-ghost"
+            >
+              Cancelar
+            </v-btn>
+            <v-btn
+              color="secondary"
+              variant="tonal"
+              prepend-icon="mdi-plus"
+              :loading="savingGoal"
+              :disabled="!canCreateGoal"
+              @click="saveGoal"
+              class="pf-btn-secondary"
+            >
+              Crear objetivo
+            </v-btn>
+          </v-card-actions>
+        </v-card>
+      </v-dialog>
 
       <v-card class="pa-4 mb-6 card-backgoundcustom" elevation="2" variant="text">
         <v-card-title class="d-flex align-center ga-2 text-h6 font-weight-bold px-0 pt-0">
@@ -390,99 +430,33 @@
             elevation="2"
             variant="text"
           >
-            <v-card-title class="text-subtitle-1 font-weight-bold px-0 pt-0">
-              Agregar registro
-            </v-card-title>
-            <v-card-text>
-              <v-alert
-                v-if="!activeTherapy"
-                class="mb-4"
-                color="warning"
-                variant="tonal"
-                icon="mdi-information-outline"
-              >
-                Cuando tengas una terapia activa podrás registrar check-ins emocionales asociados a tu proceso.
-              </v-alert>
-              <v-row>
-                <v-col cols="12" md="6">
-                  <v-select
-                    v-model="checkinForm.mood"
-                    :items="moodOptions"
-                    label="Estado principal"
-                    variant="outlined"
-                    density="comfortable"
-                  />
-                </v-col>
-                <v-col cols="12" md="6">
-                  <v-combobox
-                    v-model="checkinForm.tags"
-                    :items="tagSuggestions"
-                    label="Temas del día"
-                    multiple
-                    chips
-                    closable-chips
-                    variant="outlined"
-                    density="comfortable"
-                  />
-                </v-col>
-                <v-col cols="12" md="4">
-                  <v-slider
-                    v-model="checkinForm.intensity"
-                    color="secondary"
-                    label="Intensidad"
-                    min="1"
-                    max="10"
-                    step="1"
-                    thumb-label
-                  />
-                </v-col>
-                <v-col cols="12" md="4">
-                  <v-slider
-                    v-model="checkinForm.energy"
-                    color="secondary"
-                    label="Energía"
-                    min="1"
-                    max="10"
-                    step="1"
-                    thumb-label
-                  />
-                </v-col>
-                <v-col cols="12" md="4">
-                  <v-slider
-                    v-model="checkinForm.sleepQuality"
-                    color="secondary"
-                    label="Sueño"
-                    min="1"
-                    max="10"
-                    step="1"
-                    thumb-label
-                  />
-                </v-col>
-                <v-col cols="12">
-                  <v-textarea
-                    v-model="checkinForm.note"
-                    label="Nota personal"
-                    rows="3"
-                    variant="outlined"
-                    density="comfortable"
-                  />
-                </v-col>
-              </v-row>
-            </v-card-text>
-            <v-card-actions>
-              <v-spacer />
+            <div class="d-flex flex-column flex-md-row align-md-center justify-space-between ga-3">
+              <div>
+                <h3 class="text-subtitle-1 font-weight-bold mb-1">Agregar registro</h3>
+                <p class="text-body-2 text-medium-emphasis mb-0">
+                  Guarda un check-in emocional asociado a tu proceso terapéutico.
+                </p>
+              </div>
               <v-btn
                 color="secondary"
                 variant="tonal"
-                prepend-icon="mdi-content-save-outline"
-                :loading="savingCheckin"
-                :disabled="!canCreateCheckin"
-                @click="saveCheckin"
-
-        class="pf-btn-secondary">
-                Guardar registro
+                prepend-icon="mdi-plus"
+                :disabled="!activeTherapy"
+                @click="checkinDialog = true"
+                class="pf-btn-secondary align-self-start align-self-md-center"
+              >
+                Agregar registro
               </v-btn>
-            </v-card-actions>
+            </div>
+            <v-alert
+              v-if="!activeTherapy"
+              class="mt-4 mb-0"
+              color="warning"
+              variant="tonal"
+              icon="mdi-information-outline"
+            >
+              Cuando tengas una terapia activa podrás registrar check-ins emocionales asociados a tu proceso.
+            </v-alert>
           </v-card>
 
           <div v-if="loadingCheckins" class="py-8 d-flex justify-center">
@@ -543,6 +517,112 @@
           <CitasDatatable />
         </v-card-text>
       </v-card>
+
+      <v-dialog v-model="checkinDialog" class="bg-transparent" max-width="760">
+        <v-card class="pa-4 card-backgoundcustom" elevation="2" variant="text">
+          <v-card-title class="text-h6 font-weight-bold px-0 pt-0">
+            Agregar registro emocional
+          </v-card-title>
+          <v-card-text>
+            <v-alert
+              v-if="!activeTherapy"
+              class="mb-4"
+              color="warning"
+              variant="tonal"
+              icon="mdi-information-outline"
+            >
+              Cuando tengas una terapia activa podrás registrar check-ins emocionales asociados a tu proceso.
+            </v-alert>
+            <v-row>
+              <v-col cols="12" md="6">
+                <v-select
+                  v-model="checkinForm.mood"
+                  :items="moodOptions"
+                  label="Estado principal"
+                  variant="outlined"
+                  density="comfortable"
+                />
+              </v-col>
+              <v-col cols="12" md="6">
+                <v-combobox
+                  v-model="checkinForm.tags"
+                  :items="tagSuggestions"
+                  label="Temas del día"
+                  multiple
+                  chips
+                  closable-chips
+                  variant="outlined"
+                  density="comfortable"
+                />
+              </v-col>
+              <v-col cols="12" md="4">
+                <v-slider
+                  v-model="checkinForm.intensity"
+                  color="secondary"
+                  label="Intensidad"
+                  min="1"
+                  max="10"
+                  step="1"
+                  thumb-label
+                />
+              </v-col>
+              <v-col cols="12" md="4">
+                <v-slider
+                  v-model="checkinForm.energy"
+                  color="secondary"
+                  label="Energía"
+                  min="1"
+                  max="10"
+                  step="1"
+                  thumb-label
+                />
+              </v-col>
+              <v-col cols="12" md="4">
+                <v-slider
+                  v-model="checkinForm.sleepQuality"
+                  color="secondary"
+                  label="Sueño"
+                  min="1"
+                  max="10"
+                  step="1"
+                  thumb-label
+                />
+              </v-col>
+              <v-col cols="12">
+                <v-textarea
+                  v-model="checkinForm.note"
+                  label="Nota personal"
+                  rows="3"
+                  variant="outlined"
+                  density="comfortable"
+                />
+              </v-col>
+            </v-row>
+          </v-card-text>
+          <v-card-actions>
+            <v-spacer />
+            <v-btn
+              variant="text"
+              :disabled="savingCheckin"
+              @click="checkinDialog = false"
+              class="pf-btn-ghost"
+            >
+              Cancelar
+            </v-btn>
+            <v-btn
+              color="secondary"
+              variant="tonal"
+              prepend-icon="mdi-content-save-outline"
+              :loading="savingCheckin"
+              :disabled="!canCreateCheckin"
+              @click="saveCheckin"
+              class="pf-btn-secondary"
+            >
+              Guardar registro
+            </v-btn>
+          </v-card-actions>
+        </v-card>
+      </v-dialog>
 
       <v-dialog v-model="goalProgressDialog" class="bg-transparent" max-width="620">
         <v-card class="pa-4 card-backgoundcustom" elevation="2" variant="text">
@@ -640,6 +720,8 @@ const therapistTherapies = ref([]);
 const savingGoal = ref(false);
 const savingCheckin = ref(false);
 const savingGoalProgress = ref(false);
+const goalDialog = ref(false);
+const checkinDialog = ref(false);
 const goalProgressDialog = ref(false);
 const selectedGoal = ref(null);
 let unsubscribeProfile = null;
@@ -736,6 +818,10 @@ const canCreateGoal = computed(() => {
 
   return hasTherapy && goalForm.title.trim().length > 0;
 });
+
+const canOpenGoalDialog = computed(() =>
+  therapist.value ? therapistTherapies.value.length > 0 : Boolean(activeTherapy.value?.id)
+);
 
 const canCreateCheckin = computed(
   () => Boolean(activeTherapy.value?.id) && checkinForm.mood.trim().length > 0
@@ -956,6 +1042,7 @@ async function saveGoal() {
     );
 
     resetGoalForm();
+    goalDialog.value = false;
     await loadGoals();
   } catch (error) {
     console.error("Error creating therapy goal:", error);
@@ -1020,6 +1107,7 @@ async function saveCheckin() {
     );
 
     resetCheckinForm();
+    checkinDialog.value = false;
     await loadCheckins();
   } catch (error) {
     console.error("Error creating emotional checkin:", error);

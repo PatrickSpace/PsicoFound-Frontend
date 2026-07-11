@@ -427,9 +427,9 @@ watch(
 
 .session-day {
   align-items: center;
-  border: 1px solid rgba(var(--v-theme-secondary), 0.34);
+  border: 1px solid color-mix(in srgb, var(--color-primary) 18%, #ffffff);
   border-radius: 8px;
-  color: rgb(var(--v-theme-on-secondary));
+  color: #ffffff;
   display: inline-flex;
   font-size: 2.4rem;
   font-weight: 700;
@@ -438,16 +438,16 @@ watch(
   line-height: 1;
   margin-right: 14px;
   min-width: 72px;
-  background: rgba(var(--v-theme-secondary), 0.24);
+  background: var(--color-primary);
 }
 
 .clickable-card {
   cursor: pointer;
-  transition: transform 0.2s ease, box-shadow 0.2s ease, opacity 0.2s ease;
+  transition: opacity 0.2s ease;
 }
 
 .clickable-card:hover {
-  transform: translateY(-2px);
+  transform: none;
 }
 
 .clickable-card--disabled {

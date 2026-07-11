@@ -92,73 +92,28 @@
         </v-row>
 
         <v-card class="pa-4 mb-5 card-backgoundcustom" elevation="2" variant="text">
-          <v-card-title class="d-flex align-center ga-2 text-h6 font-weight-bold px-0 pt-0">
-            <v-icon color="secondary" size="small">mdi-calendar-plus-outline</v-icon>
-            Abrir horarios disponibles
-          </v-card-title>
+          <div class="d-flex flex-column flex-md-row align-md-center justify-space-between ga-3">
+            <div>
+              <div class="d-flex align-center ga-2 mb-1">
+                <v-icon color="secondary" size="small">mdi-calendar-plus-outline</v-icon>
+                <h2 class="text-h6 font-weight-bold mb-0">Abrir horarios disponibles</h2>
+              </div>
+              <p class="text-body-2 text-medium-emphasis mb-0">
+                Cada bloque dura 1 hora y queda visible para pacientes con terapia activa.
+              </p>
+            </div>
+            <v-btn
+              color="secondary"
+              variant="tonal"
+              prepend-icon="mdi-calendar-plus"
+              @click="availabilityDialog = true"
+              class="pf-btn-secondary align-self-start align-self-md-center"
+            >
+              Abrir bloque
+            </v-btn>
+          </div>
           <v-card-text>
             <v-divider class="mb-4"></v-divider>
-            <v-row align="start">
-              <v-col cols="12" md="3">
-                <v-text-field
-                  v-model="availabilityForm.date"
-                  label="Fecha"
-                  type="date"
-                  variant="outlined"
-                  density="comfortable"
-                />
-              </v-col>
-              <v-col cols="12" md="3">
-                <v-text-field
-                  v-model="availabilityForm.startTime"
-                  label="Hora de inicio"
-                  type="time"
-                  variant="outlined"
-                  density="comfortable"
-                  hint="Duración fija: 1 hora"
-                  persistent-hint
-                />
-              </v-col>
-              <v-col cols="12" md="3">
-                <v-select
-                  v-model="availabilityForm.modality"
-                  :items="modalityOptions"
-                  label="Modalidad"
-                  variant="outlined"
-                  density="comfortable"
-                />
-              </v-col>
-              <v-col cols="12" md="3">
-                <v-text-field
-                  v-model="availabilityForm.location"
-                  label="Ubicación"
-                  variant="outlined"
-                  density="comfortable"
-                  :disabled="isAvailabilityRemote"
-                  :hint="isAvailabilityRemote ? 'Se registrará como Terapia Online' : 'Dirección o sede'"
-                  persistent-hint
-                />
-              </v-col>
-            </v-row>
-            <div class="d-flex flex-column flex-md-row justify-space-between ga-3 mt-2">
-              <div class="text-body-2 text-medium-emphasis">
-                Cada bloque dura 1 hora. Los pacientes solo podrán elegir horarios abiertos y, al reservarse, el bloque quedará ocupado.
-              </div>
-              <v-btn
-                color="secondary"
-                variant="tonal"
-                prepend-icon="mdi-calendar-plus"
-                :loading="savingAvailability"
-                :disabled="!availabilityForm.date || !availabilityForm.startTime"
-                @click="saveAvailabilitySlot"
-
-        class="pf-btn-secondary">
-                Abrir bloque
-              </v-btn>
-            </div>
-
-            <v-divider class="my-4"></v-divider>
-
             <div class="availability-slot-list">
               <v-chip
                 v-for="slot in upcomingAvailabilitySlots"
@@ -349,6 +304,80 @@
         @saved="handleDialogSaved"
       />
 
+      <v-dialog v-model="availabilityDialog" class="bg-transparent" max-width="760">
+        <v-card class="pa-4 card-backgoundcustom" elevation="2" variant="text">
+          <v-card-title class="text-h6 font-weight-bold px-0 pt-0">
+            Abrir bloque disponible
+          </v-card-title>
+          <v-card-text>
+            <v-row align="start">
+              <v-col cols="12" md="6">
+                <v-text-field
+                  v-model="availabilityForm.date"
+                  label="Fecha"
+                  type="date"
+                  variant="outlined"
+                  density="comfortable"
+                />
+              </v-col>
+              <v-col cols="12" md="6">
+                <v-text-field
+                  v-model="availabilityForm.startTime"
+                  label="Hora de inicio"
+                  type="time"
+                  variant="outlined"
+                  density="comfortable"
+                  hint="Duración fija: 1 hora"
+                  persistent-hint
+                />
+              </v-col>
+              <v-col cols="12" md="6">
+                <v-select
+                  v-model="availabilityForm.modality"
+                  :items="modalityOptions"
+                  label="Modalidad"
+                  variant="outlined"
+                  density="comfortable"
+                />
+              </v-col>
+              <v-col cols="12" md="6">
+                <v-text-field
+                  v-model="availabilityForm.location"
+                  label="Ubicación"
+                  variant="outlined"
+                  density="comfortable"
+                  :disabled="isAvailabilityRemote"
+                  :hint="isAvailabilityRemote ? 'Se registrará como Terapia Online' : 'Dirección o sede'"
+                  persistent-hint
+                />
+              </v-col>
+            </v-row>
+          </v-card-text>
+          <v-card-actions>
+            <v-spacer />
+            <v-btn
+              variant="text"
+              :disabled="savingAvailability"
+              @click="availabilityDialog = false"
+              class="pf-btn-ghost"
+            >
+              Cancelar
+            </v-btn>
+            <v-btn
+              color="secondary"
+              variant="tonal"
+              prepend-icon="mdi-calendar-plus"
+              :loading="savingAvailability"
+              :disabled="!availabilityForm.date || !availabilityForm.startTime"
+              @click="saveAvailabilitySlot"
+              class="pf-btn-secondary"
+            >
+              Abrir bloque
+            </v-btn>
+          </v-card-actions>
+        </v-card>
+      </v-dialog>
+
       <v-dialog v-model="completeDialog" class="bg-transparent" max-width="640">
         <v-card class="pa-4 card-backgoundcustom" elevation="2" variant="text">
           <v-card-title class="text-h6 font-weight-bold px-0 pt-0">Cerrar sesión</v-card-title>
@@ -422,6 +451,7 @@ const editingAppointment = ref(null);
 const availabilitySlots = ref([]);
 const loadingAvailability = ref(false);
 const savingAvailability = ref(false);
+const availabilityDialog = ref(false);
 const availabilityActionId = ref("");
 const appointmentAction = ref({ id: "", type: "" });
 const availabilityForm = ref({
@@ -608,6 +638,7 @@ async function saveAvailabilitySlot() {
     });
     availabilityForm.value.startTime = "";
     availabilityForm.value.location = "";
+    availabilityDialog.value = false;
     await loadTherapistSchedule();
     window.dispatchEvent(
       new CustomEvent("ui-success", {

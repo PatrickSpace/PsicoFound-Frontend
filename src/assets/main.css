@@ -108,7 +108,7 @@ h6 {
 }
 
 .v-theme--light {
-  --pf-app-gradient: linear-gradient(180deg, #f8fbfb 0%, #f5fafa 100%);
+  --pf-app-gradient: linear-gradient(180deg, #f2f8f7 0%, #eef7f6 100%);
   --pf-auth-gradient: linear-gradient(145deg, #eff9f7 0%, #f8fbfb 58%, #ffffff 100%);
   --pf-overlay-gradient:
     linear-gradient(180deg, rgba(26, 58, 56, 0.28), rgba(26, 58, 56, 0.42));
@@ -457,7 +457,14 @@ h6 {
 }
 
 .v-empty-state {
+  background: transparent !important;
+  background-color: transparent !important;
   color: rgba(var(--v-theme-text-primary), var(--pf-text-primary-alpha));
+}
+
+.v-empty-state :is(.v-empty-state__content, .v-empty-state__media) {
+  background: transparent !important;
+  background-color: transparent !important;
 }
 
 .v-empty-state .v-empty-state__headline {
@@ -483,9 +490,18 @@ h6 {
 }
 
 .appointment-day {
+  align-items: center;
+  background: var(--color-primary);
+  border: 1px solid color-mix(in srgb, var(--color-primary) 18%, #ffffff);
+  border-radius: 8px;
+  color: #ffffff;
+  display: inline-flex;
   font-size: 3rem;
+  justify-content: center;
   line-height: 1;
   letter-spacing: 0;
+  min-height: 76px;
+  min-width: 76px;
 }
 
 .auth-page {

@@ -9,9 +9,14 @@
   --pf-card-accent: var(--color-primary, #45a99a);
   --pf-card-accent-soft: rgba(69, 169, 154, 0.12);
   --pf-card-radius: 28px;
-  --pf-card-shadow: 0 10px 28px rgba(26, 58, 56, 0.08);
-  --pf-card-shadow-hover: 0 18px 44px rgba(26, 58, 56, 0.13);
+  --pf-card-shadow: 0 13px 34px rgba(26, 58, 56, 0.1);
+  --pf-card-shadow-hover: var(--pf-card-shadow);
   --pf-card-top-strip: 7px;
+  --pf-subcard-bg: #ffffff;
+  --pf-subcard-border: rgba(69, 169, 154, 0.12);
+  --pf-subcard-shadow: 0 3px 8px rgba(26, 58, 56, 0.055);
+  --pf-subcard-shadow-hover: var(--pf-subcard-shadow);
+  --pf-subcard-radius: 16px;
 }
 
 .v-theme--dark {
@@ -23,8 +28,12 @@
   --pf-card-muted: #c8ede8;
   --pf-card-accent: var(--color-primary, #72cbbf);
   --pf-card-accent-soft: rgba(114, 203, 191, 0.16);
-  --pf-card-shadow: 0 14px 34px rgba(0, 0, 0, 0.22);
-  --pf-card-shadow-hover: 0 20px 48px rgba(0, 0, 0, 0.28);
+  --pf-card-shadow: 0 17px 40px rgba(0, 0, 0, 0.25);
+  --pf-card-shadow-hover: var(--pf-card-shadow);
+  --pf-subcard-bg: rgba(255, 255, 255, 0.045);
+  --pf-subcard-border: rgba(160, 224, 216, 0.14);
+  --pf-subcard-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
+  --pf-subcard-shadow-hover: var(--pf-subcard-shadow);
 }
 
 [data-user-role="psychologist"] {
@@ -35,6 +44,21 @@
 .pf-card--brand,
 .card-backgoundcustom {
   --pf-card-accent: var(--color-primary, #45a99a);
+}
+
+.v-theme--light .card-backgoundcustom,
+.v-theme--light .v-card.pf-card {
+  --pf-card-bg: #ffffff;
+  --pf-subcard-bg: #ffffff;
+}
+
+.v-theme--light .v-card.card-backgoundcustom,
+.v-theme--light .v-card.pf-card,
+.v-theme--light .v-data-table.card-backgoundcustom,
+.v-theme--light .v-table.card-backgoundcustom {
+  --v-card-background: #ffffff;
+  background: #ffffff !important;
+  background-color: #ffffff !important;
 }
 
 .pf-card--patient {
@@ -102,14 +126,7 @@
 .v-card.card-backgoundcustom::before,
 .v-card.pf-card::before,
 .v-overlay__content > .v-card::before {
-  background: var(--pf-card-accent);
-  block-size: var(--pf-card-top-strip);
-  border-radius: var(--pf-card-radius) var(--pf-card-radius) 0 0;
-  content: "";
-  inset: 0 0 auto;
-  pointer-events: none;
-  position: absolute;
-  z-index: 1;
+  content: none;
 }
 
 .v-card.card-backgoundcustom > *,
@@ -121,8 +138,97 @@
 
 .v-card.card-backgoundcustom:hover,
 .v-card.pf-card:hover {
-  border-color: var(--pf-card-border-strong) !important;
-  box-shadow: var(--pf-card-shadow-hover) !important;
+  border-color: var(--pf-card-border) !important;
+  box-shadow: var(--pf-card-shadow) !important;
+}
+
+.v-card.card-backgoundcustom .v-card.card-backgoundcustom,
+.v-card.pf-card .v-card.card-backgoundcustom,
+.v-card.card-backgoundcustom .v-card.pf-card,
+.v-card.pf-card .v-card.pf-card,
+.v-card.card-backgoundcustom:is(
+  .progress-stat-card,
+  .schedule-stat-card,
+  .tool-stat-card,
+  .patients-stat-card,
+  .goal-card,
+  .history-event-card,
+  .exercise-card,
+  .therapist-card
+),
+.v-card.pf-card:is(
+  .progress-stat-card,
+  .schedule-stat-card,
+  .tool-stat-card,
+  .patients-stat-card,
+  .goal-card,
+  .history-event-card,
+  .exercise-card,
+  .therapist-card
+),
+.pf-subcard {
+  background: var(--pf-subcard-bg) !important;
+  border-color: var(--pf-subcard-border) !important;
+  border-radius: var(--pf-subcard-radius) !important;
+  box-shadow: var(--pf-subcard-shadow) !important;
+}
+
+.v-card.card-backgoundcustom .v-card.card-backgoundcustom::before,
+.v-card.pf-card .v-card.card-backgoundcustom::before,
+.v-card.card-backgoundcustom .v-card.pf-card::before,
+.v-card.pf-card .v-card.pf-card::before,
+.v-card.card-backgoundcustom:is(
+  .progress-stat-card,
+  .schedule-stat-card,
+  .tool-stat-card,
+  .patients-stat-card,
+  .goal-card,
+  .history-event-card,
+  .exercise-card,
+  .therapist-card
+)::before,
+.v-card.pf-card:is(
+  .progress-stat-card,
+  .schedule-stat-card,
+  .tool-stat-card,
+  .patients-stat-card,
+  .goal-card,
+  .history-event-card,
+  .exercise-card,
+  .therapist-card
+)::before,
+.pf-subcard::before {
+  content: none !important;
+}
+
+.v-card.card-backgoundcustom .v-card.card-backgoundcustom:hover,
+.v-card.pf-card .v-card.card-backgoundcustom:hover,
+.v-card.card-backgoundcustom .v-card.pf-card:hover,
+.v-card.pf-card .v-card.pf-card:hover,
+.v-card.card-backgoundcustom:is(
+  .progress-stat-card,
+  .schedule-stat-card,
+  .tool-stat-card,
+  .patients-stat-card,
+  .goal-card,
+  .history-event-card,
+  .exercise-card,
+  .therapist-card
+):hover,
+.v-card.pf-card:is(
+  .progress-stat-card,
+  .schedule-stat-card,
+  .tool-stat-card,
+  .patients-stat-card,
+  .goal-card,
+  .history-event-card,
+  .exercise-card,
+  .therapist-card
+):hover,
+.pf-subcard:hover {
+  border-color: var(--pf-subcard-border) !important;
+  box-shadow: var(--pf-subcard-shadow) !important;
+  transform: none !important;
 }
 
 .card-backgoundcustom .v-card-title,

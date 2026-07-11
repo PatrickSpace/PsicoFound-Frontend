@@ -22,6 +22,7 @@ const palette = {
   psychologist700: "#4D44A0",
   psychologist800: "#383188",
   neutral50: "#F5FAFA",
+  neutral75: "#EEF7F6",
   neutral100: "#E8F4F2",
   neutral300: "#A0C5C0",
   neutral400: "#7BADA8",
@@ -39,7 +40,7 @@ export const designTokens = {
     background: {
       primaryDark: palette.teal900,
       secondaryDark: "#0E2422",
-      primaryLight: palette.neutral50,
+      primaryLight: palette.neutral75,
       secondaryLight: palette.teal50,
       overlayDark: palette.teal800,
       overlayLight: palette.teal100,
