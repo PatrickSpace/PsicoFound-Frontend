@@ -17,6 +17,7 @@
       v-if="overflowItems.length"
       location="top end"
       offset="10"
+      :scrim="false"
     >
       <template #activator="{ props }">
         <v-btn v-bind="props" value="more">
