@@ -20,7 +20,7 @@
       />
       <v-btn
         block
-        class="my-5 bg-transparent"
+        class="my-5 bg-transparent pf-btn-secondary"
         elevation="4"
         variant="tonal"
         size="large"
@@ -39,7 +39,7 @@
 
   <v-btn
     block
-    class="my-5 bg-google text-left"
+    class="my-5 bg-google text-left pf-btn-google"
     elevation="4"
     variant="tonal"
     size="large"

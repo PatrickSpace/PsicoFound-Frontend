@@ -14,7 +14,7 @@
           variant="tonal"
           prepend-icon="mdi-refresh"
           :loading="loading"
-          class="align-self-start align-self-md-center"
+          class="align-self-start align-self-md-center pf-btn-secondary"
           @click="loadTools"
         >
           Actualizar
@@ -136,7 +136,8 @@
                     variant="tonal"
                     prepend-icon="mdi-check"
                     @click="openCompleteDialog(exercise)"
-                  >
+
+        class="pf-btn-secondary">
                     Completar
                   </v-btn>
                 </v-card-actions>
@@ -225,7 +226,8 @@
             :loading="savingAssignment"
             :disabled="!canAssignExercise"
             @click="assignExercise"
-          >
+
+        class="pf-btn-secondary">
             Asignar
           </v-btn>
         </v-card-actions>
@@ -248,7 +250,8 @@
           </v-card-text>
           <v-card-actions>
             <v-spacer />
-            <v-btn variant="text" @click="completeDialog = false">
+            <v-btn variant="text" @click="completeDialog = false"
+        class="pf-btn-ghost">
               Cancelar
             </v-btn>
             <v-btn
@@ -256,7 +259,8 @@
               variant="tonal"
               :loading="savingCompletion"
               @click="completeSelectedExercise"
-            >
+
+        class="pf-btn-secondary">
               Guardar
             </v-btn>
           </v-card-actions>

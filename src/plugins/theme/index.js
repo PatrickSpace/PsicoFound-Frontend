@@ -37,10 +37,6 @@ const vuetify = createVuetify({
     sets: { mdi },
   },
   defaults: {
-    VBtn: {
-      rounded: "lg",
-      elevation: 0,
-    },
     VCard: {
       rounded: "lg",
       elevation: 0,

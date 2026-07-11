@@ -1,0 +1,276 @@
+:root,
+[data-theme="light"] {
+  --pf-btn-brand: #45a99a;
+  --pf-btn-brand-hover: #35897c;
+  --pf-btn-brand-text: #ffffff;
+  --pf-btn-secondary-bg: #eff9f7;
+  --pf-btn-secondary-border: #72cbbf;
+  --pf-btn-secondary-hover: #dff2ef;
+  --pf-btn-secondary-text: #2a6c63;
+  --pf-btn-patient: #4caf88;
+  --pf-btn-patient-hover: #3a9070;
+  --pf-btn-psychologist: #7b6fd0;
+  --pf-btn-psychologist-hover: #6358b8;
+  --pf-btn-hope: #f4c84b;
+  --pf-btn-hope-hover: #deb036;
+  --pf-btn-hope-text: #574103;
+  --pf-btn-destructive: #e05454;
+  --pf-btn-destructive-hover: #c94040;
+  --pf-btn-disabled-bg: #eef6f4;
+  --pf-btn-disabled-text: #a0c5c0;
+  --pf-btn-radius: 14px;
+  --pf-btn-shadow: 0 8px 18px rgba(26, 58, 56, 0.1);
+  --pf-btn-shadow-hover: 0 12px 26px rgba(26, 58, 56, 0.16);
+}
+
+.v-theme--dark {
+  --pf-btn-secondary-bg: rgba(160, 224, 216, 0.12);
+  --pf-btn-secondary-border: rgba(160, 224, 216, 0.46);
+  --pf-btn-secondary-hover: rgba(160, 224, 216, 0.2);
+  --pf-btn-secondary-text: #c8ede8;
+  --pf-btn-disabled-bg: rgba(160, 224, 216, 0.1);
+  --pf-btn-disabled-text: rgba(200, 237, 232, 0.52);
+  --pf-btn-shadow: 0 10px 22px rgba(0, 0, 0, 0.2);
+  --pf-btn-shadow-hover: 0 14px 30px rgba(0, 0, 0, 0.28);
+}
+
+[data-user-role="psychologist"] {
+  --pf-btn-brand: #7b6fd0;
+  --pf-btn-brand-hover: #6358b8;
+  --pf-btn-secondary-bg: #f0eeff;
+  --pf-btn-secondary-border: #aaa2ed;
+  --pf-btn-secondary-hover: #e5e1ff;
+  --pf-btn-secondary-text: #4d44a0;
+}
+
+.pf-btn-primary,
+.pf-btn-secondary,
+.pf-btn-ghost,
+.pf-btn-patient,
+.pf-btn-psychologist,
+.pf-btn-hope,
+.pf-btn-destructive,
+.pf-btn-google,
+.pf-btn-icon {
+  font-family: "Poppins", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif !important;
+  font-weight: 800 !important;
+  letter-spacing: 0 !important;
+  text-transform: none !important;
+}
+
+.pf-btn-primary,
+.pf-btn-secondary,
+.pf-btn-patient,
+.pf-btn-psychologist,
+.pf-btn-hope,
+.pf-btn-destructive,
+.pf-btn-google {
+  border-radius: var(--pf-btn-radius) !important;
+  min-height: 42px;
+  padding-inline: 22px !important;
+}
+
+.pf-btn-primary :is(.v-btn__content, .v-btn__prepend, .v-btn__append),
+.pf-btn-secondary :is(.v-btn__content, .v-btn__prepend, .v-btn__append),
+.pf-btn-ghost :is(.v-btn__content, .v-btn__prepend, .v-btn__append),
+.pf-btn-patient :is(.v-btn__content, .v-btn__prepend, .v-btn__append),
+.pf-btn-psychologist :is(.v-btn__content, .v-btn__prepend, .v-btn__append),
+.pf-btn-hope :is(.v-btn__content, .v-btn__prepend, .v-btn__append),
+.pf-btn-destructive :is(.v-btn__content, .v-btn__prepend, .v-btn__append),
+.pf-btn-google :is(.v-btn__content, .v-btn__prepend, .v-btn__append),
+.pf-btn-icon :is(.v-btn__content, .v-btn__prepend, .v-btn__append) {
+  font-weight: inherit;
+}
+
+.pf-btn-primary .v-icon,
+.pf-btn-secondary .v-icon,
+.pf-btn-ghost .v-icon,
+.pf-btn-patient .v-icon,
+.pf-btn-psychologist .v-icon,
+.pf-btn-hope .v-icon,
+.pf-btn-destructive .v-icon,
+.pf-btn-google .v-icon,
+.pf-btn-icon .v-icon {
+  color: currentColor !important;
+  opacity: 1;
+}
+
+.pf-btn-primary,
+.pf-btn-primary.v-btn {
+  background: var(--pf-btn-brand) !important;
+  border: 1px solid transparent !important;
+  box-shadow: var(--pf-btn-shadow) !important;
+  color: var(--pf-btn-brand-text) !important;
+}
+
+.pf-btn-primary:hover,
+.pf-btn-primary:focus-visible {
+  background: var(--pf-btn-brand-hover) !important;
+  box-shadow: var(--pf-btn-shadow-hover) !important;
+  color: var(--pf-btn-brand-text) !important;
+}
+
+.pf-btn-secondary,
+.pf-btn-secondary.v-btn {
+  background: var(--pf-btn-secondary-bg) !important;
+  border: 1.5px solid var(--pf-btn-secondary-border) !important;
+  box-shadow: none !important;
+  color: var(--pf-btn-secondary-text) !important;
+}
+
+.pf-btn-secondary:hover,
+.pf-btn-secondary:focus-visible {
+  background: var(--pf-btn-secondary-hover) !important;
+  border-color: color-mix(in srgb, var(--pf-btn-secondary-border) 78%, var(--pf-btn-secondary-text)) !important;
+  color: var(--pf-btn-secondary-text) !important;
+}
+
+.pf-btn-ghost,
+.pf-btn-ghost.v-btn {
+  background: transparent !important;
+  border: 1px solid transparent !important;
+  box-shadow: none !important;
+  color: var(--pf-btn-secondary-text) !important;
+}
+
+.pf-btn-ghost:hover,
+.pf-btn-ghost:focus-visible {
+  background: var(--pf-btn-secondary-bg) !important;
+  color: var(--pf-btn-secondary-text) !important;
+}
+
+.pf-btn-patient,
+.pf-btn-patient.v-btn {
+  background: var(--pf-btn-patient) !important;
+  border: 1px solid transparent !important;
+  box-shadow: var(--pf-btn-shadow) !important;
+  color: #ffffff !important;
+}
+
+.pf-btn-patient:hover,
+.pf-btn-patient:focus-visible {
+  background: var(--pf-btn-patient-hover) !important;
+  box-shadow: var(--pf-btn-shadow-hover) !important;
+}
+
+.pf-btn-psychologist,
+.pf-btn-psychologist.v-btn {
+  background: var(--pf-btn-psychologist) !important;
+  border: 1px solid transparent !important;
+  box-shadow: var(--pf-btn-shadow) !important;
+  color: #ffffff !important;
+}
+
+.pf-btn-psychologist:hover,
+.pf-btn-psychologist:focus-visible {
+  background: var(--pf-btn-psychologist-hover) !important;
+  box-shadow: var(--pf-btn-shadow-hover) !important;
+}
+
+.pf-btn-hope,
+.pf-btn-hope.v-btn {
+  background: var(--pf-btn-hope) !important;
+  border: 1px solid transparent !important;
+  box-shadow: 0 8px 18px rgba(87, 65, 3, 0.12) !important;
+  color: var(--pf-btn-hope-text) !important;
+}
+
+.pf-btn-hope:hover,
+.pf-btn-hope:focus-visible {
+  background: var(--pf-btn-hope-hover) !important;
+  color: var(--pf-btn-hope-text) !important;
+}
+
+.pf-btn-destructive,
+.pf-btn-destructive.v-btn {
+  background: var(--pf-btn-destructive) !important;
+  border: 1px solid transparent !important;
+  box-shadow: 0 8px 18px rgba(224, 84, 84, 0.16) !important;
+  color: #ffffff !important;
+}
+
+.pf-btn-destructive:hover,
+.pf-btn-destructive:focus-visible {
+  background: var(--pf-btn-destructive-hover) !important;
+  color: #ffffff !important;
+}
+
+.pf-btn-google,
+.pf-btn-google.v-btn {
+  background: #d82518 !important;
+  border: 1px solid transparent !important;
+  box-shadow: 0 8px 18px rgba(216, 37, 24, 0.16) !important;
+  color: #ffffff !important;
+}
+
+.pf-btn-google:hover,
+.pf-btn-google:focus-visible {
+  background: #b82016 !important;
+  color: #ffffff !important;
+}
+
+.pf-btn-icon,
+.pf-btn-icon.v-btn {
+  background: transparent !important;
+  border: 1px solid transparent !important;
+  border-radius: 10px !important;
+  box-shadow: none !important;
+  color: rgb(var(--v-theme-text-primary)) !important;
+}
+
+.pf-btn-icon:hover,
+.pf-btn-icon:focus-visible {
+  background: var(--pf-btn-secondary-bg) !important;
+  color: var(--pf-btn-secondary-text) !important;
+}
+
+.pf-btn-snackbar,
+.pf-btn-snackbar.v-btn {
+  background: transparent !important;
+  border-color: transparent !important;
+  box-shadow: none !important;
+  color: #ffffff !important;
+}
+
+.pf-btn-snackbar:hover,
+.pf-btn-snackbar:focus-visible {
+  background: rgba(255, 255, 255, 0.16) !important;
+  color: #ffffff !important;
+}
+
+.pf-btn-primary :is(.v-btn__overlay, .v-btn__underlay),
+.pf-btn-secondary :is(.v-btn__overlay, .v-btn__underlay),
+.pf-btn-ghost :is(.v-btn__overlay, .v-btn__underlay),
+.pf-btn-patient :is(.v-btn__overlay, .v-btn__underlay),
+.pf-btn-psychologist :is(.v-btn__overlay, .v-btn__underlay),
+.pf-btn-hope :is(.v-btn__overlay, .v-btn__underlay),
+.pf-btn-destructive :is(.v-btn__overlay, .v-btn__underlay),
+.pf-btn-google :is(.v-btn__overlay, .v-btn__underlay),
+.pf-btn-icon :is(.v-btn__overlay, .v-btn__underlay),
+.pf-btn-snackbar :is(.v-btn__overlay, .v-btn__underlay) {
+  background: transparent !important;
+  opacity: 0 !important;
+}
+
+.pf-btn-primary.v-btn--disabled,
+.pf-btn-primary[disabled],
+.pf-btn-secondary.v-btn--disabled,
+.pf-btn-secondary[disabled],
+.pf-btn-ghost.v-btn--disabled,
+.pf-btn-ghost[disabled],
+.pf-btn-patient.v-btn--disabled,
+.pf-btn-patient[disabled],
+.pf-btn-psychologist.v-btn--disabled,
+.pf-btn-psychologist[disabled],
+.pf-btn-hope.v-btn--disabled,
+.pf-btn-hope[disabled],
+.pf-btn-destructive.v-btn--disabled,
+.pf-btn-destructive[disabled],
+.pf-btn-google.v-btn--disabled,
+.pf-btn-google[disabled] {
+  background: var(--pf-btn-disabled-bg) !important;
+  border-color: transparent !important;
+  box-shadow: none !important;
+  color: var(--pf-btn-disabled-text) !important;
+  opacity: 1 !important;
+}

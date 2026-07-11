@@ -63,7 +63,8 @@
                 prepend-icon="mdi-calendar-plus"
                 :disabled="normalizedTherapyStatus !== 'activo'"
                 @click="dialog = true"
-              >
+
+        class="pf-btn-secondary">
                 Agendar cita
               </v-btn>
               <div class="text-caption text-medium-emphasis mt-3">
@@ -72,7 +73,7 @@
               <v-btn
                 v-if="canChangeTherapyStatus"
                 block
-                class="mt-4"
+                class="mt-4 pf-btn-hope"
                 color="warning"
                 variant="tonal"
                 prepend-icon="mdi-pause-circle"
@@ -85,7 +86,7 @@
               <v-btn
                 v-if="canChangeTherapyStatus"
                 block
-                class="mt-3"
+                class="mt-3 pf-btn-patient"
                 color="success"
                 variant="tonal"
                 prepend-icon="mdi-play-circle"
@@ -98,7 +99,7 @@
               <v-btn
                 v-if="canChangeTherapyStatus"
                 block
-                class="mt-3"
+                class="mt-3 pf-btn-destructive"
                 color="error"
                 variant="tonal"
                 prepend-icon="mdi-cancel"
@@ -159,7 +160,8 @@
                 color="secondary"
                 variant="tonal"
                 prepend-icon="mdi-video-outline"
-              >
+
+        class="pf-btn-secondary">
                 Abrir
               </v-btn>
               <v-chip v-else size="small" variant="tonal" color="secondary">

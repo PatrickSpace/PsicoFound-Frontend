@@ -35,6 +35,7 @@
                 variant="text"
                 aria-label="Editar perfil de usuario"
                 @click="startProfileEdit"
+                class="pf-btn-icon"
               />
             </v-card-title>
             <v-card-text>
@@ -102,7 +103,8 @@
                     variant="text"
                     :disabled="savingProfile"
                     @click="cancelProfileEdit"
-                  >
+
+        class="pf-btn-ghost">
                     Cancelar
                   </v-btn>
                   <v-btn
@@ -112,7 +114,8 @@
                     :loading="savingProfile"
                     :disabled="!canSaveProfile"
                     @click="saveProfile"
-                  >
+
+        class="pf-btn-secondary">
                     Guardar cambios
                   </v-btn>
                 </div>
@@ -140,7 +143,7 @@
               <v-btn-toggle
                 v-else
                 :model-value="appContext.activeMode"
-                class="mt-1 flex-wrap"
+                class="mt-1 flex-wrap pf-btn-secondary"
                 color="secondary"
                 mandatory
                 variant="tonal"
@@ -150,7 +153,8 @@
                   v-for="mode in appContext.availableModes"
                   :key="mode.value"
                   :value="mode.value"
-                >
+
+        class="pf-btn-primary">
                   <v-icon start>{{ mode.icon }}</v-icon>
                   {{ mode.label }}
                 </v-btn>
@@ -193,7 +197,8 @@
                   :loading="loadingPsychologistRequest"
                   :disabled="requestBlocksNewSubmission"
                   @click="showPsychologistRequest"
-                >
+
+        class="pf-btn-secondary">
                   Registrarse como psicólogo
                 </v-btn>
               </template>
@@ -219,7 +224,8 @@
                 :loading="loggingOut"
                 :disabled="loggingOut"
                 @click="logout"
-              >
+
+        class="pf-btn-destructive">
                 Cerrar sesión
               </v-btn>
             </v-card-text>
@@ -334,7 +340,8 @@
               variant="text"
               :disabled="savingPsychologistRequest"
               @click="psychologistRequestDialog = false"
-            >
+
+        class="pf-btn-ghost">
               Cancelar
             </v-btn>
             <v-btn
@@ -344,7 +351,8 @@
               :loading="savingPsychologistRequest"
               :disabled="!canSubmitPsychologistRequest"
               @click="submitPsychologistRequest"
-            >
+
+        class="pf-btn-secondary">
               Enviar solicitud
             </v-btn>
           </v-card-actions>

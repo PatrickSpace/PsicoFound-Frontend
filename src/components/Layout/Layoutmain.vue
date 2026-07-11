@@ -61,8 +61,10 @@ const appContext = useAppContextStore();
 }
 
 .layout-container {
-  width: min(100%, 1120px);
+  margin-inline: auto;
+  max-width: 1180px !important;
   padding-inline: 16px;
+  width: 100%;
 }
 
 @media (max-width: 599px) {
@@ -86,6 +88,10 @@ const appContext = useAppContextStore();
 }
 
 @media (min-width: 1280px) {
+  .context-progress {
+    left: 320px;
+  }
+
   .layout-main-content {
     padding-bottom: 24px;
   }

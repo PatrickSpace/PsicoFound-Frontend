@@ -40,7 +40,7 @@
             :items="['Rojo', 'Azul', 'Morado', 'Verde', 'Amarillo']"
             variant="underlined"
           ></v-combobox>
-          <!-- <v-btn class="mt-2" color="teal" block>Buscar</v-btn> -->
+          <!-- <v-btn class="mt-2 pf-btn-primary" color="teal" block>Buscar</v-btn> -->
         </v-form>
       </v-col>
       <v-col cols="12" md="6">

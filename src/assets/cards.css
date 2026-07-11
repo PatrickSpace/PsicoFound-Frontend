@@ -1,0 +1,203 @@
+:root,
+[data-theme="light"] {
+  --pf-card-bg: #ffffff;
+  --pf-card-bg-soft: #f8fcfb;
+  --pf-card-border: rgba(69, 169, 154, 0.16);
+  --pf-card-border-strong: rgba(69, 169, 154, 0.26);
+  --pf-card-text: #1a3a38;
+  --pf-card-muted: #5a8480;
+  --pf-card-accent: var(--color-primary, #45a99a);
+  --pf-card-accent-soft: rgba(69, 169, 154, 0.12);
+  --pf-card-radius: 28px;
+  --pf-card-shadow: 0 10px 28px rgba(26, 58, 56, 0.08);
+  --pf-card-shadow-hover: 0 18px 44px rgba(26, 58, 56, 0.13);
+  --pf-card-top-strip: 7px;
+}
+
+.v-theme--dark {
+  --pf-card-bg: rgba(26, 58, 56, 0.92);
+  --pf-card-bg-soft: rgba(31, 80, 74, 0.58);
+  --pf-card-border: rgba(160, 224, 216, 0.18);
+  --pf-card-border-strong: rgba(160, 224, 216, 0.32);
+  --pf-card-text: #ffffff;
+  --pf-card-muted: #c8ede8;
+  --pf-card-accent: var(--color-primary, #72cbbf);
+  --pf-card-accent-soft: rgba(114, 203, 191, 0.16);
+  --pf-card-shadow: 0 14px 34px rgba(0, 0, 0, 0.22);
+  --pf-card-shadow-hover: 0 20px 48px rgba(0, 0, 0, 0.28);
+}
+
+[data-user-role="psychologist"] {
+  --pf-card-accent: var(--lurems-psychologist-primary, #7b6fd0);
+  --pf-card-accent-soft: rgba(123, 111, 208, 0.14);
+}
+
+.pf-card--brand,
+.card-backgoundcustom {
+  --pf-card-accent: var(--color-primary, #45a99a);
+}
+
+.pf-card--patient {
+  --pf-card-accent: var(--lurems-patient-primary, #4caf88);
+}
+
+.pf-card--psychologist {
+  --pf-card-accent: var(--lurems-psychologist-primary, #7b6fd0);
+  --pf-card-accent-soft: rgba(123, 111, 208, 0.14);
+}
+
+.pf-card--success {
+  --pf-card-accent: var(--lurems-patient-dark, #2d725a);
+}
+
+.pf-card--warning {
+  --pf-card-accent: var(--lurems-hope-primary, #a37c08);
+}
+
+.pf-card--disabled,
+.card-backgoundcustom.pf-card--disabled {
+  --pf-card-bg: #f6f9f8;
+  --pf-card-bg-soft: #e8f0ee;
+  --pf-card-border: rgba(90, 132, 128, 0.18);
+  --pf-card-border-strong: rgba(90, 132, 128, 0.24);
+  --pf-card-text: #45635f;
+  --pf-card-muted: #6f8c88;
+  --pf-card-accent: rgba(123, 173, 168, 0.54);
+  --pf-card-accent-soft: rgba(123, 173, 168, 0.12);
+  --pf-card-shadow: 0 6px 18px rgba(26, 58, 56, 0.06);
+  --pf-card-shadow-hover: 0 6px 18px rgba(26, 58, 56, 0.06);
+  opacity: 0.58;
+}
+
+.v-theme--dark .pf-card--disabled,
+.v-theme--dark .card-backgoundcustom.pf-card--disabled {
+  --pf-card-bg: rgba(66, 100, 96, 0.34);
+  --pf-card-bg-soft: rgba(90, 132, 128, 0.2);
+  --pf-card-border: rgba(160, 197, 192, 0.16);
+  --pf-card-border-strong: rgba(160, 197, 192, 0.22);
+  --pf-card-text: #c8ede8;
+  --pf-card-muted: #a0c5c0;
+  --pf-card-accent: rgba(123, 173, 168, 0.58);
+  --pf-card-accent-soft: rgba(160, 197, 192, 0.14);
+  opacity: 0.62;
+}
+
+.card-backgoundcustom,
+.v-card:not(.v-card--variant-text):not(.v-card--variant-plain):not(.bg-transparent),
+.v-overlay__content > .v-card {
+  background: var(--pf-card-bg) !important;
+  border: 1px solid var(--pf-card-border) !important;
+  border-radius: var(--pf-card-radius) !important;
+  box-shadow: var(--pf-card-shadow) !important;
+  color: var(--pf-card-text) !important;
+}
+
+.v-card.card-backgoundcustom,
+.v-card.pf-card,
+.v-overlay__content > .v-card {
+  overflow: hidden;
+  position: relative;
+}
+
+.v-card.card-backgoundcustom::before,
+.v-card.pf-card::before,
+.v-overlay__content > .v-card::before {
+  background: var(--pf-card-accent);
+  block-size: var(--pf-card-top-strip);
+  border-radius: var(--pf-card-radius) var(--pf-card-radius) 0 0;
+  content: "";
+  inset: 0 0 auto;
+  pointer-events: none;
+  position: absolute;
+  z-index: 1;
+}
+
+.v-card.card-backgoundcustom > *,
+.v-card.pf-card > *,
+.v-overlay__content > .v-card > * {
+  position: relative;
+  z-index: 2;
+}
+
+.v-card.card-backgoundcustom:hover,
+.v-card.pf-card:hover {
+  border-color: var(--pf-card-border-strong) !important;
+  box-shadow: var(--pf-card-shadow-hover) !important;
+}
+
+.card-backgoundcustom .v-card-title,
+.v-card.pf-card .v-card-title,
+.v-overlay__content > .v-card .v-card-title {
+  color: var(--pf-card-text) !important;
+  font-weight: 800;
+  letter-spacing: 0;
+}
+
+.card-backgoundcustom .v-card-subtitle,
+.card-backgoundcustom .v-card-text,
+.v-card.pf-card .v-card-subtitle,
+.v-card.pf-card .v-card-text,
+.v-overlay__content > .v-card .v-card-subtitle,
+.v-overlay__content > .v-card .v-card-text {
+  color: var(--pf-card-muted) !important;
+  opacity: 1 !important;
+}
+
+.card-backgoundcustom .text-overline,
+.v-card.pf-card .text-overline {
+  color: var(--pf-card-accent) !important;
+  font-weight: 800 !important;
+  letter-spacing: 0.16em !important;
+}
+
+.card-backgoundcustom .v-divider,
+.v-card.pf-card .v-divider,
+.v-overlay__content > .v-card .v-divider {
+  border-color: var(--pf-card-border) !important;
+  opacity: 1;
+}
+
+.card-backgoundcustom .v-chip,
+.v-card.pf-card .v-chip {
+  background: var(--pf-card-accent-soft) !important;
+  border-color: color-mix(in srgb, var(--pf-card-accent) 24%, transparent) !important;
+  color: var(--pf-card-accent) !important;
+}
+
+.pf-card--disabled .v-chip,
+.card-backgoundcustom.pf-card--disabled .v-chip {
+  background: #dce9e6 !important;
+  border-color: rgba(90, 132, 128, 0.24) !important;
+  color: #45635f !important;
+}
+
+.card-backgoundcustom .v-alert,
+.v-card.pf-card .v-alert {
+  background: var(--pf-card-bg-soft) !important;
+  border-color: var(--pf-card-border) !important;
+  color: var(--pf-card-text) !important;
+}
+
+.v-data-table.card-backgoundcustom,
+.v-table.card-backgoundcustom {
+  border-radius: 22px !important;
+  overflow: hidden;
+}
+
+.v-data-table.card-backgoundcustom:hover,
+.v-table.card-backgoundcustom:hover {
+  box-shadow: var(--pf-card-shadow) !important;
+}
+
+@media (max-width: 600px) {
+  :root,
+  [data-theme="light"] {
+    --pf-card-radius: 22px;
+    --pf-card-top-strip: 6px;
+  }
+
+  .v-data-table.card-backgoundcustom,
+  .v-table.card-backgoundcustom {
+    border-radius: 18px !important;
+  }
+}

@@ -53,7 +53,8 @@
                 variant="tonal"
                 to="/encuesta"
                 prepend-icon="mdi-chat-outline"
-              >
+
+        class="pf-btn-secondary">
                 Completar entrevista
               </v-btn>
             </template>
@@ -231,7 +232,8 @@
                     variant="tonal"
                     prepend-icon="mdi-chart-line"
                     @click="openGoalProgressDialog(goal)"
-                  >
+
+        class="pf-btn-secondary">
                     Actualizar avance
                   </v-btn>
                 </v-card-actions>
@@ -310,7 +312,8 @@
                 :loading="savingGoal"
                 :disabled="!canCreateGoal"
                 @click="saveGoal"
-              >
+
+        class="pf-btn-secondary">
                 Crear objetivo
               </v-btn>
             </v-card-actions>
@@ -475,7 +478,8 @@
                 :loading="savingCheckin"
                 :disabled="!canCreateCheckin"
                 @click="saveCheckin"
-              >
+
+        class="pf-btn-secondary">
                 Guardar registro
               </v-btn>
             </v-card-actions>
@@ -569,7 +573,8 @@
           </v-card-text>
           <v-card-actions>
             <v-spacer />
-            <v-btn variant="text" @click="goalProgressDialog = false">
+            <v-btn variant="text" @click="goalProgressDialog = false"
+        class="pf-btn-ghost">
               Cancelar
             </v-btn>
             <v-btn
@@ -577,7 +582,8 @@
               variant="tonal"
               :loading="savingGoalProgress"
               @click="saveGoalProgress"
-            >
+
+        class="pf-btn-secondary">
               Guardar
             </v-btn>
           </v-card-actions>

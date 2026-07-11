@@ -12,7 +12,7 @@
       <v-spacer></v-spacer>
 
       <!--
-      <v-btn append-icon="mdi-arrow-top-right" class="theme-contrast-text text-body-1 my-5" variant="text" size="large"
+      <v-btn append-icon="mdi-arrow-top-right" class="theme-contrast-text text-body-1 my-5 pf-btn-ghost" variant="text" size="large"
         to="psicologos">
         Buscar terapeuta por nombre
       </v-btn>

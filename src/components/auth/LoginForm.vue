@@ -22,7 +22,7 @@
         />
         <v-btn
           block
-          class="my-5"
+          class="my-5 pf-btn-primary"
           elevation="4"
           size="large"
           type="submit"
@@ -39,7 +39,7 @@
     <v-divider></v-divider>
     <v-btn
       block
-      class="my-5 text-left"
+      class="my-5 text-left pf-btn-google"
       id="google-login-button"
       elevation="4"
       size="large"

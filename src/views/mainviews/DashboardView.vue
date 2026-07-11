@@ -44,7 +44,7 @@
             <v-card-actions class="my-2">
               <v-btn
                 color="secondary"
-                class="px-3"
+                class="px-3 pf-btn-ghost"
                 rounded="sm"
                 variant="text"
                 to="/progreso"
@@ -127,7 +127,8 @@
                       variant="flat"
                       size="small"
                       prepend-icon="mdi-open-in-new"
-                    >
+
+        class="pf-btn-secondary">
                       Entrar
                     </v-btn>
                   </div>
@@ -178,7 +179,8 @@
           </v-card-subtitle>
         </v-card-item>
         <v-card-text class="pt-6">
-          <v-btn color="secondary" size="large" to="/encuesta">
+          <v-btn color="secondary" size="large" to="/encuesta"
+        class="pf-btn-secondary">
             Encontrar terapeuta
           </v-btn>
         </v-card-text>

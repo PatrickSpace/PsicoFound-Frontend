@@ -14,10 +14,10 @@
         />
       </v-app-bar-title>
       <v-spacer></v-spacer>
-      <v-btn class="theme-contrast-text" to="/login" variant="tonal">
+      <v-btn class="theme-contrast-text pf-btn-secondary" to="/login" variant="tonal">
         Iniciar sesión
       </v-btn>
-      <v-btn class="theme-contrast-text" to="/registro" variant="text">
+      <v-btn class="theme-contrast-text pf-btn-ghost" to="/registro" variant="text">
         Registrarse
       </v-btn>
     </v-app-bar>
@@ -43,7 +43,7 @@
           <v-btn
             to="encuesta"
             color="secondary"
-            class="text-subtitle-1"
+            class="text-subtitle-1 pf-btn-secondary"
             variant="tonal"
             append-icon="mdi-arrow-right"
             size="large"

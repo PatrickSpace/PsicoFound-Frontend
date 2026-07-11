@@ -14,7 +14,7 @@
           variant="tonal"
           prepend-icon="mdi-refresh"
           :loading="loading"
-          class="align-self-start align-self-md-center"
+          class="align-self-start align-self-md-center pf-btn-secondary"
           @click="loadTherapistSchedule"
         >
           Actualizar
@@ -151,7 +151,8 @@
                 :loading="savingAvailability"
                 :disabled="!availabilityForm.date || !availabilityForm.startTime"
                 @click="saveAvailabilitySlot"
-              >
+
+        class="pf-btn-secondary">
                 Abrir bloque
               </v-btn>
             </div>
@@ -175,7 +176,7 @@
                   icon="mdi-close"
                   variant="text"
                   size="x-small"
-                  class="ml-1"
+                  class="ml-1 pf-btn-icon"
                   aria-label="Cerrar bloque disponible"
                   :loading="availabilityActionId === slot.id"
                   :disabled="Boolean(availabilityActionId)"
@@ -243,7 +244,8 @@
                     color="secondary"
                     variant="tonal"
                     prepend-icon="mdi-video-outline"
-                  >
+
+        class="pf-btn-secondary">
                     Abrir
                   </v-btn>
                   <v-btn
@@ -253,7 +255,8 @@
                     :prepend-icon="item.meetingUrl ? 'mdi-link-edit' : 'mdi-link-plus'"
                     :disabled="item.estado === 'realizada'"
                     @click="openMeetingLinkDialog(item)"
-                  >
+
+        class="pf-btn-ghost">
                     {{ item.meetingUrl ? "Editar link" : "Agregar link" }}
                   </v-btn>
                 </div>
@@ -271,7 +274,8 @@
                         aria-label="Editar cita"
                         :disabled="item.estado === 'realizada'"
                         @click="openEditDialog(item)"
-                      >
+
+        class="pf-btn-icon">
                         <v-icon>mdi-pencil</v-icon>
                       </v-btn>
                     </template>
@@ -287,7 +291,8 @@
                         :loading="isAppointmentActionLoading(item, 'confirm')"
                         :disabled="isAppointmentBusy(item) || item.estado === 'confirmada' || item.estado === 'realizada'"
                         @click="handleConfirmAppointment(item)"
-                      >
+
+        class="pf-btn-patient">
                         <v-icon>mdi-check-circle</v-icon>
                       </v-btn>
                     </template>
@@ -303,7 +308,8 @@
                         :loading="isAppointmentActionLoading(item, 'complete')"
                         :disabled="isAppointmentBusy(item) || item.estado === 'realizada'"
                         @click="handleCompleteAppointment(item)"
-                      >
+
+        class="pf-btn-icon">
                         <v-icon>mdi-calendar-check</v-icon>
                       </v-btn>
                     </template>
@@ -319,7 +325,8 @@
                         :loading="isAppointmentActionLoading(item, 'reset')"
                         :disabled="isAppointmentBusy(item) || item.estado === 'pendiente'"
                         @click="handleResetAppointment(item)"
-                      >
+
+        class="pf-btn-hope">
                         <v-icon>mdi-refresh</v-icon>
                       </v-btn>
                     </template>
@@ -363,7 +370,8 @@
           </v-card-text>
           <v-card-actions>
             <v-spacer />
-            <v-btn variant="text" @click="completeDialog = false">
+            <v-btn variant="text" @click="completeDialog = false"
+        class="pf-btn-ghost">
               Cancelar
             </v-btn>
             <v-btn
@@ -372,7 +380,8 @@
               :loading="savingCompletion"
               prepend-icon="mdi-calendar-check"
               @click="saveAppointmentCompletion"
-            >
+
+        class="pf-btn-secondary">
               Marcar realizada
             </v-btn>
           </v-card-actions>

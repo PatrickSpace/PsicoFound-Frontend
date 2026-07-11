@@ -76,7 +76,8 @@
               variant="tonal"
               prepend-icon="mdi-account-plus-outline"
               v-bind="activatorProps"
-            >
+
+        class="pf-btn-secondary">
               Nuevo terapeuta
             </v-btn>
           </template>
@@ -298,7 +299,8 @@
 
             <v-card-actions class="px-0 pb-0">
               <v-spacer></v-spacer>
-              <v-btn color="secondary" variant="text" :disabled="saving" @click="close">
+              <v-btn color="secondary" variant="text" :disabled="saving" @click="close"
+        class="pf-btn-ghost">
                 Cancelar
               </v-btn>
               <v-btn
@@ -307,7 +309,8 @@
                 :loading="saving"
                 :disabled="saving"
                 @click="save"
-              >
+
+        class="pf-btn-secondary">
                 Guardar
               </v-btn>
             </v-card-actions>
@@ -321,7 +324,8 @@
             </v-card-title>
             <v-card-actions class="px-6 pb-5">
               <v-spacer></v-spacer>
-              <v-btn color="secondary" variant="text" :disabled="deleting" @click="closeDelete">
+              <v-btn color="secondary" variant="text" :disabled="deleting" @click="closeDelete"
+        class="pf-btn-destructive">
                 Cancelar
               </v-btn>
               <v-btn
@@ -330,7 +334,8 @@
                 :loading="deleting"
                 :disabled="deleting"
                 @click="deleteItemConfirm"
-              >
+
+        class="pf-btn-destructive">
                 Eliminar
               </v-btn>
               <v-spacer></v-spacer>
@@ -348,6 +353,7 @@
         size="small"
         aria-label="Editar terapeuta"
         @click="editItem(item)"
+        class="pf-btn-icon"
       />
       <v-btn
         icon="mdi-delete-outline"
@@ -356,6 +362,7 @@
         size="small"
         aria-label="Eliminar terapeuta"
         @click="deleteItem(item)"
+        class="pf-btn-destructive"
       />
     </template>
 
@@ -366,7 +373,8 @@
         text="Actualiza la tabla o registra un nuevo terapeuta."
       >
         <template #actions>
-          <v-btn color="secondary" variant="tonal" @click="initialize">
+          <v-btn color="secondary" variant="tonal" @click="initialize"
+        class="pf-btn-secondary">
             Actualizar
           </v-btn>
         </template>

@@ -18,7 +18,7 @@ import MainLogo from "@/components/Common/MainLogo.vue";
       <v-btn
         to="/registro"
         append-icon="mdi-arrow-top-right"
-        class="auth-link theme-contrast-text text-body-1"
+        class="auth-link theme-contrast-text text-body-1 pf-btn-ghost"
         variant="text"
         size="large"
       >

@@ -62,7 +62,7 @@
 
         <div class="chat-header-actions">
           <v-btn
-            class="reset-button"
+            class="reset-button pf-btn-ghost"
             variant="text"
             color="secondary"
             size="small"
@@ -75,7 +75,7 @@
           </v-btn>
           <v-btn
             v-if="canViewRecommendations"
-            class="recommendations-button"
+            class="recommendations-button pf-btn-ghost"
             variant="text"
             color="secondary"
             size="small"
@@ -165,7 +165,7 @@
           />
 
           <v-btn
-            class="send-button"
+            class="send-button pf-btn-icon"
             color="secondary"
             variant="text"
             type="submit"

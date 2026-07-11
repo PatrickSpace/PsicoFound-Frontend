@@ -43,7 +43,7 @@
             v-if="index === 2"
             variant="tonal"
             size="large"
-            class="mb-10"
+          class="mb-10 pf-btn-secondary"
             append-icon="mdi-arrow-right"
             @click.stop="openDialog(index)"
           >
@@ -59,7 +59,7 @@
     {{ therapists[currentIndex].mensaje}}
   </p>
   -->
-  
+
   <!-- Dialog separado: sólo muestra el modal cuando dialog === true -->
   <v-dialog
     v-model="dialog"
@@ -74,16 +74,16 @@
         elevation="0"
       >
         <div class="text-center d-flex align-center position-absolute">
-          <v-btn icon variant="text" @click="prevMonth"
+          <v-btn icon variant="text" class="pf-btn-icon" @click="prevMonth"
             ><v-icon>mdi-chevron-left</v-icon></v-btn
           >
           <div class="dialog-month mx-6 text-h6">{{ monthLabel }}</div>
-          <v-btn icon variant="text" @click="nextMonth"
+          <v-btn icon variant="text" class="pf-btn-icon" @click="nextMonth"
             ><v-icon>mdi-chevron-right</v-icon></v-btn
           >
         </div>
 
-        <v-btn icon variant="text" class="ml-auto" @click="dialog = false">
+        <v-btn icon variant="text" class="ml-auto pf-btn-icon" @click="dialog = false">
           <v-icon>mdi-close</v-icon>
         </v-btn>
       </v-sheet>
@@ -99,7 +99,7 @@
               :key="day"
               class="d-flex justify-center"
             >
-              <v-btn size="x-large" color="secondary" class="day-pill">
+              <v-btn size="x-large" color="secondary" class="day-pill pf-btn-secondary">
                 {{ day }}
               </v-btn>
             </v-col>
@@ -114,7 +114,7 @@
                 :key="dayIndex"
               >
                 <v-btn
-                  class="time-btn"
+                  class="time-btn pf-btn-secondary"
                   :variant="isSelectedSlot(dayIndex, time)"
                   :color="slotColor(dayIndex, time) || 'secondary'"
                   size="large"
@@ -129,6 +129,7 @@
           <!-- Acción final -->
           <div class="d-flex justify-end mt-6">
             <v-btn
+              class="pf-btn-primary"
               variant="tonal"
               color="secondary"
               :disabled="!selectedSlot"

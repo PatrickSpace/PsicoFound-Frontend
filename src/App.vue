@@ -17,7 +17,7 @@
         <span v-if="snack.extra" class="text-caption">{{ snack.extra }}</span>
       </div>
       <template #actions>
-        <v-btn variant="text" @click="snack.open = false">Cerrar</v-btn>
+        <v-btn variant="text" class="pf-btn-snackbar" @click="snack.open = false">Cerrar</v-btn>
       </template>
     </v-snackbar>
 
@@ -33,7 +33,7 @@
         <span>{{ snackOk.message }}</span>
       </div>
       <template #actions>
-        <v-btn variant="text" @click="snackOk.open = false">Cerrar</v-btn>
+        <v-btn variant="text" class="pf-btn-snackbar" @click="snackOk.open = false">Cerrar</v-btn>
       </template>
     </v-snackbar>
   </v-app>

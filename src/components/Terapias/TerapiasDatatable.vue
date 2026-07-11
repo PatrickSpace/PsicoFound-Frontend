@@ -5,7 +5,7 @@
         color="secondary"
         prepend-icon="mdi-plus"
         variant="tonal"
-        class="therapies-action"
+        class="therapies-action pf-btn-secondary"
         @click="handleNewTherapy"
       >
         Iniciar una nueva terapia
@@ -58,7 +58,8 @@
           color="secondary"
           aria-label="Ver detalle de terapia"
           @click="itemdetail(item.id)"
-        >
+
+        class="pf-btn-icon">
           <v-icon icon="mdi-list-box-outline"></v-icon>
         </v-btn>
       </div>

@@ -13,7 +13,7 @@
           color="secondary"
           variant="tonal"
           prepend-icon="mdi-calendar-plus-outline"
-          class="align-self-start"
+          class="align-self-start pf-btn-secondary"
           @click="dialog = true"
         >
           Agendar
@@ -123,7 +123,7 @@
                     color="secondary"
                     variant="tonal"
                     prepend-icon="mdi-open-in-new"
-                    class="align-self-start"
+                    class="align-self-start pf-btn-secondary"
                   >
                     Entrar a la sesión
                   </v-btn>
@@ -136,13 +136,13 @@
 
       <v-card
         class="pa-4 mb-5 card-backgoundcustom clickable-card session-card"
-        :class="{ 'clickable-card--disabled': !editableAppointment }"
+        :class="{ 'clickable-card--disabled pf-card--disabled': !editableAppointment }"
         elevation="2"
         variant="text"
         @click="openRescheduleDialog"
       >
         <v-card-title class="text-h6 font-weight-bold d-flex align-center ga-2">
-          <v-icon color="secondary">mdi-calendar-edit-outline</v-icon>
+          <v-icon :color="editableAppointment ? 'secondary' : undefined">mdi-calendar-edit-outline</v-icon>
           ¿Cambio de planes?
         </v-card-title>
         <v-card-text>
@@ -199,7 +199,7 @@
         <v-col cols="12" sm="12" md="6" class="d-flex">
           <v-card
             class="pa-4 card-backgoundcustom flex-grow-1 d-flex flex-column clickable-card session-card"
-            :class="{ 'clickable-card--disabled': !activeTherapy?.id }"
+            :class="{ 'clickable-card--disabled pf-card--disabled': !activeTherapy?.id }"
             elevation="2"
             variant="text"
             @click="openActiveTherapy"
@@ -452,7 +452,6 @@ watch(
 
 .clickable-card--disabled {
   cursor: default;
-  opacity: 0.7;
 }
 
 .clickable-card--disabled:hover {

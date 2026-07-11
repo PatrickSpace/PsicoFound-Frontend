@@ -130,14 +130,15 @@
 
 
                     <div class="d-flex flex-column ga-2">
-                      <!-- 
+                      <!--
                         <v-btn
                         block
                         variant="text"
                         color="secondary"
                         prepend-icon="mdi-account-search"
                         to="/psicologos"
-                        >
+
+        class="pf-btn-ghost">
                         Ver perfil
                       </v-btn>
                       -->
@@ -148,7 +149,8 @@
                         variant="tonal"
                         append-icon="mdi-arrow-right"
                         @click="openAppointmentDialog(therapist)"
-                      >
+
+        class="pf-btn-secondary">
                         Agendar cita
                       </v-btn>
                     </div>

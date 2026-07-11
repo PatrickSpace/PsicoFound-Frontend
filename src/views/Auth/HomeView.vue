@@ -12,7 +12,7 @@
                   <v-spacer></v-spacer>
                   <v-btn
                     to="/login"
-                    class="theme-contrast-text"
+                    class="theme-contrast-text pf-btn-secondary"
                     variant="tonal"
                     rounded="0"
                   >
@@ -20,7 +20,7 @@
                   </v-btn>
                   <v-btn
                     to="/registro"
-                    class="theme-contrast-text"
+                    class="theme-contrast-text pf-btn-ghost"
                     variant="text"
                   >
                     Registrarse
@@ -44,7 +44,7 @@
                   profesional afín a ti.
                 </p>
                 <v-btn
-                  class="theme-contrast-text mb-15"
+                  class="theme-contrast-text mb-15 pf-btn-ghost"
                   rounded="0"
                   variant="text"
                   append-icon="mdi-arrow-right"
@@ -56,7 +56,7 @@
               <v-col cols="12" class="d-flex my-5" align-self="end">
                 <v-btn
                   append-icon="mdi-arrow-top-right"
-                  class="theme-contrast-text text-body-1 d-flex"
+                  class="theme-contrast-text text-body-1 d-flex pf-btn-ghost"
                   variant="text"
                   size="large"
                 >

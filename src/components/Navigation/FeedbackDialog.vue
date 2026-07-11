@@ -44,8 +44,10 @@
 
       <v-card-actions class="px-6 pb-5 feedback-actions">
         <v-spacer></v-spacer>
-        <v-btn variant="text" :disabled="saving" @click="closeDialog">Cancelar</v-btn>
-        <v-btn color="secondary" variant="tonal" :loading="saving" @click="submitFeedback">
+        <v-btn variant="text" :disabled="saving" @click="closeDialog"
+        class="pf-btn-ghost">Cancelar</v-btn>
+        <v-btn color="secondary" variant="tonal" :loading="saving" @click="submitFeedback"
+        class="pf-btn-secondary">
           Enviar feedback
         </v-btn>
       </v-card-actions>

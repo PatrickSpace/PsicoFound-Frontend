@@ -14,7 +14,7 @@
           variant="tonal"
           prepend-icon="mdi-refresh"
           :loading="loading"
-          class="align-self-start align-self-md-center"
+          class="align-self-start align-self-md-center pf-btn-secondary"
           @click="loadPatients"
         >
           Actualizar
@@ -156,7 +156,8 @@
                 aria-label="Abrir detalle de terapia"
                 :disabled="!item.activeTherapy?.id"
                 @click="openTherapy(item)"
-              >
+
+        class="pf-btn-icon">
                 <v-icon>mdi-open-in-new</v-icon>
               </v-btn>
             </template>

@@ -13,7 +13,7 @@
           variant="tonal"
           prepend-icon="mdi-refresh"
           :loading="loadingHistory"
-          class="align-self-start"
+          class="align-self-start pf-btn-secondary"
           @click="loadHistory"
         >
           Actualizar

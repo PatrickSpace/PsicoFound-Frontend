@@ -14,7 +14,7 @@
           variant="tonal"
           prepend-icon="mdi-refresh"
           :loading="loading"
-          class="align-self-start align-self-md-center"
+          class="align-self-start align-self-md-center pf-btn-secondary"
           @click="loadRequests"
         >
           Actualizar
@@ -83,7 +83,8 @@
                   :loading="processingId === item.id && processingAction === 'approve'"
                   :disabled="item.status === 'approved' || Boolean(processingId)"
                   @click="approveRequest(item)"
-                >
+
+        class="pf-btn-patient">
                   Aprobar
                 </v-btn>
                 <v-btn
@@ -93,7 +94,8 @@
                   prepend-icon="mdi-close-circle-outline"
                   :disabled="item.status === 'approved' || Boolean(processingId)"
                   @click="openRejectDialog(item)"
-                >
+
+        class="pf-btn-hope">
                   Rechazar
                 </v-btn>
               </div>
@@ -127,7 +129,8 @@
               variant="text"
               :disabled="Boolean(processingId)"
               @click="rejectDialog = false"
-            >
+
+        class="pf-btn-ghost">
               Cancelar
             </v-btn>
             <v-btn
@@ -137,7 +140,8 @@
               :loading="processingId === selectedRequest?.id && processingAction === 'reject'"
               :disabled="!selectedRequest || Boolean(processingId)"
               @click="rejectSelectedRequest"
-            >
+
+        class="pf-btn-hope">
               Rechazar
             </v-btn>
           </v-card-actions>

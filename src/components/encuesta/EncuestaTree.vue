@@ -28,7 +28,8 @@
                 ></v-combobox>
                 <!--
                 <v-btn to="/elegirterapeuta" @click="conversarConAlguien" variant="text"
-                  >Solo quiero conversar con alguien</v-btn
+
+        class="pf-btn-ghost">Solo quiero conversar con alguien</v-btn
                 >
                 -->
               </v-container>
@@ -93,7 +94,7 @@
                 ></v-combobox>
                 <!--
                 <v-btn
-                  class="mx-auto text-center"
+                  class="mx-auto text-center pf-btn-secondary"
                   variant="tonal"
                   size="large"
                   @click="buscarTerapeuta"

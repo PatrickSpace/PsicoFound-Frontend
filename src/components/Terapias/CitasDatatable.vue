@@ -5,7 +5,7 @@
         color="secondary"
         prepend-icon="mdi-plus"
         variant="tonal"
-        class="appointments-action"
+        class="appointments-action pf-btn-secondary"
         :disabled="!activeTherapy"
         @click="openAppointmentDialog"
       >
@@ -58,7 +58,8 @@
         color="secondary"
         variant="tonal"
         prepend-icon="mdi-video-outline"
-      >
+
+        class="pf-btn-secondary">
         Abrir
       </v-btn>
       <v-chip v-else size="small" variant="tonal" color="secondary">
@@ -81,7 +82,8 @@
           aria-label="Editar cita"
           :disabled="item.estado === 'realizada'"
           @click="openEditDialog(item)"
-        >
+
+        class="pf-btn-icon">
           <v-icon>mdi-pencil</v-icon>
         </v-btn>
         <v-btn
@@ -92,7 +94,8 @@
           :loading="isActionLoading(item, 'confirm')"
           :disabled="isRowBusy(item) || item.estado === 'confirmada' || item.estado === 'realizada'"
           @click="handleConfirmAppointment(item)"
-        >
+
+        class="pf-btn-patient">
           <v-icon>mdi-check-circle</v-icon>
         </v-btn>
         <v-btn
@@ -103,7 +106,8 @@
           :loading="isActionLoading(item, 'complete')"
           :disabled="isRowBusy(item) || item.estado === 'realizada'"
           @click="handleCompleteAppointment(item)"
-        >
+
+        class="pf-btn-icon">
           <v-icon>mdi-calendar-check</v-icon>
         </v-btn>
         <v-btn
@@ -114,7 +118,8 @@
           :loading="isActionLoading(item, 'reset')"
           :disabled="isRowBusy(item) || item.estado === 'pendiente'"
           @click="handleResetAppointment(item)"
-        >
+
+        class="pf-btn-hope">
           <v-icon>mdi-refresh</v-icon>
         </v-btn>
       </div>

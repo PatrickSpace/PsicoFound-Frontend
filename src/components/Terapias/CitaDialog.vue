@@ -14,6 +14,7 @@
           color="secondary"
           aria-label="Volver"
           @click="emit('update:modelValue', false)"
+          class="pf-btn-icon"
         />
         <div class="appointment-topbar__title">
           {{ appointmentDialogTitle }}
@@ -24,6 +25,7 @@
           color="secondary"
           aria-label="Cerrar"
           @click="emit('update:modelValue', false)"
+          class="pf-btn-icon"
         />
       </div>
 
@@ -248,7 +250,8 @@
           :loading="saving"
           :disabled="!canSubmitAppointment"
           @click="submitAppointment"
-        >
+
+        class="pf-btn-secondary">
           {{ showAvailabilityPicker ? "Siguiente paso" : citaId ? "Guardar cambios" : "Registrar cita" }}
         </v-btn>
       </v-card-actions>
