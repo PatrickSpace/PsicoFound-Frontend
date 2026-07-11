@@ -65,7 +65,6 @@
     v-model="dialog"
     max-width="1100"
     persistent
-    scrim="rgba(var(--v-theme-brand-primary), 0.86)"
   >
     <v-card class="dialog-root pa-0" v-if="selectedTherapist">
       <!-- Header: month + navigation + close -->

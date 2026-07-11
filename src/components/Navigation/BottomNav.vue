@@ -180,11 +180,7 @@ const navItemCount = computed(() =>
 }
 
 .bottom-nav-menu {
-  background-color: rgba(var(--v-theme-surface-elevated), 0.98) !important;
-}
-
-:global(.v-theme--light) .bottom-nav-menu {
-  background-color: rgb(var(--v-theme-surface)) !important;
+  background-color: var(--pf-floating-surface, rgba(var(--v-theme-surface-elevated), 0.96)) !important;
 }
 
 @media (max-width: 380px) {

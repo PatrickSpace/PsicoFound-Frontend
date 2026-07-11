@@ -181,10 +181,10 @@
 }
 
 .v-menu > .v-overlay__content > .v-list,
-.v-overlay-container .v-list {
+.v-overlay-container .v-overlay__content > .v-list {
   border: 1px solid rgb(var(--v-theme-border-subtle));
   border-radius: 14px;
-  background: rgb(var(--v-theme-surface)) !important;
+  background: var(--pf-floating-surface, rgb(var(--v-theme-surface))) !important;
   box-shadow: var(--pf-shadow-md);
 }
 

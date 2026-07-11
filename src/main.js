@@ -2,6 +2,7 @@ import "./assets/main.css";
 import "./assets/forms.css";
 import "./assets/cards.css";
 import "./assets/buttons.css";
+import "./assets/overlays.css";
 
 import { createApp } from "vue";
 import App from "./App.vue";
