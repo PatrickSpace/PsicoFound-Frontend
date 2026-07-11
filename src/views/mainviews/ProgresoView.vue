@@ -22,7 +22,7 @@
       <v-alert
         v-if="profileError"
         class="mb-5"
-        color="error"
+        color="warning"
         variant="tonal"
         icon="mdi-alert-outline"
       >
@@ -123,7 +123,7 @@
           <v-alert
             v-if="goalsError"
             class="mb-4"
-            color="error"
+            color="warning"
             variant="tonal"
             icon="mdi-alert-outline"
           >
@@ -332,7 +332,7 @@
           <v-alert
             v-if="checkinsError"
             class="mb-4"
-            color="error"
+            color="warning"
             variant="tonal"
             icon="mdi-alert-outline"
           >

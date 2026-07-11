@@ -322,9 +322,35 @@ h6 {
 
 .v-alert.v-alert--variant-tonal,
 .v-theme--light .v-alert.v-alert--variant-tonal {
-  background-color: rgb(var(--v-theme-background-secondary)) !important;
-  border: 1px solid rgb(var(--v-theme-border-subtle));
-  color: rgb(var(--v-theme-text-primary)) !important;
+  align-items: center;
+  border: 1.5px solid currentColor !important;
+  border-radius: 18px !important;
+  background-color: color-mix(in srgb, currentColor 9%, white 91%) !important;
+  color: currentColor !important;
+  font-size: 1rem;
+  font-weight: 600;
+  line-height: 1.45;
+  padding: 18px 22px !important;
+  box-shadow: none !important;
+}
+
+.v-alert.v-alert--variant-tonal .v-alert__prepend {
+  align-self: center;
+  margin-inline-end: 18px;
+}
+
+.v-alert.v-alert--variant-tonal .v-icon {
+  color: currentColor !important;
+  opacity: 1;
+}
+
+.v-alert.v-alert--variant-tonal :is(.v-alert__content, .v-alert-title) {
+  color: currentColor !important;
+  opacity: 1;
+}
+
+.v-theme--dark .v-alert.v-alert--variant-tonal {
+  background-color: color-mix(in srgb, currentColor 18%, transparent) !important;
 }
 
 .v-btn--variant-tonal,
