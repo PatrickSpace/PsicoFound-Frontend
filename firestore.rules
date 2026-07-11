@@ -19,6 +19,36 @@ service cloud.firestore {
         currentUserDoc().data.rol in ["admin", "psicofound-admin"];
     }
 
+    function isPatientRole(role) {
+      return role in ["paciente", "patient"];
+    }
+
+    function validSelfUserCreate(uid) {
+      return isOwner(uid) &&
+        request.resource.data.id == uid &&
+        request.resource.data.email is string &&
+        request.resource.data.nombre is string &&
+        isPatientRole(request.resource.data.rol) &&
+        request.resource.data.keys().hasOnly([
+          "id",
+          "email",
+          "nombre",
+          "rol",
+          "createdAt",
+          "updatedAt"
+        ]);
+    }
+
+    function validSelfUserUpdate() {
+      return request.resource.data.rol == resource.data.rol &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+          "nombre",
+          "fechaNacimiento",
+          "telefono",
+          "updatedAt"
+        ]);
+    }
+
     function ownsExistingPatientDoc() {
       return signedIn() && resource.data.pacienteUid == request.auth.uid;
     }
@@ -90,10 +120,10 @@ service cloud.firestore {
 
     match /users/{uid} {
       allow read: if isOwner(uid) || isAdmin();
-      allow create: if isOwner(uid) || isAdmin();
+      allow create: if validSelfUserCreate(uid) || isAdmin();
       allow update: if isAdmin() || (
         isOwner(uid) &&
-        request.resource.data.rol == resource.data.rol
+        validSelfUserUpdate()
       );
       allow delete: if false;
     }

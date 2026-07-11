@@ -347,9 +347,9 @@ h6 {
 
 .v-alert.v-alert--variant-tonal.text-warning,
 .v-alert.v-alert--variant-tonal.v-alert--type-warning {
-  --pf-alert-bg: #fffbeb;
-  --pf-alert-border: #f9d64e;
-  --pf-alert-text: #574103;
+  --pf-alert-bg: rgb(254, 251, 236);
+  --pf-alert-border: 1px solid rgb(249, 214, 78);
+  --pf-alert-text: rgb(87, 65, 3);
 }
 
 .v-alert.v-alert--variant-tonal.text-error,

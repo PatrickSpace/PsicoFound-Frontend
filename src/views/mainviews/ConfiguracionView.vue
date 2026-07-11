@@ -1,7 +1,9 @@
 <template>
   <LayoutDefault layout>
     <v-container class="settings-view">
-      <div class="d-flex flex-column flex-md-row justify-space-between align-md-center ga-4 mb-6">
+      <div
+        class="d-flex flex-column flex-md-row justify-space-between align-md-center ga-4 mb-6"
+      >
         <div>
           <p class="text-overline text-secondary mb-1">Cuenta y preferencias</p>
           <h1 class="text-h4 font-weight-bold">Configuración</h1>
@@ -22,10 +24,18 @@
 
       <v-row align="stretch">
         <v-col cols="12" md="6" class="d-flex">
-          <v-card class="pa-4 card-backgoundcustom flex-grow-1" elevation="2" variant="text">
-            <v-card-title class="text-h6 font-weight-bold d-flex align-center justify-space-between ga-3 px-0 pt-0">
+          <v-card
+            class="pa-4 card-backgoundcustom flex-grow-1"
+            elevation="2"
+            variant="text"
+          >
+            <v-card-title
+              class="text-h6 font-weight-bold d-flex align-center justify-space-between ga-3 px-0 pt-0"
+            >
               <span class="d-flex align-center ga-2">
-                <v-icon color="secondary" size="small">mdi-account-circle-outline</v-icon>
+                <v-icon color="secondary" size="small"
+                  >mdi-account-circle-outline</v-icon
+                >
                 Perfil de usuario
               </span>
               <v-btn
@@ -103,8 +113,8 @@
                     variant="text"
                     :disabled="savingProfile"
                     @click="cancelProfileEdit"
-
-        class="pf-btn-ghost">
+                    class="pf-btn-ghost"
+                  >
                     Cancelar
                   </v-btn>
                   <v-btn
@@ -114,8 +124,8 @@
                     :loading="savingProfile"
                     :disabled="!canSaveProfile"
                     @click="saveProfile"
-
-        class="pf-btn-secondary">
+                    class="pf-btn-secondary"
+                  >
                     Guardar cambios
                   </v-btn>
                 </div>
@@ -125,9 +135,17 @@
         </v-col>
 
         <v-col cols="12" md="6" class="d-flex">
-          <v-card class="pa-4 card-backgoundcustom flex-grow-1" elevation="2" variant="text">
-            <v-card-title class="text-h6 font-weight-bold d-flex align-center ga-2 px-0 pt-0">
-              <v-icon color="secondary" size="small">mdi-swap-horizontal</v-icon>
+          <v-card
+            class="pa-4 card-backgoundcustom flex-grow-1"
+            elevation="2"
+            variant="text"
+          >
+            <v-card-title
+              class="text-h6 font-weight-bold d-flex align-center ga-2 px-0 pt-0"
+            >
+              <v-icon color="secondary" size="small"
+                >mdi-swap-horizontal</v-icon
+              >
               Vista y accesos
             </v-card-title>
             <v-card-text>
@@ -153,8 +171,8 @@
                   v-for="mode in appContext.availableModes"
                   :key="mode.value"
                   :value="mode.value"
-
-        class="pf-btn-primary">
+                  class="pf-btn-primary"
+                >
                   <v-icon start>{{ mode.icon }}</v-icon>
                   {{ mode.label }}
                 </v-btn>
@@ -164,17 +182,37 @@
         </v-col>
 
         <v-col cols="12" md="6" class="d-flex">
-          <v-card class="pa-4 card-backgoundcustom flex-grow-1" elevation="2" variant="text">
-            <v-card-title class="text-h6 font-weight-bold d-flex align-center ga-2 px-0 pt-0">
-              <v-icon color="secondary" size="small">mdi-account-tie-outline</v-icon>
+          <v-card
+            class="pa-4 card-backgoundcustom flex-grow-1"
+            elevation="2"
+            variant="text"
+          >
+            <v-card-title
+              class="text-h6 font-weight-bold d-flex align-center ga-2 px-0 pt-0"
+            >
+              <v-icon color="secondary" size="small"
+                >mdi-account-tie-outline</v-icon
+              >
               Perfil profesional
             </v-card-title>
             <v-card-text>
               <v-divider class="mb-4"></v-divider>
               <template v-if="appContext.hasPsychologistAccess">
                 <v-list class="bg-transparent" density="compact">
-                  <v-list-item title="Nombre profesional" :subtitle="appContext.therapistProfile?.nombre || 'No definido'" />
-                  <v-list-item title="Estado" :subtitle="appContext.therapistProfile?.activo === false ? 'Inactivo' : 'Activo'" />
+                  <v-list-item
+                    title="Nombre profesional"
+                    :subtitle="
+                      appContext.therapistProfile?.nombre || 'No definido'
+                    "
+                  />
+                  <v-list-item
+                    title="Estado"
+                    :subtitle="
+                      appContext.therapistProfile?.activo === false
+                        ? 'Inactivo'
+                        : 'Activo'
+                    "
+                  />
                 </v-list>
               </template>
               <template v-else>
@@ -188,7 +226,8 @@
                   {{ requestStatusText }}
                 </v-alert>
                 <p class="text-body-2 text-medium-emphasis mb-4">
-                  Puedes solicitar habilitar un perfil profesional para atender pacientes desde Lurems.
+                  Puedes solicitar habilitar un perfil profesional para atender
+                  pacientes desde Lurems.
                 </p>
                 <v-btn
                   color="secondary"
@@ -197,8 +236,8 @@
                   :loading="loadingPsychologistRequest"
                   :disabled="requestBlocksNewSubmission"
                   @click="showPsychologistRequest"
-
-        class="pf-btn-secondary">
+                  class="pf-btn-secondary"
+                >
                   Registrarse como psicólogo
                 </v-btn>
               </template>
@@ -207,15 +246,24 @@
         </v-col>
 
         <v-col cols="12" md="6" class="d-flex">
-          <v-card class="pa-4 card-backgoundcustom flex-grow-1" elevation="2" variant="text">
-            <v-card-title class="text-h6 font-weight-bold d-flex align-center ga-2 px-0 pt-0">
-              <v-icon color="secondary" size="small">mdi-shield-lock-outline</v-icon>
+          <v-card
+            class="pa-4 card-backgoundcustom flex-grow-1"
+            elevation="2"
+            variant="text"
+          >
+            <v-card-title
+              class="text-h6 font-weight-bold d-flex align-center ga-2 px-0 pt-0"
+            >
+              <v-icon color="secondary" size="small"
+                >mdi-shield-lock-outline</v-icon
+              >
               Seguridad
             </v-card-title>
             <v-card-text>
               <v-divider class="mb-4"></v-divider>
               <p class="text-body-2 text-medium-emphasis mb-4">
-                Mantén el control de tu sesión y privacidad. La edición avanzada de datos estará disponible en una siguiente iteración.
+                Mantén el control de tu sesión y privacidad. La edición avanzada
+                de datos estará disponible en una siguiente iteración.
               </p>
               <v-btn
                 color="error"
@@ -224,18 +272,26 @@
                 :loading="loggingOut"
                 :disabled="loggingOut"
                 @click="logout"
-
-        class="pf-btn-destructive">
+                class="pf-btn-destructive"
+              >
                 Cerrar sesión
               </v-btn>
             </v-card-text>
           </v-card>
         </v-col>
       </v-row>
-      <v-dialog v-model="psychologistRequestDialog" class="bg-transparent" max-width="760">
+      <v-dialog
+        v-model="psychologistRequestDialog"
+        max-width="760"
+        class="bg-transparent"
+      >
         <v-card class="pa-4 card-backgoundcustom" elevation="2" variant="text">
-          <v-card-title class="text-h6 font-weight-bold d-flex align-center ga-2 px-0 pt-0">
-            <v-icon color="secondary" size="small">mdi-account-tie-outline</v-icon>
+          <v-card-title
+            class="text-h6 font-weight-bold d-flex align-center ga-2 px-0 pt-0"
+          >
+            <v-icon color="secondary" size="small"
+              >mdi-account-tie-outline</v-icon
+            >
             Solicitud profesional
           </v-card-title>
           <v-card-text>
@@ -340,8 +396,8 @@
               variant="text"
               :disabled="savingPsychologistRequest"
               @click="psychologistRequestDialog = false"
-
-        class="pf-btn-ghost">
+              class="pf-btn-ghost"
+            >
               Cancelar
             </v-btn>
             <v-btn
@@ -351,8 +407,8 @@
               :loading="savingPsychologistRequest"
               :disabled="!canSubmitPsychologistRequest"
               @click="submitPsychologistRequest"
-
-        class="pf-btn-secondary">
+              class="pf-btn-secondary"
+            >
               Enviar solicitud
             </v-btn>
           </v-card-actions>
@@ -532,10 +588,7 @@ function readableProfileValue(value) {
 
 function resetProfileForm(profile = appContext.userProfile) {
   profileForm.nombre =
-    profile?.nombre ||
-    currentUser.value?.displayName ||
-    userName.value ||
-    "";
+    profile?.nombre || currentUser.value?.displayName || userName.value || "";
   profileForm.fechaNacimiento = profile?.fechaNacimiento || "";
   profileForm.telefono = profile?.telefono || "";
 }

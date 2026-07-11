@@ -15,7 +15,8 @@
           </h1>
           <p class="survey-subtitle text-body-2 text-medium-emphasis">
             <span class="desktop-copy">
-              Te haré algunas preguntas para entender tu situación actual y sugerirte psicólogos afines.
+              Te haré algunas preguntas para entender tu situación actual y
+              sugerirte psicólogos afines.
             </span>
             <span class="mobile-copy">
               Te haré unas preguntas para orientarte mejor.
@@ -35,15 +36,24 @@
                 tabindex="0"
               >
                 <v-icon size="15">
-                  {{ canViewRecommendations ? "mdi-check-circle-outline" : "mdi-progress-clock" }}
+                  {{
+                    canViewRecommendations
+                      ? "mdi-check-circle-outline"
+                      : "mdi-progress-clock"
+                  }}
                 </v-icon>
-                <span>{{ canViewRecommendations ? "Perfil listo" : "Perfil en progreso" }}</span>
+                <span>{{
+                  canViewRecommendations ? "Perfil listo" : "Perfil en progreso"
+                }}</span>
               </div>
             </template>
 
             <div class="profile-popover">
               <div class="profile-popover-title">Perfil registrado</div>
-              <div v-if="profileSummaryItems.length" class="profile-popover-list">
+              <div
+                v-if="profileSummaryItems.length"
+                class="profile-popover-list"
+              >
                 <div
                   v-for="item in profileSummaryItems"
                   :key="item.label"
@@ -101,7 +111,11 @@
               },
             ]"
           >
-            <div v-if="message.role !== 'user'" class="message-avatar" aria-hidden="true">
+            <div
+              v-if="message.role !== 'user'"
+              class="message-avatar"
+              aria-hidden="true"
+            >
               <v-icon size="18">mdi-heart-outline</v-icon>
             </div>
             <div class="message-stack">
@@ -110,12 +124,17 @@
               </div>
               <div class="message-bubble">
                 <p class="message-text">{{ message.text }}</p>
-                <div v-if="message.pending || message.error" class="message-status">
+                <div
+                  v-if="message.pending || message.error"
+                  class="message-status"
+                >
                   {{ message.error ? "No enviado" : "Enviando..." }}
                 </div>
               </div>
               <div
-                v-if="message.role !== 'user' && getMessageOptions(message).length"
+                v-if="
+                  message.role !== 'user' && getMessageOptions(message).length
+                "
                 class="message-options"
               >
                 <button
@@ -176,10 +195,12 @@
           />
         </form>
         <div class="composer-footer">
-          <span>Tu información ayuda a orientar la recomendación, no reemplaza diagnóstico clínico.</span>
+          <span
+            >Tu información ayuda a orientar la recomendación, no reemplaza
+            diagnóstico clínico.</span
+          >
         </div>
       </div>
-
     </div>
   </section>
 </template>
@@ -222,8 +243,7 @@ let unsubscribeProfile = null;
 const welcomeMessage = {
   id: "welcome",
   role: "assistant",
-  text:
-    "Hola, soy Lurems. Cuéntame qué tipo de apoyo buscas.",
+  text: "Hola, soy Lurems. Cuéntame qué tipo de apoyo buscas.",
   suggestedOptions: [
     { label: "Ansiedad", value: "Ansiedad", field: "temas" },
     { label: "Depresión", value: "Depresión", field: "temas" },
@@ -246,14 +266,20 @@ const visibleMessages = computed(() => {
 
 const canSend = computed(() => draft.value.trim().length > 0 && !loading.value);
 const canViewRecommendations = computed(() => {
-  if (!activeSessionId.value || profile.value?.sessionId !== activeSessionId.value) {
+  if (
+    !activeSessionId.value ||
+    profile.value?.sessionId !== activeSessionId.value
+  ) {
     return false;
   }
 
   return isProfileReadyForRecommendations(profile.value);
 });
 const profileSummaryItems = computed(() => {
-  if (!activeSessionId.value || profile.value?.sessionId !== activeSessionId.value) {
+  if (
+    !activeSessionId.value ||
+    profile.value?.sessionId !== activeSessionId.value
+  ) {
     return [];
   }
 
@@ -536,7 +562,9 @@ function goToRecommendations() {
 
 function getMessageOptions(message) {
   return Array.isArray(message?.suggestedOptions)
-    ? message.suggestedOptions.filter((option) => option?.label && option?.value)
+    ? message.suggestedOptions.filter(
+        (option) => option?.label && option?.value
+      )
     : [];
 }
 
@@ -701,7 +729,10 @@ function notifyError(message) {
 :global(.v-theme--light) .profile-popover {
   color: rgba(var(--v-theme-text-primary), 0.88);
   background: rgba(var(--v-theme-surface-elevated), 0.98);
-  border-color: rgba(var(--v-theme-border-subtle), var(--pf-border-subtle-alpha));
+  border-color: rgba(
+    var(--v-theme-border-subtle),
+    var(--pf-border-subtle-alpha)
+  );
   box-shadow: var(--pf-shadow-md);
   backdrop-filter: none;
 }
@@ -882,7 +913,6 @@ function notifyError(message) {
 }
 
 .message-text {
-  color: rgb(var(--v-theme-text-primary));
   margin: 0;
   white-space: pre-wrap;
   line-height: 1.55;
@@ -919,11 +949,8 @@ function notifyError(message) {
   font-size: 0.78rem;
   font-weight: 700;
   line-height: 1.15;
-  transition:
-    background-color 0.18s ease,
-    border-color 0.18s ease,
-    color 0.18s ease,
-    transform 0.18s ease;
+  transition: background-color 0.18s ease, border-color 0.18s ease,
+    color 0.18s ease, transform 0.18s ease;
 }
 
 .message-option:hover:not(:disabled),
@@ -1161,6 +1188,5 @@ function notifyError(message) {
     width: 40px;
     height: 40px;
   }
-
 }
 </style>

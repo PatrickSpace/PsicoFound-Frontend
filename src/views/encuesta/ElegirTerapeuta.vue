@@ -7,7 +7,7 @@
       :elevation="0"
     >
       <v-app-bar-title class="theme-contrast-text">
-        <MainLogo />
+        <MainLogo :compact="true" />
       </v-app-bar-title>
       <v-spacer></v-spacer>
       <!--
@@ -53,14 +53,21 @@
             Psicólogos afines a tu perfil
           </h1>
           <p class="text-body-1 text-medium-emphasis mt-2 mb-0">
-            Revisa las opciones sugeridas y agenda una primera cita cuando encuentres una buena conexión.
+            Revisa las opciones sugeridas y agenda una primera cita cuando
+            encuentres una buena conexión.
           </p>
         </div>
       </v-container>
       <div v-if="loading" class="pa-6 d-flex justify-center">
-        <v-card class="pa-6 card-backgoundcustom therapist-loading-card" elevation="2" variant="text">
+        <v-card
+          class="pa-6 card-backgoundcustom therapist-loading-card"
+          elevation="2"
+          variant="text"
+        >
           <v-progress-circular indeterminate color="secondary" />
-          <span class="text-body-2 text-medium-emphasis">Buscando psicólogos compatibles...</span>
+          <span class="text-body-2 text-medium-emphasis"
+            >Buscando psicólogos compatibles...</span
+          >
         </v-card>
       </div>
       <TerapeutaLista v-else :terapeutas="therapists" />
@@ -110,7 +117,6 @@ async function buscarnuevosterapeutas() {
 onMounted(() => {
   buscarTerapeutas();
 });
-
 </script>
 
 <style scoped>

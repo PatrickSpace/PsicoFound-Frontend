@@ -91,10 +91,6 @@
   mask-image: none;
 }
 
-:is(.v-text-field, .v-select, .v-autocomplete, .v-combobox, .v-file-input) .v-field:is(.v-field--active, .v-field--dirty, .v-field--focused):not(.v-field--variant-plain) .v-field__input {
-  padding-top: var(--pf-field-floating-input-padding-top);
-  padding-bottom: var(--pf-field-floating-input-padding-bottom);
-}
 
 .v-textarea .v-field:not(.v-field--variant-plain) .v-field__input {
   align-items: flex-start;
