@@ -36,42 +36,6 @@ const vuetify = createVuetify({
     aliases,
     sets: { mdi },
   },
-  defaults: {
-    VCard: {
-      rounded: "lg",
-      elevation: 0,
-    },
-    VTextField: {
-      variant: "solo-filled",
-      density: "comfortable",
-      flat: true,
-    },
-    VTextarea: {
-      variant: "solo-filled",
-      density: "comfortable",
-      flat: true,
-    },
-    VSelect: {
-      variant: "solo-filled",
-      density: "comfortable",
-      flat: true,
-    },
-    VAutocomplete: {
-      variant: "solo-filled",
-      density: "comfortable",
-      flat: true,
-    },
-    VCombobox: {
-      variant: "solo-filled",
-      density: "comfortable",
-      flat: true,
-    },
-    VFileInput: {
-      variant: "solo-filled",
-      density: "comfortable",
-      flat: true,
-    },
-  },
 });
 
 export {

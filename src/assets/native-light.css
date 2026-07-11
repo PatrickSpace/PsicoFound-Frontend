@@ -1,0 +1,127 @@
+/* Experimental Vuetify-native light mode.
+   Imported last so light theme can bypass the Lurems component skin without
+   disturbing the dark-mode design layer. */
+
+.v-theme--light {
+  --color-primary: rgb(var(--v-theme-primary));
+  --color-primary-dark: rgb(var(--v-theme-primary));
+  --color-primary-soft: rgba(var(--v-theme-primary), 0.12);
+  --color-brand-primary: rgb(var(--v-theme-primary));
+  --color-brand-primary-hover: rgb(var(--v-theme-primary));
+  --color-button-secondary-bg: transparent;
+  --color-button-secondary-hover: rgba(var(--v-theme-on-surface), 0.04);
+  --color-button-disabled-bg: rgba(var(--v-theme-on-surface), 0.12);
+  --color-button-disabled-text: rgba(var(--v-theme-on-surface), 0.38);
+  --color-background: rgb(var(--v-theme-background));
+  --color-surface: rgb(var(--v-theme-surface));
+  --color-surface-muted: rgba(var(--v-theme-on-surface), 0.04);
+  --color-text-primary: rgba(var(--v-theme-on-surface), var(--v-high-emphasis-opacity));
+  --color-text-secondary: rgba(var(--v-theme-on-surface), var(--v-medium-emphasis-opacity));
+  --color-border: rgba(var(--v-border-color), var(--v-border-opacity));
+  --color-focus: rgb(var(--v-theme-primary));
+  --pf-app-gradient: rgb(var(--v-theme-background));
+  --pf-auth-gradient: rgb(var(--v-theme-background));
+  --pf-overlay-gradient: rgba(0, 0, 0, 0.32);
+  --pf-shadow-xs: none;
+  --pf-shadow-sm: none;
+  --pf-shadow-md: none;
+  --pf-shadow-lg: none;
+  --pf-border-subtle-alpha: var(--v-border-opacity);
+  --pf-border-default-alpha: var(--v-border-opacity);
+  --pf-text-primary-alpha: var(--v-high-emphasis-opacity);
+  --pf-text-secondary-alpha: var(--v-medium-emphasis-opacity);
+  --pf-table-header-alpha: var(--v-medium-emphasis-opacity);
+  --pf-table-cell-alpha: var(--v-high-emphasis-opacity);
+  color-scheme: light;
+}
+
+.v-theme--light :is(.screen, .bg-diagonal, .auth-page) {
+  background: rgb(var(--v-theme-background)) !important;
+  background-image: none !important;
+}
+
+.v-theme--light :is(.card-backgoundcustom, .v-card:not(.v-card--variant-text):not(.v-card--variant-plain):not(.bg-transparent), .v-overlay__content > .v-card) {
+  background: rgb(var(--v-theme-surface)) !important;
+  border: 0 !important;
+  border-radius: 4px !important;
+  box-shadow: none !important;
+  color: rgba(var(--v-theme-on-surface), var(--v-high-emphasis-opacity)) !important;
+}
+
+.v-theme--light :is(.v-card.card-backgoundcustom, .v-card.pf-card, .v-overlay__content > .v-card)::before {
+  content: none !important;
+}
+
+.v-theme--light :is(.card-backgoundcustom, .v-card.pf-card, .v-overlay__content > .v-card) :is(.v-card-title, .v-card-subtitle, .v-card-text) {
+  color: inherit !important;
+  font-weight: inherit;
+}
+
+.v-theme--light :is(.v-text-field, .v-textarea, .v-select, .v-autocomplete, .v-combobox, .v-file-input) {
+  color: rgba(var(--v-theme-on-surface), var(--v-high-emphasis-opacity));
+  font-family: inherit;
+}
+
+.v-theme--light :is(.v-text-field, .v-textarea, .v-select, .v-autocomplete, .v-combobox, .v-file-input) .v-field:not(.v-field--variant-plain) {
+  min-height: initial;
+  border: 0 !important;
+  border-radius: 4px !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  color: inherit;
+}
+
+.v-theme--light :is(.v-text-field, .v-textarea, .v-select, .v-autocomplete, .v-combobox, .v-file-input) :is(.v-field__overlay, .v-field__outline, .v-field__underlay) {
+  background: initial !important;
+  border: initial !important;
+  color: initial !important;
+  opacity: initial !important;
+}
+
+.v-theme--light :is(.v-text-field, .v-textarea, .v-select, .v-autocomplete, .v-combobox, .v-file-input) :is(.v-field__input, input, textarea, .v-field-label, .v-label) {
+  color: inherit !important;
+  font-family: inherit;
+  font-weight: inherit;
+}
+
+.v-theme--light :is(.pf-btn-primary, .pf-btn-secondary, .pf-btn-ghost, .pf-btn-patient, .pf-btn-psychologist, .pf-btn-hope, .pf-btn-destructive, .pf-btn-google, .pf-btn-icon).v-btn {
+  background: initial !important;
+  border: 0 !important;
+  border-radius: 4px !important;
+  box-shadow: none !important;
+  color: inherit !important;
+  font-family: inherit !important;
+  font-weight: inherit !important;
+  text-transform: uppercase !important;
+}
+
+.v-theme--light :is(.pf-btn-primary, .pf-btn-secondary, .pf-btn-ghost, .pf-btn-patient, .pf-btn-psychologist, .pf-btn-hope, .pf-btn-destructive, .pf-btn-google, .pf-btn-icon).v-btn:hover {
+  background: rgba(var(--v-theme-on-surface), 0.04) !important;
+  color: inherit !important;
+}
+
+.v-theme--light :is(.v-btn--variant-tonal, .v-btn.theme-contrast-text.v-btn--variant-tonal) {
+  background-color: rgba(var(--v-theme-primary), 0.12) !important;
+  border: 0 !important;
+  color: rgb(var(--v-theme-primary)) !important;
+}
+
+.v-theme--light :is(.v-list-item, .v-list-item--active) {
+  border-radius: 4px;
+  background: transparent;
+  color: inherit;
+}
+
+.v-theme--light :is(.bottom-nav-mobile, .app-top-nav, .nav-drawer-content) {
+  background: rgb(var(--v-theme-surface)) !important;
+  border-color: rgba(var(--v-border-color), var(--v-border-opacity)) !important;
+  box-shadow: none !important;
+}
+
+.v-theme--light .bottom-nav-popover {
+  background: rgb(var(--v-theme-surface)) !important;
+  border-color: rgba(var(--v-border-color), var(--v-border-opacity)) !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
