@@ -14,13 +14,26 @@ service cloud.firestore {
       return get(/databases/$(database)/documents/users/$(request.auth.uid));
     }
 
+    function userHasRole(role) {
+      return signedIn() &&
+        currentUserDoc().data.roles is list &&
+        currentUserDoc().data.roles.hasAny([role]);
+    }
+
     function isAdmin() {
       return signedIn() &&
-        currentUserDoc().data.rol in ["admin", "psicofound-admin"];
+        (
+          userHasRole("admin") ||
+          currentUserDoc().data.rol in ["admin", "psicofound-admin"]
+        );
     }
 
     function isPatientRole(role) {
       return role in ["paciente", "patient"];
+    }
+
+    function isPatientRoles(roles) {
+      return roles is list && roles.hasOnly(["patient"]) && roles.hasAll(["patient"]);
     }
 
     function validSelfUserCreate(uid) {
@@ -29,19 +42,20 @@ service cloud.firestore {
         request.resource.data.email is string &&
         request.resource.data.nombre is string &&
         isPatientRole(request.resource.data.rol) &&
+        isPatientRoles(request.resource.data.roles) &&
         request.resource.data.keys().hasOnly([
           "id",
           "email",
           "nombre",
           "rol",
+          "roles",
           "createdAt",
           "updatedAt"
         ]);
     }
 
     function validSelfUserUpdate() {
-      return request.resource.data.rol == resource.data.rol &&
-        request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+      return request.resource.data.diff(resource.data).affectedKeys().hasOnly([
           "nombre",
           "fechaNacimiento",
           "telefono",
@@ -125,7 +139,7 @@ service cloud.firestore {
         isOwner(uid) &&
         validSelfUserUpdate()
       );
-      allow delete: if false;
+      allow delete: if isAdmin();
     }
 
     match /profiles/{uid} {

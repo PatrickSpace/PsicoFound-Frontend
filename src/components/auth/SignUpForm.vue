@@ -92,6 +92,7 @@ async function registrarse() {
       email: usersignup.user.email,
       nombre: usersignup.user.email?.split("@")[0] || "Usuario",
       rol: "paciente",
+      roles: ["patient"],
     });
     await router.push("/encuesta");
   } catch (error) {
@@ -115,6 +116,7 @@ async function registerWithGoogle() {
       email: user.email,
       nombre: user.displayName || user.email?.split("@")[0] || "Usuario",
       rol: "paciente",
+      roles: ["patient"],
     });
 
     await router.push("/encuesta");

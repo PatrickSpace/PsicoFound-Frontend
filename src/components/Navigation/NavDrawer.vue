@@ -48,6 +48,14 @@ const adminRequestsItem = {
   link: "/admin/solicitudes-psicologos",
 };
 
+const adminUsersItem = {
+  name: "Usuarios",
+  icon: "mdi-account-cog-outline",
+  link: "/admin/usuarios",
+};
+
+const adminAccessItems = [adminRequestsItem, adminUsersItem];
+
 const navigationByMode = {
   patient: [
     { name: "Home", icon: "mdi-view-dashboard-outline", link: "/dashboard" },
@@ -80,9 +88,10 @@ const navigationByMode = {
     },
   ],
   admin: [
+    adminRequestsItem,
+    adminUsersItem,
     { name: "Pacientes", icon: "mdi-account-group", link: "/pacientes" },
     { name: "Psicólogos", icon: "mdi-account-heart", link: "/psicologos" },
-    adminRequestsItem,
   ],
 };
 
@@ -90,14 +99,15 @@ const items = computed(() => {
   const baseItems =
     navigationByMode[appContext.activeMode] || navigationByMode.patient;
 
-  if (
-    !appContext.isAdmin ||
-    baseItems.some((item) => item.link === adminRequestsItem.link)
-  ) {
+  if (!appContext.isAdmin) {
     return baseItems;
   }
 
-  return [...baseItems, adminRequestsItem];
+  const missingAdminItems = adminAccessItems.filter(
+    (adminItem) => !baseItems.some((item) => item.link === adminItem.link)
+  );
+
+  return [...baseItems, ...missingAdminItems];
 });
 
 </script>

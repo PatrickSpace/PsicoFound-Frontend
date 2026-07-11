@@ -116,6 +116,7 @@ async function LoginGoogle() {
       email: userlogged.email,
       nombre: userlogged.displayName || "Usuario",
       rol: "paciente",
+      roles: ["patient"],
     };
     console.log("Google user:", newUser);
     await createUserInFirestore(newUser);

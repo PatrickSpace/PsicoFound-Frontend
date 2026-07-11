@@ -2,6 +2,7 @@ import { computed, ref } from "vue";
 import { defineStore } from "pinia";
 import { getUserById } from "@/services/userService";
 import { getTherapistByUserUid } from "@/services/psicologoService";
+import { APP_ROLES, getUserRoles } from "@/utils/roles";
 
 const MODE_STORAGE_KEY = "psicofound-active-mode";
 
@@ -12,13 +13,22 @@ export const useAppContextStore = defineStore("appContext", () => {
   const loadedForUid = ref("");
   const activeMode = ref(readStoredMode());
 
+  const userRoles = computed(() =>
+    getUserRoles(userProfile.value, { defaultPatient: Boolean(userProfile.value) })
+  );
+
   const isAdmin = computed(() => {
-    const role = normalizeRole(userProfile.value?.rol || userProfile.value?.role);
-    return ["admin", "psicofound-admin"].includes(role);
+    return userRoles.value.includes(APP_ROLES.ADMIN);
   });
 
-  const hasPatientAccess = computed(() => Boolean(userProfile.value));
-  const hasPsychologistAccess = computed(() => Boolean(therapistProfile.value?.id));
+  const hasPatientAccess = computed(() =>
+    userRoles.value.includes(APP_ROLES.PATIENT)
+  );
+  const hasPsychologistAccess = computed(
+    () =>
+      userRoles.value.includes(APP_ROLES.PSYCHOLOGIST) &&
+      Boolean(therapistProfile.value?.id)
+  );
 
   const availableModes = computed(() => {
     const modes = [];
@@ -73,7 +83,8 @@ export const useAppContextStore = defineStore("appContext", () => {
 
       userProfile.value = user || {
         id: uid,
-        rol: "patient",
+        roles: [APP_ROLES.PATIENT],
+        rol: APP_ROLES.PATIENT,
       };
       therapistProfile.value = therapist;
       loadedForUid.value = uid;
@@ -82,7 +93,8 @@ export const useAppContextStore = defineStore("appContext", () => {
       console.error("Error loading app context:", error);
       userProfile.value = {
         id: uid,
-        rol: "patient",
+        roles: [APP_ROLES.PATIENT],
+        rol: APP_ROLES.PATIENT,
       };
       therapistProfile.value = null;
       loadedForUid.value = uid;
@@ -127,6 +139,7 @@ export const useAppContextStore = defineStore("appContext", () => {
     therapistProfile,
     loading,
     activeMode,
+    userRoles,
     availableModes,
     canSwitchModes,
     hasPatientAccess,
@@ -140,8 +153,4 @@ export const useAppContextStore = defineStore("appContext", () => {
 
 function readStoredMode() {
   return localStorage.getItem(MODE_STORAGE_KEY) || "patient";
-}
-
-function normalizeRole(role = "") {
-  return role.toString().trim().toLowerCase();
 }
