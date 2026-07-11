@@ -322,16 +322,48 @@ h6 {
 
 .v-alert.v-alert--variant-tonal,
 .v-theme--light .v-alert.v-alert--variant-tonal {
+  --pf-alert-bg: #edfaf4;
+  --pf-alert-border: #4caf88;
+  --pf-alert-text: #2d725a;
+
   align-items: center;
-  border: 1.5px solid currentColor !important;
+  border: 1.5px solid var(--pf-alert-border) !important;
   border-radius: 18px !important;
-  background-color: color-mix(in srgb, currentColor 9%, white 91%) !important;
-  color: currentColor !important;
+  background-color: var(--pf-alert-bg) !important;
+  color: var(--pf-alert-text) !important;
   font-size: 1rem;
   font-weight: 600;
   line-height: 1.45;
   padding: 18px 22px !important;
   box-shadow: none !important;
+}
+
+.v-alert.v-alert--variant-tonal.text-success,
+.v-alert.v-alert--variant-tonal.v-alert--type-success {
+  --pf-alert-bg: #edfaf4;
+  --pf-alert-border: #4caf88;
+  --pf-alert-text: #2d725a;
+}
+
+.v-alert.v-alert--variant-tonal.text-warning,
+.v-alert.v-alert--variant-tonal.v-alert--type-warning {
+  --pf-alert-bg: #fffbea;
+  --pf-alert-border: #f2c94c;
+  --pf-alert-text: #a37c08;
+}
+
+.v-alert.v-alert--variant-tonal.text-error,
+.v-alert.v-alert--variant-tonal.v-alert--type-error {
+  --pf-alert-bg: #fff0f0;
+  --pf-alert-border: #ffbdbd;
+  --pf-alert-text: #d32f2f;
+}
+
+.v-alert.v-alert--variant-tonal.text-info,
+.v-alert.v-alert--variant-tonal.v-alert--type-info {
+  --pf-alert-bg: #f0eeff;
+  --pf-alert-border: #aaa2ed;
+  --pf-alert-text: #4d44a0;
 }
 
 .v-alert.v-alert--variant-tonal .v-alert__prepend {
@@ -340,17 +372,17 @@ h6 {
 }
 
 .v-alert.v-alert--variant-tonal .v-icon {
-  color: currentColor !important;
+  color: var(--pf-alert-text) !important;
   opacity: 1;
 }
 
 .v-alert.v-alert--variant-tonal :is(.v-alert__content, .v-alert-title) {
-  color: currentColor !important;
+  color: var(--pf-alert-text) !important;
   opacity: 1;
 }
 
 .v-theme--dark .v-alert.v-alert--variant-tonal {
-  background-color: color-mix(in srgb, currentColor 18%, transparent) !important;
+  background-color: color-mix(in srgb, var(--pf-alert-text) 18%, transparent) !important;
 }
 
 .v-btn--variant-tonal,
