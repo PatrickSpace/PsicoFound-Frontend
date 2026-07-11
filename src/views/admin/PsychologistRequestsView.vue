@@ -104,7 +104,7 @@
         </v-card-text>
       </v-card>
 
-      <v-dialog v-model="rejectDialog" max-width="560">
+      <v-dialog v-model="rejectDialog" class="bg-transparent" max-width="560">
         <v-card class="pa-4 card-backgoundcustom" elevation="2" variant="text">
           <v-card-title class="text-h6 font-weight-bold px-0 pt-0">
             Rechazar solicitud

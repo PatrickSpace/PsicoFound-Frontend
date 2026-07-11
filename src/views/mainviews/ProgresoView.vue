@@ -544,7 +544,7 @@
         </v-card-text>
       </v-card>
 
-      <v-dialog v-model="goalProgressDialog" max-width="620">
+      <v-dialog v-model="goalProgressDialog" class="bg-transparent" max-width="620">
         <v-card class="pa-4 card-backgoundcustom" elevation="2" variant="text">
           <v-card-title class="text-h6 font-weight-bold px-0 pt-0">Actualizar objetivo</v-card-title>
           <v-card-text>

@@ -232,7 +232,7 @@
           </v-card>
         </v-col>
       </v-row>
-      <v-dialog v-model="psychologistRequestDialog" max-width="760">
+      <v-dialog v-model="psychologistRequestDialog" class="bg-transparent" max-width="760">
         <v-card class="pa-4 card-backgoundcustom" elevation="2" variant="text">
           <v-card-title class="text-h6 font-weight-bold d-flex align-center ga-2 px-0 pt-0">
             <v-icon color="secondary" size="small">mdi-account-tie-outline</v-icon>

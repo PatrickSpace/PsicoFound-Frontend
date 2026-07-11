@@ -69,7 +69,7 @@
         </v-toolbar-title>
         <v-spacer></v-spacer>
 
-        <v-dialog v-model="dialog" max-width="900px">
+        <v-dialog v-model="dialog" class="bg-transparent" max-width="900px">
           <template #activator="{ props: activatorProps }">
             <v-btn
               color="secondary"
@@ -317,7 +317,7 @@
           </v-card>
         </v-dialog>
 
-        <v-dialog v-model="dialogDelete" max-width="500px">
+        <v-dialog v-model="dialogDelete" class="bg-transparent" max-width="500px">
           <v-card class="ma-5 card-backgoundcustom" elevation="2" variant="text">
             <v-card-title class="text-h6 font-weight-bold">
               ¿Seguro que deseas eliminar este terapeuta?

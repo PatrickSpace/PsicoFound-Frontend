@@ -1,6 +1,7 @@
 <template>
   <v-dialog
     :model-value="modelValue"
+    class="bg-transparent"
     max-width="560px"
     @update:model-value="emit('update:modelValue', $event)"
   >

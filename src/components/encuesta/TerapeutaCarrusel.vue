@@ -63,6 +63,7 @@
   <!-- Dialog separado: sólo muestra el modal cuando dialog === true -->
   <v-dialog
     v-model="dialog"
+    class="bg-transparent"
     max-width="1100"
     persistent
   >

@@ -1,7 +1,7 @@
 <template>
   <v-dialog
     :model-value="modelValue"
-    class="appointment-dialog"
+    class="appointment-dialog bg-transparent"
     max-width="640px"
     scrollable
     @update:model-value="emit('update:modelValue', $event)"

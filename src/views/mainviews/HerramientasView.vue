@@ -233,7 +233,7 @@
         </v-card-actions>
       </v-card>
 
-      <v-dialog v-model="completeDialog" max-width="640">
+      <v-dialog v-model="completeDialog" class="bg-transparent" max-width="640">
         <v-card class="pa-4 card-backgoundcustom" elevation="2" variant="text">
           <v-card-title class="text-h6 font-weight-bold px-0 pt-0">Completar ejercicio</v-card-title>
           <v-card-text>
