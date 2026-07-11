@@ -86,33 +86,38 @@
             </v-card-title>
             <v-card-text>
               <v-divider class="mb-4"></v-divider>
-              <v-alert
-                v-if="!appContext.canSwitchModes"
-                color="info"
-                variant="tonal"
-                icon="mdi-information-outline"
-              >
-                Tu cuenta tiene una sola vista activa por ahora.
-              </v-alert>
-              <v-btn-toggle
-                v-else
+              <v-select
                 :model-value="appContext.activeMode"
-                class="mt-1 flex-wrap pf-btn-secondary"
+                :items="appContext.availableModes"
+                item-title="label"
+                item-value="value"
+                label="Vista activa"
+                variant="outlined"
+                density="comfortable"
                 color="secondary"
-                mandatory
-                variant="tonal"
+                :disabled="!appContext.canSwitchModes"
+                persistent-hint
+                :hint="
+                  appContext.canSwitchModes
+                    ? 'Selecciona cómo quieres usar Lurems en esta sesión.'
+                    : 'Tu cuenta tiene una sola vista activa por ahora.'
+                "
                 @update:model-value="switchMode"
               >
-                <v-btn
-                  v-for="mode in appContext.availableModes"
-                  :key="mode.value"
-                  :value="mode.value"
-                  class="pf-btn-primary"
-                >
-                  <v-icon start>{{ mode.icon }}</v-icon>
-                  {{ mode.label }}
-                </v-btn>
-              </v-btn-toggle>
+                <template #selection="{ item }">
+                  <div class="d-flex align-center ga-2">
+                    <v-icon size="small">{{ item.raw.icon }}</v-icon>
+                    <span>{{ item.raw.label }}</span>
+                  </div>
+                </template>
+                <template #item="{ props, item }">
+                  <v-list-item
+                    v-bind="props"
+                    :prepend-icon="item.raw.icon"
+                    :title="item.raw.label"
+                  />
+                </template>
+              </v-select>
             </v-card-text>
           </v-card>
         </v-col>
