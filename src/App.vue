@@ -1,6 +1,6 @@
 <template>
   <Analytics />
-  <v-app :data-user-role="appContext.activeMode" data-theme="vuetify-native">
+  <v-app :data-user-role="appContext.activeMode" data-theme="light">
     <!-- Contenido principal -->
     <RouterView />
 
