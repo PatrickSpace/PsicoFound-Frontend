@@ -323,8 +323,8 @@ h6 {
 .v-alert.v-alert--variant-tonal,
 .v-theme--light .v-alert.v-alert--variant-tonal {
   --pf-alert-bg: #edfaf4;
-  --pf-alert-border: #4caf88;
-  --pf-alert-text: #2d725a;
+  --pf-alert-border: #70d4ab;
+  --pf-alert-text: #143a2e;
 
   align-items: center;
   border: 1.5px solid var(--pf-alert-border) !important;
@@ -341,29 +341,29 @@ h6 {
 .v-alert.v-alert--variant-tonal.text-success,
 .v-alert.v-alert--variant-tonal.v-alert--type-success {
   --pf-alert-bg: #edfaf4;
-  --pf-alert-border: #4caf88;
-  --pf-alert-text: #2d725a;
+  --pf-alert-border: #70d4ab;
+  --pf-alert-text: #143a2e;
 }
 
 .v-alert.v-alert--variant-tonal.text-warning,
 .v-alert.v-alert--variant-tonal.v-alert--type-warning {
-  --pf-alert-bg: #fffbea;
-  --pf-alert-border: #f2c94c;
-  --pf-alert-text: #a37c08;
+  --pf-alert-bg: #fffbeb;
+  --pf-alert-border: #f9d64e;
+  --pf-alert-text: #574103;
 }
 
 .v-alert.v-alert--variant-tonal.text-error,
 .v-alert.v-alert--variant-tonal.v-alert--type-error {
   --pf-alert-bg: #fff0f0;
   --pf-alert-border: #ffbdbd;
-  --pf-alert-text: #d32f2f;
+  --pf-alert-text: #7f1d1d;
 }
 
 .v-alert.v-alert--variant-tonal.text-info,
 .v-alert.v-alert--variant-tonal.v-alert--type-info {
   --pf-alert-bg: #f0eeff;
-  --pf-alert-border: #aaa2ed;
-  --pf-alert-text: #4d44a0;
+  --pf-alert-border: #c0baff;
+  --pf-alert-text: #272170;
 }
 
 .v-alert.v-alert--variant-tonal .v-alert__prepend {
