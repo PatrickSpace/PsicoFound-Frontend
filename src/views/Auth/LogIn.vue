@@ -1,6 +1,9 @@
 <script setup>
 import Loginform from "@/components/auth/LoginForm.vue";
 import MainLogo from "@/components/Common/MainLogo.vue";
+import { useDisplay } from "vuetify";
+
+const { smAndDown } = useDisplay();
 </script>
 <template>
   <section class="auth-page min-dvh-page">
@@ -8,7 +11,7 @@ import MainLogo from "@/components/Common/MainLogo.vue";
 
     <main class="auth-content safe-bottom-mobile">
       <div class="auth-form-shell">
-        <MainLogo />
+        <MainLogo class="auth-logo" :compact="smAndDown" />
         <h1 class="responsive-title-lg font-weight-medium theme-contrast-text">
           Iniciar sesion
         </h1>

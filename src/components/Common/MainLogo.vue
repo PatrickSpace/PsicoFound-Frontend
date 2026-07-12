@@ -30,6 +30,11 @@ defineProps({
 
 <style scoped>
 .main-logo {
+  align-items: center;
+  display: flex !important;
+  flex: 0 0 auto;
+  height: auto !important;
+  line-height: 0;
   min-height: fit-content !important;
   min-width: 0;
   overflow: hidden;
@@ -37,9 +42,9 @@ defineProps({
 }
 
 .main-logo--compact {
-  height: 60px !important;
-  min-height: 60px !important;
-  width: 92px;
+  height: 64px !important;
+  min-height: 64px !important;
+  width: 72px;
 }
 
 .main-logo__image {
@@ -51,8 +56,8 @@ defineProps({
 }
 
 .main-logo--compact .main-logo__image {
-  height: 60px;
+  height: 64px;
   object-fit: contain;
-  width: 72px;
+  width: 64px;
 }
 </style>

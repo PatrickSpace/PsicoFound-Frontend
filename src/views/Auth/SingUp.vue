@@ -4,7 +4,7 @@
 
     <main class="auth-content safe-bottom-mobile">
       <div class="auth-form-shell">
-        <MainLogo />
+        <MainLogo class="auth-logo" :compact="smAndDown" />
         <h1 class="responsive-title-lg font-weight-medium theme-contrast-text">
           Registrarse
         </h1>
@@ -26,4 +26,7 @@
 <script setup>
 import SignUpForm from "@/components/auth/SignUpForm.vue";
 import MainLogo from "@/components/Common/MainLogo.vue";
+import { useDisplay } from "vuetify";
+
+const { smAndDown } = useDisplay();
 </script>

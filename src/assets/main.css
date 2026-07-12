@@ -554,6 +554,11 @@ h6 {
   margin-inline: auto;
 }
 
+.auth-logo {
+  display: flex !important;
+  margin-bottom: 18px;
+}
+
 .auth-form-shell h1 {
   margin: 18px 0 12px;
 }
@@ -591,6 +596,19 @@ h6 {
 }
 
 @media (max-width: 600px) {
+  .auth-content {
+    justify-content: flex-start;
+    padding: 72px 28px 24px;
+  }
+
+  .auth-logo {
+    margin-bottom: 14px;
+  }
+
+  .auth-form-shell h1 {
+    margin-top: 0;
+  }
+
   .responsive-app-bar {
     padding-inline: 10px !important;
   }
