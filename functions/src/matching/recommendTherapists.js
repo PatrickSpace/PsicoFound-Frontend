@@ -14,7 +14,8 @@ async function getRecommendedTherapists(request) {
   const profileRef = db.collection("profiles").doc(uid);
   const profile = await getCurrentProfile(profileRef);
   const criteria = buildSearchCriteriaFromProfile(profile);
-  const therapists = await getActiveTherapists(db);
+  const availableTherapistIds = await getTherapistIdsWithAvailableSlots(db);
+  const therapists = await getActiveTherapists(db, availableTherapistIds);
   const recommendations = findMatchingTherapists(therapists, criteria);
 
   return {
@@ -24,7 +25,11 @@ async function getRecommendedTherapists(request) {
   };
 }
 
-async function getActiveTherapists(db) {
+async function getActiveTherapists(db, availableTherapistIds = new Set()) {
+  if (!availableTherapistIds.size) {
+    return [];
+  }
+
   const snapshot = await db.collection("therapists").orderBy("nombre").get();
 
   return snapshot.docs
@@ -32,7 +37,30 @@ async function getActiveTherapists(db) {
         id: doc.id,
         ...doc.data(),
       }))
-      .filter((therapist) => therapist.activo !== false);
+      .filter((therapist) =>
+        therapist.activo !== false && availableTherapistIds.has(therapist.id),
+      );
+}
+
+async function getTherapistIdsWithAvailableSlots(db) {
+  const snapshot = await db
+      .collection("therapist_availability")
+      .where("status", "==", "available")
+      .get();
+  const today = getTodayISOForLima();
+  const therapistIds = new Set();
+
+  snapshot.docs.forEach((doc) => {
+    const slot = doc.data();
+    const therapistId = (slot.therapistId || "").toString().trim();
+    const date = (slot.date || "").toString().trim();
+
+    if (therapistId && date && date >= today) {
+      therapistIds.add(therapistId);
+    }
+  });
+
+  return therapistIds;
 }
 
 function sanitizeTherapistForClient(therapist = {}) {
@@ -57,6 +85,15 @@ function sanitizeTherapistForClient(therapist = {}) {
     gradient: therapist.gradient || "",
     activo: typeof therapist.activo === "boolean" ? therapist.activo : true,
   };
+}
+
+function getTodayISOForLima() {
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: "America/Lima",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(new Date());
 }
 
 module.exports = {

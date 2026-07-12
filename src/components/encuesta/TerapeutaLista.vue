@@ -162,9 +162,9 @@
 
           <v-empty-state
             v-if="topTherapists.length === 0"
-            headline="Aún no hay terapeutas para mostrar"
-            text="Realiza la búsqueda o explora otras opciones para ver recomendaciones."
-            icon="mdi-account-search-outline"
+            headline="No hay horarios disponibles"
+            text="Por ahora no encontramos psicólogos afines con bloques abiertos para agendar. Puedes revisar nuevamente más tarde."
+            icon="mdi-calendar-clock-outline"
           ></v-empty-state>
         </div>
       </v-col>

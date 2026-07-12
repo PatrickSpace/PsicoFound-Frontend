@@ -20,26 +20,32 @@ test("saludo o perfil vacio no queda listo para recomendaciones", () => {
   assert.equal(getMissingProfileField(profile), "temas");
 });
 
-test("perfil regular solo queda listo con tema y preferencias requeridas", () => {
-  const incompleteProfile = finalizeProfileForMatching({
-    ...PROFILE_DEFAULTS,
-    temas: ["Ansiedad"],
-    modalidad: "Online",
-    preferenciaGenero: "indiferente",
-    enfoque: "Cognitivo-Conductual",
-  });
+test(
+    "perfil regular solo queda listo con tema y preferencias requeridas",
+    () => {
+      const incompleteProfile = finalizeProfileForMatching({
+        ...PROFILE_DEFAULTS,
+        temas: ["Ansiedad"],
+        modalidad: "Online",
+        preferenciaGenero: "indiferente",
+        enfoque: "Cognitivo-Conductual",
+      });
 
-  assert.equal(incompleteProfile.completado, false);
-  assert.equal(getMissingProfileField(incompleteProfile), "preferenciaEdad");
+      assert.equal(incompleteProfile.completado, false);
+      assert.equal(
+          getMissingProfileField(incompleteProfile),
+          "preferenciaEdad",
+      );
 
-  const completeProfile = finalizeProfileForMatching({
-    ...incompleteProfile,
-    preferenciaEdad: "indiferente",
-  });
+      const completeProfile = finalizeProfileForMatching({
+        ...incompleteProfile,
+        preferenciaEdad: "indiferente",
+      });
 
-  assert.equal(completeProfile.completado, true);
-  assert.equal(getMissingProfileField(completeProfile), "");
-});
+      assert.equal(completeProfile.completado, true);
+      assert.equal(getMissingProfileField(completeProfile), "");
+    },
+);
 
 test("solo conversar no exige tema ni enfoque", () => {
   const profile = finalizeProfileForMatching({
@@ -54,21 +60,24 @@ test("solo conversar no exige tema ni enfoque", () => {
   assert.equal(getMissingProfileField(profile), "");
 });
 
-test("me da igual se normaliza como indiferente en preferencias opcionales", () => {
-  const profile = sanitizeModelProfileData({
-    modalidad: "me da igual",
-    preferenciaGenero: "cualquiera",
-    preferenciaEdad: "no importa",
-    enfoque: "sin preferencia",
-    motivoConsulta: "Me siento ansioso por el trabajo",
-  });
+test(
+    "me da igual se normaliza como indiferente en preferencias opcionales",
+    () => {
+      const profile = sanitizeModelProfileData({
+        modalidad: "me da igual",
+        preferenciaGenero: "cualquiera",
+        preferenciaEdad: "no importa",
+        enfoque: "sin preferencia",
+        motivoConsulta: "Me siento ansioso por el trabajo",
+      });
 
-  assert.equal(profile.modalidad, "indiferente");
-  assert.equal(profile.preferenciaGenero, "indiferente");
-  assert.equal(profile.preferenciaEdad, "indiferente");
-  assert.equal(profile.enfoque, "indiferente");
-  assert.equal(profile.motivoConsulta, "Me siento ansioso por el trabajo");
-});
+      assert.equal(profile.modalidad, "indiferente");
+      assert.equal(profile.preferenciaGenero, "indiferente");
+      assert.equal(profile.preferenciaEdad, "indiferente");
+      assert.equal(profile.enfoque, "indiferente");
+      assert.equal(profile.motivoConsulta, "Me siento ansioso por el trabajo");
+    },
+);
 
 test("opciones sugeridas siguen el primer campo faltante", () => {
   const profile = {

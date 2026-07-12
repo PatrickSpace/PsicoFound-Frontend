@@ -2,23 +2,26 @@ const test = require("node:test");
 const assert = require("node:assert/strict");
 const {buildSearchCriteriaFromProfile} = require("./criteria");
 
-test("criterios indiferentes no filtran modalidad, genero, edad ni enfoque", () => {
-  const criteria = buildSearchCriteriaFromProfile({
-    temas: ["Ansiedad"],
-    modalidad: "indiferente",
-    preferenciaGenero: "me da igual",
-    preferenciaEdad: "no importa",
-    enfoque: "sin preferencia",
-  });
+test(
+    "criterios indiferentes no filtran modalidad, genero, edad ni enfoque",
+    () => {
+      const criteria = buildSearchCriteriaFromProfile({
+        temas: ["Ansiedad"],
+        modalidad: "indiferente",
+        preferenciaGenero: "me da igual",
+        preferenciaEdad: "no importa",
+        enfoque: "sin preferencia",
+      });
 
-  assert.deepEqual(criteria, {
-    especialidades: ["Ansiedad"],
-    enfoque: "",
-    genero: "",
-    modalidad: "",
-    edad: "",
-  });
-});
+      assert.deepEqual(criteria, {
+        especialidades: ["Ansiedad"],
+        enfoque: "",
+        genero: "",
+        modalidad: "",
+        edad: "",
+      });
+    },
+);
 
 test("solo conversar no filtra por tema ni enfoque", () => {
   const criteria = buildSearchCriteriaFromProfile({
