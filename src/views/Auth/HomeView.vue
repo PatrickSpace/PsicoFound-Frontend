@@ -1,5 +1,5 @@
 <template>
-  <div>
+  <div class="brand-system-scope">
     <v-row class="h-screen ma-0">
       <v-col class="bg-image d-md-flex d-sm-none d-none" cols="6"></v-col>
       <v-col class="bg-diagonal h-auto">

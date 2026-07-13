@@ -60,6 +60,58 @@
   --v-theme-border-focus: 45, 114, 90;
 }
 
+.brand-system-scope {
+  --color-primary: var(--lurems-brand-primary);
+  --color-primary-dark: var(--lurems-brand-dark);
+  --color-primary-soft: var(--lurems-brand-subtle);
+  --color-brand-primary: #45a99a;
+  --color-brand-primary-hover: #35897c;
+  --color-button-secondary-bg: #eff9f7;
+  --color-button-secondary-hover: #dff2ef;
+  --color-button-disabled-bg: #eef6f4;
+  --color-button-disabled-text: #a0c5c0;
+  --v-theme-primary: 69, 169, 154;
+  --v-theme-secondary: 53, 137, 124;
+  --v-theme-surface-active: 69, 169, 154;
+  --v-theme-border-focus: 69, 169, 154;
+  --pf-btn-brand: #45a99a;
+  --pf-btn-brand-hover: #35897c;
+  --pf-btn-brand-text: #ffffff;
+  --pf-btn-secondary-bg: #eff9f7;
+  --pf-btn-secondary-border: #72cbbf;
+  --pf-btn-secondary-hover: #dff2ef;
+  --pf-btn-secondary-text: #2a6c63;
+  --pf-btn-disabled-bg: #eef6f4;
+  --pf-btn-disabled-text: #a0c5c0;
+  --pf-field-bg: #f6fbfb;
+  --pf-field-bg-hover: #f0f8f7;
+  --pf-field-bg-focus: #ffffff;
+  --pf-field-border: #9eddd5;
+  --pf-field-border-hover: #72cbbf;
+  --pf-field-border-focus: #45a99a;
+  --pf-field-label: #1a3a38;
+  --pf-field-text: #1a3a38;
+  --pf-field-placeholder: #819b97;
+  --pf-field-helper: #426460;
+}
+
+.brand-system-scope .pf-btn-google,
+.brand-system-scope .pf-btn-google.v-btn,
+.brand-system-scope #google-login-button {
+  background: var(--pf-btn-brand) !important;
+  border-color: transparent !important;
+  box-shadow: var(--pf-btn-shadow) !important;
+  color: var(--pf-btn-brand-text) !important;
+}
+
+.brand-system-scope .pf-btn-google:hover,
+.brand-system-scope .pf-btn-google:focus-visible,
+.brand-system-scope #google-login-button:hover,
+.brand-system-scope #google-login-button:focus-visible {
+  background: var(--pf-btn-brand-hover) !important;
+  color: var(--pf-btn-brand-text) !important;
+}
+
 html,
 body,
 #app {

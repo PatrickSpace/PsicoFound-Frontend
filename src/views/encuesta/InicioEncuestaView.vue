@@ -1,5 +1,5 @@
 <template>
-  <v-app class="bg-diagonal min-dvh-page">
+  <v-app class="brand-system-scope bg-diagonal min-dvh-page">
     <v-app-bar
       app
       class="responsive-app-bar"

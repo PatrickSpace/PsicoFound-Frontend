@@ -6,7 +6,7 @@ import { useDisplay } from "vuetify";
 const { smAndDown } = useDisplay();
 </script>
 <template>
-  <section class="auth-page min-dvh-page">
+  <section class="brand-system-scope auth-page min-dvh-page">
     <div class="auth-image" aria-hidden="true"></div>
 
     <main class="auth-content safe-bottom-mobile">

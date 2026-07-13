@@ -23,43 +23,78 @@
       />
 
       <template v-else-if="activeTherapy">
-        <v-card class="pa-2 card-backgoundcustom" elevation="2">
-          <v-card-item>
-            <v-card-title class="text-h5"> Tu progreso </v-card-title>
-            <v-card-subtitle>
-              Te felicitamos por seguir con tu terapia, aquí tienes un resumen
-              de tu proceso:
-            </v-card-subtitle>
-          </v-card-item>
-          <v-card-text class="pb-0">
-            <v-row class="text-center py-5">
+        <v-card
+          class="progress-summary-card pa-4 card-backgoundcustom"
+          elevation="2"
+          variant="text"
+        >
+          <v-card-title
+            class="d-flex align-center ga-2 text-h6 font-weight-bold px-0 pt-0"
+          >
+            <v-icon color="secondary" size="small">mdi-chart-line</v-icon>
+            Tu progreso
+          </v-card-title>
+          <v-card-subtitle class="px-0 pb-1 text-body-2">
+            Un resumen de la continuidad de tu proceso terapéutico.
+          </v-card-subtitle>
+          <v-card-text class="px-0 pb-0">
+            <v-divider class="mb-2" />
+            <v-row class="progress-summary-stats" align="stretch">
               <v-col cols="12" sm="4">
-                <div>
-                  <h3 class="text-h4">{{ upcomingSessionsCount }}</h3>
-                  <p>Sesiones agendadas</p>
+                <div class="progress-summary-stat">
+                  <v-avatar color="secondary" variant="tonal" rounded="lg">
+                    <v-icon>mdi-calendar-clock-outline</v-icon>
+                  </v-avatar>
+                  <div>
+                    <p class="progress-summary-stat__value mb-0">
+                      {{ upcomingSessionsCount }}
+                    </p>
+                    <p class="text-body-2 text-medium-emphasis mb-0">
+                      Sesiones agendadas
+                    </p>
+                  </div>
                 </div>
               </v-col>
+
               <v-col cols="12" sm="4">
-                <div>
-                  <h3 class="text-h4">{{ learnedToolsCount }}</h3>
-                  <p>Herramientas aprendidas</p>
+                <div class="progress-summary-stat">
+                  <v-avatar color="warning" variant="tonal" rounded="lg">
+                    <v-icon>mdi-tools</v-icon>
+                  </v-avatar>
+                  <div>
+                    <p class="progress-summary-stat__value mb-0">
+                      {{ learnedToolsCount }}
+                    </p>
+                    <p class="text-body-2 text-medium-emphasis mb-0">
+                      Herramientas aprendidas
+                    </p>
+                  </div>
                 </div>
               </v-col>
+
               <v-col cols="12" sm="4">
-                <div>
-                  <h3 class="text-h4">{{ completedSessionsCount }}</h3>
-                  <p>Sesiones tomadas</p>
+                <div class="progress-summary-stat">
+                  <v-avatar color="success" variant="tonal" rounded="lg">
+                    <v-icon>mdi-check-circle-outline</v-icon>
+                  </v-avatar>
+                  <div>
+                    <p class="progress-summary-stat__value mb-0">
+                      {{ completedSessionsCount }}
+                    </p>
+                    <p class="text-body-2 text-medium-emphasis mb-0">
+                      Sesiones tomadas
+                    </p>
+                  </div>
                 </div>
               </v-col>
             </v-row>
-            <v-divider></v-divider>
-            <v-card-actions class="my-2">
+
+            <v-divider />
+            <v-card-actions class="px-0 pt-4 pb-0">
               <v-btn
-                color="secondary"
-                class="px-3 pf-btn-ghost"
-                rounded="sm"
-                variant="text"
+                class="pf-btn-secondary"
                 to="/progreso"
+                append-icon="mdi-arrow-right"
               >
                 Ver progreso
               </v-btn>
@@ -68,17 +103,17 @@
         </v-card>
 
         <v-card
-          v-if="!hasScheduledAppointments && activeTherapy"
+          v-if="!nextAppointment"
           class="pa-2 my-5 card-backgoundcustom clickable-card"
           elevation="2"
           variant="text"
-          @click="dialog = true"
+          @click="openScheduleDialog"
         >
           <v-card-title class="text-h5">
             Agenda una sesión <v-icon size="small">mdi-open-in-new</v-icon>
           </v-card-title>
           <v-card-text>
-            <v-divider></v-divider>
+            <v-divider />
             <v-list-item class="pt-5 px-0">
               <v-list-item-title>
                 {{
@@ -88,111 +123,50 @@
                 }}
               </v-list-item-title>
               <v-list-item-subtitle>
-                {{
-                  nextAppointment
-                    ? "Haz click aquí para revisar la agenda de tu terapeuta y agendar una sesión"
-                    : "Haz click aquí para revisar la agenda de tu terapeuta y agendar una sesión"
-                }}
+                Haz click aquí para revisar la agenda de tu terapeuta y agendar
+                una sesión
               </v-list-item-subtitle>
             </v-list-item>
           </v-card-text>
         </v-card>
 
-        <v-row v-if="hasScheduledAppointments" align="stretch">
-          <v-col cols="12" md="4" class="d-flex">
-            <v-card
-              class="pa-2 my-5 card-backgoundcustom flex-grow-1 d-flex flex-column"
-              elevation="2"
-              variant="text"
-            >
-              <v-card-title class="text-h5"> <v-icon size="small">mdi-calendar-clock</v-icon> Proxima sesión </v-card-title>
-              <v-card-text>
-                <v-divider></v-divider>
-                <v-list-item class="dashboard-list-item mx-auto pt-5">
-                  <template v-slot:prepend>
-                    <h4 class="appointment-day">{{ nextAppointmentDay }}</h4>
-                  </template>
-                  <v-list-item-title class="pl-5">{{ nextAppointmentMonth }}</v-list-item-title>
-                  <v-list-item-subtitle class="pl-5"
-                    >{{ nextAppointmentYear }}{{ nextAppointment?.hora ? ` • ${nextAppointment.hora}` : "" }}</v-list-item-subtitle
-                  >
-                </v-list-item>
-                <v-alert
-                  v-if="isNextAppointmentRemote"
-                  class="mt-4"
-                  :color="nextAppointmentMeetingUrl ? 'secondary' : 'warning'"
-                  variant="tonal"
-                  density="compact"
-                  icon="mdi-video-outline"
-                >
-                  {{
-                    nextAppointmentMeetingUrl
-                      ? "El enlace de tu sesión ya está disponible."
-                      : "El psicólogo agregará aquí el enlace de la sesión."
-                  }}
-                  <div v-if="nextAppointmentMeetingUrl" class="mt-2">
-                    <v-btn
-                      :href="nextAppointmentMeetingUrl"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      color="secondary"
-                      variant="flat"
-                      size="small"
-                      prepend-icon="mdi-open-in-new"
+        <NextAppointmentCard
+          v-if="nextAppointment"
+          class="my-5"
+          :appointment="nextAppointment"
+          :reschedulable="Boolean(editableAppointment)"
+          @reschedule="openRescheduleDialog"
+        />
 
-        class="pf-btn-secondary">
-                      Entrar
-                    </v-btn>
-                  </div>
-                </v-alert>
-              </v-card-text>
-            </v-card>
-          </v-col>
-
-          <v-col cols="12" md="8" class="d-flex">
-            <v-card
-              class="pa-2 my-5 card-backgoundcustom flex-grow-1 d-flex flex-column"
-              elevation="2"
-              variant="text"
-            >
-              <v-card-title class="text-h5">
-                Tu terapeuta <v-icon size="small">mdi-open-in-new</v-icon>
-              </v-card-title>
-              <v-card-text>
-                <v-divider></v-divider>
-                <v-list-item class="dashboard-list-item pt-5">
-                  <template v-slot:prepend>
-                    <v-avatar
-                      color="surface-glass"
-                      image="https://avataaars.io/?avatarStyle=Transparent&topType=ShortHairShortCurly&accessoriesType=Prescription02&hairColor=Black&facialHairType=Blank&clotheType=Hoodie&clotheColor=White&eyeType=Default&eyebrowType=DefaultNatural&mouthType=Default&skinColor=Light"
-                    ></v-avatar>
-                  </template>
-                  <v-list-item-title>{{ activeTherapy.terapeutaNombre || "Terapeuta asignado" }}</v-list-item-title>
-                  <v-list-item-subtitle
-                    >Tu terapia se encuentra activa.</v-list-item-subtitle
-                  >
-                </v-list-item>
-              </v-card-text>
-            </v-card>
-          </v-col>
-        </v-row>
+        <ActiveTherapySummaryCard
+          :therapy="activeTherapy"
+          :therapist="activeTherapist"
+          :main-reason="mainReason"
+          :loading-therapist="loadingTherapist"
+          :learned-tools-count="learnedToolsCount"
+        />
       </template>
 
       <v-card
         v-else
-        class="pa-6 card-backgoundcustom"
         id="container"
+        class="pa-6 card-backgoundcustom"
         elevation="2"
       >
         <v-card-item>
           <v-card-title class="text-h5">Aún no tienes una cita</v-card-title>
           <v-card-subtitle>
-            Cuéntanos qué estás buscando para sugerirte psicólogos afines y agendar tu primera sesión.
+            Cuéntanos qué estás buscando para sugerirte psicólogos afines y
+            agendar tu primera sesión.
           </v-card-subtitle>
         </v-card-item>
         <v-card-text class="pt-6">
-          <v-btn color="secondary" size="large" to="/encuesta"
-        class="pf-btn-secondary">
+          <v-btn
+            color="secondary"
+            size="large"
+            to="/encuesta"
+            class="pf-btn-secondary"
+          >
             Encontrar terapeuta
           </v-btn>
         </v-card-text>
@@ -200,29 +174,48 @@
 
       <CitaDialog
         v-model="dialog"
-        :terapia-id="activeTherapy?.id || ''"
-        :terapeuta-id="activeTherapy?.terapeutaId || ''"
-        :terapeuta-nombre="activeTherapy?.terapeutaNombre || ''"
+        :terapia-id="dialogAppointment?.terapiaId || activeTherapy?.id || ''"
+        :terapeuta-id="dialogAppointment?.terapeutaId || activeTherapy?.terapeutaId || ''"
+        :terapeuta-nombre="dialogAppointment?.terapeutaNombre || activeTherapy?.terapeutaNombre || ''"
+        :cita-id="dialogAppointment?.citaId || ''"
+        :initial-appointment="dialogAppointment || {}"
         :redirect-on-save="false"
-        @saved="loadActiveTherapy"
+        @saved="handleDialogSaved"
       />
     </div>
   </LayoutDefault>
 </template>
+
 <script setup>
-import { computed, ref, watch } from "vue";
+import { computed, onBeforeUnmount, ref, watch } from "vue";
 import { storeToRefs } from "pinia";
 import LayoutDefault from "@/components/Layout/Layoutmain.vue";
 import CitaDialog from "@/components/Terapias/CitaDialog.vue";
+import NextAppointmentCard from "@/components/Terapias/NextAppointmentCard.vue";
+import ActiveTherapySummaryCard from "@/components/Terapias/ActiveTherapySummaryCard.vue";
 import { useAuthStore } from "@/store/auth";
-import { getActiveTherapyByPatient, getTherapiesByPatient } from "@/services/terapiaService";
+import { watchProfile } from "@/services/conversationService";
+import { getTherapistById } from "@/services/psicologoService";
+import { getExercisesByPatient } from "@/services/exerciseService";
+import {
+  getActiveTherapyByPatient,
+  getTherapiesByPatient,
+} from "@/services/terapiaService";
 
 const authStore = useAuthStore();
 const { currentUser, userName: username } = storeToRefs(authStore);
 const therapiesReady = ref(false);
 const activeTherapyData = ref(null);
 const therapies = ref([]);
+const exercises = ref([]);
+const profile = ref(null);
+const activeTherapist = ref(null);
+const loadingTherapist = ref(false);
 const dialog = ref(false);
+const dialogAppointment = ref(null);
+
+let unsubscribeProfile = null;
+let therapistRequestId = 0;
 
 const activeTherapy = computed(() => activeTherapyData.value);
 
@@ -242,28 +235,21 @@ const completedAppointments = computed(() =>
   })
 );
 
-const completedSessionsCount = computed(() => completedAppointments.value.length);
+const completedSessionsCount = computed(
+  () => completedAppointments.value.length
+);
 
-const learnedToolsCount = computed(() => {
-  // Mientras no exista un campo estructurado de herramientas, usamos las notas
-  // registradas en sesiones realizadas como aproximacion.
-  const tools = new Set();
+const learnedToolsCount = computed(() =>
+  exercises.value.filter(
+    (exercise) =>
+      exercise?.terapiaId === activeTherapy.value?.id &&
+      (exercise?.status || "").toString().trim().toLowerCase() === "completed"
+  ).length
+);
 
-  completedAppointments.value.forEach((appointment) => {
-    const note = (appointment?.notas || "").toString().trim();
-
-    if (!note) {
-      return;
-    }
-
-    note
-      .split(/[\n,;]+/)
-      .map((item) => item.trim().toLowerCase())
-      .filter(Boolean)
-      .forEach((item) => tools.add(item));
-  });
-
-  return tools.size;
+const mainReason = computed(() => {
+  const reason = profile.value?.motivoConsulta?.toString().trim();
+  return reason || "En exploración";
 });
 
 function parseAppointmentDate(appointment) {
@@ -278,70 +264,78 @@ function parseAppointmentDate(appointment) {
 }
 
 const nextAppointment = computed(() => {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
   const appointments = therapies.value
     .flatMap((therapy) =>
       (Array.isArray(therapy.citas) ? therapy.citas : []).map((appointment) => ({
         ...appointment,
+        terapiaId: therapy.id,
+        terapeutaId: therapy.terapeutaId,
         terapeutaNombre: therapy.terapeutaNombre,
       }))
     )
     .filter((appointment) => {
-      const status = (appointment?.estado || "").toString().trim().toLowerCase();
-      return (status === "pendiente" || status === "confirmada") && parseAppointmentDate(appointment);
+      const status = (appointment?.estado || "")
+        .toString()
+        .trim()
+        .toLowerCase();
+      return (
+        (status === "pendiente" || status === "confirmada") &&
+        parseAppointmentDate(appointment) &&
+        parseAppointmentDate(appointment) >= today
+      );
     })
     .sort((a, b) => parseAppointmentDate(a) - parseAppointmentDate(b));
 
   return appointments[0] || null;
 });
 
-const nextAppointmentDay = computed(() => {
-  const date = parseAppointmentDate(nextAppointment.value);
-  return date ? String(date.getDate()).padStart(2, "0") : "--";
+const editableAppointment = computed(() => {
+  if (!nextAppointment.value) return null;
+
+  return {
+    citaId: nextAppointment.value.citaId || "",
+    terapiaId: nextAppointment.value.terapiaId || "",
+    terapeutaId: nextAppointment.value.terapeutaId || "",
+    terapeutaNombre: nextAppointment.value.terapeutaNombre || "",
+    fecha: nextAppointment.value.fecha || "",
+    hora: nextAppointment.value.hora || "",
+    notas: nextAppointment.value.notas || "",
+    modalidad: nextAppointment.value.modalidad || "",
+    ubicacion: nextAppointment.value.ubicacion || "",
+    meetingProvider: nextAppointment.value.meetingProvider || "",
+    meetingUrl: nextAppointment.value.meetingUrl || "",
+  };
 });
 
-const nextAppointmentMonth = computed(() => {
-  const date = parseAppointmentDate(nextAppointment.value);
-  return date
-    ? date.toLocaleDateString("es-PE", { month: "long" })
-    : "Sin fecha";
-});
-
-const nextAppointmentYear = computed(() => {
-  const date = parseAppointmentDate(nextAppointment.value);
-  return date ? date.getFullYear() : "";
-});
-
-const isNextAppointmentRemote = computed(() => {
-  const mode = (nextAppointment.value?.modalidad || "")
-    .toString()
-    .trim()
-    .toLowerCase();
-
-  return ["remoto", "online", "remota"].includes(mode);
-});
-
-const nextAppointmentMeetingUrl = computed(
-  () => nextAppointment.value?.meetingUrl || ""
-);
-
-const hasScheduledAppointments = computed(() =>
-  therapies.value.some((therapy) =>
-    (Array.isArray(therapy.citas) ? therapy.citas : []).some((appointment) => {
+const upcomingSessionsCount = computed(
+  () =>
+    allAppointments.value.filter((appointment) => {
       const status = (appointment?.estado || "")
         .toString()
         .trim()
         .toLowerCase();
       return status === "pendiente" || status === "confirmada";
-    })
-  )
+    }).length
 );
 
-const upcomingSessionsCount = computed(() =>
-  allAppointments.value.filter((appointment) => {
-    const status = (appointment?.estado || "").toString().trim().toLowerCase();
-    return status === "pendiente" || status === "confirmada";
-  }).length
-);
+function openScheduleDialog() {
+  dialogAppointment.value = null;
+  dialog.value = true;
+}
+
+function openRescheduleDialog() {
+  if (!editableAppointment.value) return;
+  dialogAppointment.value = { ...editableAppointment.value };
+  dialog.value = true;
+}
+
+function handleDialogSaved() {
+  dialogAppointment.value = null;
+  loadActiveTherapy();
+}
 
 async function loadActiveTherapy() {
   const pacienteUid = currentUser.value?.uid;
@@ -349,22 +343,26 @@ async function loadActiveTherapy() {
   if (!pacienteUid) {
     activeTherapyData.value = null;
     therapies.value = [];
+    exercises.value = [];
     therapiesReady.value = true;
     return;
   }
 
   try {
-    const [activeTherapy, patientTherapies] = await Promise.all([
+    const [activeTherapy, patientTherapies, patientExercises] = await Promise.all([
       getActiveTherapyByPatient(pacienteUid),
       getTherapiesByPatient(pacienteUid),
+      getExercisesByPatient(pacienteUid),
     ]);
 
     activeTherapyData.value = activeTherapy;
     therapies.value = patientTherapies;
+    exercises.value = patientExercises;
   } catch (error) {
     console.error("Error loading active therapy for dashboard:", error);
     activeTherapyData.value = null;
     therapies.value = [];
+    exercises.value = [];
   } finally {
     therapiesReady.value = true;
   }
@@ -372,12 +370,69 @@ async function loadActiveTherapy() {
 
 watch(
   () => currentUser.value?.uid,
-  () => {
+  (uid) => {
+    unsubscribeProfile?.();
+    unsubscribeProfile = null;
+    profile.value = null;
+    dialogAppointment.value = null;
+
+    if (uid) {
+      unsubscribeProfile = watchProfile(
+        uid,
+        (item) => {
+          profile.value = item;
+        },
+        (error) => {
+          console.error("Error loading profile for dashboard:", error);
+          profile.value = null;
+        }
+      );
+    }
+
     therapiesReady.value = false;
     loadActiveTherapy();
   },
   { immediate: true }
 );
+
+watch(
+  () => activeTherapy.value?.terapeutaId,
+  async (therapistId) => {
+    const requestId = ++therapistRequestId;
+    activeTherapist.value = null;
+
+    if (!therapistId) {
+      loadingTherapist.value = false;
+      return;
+    }
+
+    loadingTherapist.value = true;
+
+    try {
+      const therapist = await getTherapistById(therapistId);
+
+      if (requestId === therapistRequestId) {
+        activeTherapist.value = therapist;
+      }
+    } catch (error) {
+      console.error("Error loading therapist for dashboard:", error);
+
+      if (requestId === therapistRequestId) {
+        activeTherapist.value = null;
+      }
+    } finally {
+      if (requestId === therapistRequestId) {
+        loadingTherapist.value = false;
+      }
+    }
+  },
+  { immediate: true }
+);
+
+onBeforeUnmount(() => {
+  unsubscribeProfile?.();
+  therapistRequestId += 1;
+});
 </script>
 
 <style scoped>
@@ -385,8 +440,30 @@ watch(
   width: 100%;
 }
 
-.dashboard-list-item {
-  max-width: 100%;
+.progress-summary-card {
+  overflow: hidden;
+}
+
+.progress-summary-stats {
+  padding-block: 12px;
+}
+
+.progress-summary-stat {
+  align-items: center;
+  display: flex;
+  gap: 14px;
+  min-height: 72px;
+  padding: 4px 10px;
+}
+
+.progress-summary-stats .v-col + .v-col .progress-summary-stat {
+  border-left: 1px solid rgba(var(--v-theme-border-subtle), 0.4);
+}
+
+.progress-summary-stat__value {
+  font-size: 1.65rem;
+  font-weight: 800;
+  line-height: 1.15;
 }
 
 @media (max-width: 599px) {
@@ -404,6 +481,11 @@ watch(
 
   .dashboard-shell :deep(.v-list-item) {
     padding-inline: 0;
+  }
+
+  .progress-summary-stats .v-col + .v-col .progress-summary-stat {
+    border-left: 0;
+    border-top: 1px solid rgba(var(--v-theme-border-subtle), 0.4);
   }
 }
 </style>

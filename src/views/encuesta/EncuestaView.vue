@@ -1,5 +1,5 @@
 <template>
-  <v-app class="survey-page bg-diagonal min-dvh-page">
+  <v-app class="brand-system-scope survey-page bg-diagonal min-dvh-page">
     <v-app-bar
       app
       class="responsive-app-bar"
