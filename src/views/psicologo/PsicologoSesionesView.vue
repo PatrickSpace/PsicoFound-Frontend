@@ -1,24 +1,31 @@
 <template>
   <LayoutDefault layout>
-    <v-container class="schedule-view">
-      <div class="d-flex flex-column flex-md-row justify-space-between align-md-center ga-4 mb-6">
-        <div>
-          <p class="text-overline text-secondary mb-1">Gestión de sesiones</p>
-          <h1 class="text-h4 font-weight-bold">Agenda del psicólogo</h1>
-          <p class="text-body-1 text-medium-emphasis mt-2 mb-0">
-            Gestiona tus citas, confirma sesiones y agrega el enlace externo de videollamada.
-          </p>
+    <v-container class="schedule-view pa-0">
+      <div class="page-header">
+        <div class="page-header__row">
+          <div class="page-header__copy">
+            <p class="page-header__eyebrow text-overline text-secondary mb-1">
+              Gestión de sesiones
+            </p>
+            <h1 class="text-h4 font-weight-bold">Agenda del psicólogo</h1>
+            <p class="text-body-1 text-medium-emphasis mt-2 mb-0">
+              Gestiona tus citas, confirma sesiones y agrega el enlace externo de videollamada.
+            </p>
+          </div>
+          <div class="page-header__actions">
+            <v-btn
+              color="secondary"
+              variant="tonal"
+              prepend-icon="mdi-refresh"
+              :loading="loading"
+              class="pf-btn-secondary"
+              @click="loadTherapistSchedule"
+            >
+              Actualizar
+            </v-btn>
+          </div>
         </div>
-        <v-btn
-          color="secondary"
-          variant="tonal"
-          prepend-icon="mdi-refresh"
-          :loading="loading"
-          class="align-self-start align-self-md-center pf-btn-secondary"
-          @click="loadTherapistSchedule"
-        >
-          Actualizar
-        </v-btn>
+        <v-divider class="page-header-divider" />
       </div>
 
       <v-alert
@@ -882,10 +889,6 @@ function clearAppointmentAction() {
 }
 
 @media (max-width: 600px) {
-  .schedule-view {
-    padding-inline: 16px;
-  }
-
   .schedule-view :deep(.v-card-title) {
     line-height: 1.25;
   }

@@ -1,25 +1,29 @@
 <template>
   <LayoutDefault layout>
-    <v-container class="settings-view">
-      <div
-        class="d-flex flex-column flex-md-row justify-space-between align-md-center ga-4 mb-6"
-      >
-        <div>
-          <p class="text-overline text-secondary mb-1">Cuenta y preferencias</p>
-          <h1 class="text-h4 font-weight-bold">Configuración</h1>
-          <p class="text-body-1 text-medium-emphasis mt-2 mb-0">
-            Administra tu cuenta, preferencias y accesos dentro de Lurems.
-          </p>
+    <v-container class="settings-view pa-0">
+      <div class="page-header">
+        <div class="page-header__row">
+          <div class="page-header__copy">
+            <p class="page-header__eyebrow text-overline text-secondary mb-1">
+              Cuenta y preferencias
+            </p>
+            <h1 class="text-h4 font-weight-bold">Configuración</h1>
+            <p class="text-body-1 text-medium-emphasis mt-2 mb-0">
+              Administra tu cuenta, preferencias y accesos dentro de Lurems.
+            </p>
+          </div>
+          <div class="page-header__actions">
+            <v-chip
+              v-if="activeMode"
+              color="secondary"
+              variant="tonal"
+              :prepend-icon="activeMode.icon"
+            >
+              Vista {{ activeMode.label }}
+            </v-chip>
+          </div>
         </div>
-        <v-chip
-          v-if="activeMode"
-          class="align-self-start"
-          color="secondary"
-          variant="tonal"
-          :prepend-icon="activeMode.icon"
-        >
-          Vista {{ activeMode.label }}
-        </v-chip>
+        <v-divider class="page-header-divider" />
       </div>
 
       <v-row align="stretch">
@@ -785,10 +789,6 @@ async function logout() {
 }
 
 @media (max-width: 600px) {
-  .settings-view {
-    padding-inline: 16px;
-  }
-
   .settings-view :deep(.v-card-title) {
     line-height: 1.25;
   }

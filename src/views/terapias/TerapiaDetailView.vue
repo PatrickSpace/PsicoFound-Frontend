@@ -1,12 +1,19 @@
 <template>
   <LayoutDefault layout>
-    <v-container class="therapy-detail-view">
-      <div class="mb-6">
-        <p class="text-overline text-secondary mb-1">Proceso terapéutico</p>
-        <h1 class="text-h4 font-weight-bold">Detalle de terapia</h1>
-        <p class="text-body-1 text-medium-emphasis mt-2 mb-0">
-          Revisa el estado del proceso, agenda nuevas citas y consulta sesiones asociadas.
-        </p>
+    <v-container class="therapy-detail-view pa-0">
+      <div class="page-header">
+        <div class="page-header__row">
+          <div class="page-header__copy">
+            <p class="page-header__eyebrow text-overline text-secondary mb-1">
+              Proceso terapéutico
+            </p>
+            <h1 class="text-h4 font-weight-bold">Detalle de terapia</h1>
+            <p class="text-body-1 text-medium-emphasis mt-2 mb-0">
+              Revisa el estado del proceso, agenda nuevas citas y consulta sesiones asociadas.
+            </p>
+          </div>
+        </div>
+        <v-divider class="page-header-divider" />
       </div>
 
       <v-row v-if="therapy" align="stretch">
@@ -35,7 +42,7 @@
                 <v-list-item
                   prepend-icon="mdi-calendar-month-outline"
                   title="Citas registradas"
-                  :subtitle="`${appointmentItems.length} sesiones asociadas`"
+                  :subtitle="`${Array.isArray(therapy.citas) ? therapy.citas.length : 0} sesiones asociadas`"
                 />
                 <v-list-item
                   prepend-icon="mdi-heart-pulse"
@@ -126,49 +133,17 @@
         elevation="2"
         variant="text"
       >
-        <v-card-title class="d-flex align-center ga-2 text-h6 font-weight-bold px-0 pt-0">
-          <v-icon color="secondary" size="small">mdi-calendar-check-outline</v-icon>
+        <v-card-title
+          class="d-flex align-center ga-2 text-h6 font-weight-bold px-0 pt-0"
+        >
+          <v-icon color="secondary" size="small">
+            mdi-calendar-check-outline
+          </v-icon>
           Citas asociadas
         </v-card-title>
         <v-card-text>
-          <v-divider class="mb-4"></v-divider>
-          <v-data-table
-            :headers="appointmentHeaders"
-            :items="appointmentItems"
-            class="card-backgoundcustom therapy-appointments-table"
-            :items-per-page="10"
-          >
-            <template #no-data>
-              <v-empty-state
-                headline="Aún no hay citas asociadas"
-                text="Agenda la primera sesión para iniciar el seguimiento del proceso."
-                icon="mdi-calendar-search"
-              ></v-empty-state>
-            </template>
-            <template #item.estado="{ value }">
-              <v-chip size="small" variant="tonal" :color="statusColor(value)">
-                {{ value || "pendiente" }}
-              </v-chip>
-            </template>
-            <template #item.meetingUrl="{ item }">
-              <v-btn
-                v-if="item.meetingUrl"
-                :href="item.meetingUrl"
-                target="_blank"
-                rel="noopener noreferrer"
-                size="small"
-                color="secondary"
-                variant="tonal"
-                prepend-icon="mdi-video-outline"
-
-        class="pf-btn-secondary">
-                Abrir
-              </v-btn>
-              <v-chip v-else size="small" variant="tonal" color="secondary">
-                Pendiente
-              </v-chip>
-            </template>
-          </v-data-table>
+          <v-divider class="mb-4" />
+          <TherapyAppointmentsTable :appointments="therapy.citas || []" />
         </v-card-text>
       </v-card>
 
@@ -192,6 +167,7 @@ import { storeToRefs } from "pinia";
 import { useRoute, useRouter } from "vue-router";
 import LayoutDefault from "@/components/Layout/Layoutmain.vue";
 import CitaDialog from "@/components/Terapias/CitaDialog.vue";
+import TherapyAppointmentsTable from "@/components/Terapias/TherapyAppointmentsTable.vue";
 import { useAuthStore } from "@/store/auth";
 import { useAppContextStore } from "@/store/appContext";
 import { getTherapistByUserUid } from "@/services/psicologoService";
@@ -210,13 +186,6 @@ const { currentUser } = storeToRefs(authStore);
 const therapy = ref(null);
 const dialog = ref(false);
 const changingStatus = ref("");
-const appointmentHeaders = [
-  { title: "Fecha", value: "fecha" },
-  { title: "Hora", value: "hora" },
-  { title: "Estado", value: "estado" },
-  { title: "Sesión online", value: "meetingUrl", sortable: false },
-  { title: "Notas", value: "notas" },
-];
 
 const formattedCreationDate = computed(() => {
   if (!therapy.value?.fechaCreacion) return "No definida";
@@ -242,17 +211,6 @@ const appointmentActionHint = computed(() =>
   canCreateAppointment.value
     ? "Solo puedes agendar nuevas citas cuando la terapia está en estado activo."
     : "La agenda de nuevas citas está disponible desde la vista del paciente."
-);
-
-const appointmentItems = computed(() =>
-  (Array.isArray(therapy.value?.citas) ? therapy.value.citas : []).map((appointment) => ({
-    citaId: appointment.citaId || `${appointment.fecha}-${appointment.hora}`,
-    fecha: appointment.fecha || "Sin fecha",
-    hora: appointment.hora || "Sin hora",
-    estado: appointment.estado || "pendiente",
-    meetingUrl: appointment.meetingUrl || "",
-    notas: appointment.notas || "Sin notas",
-  }))
 );
 
 function statusColor(status) {
@@ -389,10 +347,6 @@ watch(
 }
 
 @media (max-width: 600px) {
-  .therapy-detail-view {
-    padding-inline: 16px;
-  }
-
   .therapy-detail-view :deep(.v-card-title) {
     line-height: 1.25;
   }

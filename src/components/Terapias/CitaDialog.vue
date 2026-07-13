@@ -221,7 +221,7 @@
 
             <v-col v-else-if="isRemote" cols="12">
               <v-alert
-                color="info"
+                type="info"
                 variant="tonal"
                 icon="mdi-video-outline"
                 density="comfortable"
@@ -903,11 +903,6 @@ function formatDisplayDate(date) {
   opacity: 1;
 }
 
-.appointment-card :deep(.v-alert) {
-  background-color: rgba(var(--v-theme-brand-secondary), 0.24) !important;
-  color: rgba(var(--v-theme-text-primary), 0.88) !important;
-}
-
 .appointment-therapist-card {
   align-items: center;
   background: rgba(var(--v-theme-surface-glass), 0.18);
@@ -1069,78 +1064,78 @@ function formatDisplayDate(date) {
   position: absolute;
 }
 
-:global(.v-theme--light) .appointment-card {
+:global(.v-theme--light .appointment-card) {
   color: rgb(var(--v-theme-on-surface));
 }
 
-:global(.v-theme--light) .appointment-topbar {
+:global(.v-theme--light .appointment-topbar) {
   border-bottom-color: rgba(var(--v-theme-border-subtle), var(--pf-border-subtle-alpha));
 }
 
-:global(.v-theme--light) .appointment-card :deep(.v-card-title),
-:global(.v-theme--light) .appointment-card :deep(.text-subtitle-1) {
+:global(.v-theme--light .appointment-card .v-card-title),
+:global(.v-theme--light .appointment-card .text-subtitle-1) {
   color: rgba(var(--v-theme-text-primary), 0.92) !important;
 }
 
-:global(.v-theme--light) .appointment-card :deep(.text-medium-emphasis),
-:global(.v-theme--light) .appointment-card :deep(.v-messages__message) {
+:global(.v-theme--light .appointment-card .text-medium-emphasis),
+:global(.v-theme--light .appointment-card .v-messages__message) {
   color: rgba(var(--v-theme-text-secondary), 0.68) !important;
 }
 
-:global(.v-theme--light) .appointment-therapist-card {
+:global(.v-theme--light .appointment-therapist-card) {
   background: rgba(var(--v-theme-surface-glass), 0.98);
   border-color: rgba(var(--v-theme-border-subtle), var(--pf-border-subtle-alpha));
 }
 
-:global(.v-theme--light) .appointment-therapist-card__meta {
+:global(.v-theme--light .appointment-therapist-card__meta) {
   color: rgba(var(--v-theme-text-secondary), 0.62);
 }
 
-:global(.v-theme--light) .appointment-location-card {
+:global(.v-theme--light .appointment-location-card) {
   background: rgba(var(--v-theme-surface-glass), 0.98);
   border-color: rgba(var(--v-theme-border-subtle), var(--pf-border-subtle-alpha));
 }
 
-:global(.v-theme--light) .availability-range {
+:global(.v-theme--light .availability-range) {
   background: var(--color-button-secondary-bg);
   border-color: color-mix(in srgb, var(--color-primary) 26%, transparent);
   color: var(--color-primary-dark);
 }
 
-:global(.v-theme--light) .availability-range--selected {
+:global(.v-theme--light .availability-range--selected) {
   background: var(--color-primary-soft);
   border-color: color-mix(in srgb, var(--color-primary) 52%, transparent);
   color: var(--color-primary-dark);
 }
 
-:global(.v-theme--light) .availability-day {
+:global(.v-theme--light .availability-day) {
   border-top-color: rgba(var(--v-theme-border-subtle), 0.14);
 }
 
-:global(.v-theme--light) .availability-slot {
+:global(.v-theme--light .availability-slot) {
   border-color: transparent;
   color: rgb(var(--v-theme-text-primary));
 }
 
-:global(.v-theme--light) .availability-slot:hover,
-:global(.v-theme--light) .availability-slot--selected {
+:global(.v-theme--light .availability-slot:hover),
+:global(.v-theme--light .availability-slot--selected) {
   background: var(--color-button-secondary-hover);
   border-color: color-mix(in srgb, var(--color-primary) 42%, transparent);
   color: var(--color-primary-dark);
 }
 
-:global(.v-theme--dark) .availability-range,
-:global(.v-theme--dark) .availability-slot {
+:global(.v-theme--dark .availability-range),
+:global(.v-theme--dark .availability-slot) {
   color: rgb(var(--v-theme-text-primary));
   border-color: rgba(var(--v-theme-border-subtle), 0.28);
 }
 
-:global(.v-theme--dark) .availability-range:hover,
-:global(.v-theme--dark) .availability-range:focus-visible,
-:global(.v-theme--dark) .availability-range--selected,
-:global(.v-theme--dark) .availability-slot:hover,
-:global(.v-theme--dark) .availability-slot:focus-visible,
-:global(.v-theme--dark) .availability-slot--selected {
+:global(.v-theme--dark .availability-range:hover),
+:global(.v-theme--dark .availability-range:focus-visible),
+:global(.v-theme--dark .availability-range--selected),
+:global(.v-theme--dark .availability-slot:hover),
+:global(.v-theme--dark .availability-slot:focus-visible),
+:global(.v-theme--dark .availability-slot--selected) {
   color: rgb(var(--v-theme-text-primary));
   border-color: rgba(var(--v-theme-border-default), 0.48);
 }

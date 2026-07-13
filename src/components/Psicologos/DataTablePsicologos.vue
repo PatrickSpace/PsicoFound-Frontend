@@ -767,7 +767,7 @@ export default {
   color: rgb(var(--v-theme-on-secondary));
 }
 
-:global(.v-theme--light) .therapists-table {
+:global(.v-theme--light .therapists-table) {
   border-color: rgba(var(--v-theme-border-subtle), 0.16);
 }
 

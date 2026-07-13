@@ -29,7 +29,7 @@
     :headers="headers"
     :items="filteredItems"
     class="card-backgoundcustom therapies-table"
-    :items-per-page="10"
+    :items-per-page="25"
     :loading="loading"
   >
     <template #no-data>

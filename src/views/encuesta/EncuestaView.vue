@@ -44,7 +44,7 @@ import ConversationalSurvey from "@/components/encuesta/ConversationalSurvey.vue
   background: transparent !important;
 }
 
-:global(.v-theme--light) .survey-page {
+:global(.v-theme--light .survey-page) {
   background: transparent !important;
 }
 

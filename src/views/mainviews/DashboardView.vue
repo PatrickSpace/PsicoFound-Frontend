@@ -1,8 +1,20 @@
 <template>
   <LayoutDefault layout>
     <div class="dashboard-shell">
-      <h1 class="text-h4">Bienvenido, {{ username }}</h1>
-      <v-divider class="my-5 mx-auto"></v-divider>
+      <div class="page-header">
+        <div class="page-header__row">
+          <div class="page-header__copy">
+            <p class="page-header__eyebrow text-overline text-secondary mb-1">
+              Inicio
+            </p>
+            <h1 class="text-h4 font-weight-bold">Bienvenido, {{ username }}</h1>
+            <p class="text-body-1 text-medium-emphasis mt-2 mb-0">
+              Revisa tu proceso, próximas sesiones y avances recientes.
+            </p>
+          </div>
+        </div>
+        <v-divider class="page-header-divider" />
+      </div>
 
       <v-skeleton-loader
         v-if="!therapiesReady"

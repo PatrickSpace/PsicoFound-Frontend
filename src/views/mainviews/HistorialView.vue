@@ -1,23 +1,31 @@
 <template>
   <LayoutDefault layout>
     <v-container class="pa-0">
-      <div class="d-flex flex-column flex-md-row justify-space-between ga-4">
-        <div>
-          <h1 class="text-h4 font-weight-bold">Historial longitudinal</h1>
-          <p class="text-body-2 text-medium-emphasis mt-2 mb-0">
+      <div class="page-header">
+        <div class="page-header__row">
+          <div class="page-header__copy">
+            <p class="page-header__eyebrow text-overline text-secondary mb-1">
+              Historial terapéutico
+            </p>
+            <h1 class="text-h4 font-weight-bold">Historial de terapias</h1>
+            <p class="text-body-1 text-medium-emphasis mt-2 mb-0">
             {{ pageSubtitle }}
           </p>
+          </div>
+          <div class="page-header__actions">
+            <v-btn
+              color="secondary"
+              variant="tonal"
+              prepend-icon="mdi-refresh"
+              :loading="loadingHistory"
+              class="pf-btn-secondary"
+              @click="loadHistory"
+            >
+              Actualizar
+            </v-btn>
+          </div>
         </div>
-        <v-btn
-          color="secondary"
-          variant="tonal"
-          prepend-icon="mdi-refresh"
-          :loading="loadingHistory"
-          class="align-self-start pf-btn-secondary"
-          @click="loadHistory"
-        >
-          Actualizar
-        </v-btn>
+        <v-divider class="page-header-divider" />
       </div>
 
       <v-alert
@@ -124,6 +132,21 @@
           ></v-empty-state>
         </v-card-text>
       </v-card>
+
+      <v-card class="pa-4 mt-6 card-backgoundcustom" elevation="2" variant="text">
+        <v-card-title
+          class="d-flex align-center ga-2 text-h6 font-weight-bold px-0 pt-0"
+        >
+          <v-icon color="secondary" size="small">
+            mdi-calendar-check-outline
+          </v-icon>
+          Sesiones y citas
+        </v-card-title>
+        <v-card-text>
+          <v-divider class="mb-4" />
+          <CitasDatatable />
+        </v-card-text>
+      </v-card>
     </v-container>
   </LayoutDefault>
 </template>
@@ -133,6 +156,7 @@ import { computed, ref, watch } from "vue";
 import { storeToRefs } from "pinia";
 import LayoutDefault from "@/components/Layout/Layoutmain.vue";
 import TerapiasDatatable from "@/components/Terapias/TerapiasDatatable.vue";
+import CitasDatatable from "@/components/Terapias/CitasDatatable.vue";
 import { useAuthStore } from "@/store/auth";
 import { useAppContextStore } from "@/store/appContext";
 import { getTherapistByUserUid } from "@/services/psicologoService";

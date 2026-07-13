@@ -1,13 +1,19 @@
 <template>
   <LayoutDefault layout>
     <v-container class="pa-0">
-      <div class="d-flex flex-column flex-md-row justify-space-between ga-4 mb-5">
-        <div>
+      <div class="page-header">
+        <div class="page-header__row">
+          <div class="page-header__copy">
+            <p class="page-header__eyebrow text-overline text-secondary mb-1">
+              Administración
+            </p>
           <h1 class="text-h4 font-weight-bold">Psicólogos</h1>
-          <p class="text-body-2 text-medium-emphasis mt-2 mb-0">
+            <p class="text-body-1 text-medium-emphasis mt-2 mb-0">
             Gestiona el directorio profesional, disponibilidad y criterios de búsqueda.
           </p>
+          </div>
         </div>
+        <v-divider class="page-header-divider" />
       </div>
 
       <v-card class="pa-4 mb-5 card-backgoundcustom" elevation="2" variant="text">

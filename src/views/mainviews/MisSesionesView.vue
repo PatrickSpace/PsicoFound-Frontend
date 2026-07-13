@@ -1,45 +1,47 @@
 <template>
   <LayoutDefault layout>
     <v-container class="pa-0">
-      <div class="d-flex flex-column flex-md-row justify-space-between ga-4 mb-5">
-        <div>
+      <div class="page-header">
+        <div class="page-header__row">
+          <div class="page-header__copy">
+            <p class="page-header__eyebrow text-overline text-secondary mb-1">
+              Agenda terapéutica
+            </p>
           <h1 class="text-h4 font-weight-bold">Mis sesiones</h1>
-          <p class="text-body-2 text-medium-emphasis mt-2 mb-0">
+            <p class="text-body-1 text-medium-emphasis mt-2 mb-0">
             Revisa tu próxima cita, modalidad y acciones disponibles.
           </p>
+          </div>
+          <div class="page-header__actions">
+            <v-btn
+              v-if="activeTherapy"
+              color="secondary"
+              variant="tonal"
+              prepend-icon="mdi-calendar-plus-outline"
+              class="pf-btn-secondary"
+              @click="openScheduleDialog"
+            >
+              Agendar
+            </v-btn>
+          </div>
         </div>
-        <v-btn
-          v-if="activeTherapy"
-          color="secondary"
-          variant="tonal"
-          prepend-icon="mdi-calendar-plus-outline"
-          class="align-self-start pf-btn-secondary"
-          @click="dialog = true"
-        >
-          Agendar
-        </v-btn>
+        <v-divider class="page-header-divider" />
       </div>
 
       <v-card
-        v-if="!hasScheduledAppointments && activeTherapy"
+        v-if="!nextAppointment && activeTherapy"
         class="pa-4 mb-5 card-backgoundcustom session-card"
         elevation="2"
         variant="text"
-        @click="dialog = true"
+        @click="openScheduleDialog"
       >
         <v-card-title class="text-h6 font-weight-bold d-flex align-center ga-2">
           <v-icon color="secondary">mdi-calendar-plus-outline</v-icon>
-          Agenda una sesión
+          Agendar próxima sesión
         </v-card-title>
         <v-card-text>
           <v-list-item class="px-0">
-            <v-list-item-title>
-              {{
-                nextAppointment
-                  ? `Ya tienes una terapia con ${nextAppointment.terapeutaNombre}`
-                  : "No tienes una sesión agendada"
-              }}
-            </v-list-item-title>
+            <v-list-item-title>No tienes una próxima sesión agendada</v-list-item-title>
             <v-list-item-subtitle>
               Revisa la agenda de tu terapeuta y elige un horario disponible.
             </v-list-item-subtitle>
@@ -50,19 +52,28 @@
         </v-card-text>
       </v-card>
 
-      <v-row v-if="hasScheduledAppointments" align="stretch" class="mb-5">
-        <v-col cols="12" sm="12" md="6" class="d-flex">
-          <v-card
-            class="pa-4 card-backgoundcustom flex-grow-1 d-flex flex-column session-card"
-            elevation="2"
-            variant="text"
-          >
-            <v-card-title class="text-h6 font-weight-bold d-flex align-center ga-2">
-              <v-icon color="secondary">mdi-calendar-clock</v-icon>
-              Próxima sesión
-            </v-card-title>
-            <v-card-text class="pt-2">
-              <v-list-item class="session-date px-0">
+      <v-card
+        v-if="nextAppointment"
+        class="pa-4 mb-5 card-backgoundcustom session-card next-session-card"
+        elevation="2"
+        variant="text"
+      >
+        <v-card-title class="text-h6 font-weight-bold d-flex align-center ga-2">
+          <v-icon color="secondary">mdi-calendar-clock</v-icon>
+          Próxima sesión
+        </v-card-title>
+        <v-card-text class="pt-2">
+          <v-row align="stretch">
+            <v-col cols="12" md="5" class="d-flex flex-column justify-center align-start">
+              <v-chip
+                class="mb-3"
+                :color="nextAppointmentStatusColor"
+                size="small"
+                variant="tonal"
+              >
+                {{ nextAppointmentStatusLabel }}
+              </v-chip>
+              <v-list-item class="session-date px-0 w-100">
                 <template #prepend>
                   <div class="session-day">
                     {{ nextAppointmentDay }}
@@ -76,96 +87,82 @@
                   {{ nextAppointment?.hora ? `• ${nextAppointment.hora}` : "" }}
                 </v-list-item-subtitle>
               </v-list-item>
-            </v-card-text>
-          </v-card>
-        </v-col>
+            </v-col>
 
-        <v-col cols="12" sm="12" md="6" class="d-flex">
-          <v-card
-            class="pa-4 card-backgoundcustom flex-grow-1 d-flex flex-column session-card"
-            elevation="2"
-            variant="text"
-          >
-            <v-card-title class="text-h6 font-weight-bold d-flex align-center ga-2">
-              <v-icon color="secondary">mdi-map-marker-radius</v-icon>
-              Ubicación
-            </v-card-title>
-            <v-card-text class="pt-2">
-              <v-list-item class="px-0">
-                <v-list-item-title>{{
-                  nextAppointmentLocation
-                }}</v-list-item-title>
-                <v-list-item-subtitle>{{
-                  nextAppointmentMode
-                }}</v-list-item-subtitle>
-              </v-list-item>
-
-              <v-alert
-                v-if="isNextAppointmentRemote"
-                class="mt-4"
-                :color="nextAppointmentMeetingUrl ? 'secondary' : 'warning'"
-                variant="tonal"
-                icon="mdi-video-outline"
-              >
-                <div class="d-flex flex-column ga-2">
-                  <span>
-                    {{
-                      nextAppointmentMeetingUrl
-                        ? "Tu enlace de sesión ya está disponible."
-                        : "Tu psicólogo agregará aquí el enlace de Zoom, Google Meet u otra herramienta."
-                    }}
+            <v-col cols="12" md="7">
+              <div class="session-location h-100">
+                <div class="d-flex align-center ga-2 mb-2">
+                  <v-icon color="secondary" size="22">
+                    mdi-map-marker-radius
+                  </v-icon>
+                  <span class="text-subtitle-1 font-weight-bold">
+                    Ubicación y modalidad
                   </span>
-                  <v-btn
-                    v-if="nextAppointmentMeetingUrl"
-                    :href="nextAppointmentMeetingUrl"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    color="secondary"
-                    variant="tonal"
-                    prepend-icon="mdi-open-in-new"
-                    class="align-self-start pf-btn-secondary"
-                  >
-                    Entrar a la sesión
-                  </v-btn>
                 </div>
-              </v-alert>
-            </v-card-text>
-          </v-card>
-        </v-col>
-      </v-row>
+                <p class="font-weight-bold mb-1">
+                  {{ nextAppointmentLocation }}
+                </p>
+                <p class="text-body-2 text-medium-emphasis mb-0">
+                  {{ nextAppointmentMode }}
+                </p>
 
-      <v-card
-        class="pa-4 mb-5 card-backgoundcustom clickable-card session-card"
-        :class="{ 'clickable-card--disabled pf-card--disabled': !editableAppointment }"
-        elevation="2"
-        variant="text"
-        @click="openRescheduleDialog"
-      >
-        <v-card-title class="text-h6 font-weight-bold d-flex align-center ga-2">
-          <v-icon :color="editableAppointment ? 'secondary' : undefined">mdi-calendar-edit-outline</v-icon>
-          ¿Cambio de planes?
-        </v-card-title>
-        <v-card-text>
-          <v-list-item class="px-0">
-            <v-list-item-title>Reprograma tu sesión</v-list-item-title>
-            <v-list-item-subtitle>
-              {{
-                editableAppointment
-                  ? "Puedes cambiar el horario de tu cita pendiente o confirmada."
-                  : "Aún no tienes una cita pendiente o confirmada para reprogramar."
-              }}
-            </v-list-item-subtitle>
-            <template #append>
-              <v-chip
-                :color="editableAppointment ? 'secondary' : 'grey'"
-                size="small"
-                variant="tonal"
-              >
-                {{ editableAppointment ? "Disponible" : "No disponible" }}
-              </v-chip>
-            </template>
-          </v-list-item>
+                <v-alert
+                  v-if="isNextAppointmentRemote"
+                  class="mt-2"
+                  :type="nextAppointmentMeetingUrl ? 'success' : 'warning'"
+                  variant="tonal"
+                  icon="mdi-video-outline"
+                  density="comfortable"
+                >
+                  <div class="d-flex flex-column ga-2">
+                    <span>
+                      {{
+                        nextAppointmentMeetingUrl
+                          ? "Tu enlace de sesión ya está disponible."
+                          : "Tu psicólogo agregará aquí el enlace de Zoom, Google Meet u otra herramienta."
+                      }}
+                    </span>
+                    <v-btn
+                      v-if="nextAppointmentMeetingUrl"
+                      :href="nextAppointmentMeetingUrl"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      color="secondary"
+                      variant="tonal"
+                      prepend-icon="mdi-open-in-new"
+                      class="align-self-start pf-btn-secondary"
+                    >
+                      Entrar a la sesión
+                    </v-btn>
+                  </div>
+                </v-alert>
+              </div>
+            </v-col>
+          </v-row>
         </v-card-text>
+
+        <v-divider class="mx-4" />
+
+        <v-card-actions class="next-session-actions px-4 pt-4 pb-2">
+          <div class="me-auto">
+            <p class="next-session-action-title font-weight-bold mb-1">
+              ¿Cambio de planes?
+            </p>
+            <p class="text-body-2 mb-0">
+              Puedes cambiar el horario de tu cita pendiente o confirmada.
+            </p>
+          </div>
+          <v-btn
+            class="pf-btn-secondary"
+            color="secondary"
+            variant="tonal"
+            prepend-icon="mdi-calendar-edit-outline"
+            :disabled="!editableAppointment"
+            @click="openRescheduleDialog"
+          >
+            Reprogramar
+          </v-btn>
+        </v-card-actions>
       </v-card>
 
       <v-row align="stretch">
@@ -227,6 +224,28 @@
         </v-col>
       </v-row>
 
+      <v-card
+        v-if="activeTherapy"
+        class="pa-4 mt-5 card-backgoundcustom"
+        elevation="2"
+        variant="text"
+      >
+        <v-card-title
+          class="d-flex align-center ga-2 text-h6 font-weight-bold px-0 pt-0"
+        >
+          <v-icon color="secondary" size="small">
+            mdi-calendar-check-outline
+          </v-icon>
+          Citas de mi terapia actual
+        </v-card-title>
+        <v-card-text>
+          <v-divider class="mb-4" />
+          <TherapyAppointmentsTable
+            :appointments="activeTherapy.citas || []"
+          />
+        </v-card-text>
+      </v-card>
+
       <CitaDialog
         v-model="dialog"
         :terapia-id="dialogAppointment?.terapiaId || activeTherapy?.id || ''"
@@ -247,6 +266,7 @@ import { storeToRefs } from "pinia";
 import { useRouter } from "vue-router";
 import LayoutDefault from "@/components/Layout/Layoutmain.vue";
 import CitaDialog from "@/components/Terapias/CitaDialog.vue";
+import TherapyAppointmentsTable from "@/components/Terapias/TherapyAppointmentsTable.vue";
 import { useAuthStore } from "@/store/auth";
 import { getTherapiesByPatient } from "@/services/terapiaService";
 
@@ -269,6 +289,9 @@ function parseAppointmentDate(appointment) {
 }
 
 const nextAppointment = computed(() => {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
   const appointments = therapies.value
     .flatMap((therapy) =>
       (Array.isArray(therapy.citas) ? therapy.citas : []).map(
@@ -282,7 +305,13 @@ const nextAppointment = computed(() => {
     )
     .filter((appointment) => {
       const status = (appointment?.estado || "").toString().trim().toLowerCase();
-      return (status === "pendiente" || status === "confirmada") && parseAppointmentDate(appointment);
+      const appointmentDate = parseAppointmentDate(appointment);
+
+      return (
+        (status === "pendiente" || status === "confirmada") &&
+        appointmentDate &&
+        appointmentDate >= today
+      );
     })
     .sort((a, b) => parseAppointmentDate(a) - parseAppointmentDate(b));
 
@@ -309,18 +338,6 @@ const editableAppointment = computed(() => {
   };
 });
 
-const hasScheduledAppointments = computed(() =>
-  therapies.value.some((therapy) =>
-    (Array.isArray(therapy.citas) ? therapy.citas : []).some((appointment) => {
-      const status = (appointment?.estado || "")
-        .toString()
-        .trim()
-        .toLowerCase();
-      return status === "pendiente" || status === "confirmada";
-    })
-  )
-);
-
 const activeTherapy = computed(
   () =>
     therapies.value.find(
@@ -345,6 +362,20 @@ const nextAppointmentYear = computed(() => {
   const date = parseAppointmentDate(nextAppointment.value);
   return date ? date.getFullYear() : "";
 });
+
+const nextAppointmentStatusLabel = computed(() =>
+  (nextAppointment.value?.estado || "").toString().trim().toLowerCase() ===
+  "confirmada"
+    ? "Confirmada"
+    : "Pendiente de confirmación"
+);
+
+const nextAppointmentStatusColor = computed(() =>
+  (nextAppointment.value?.estado || "").toString().trim().toLowerCase() ===
+  "confirmada"
+    ? "success"
+    : "warning"
+);
 
 const nextAppointmentLocation = computed(() => {
   if (!nextAppointment.value) return "Sin ubicación definida";
@@ -375,6 +406,11 @@ function openRescheduleDialog() {
   }
 
   dialogAppointment.value = { ...editableAppointment.value };
+  dialog.value = true;
+}
+
+function openScheduleDialog() {
+  dialogAppointment.value = null;
   dialog.value = true;
 }
 
@@ -441,6 +477,22 @@ watch(
   background: var(--color-primary);
 }
 
+.session-location {
+  border-left: 1px solid rgba(var(--v-theme-border-subtle), 0.28);
+  padding: 4px 0 4px 24px;
+}
+
+.next-session-actions {
+  align-items: center;
+  display: flex;
+  gap: 20px;
+}
+
+.next-session-action-title {
+  color: var(--pf-card-text) !important;
+  opacity: 1 !important;
+}
+
 .clickable-card {
   cursor: pointer;
   transition: opacity 0.2s ease;
@@ -458,6 +510,14 @@ watch(
   transform: none;
 }
 
+@media (max-width: 959px) {
+  .session-location {
+    border-left: 0;
+    border-top: 1px solid rgba(var(--v-theme-border-subtle), 0.28);
+    padding: 20px 0 0;
+  }
+}
+
 @media (max-width: 599px) {
   .session-card {
     padding: 14px !important;
@@ -472,6 +532,16 @@ watch(
     font-size: 2rem;
     height: 60px;
     min-width: 60px;
+  }
+
+  .next-session-actions {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  .next-session-actions .v-btn {
+    width: 100%;
   }
 
   .session-card :deep(.v-list-item__append) {

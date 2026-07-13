@@ -63,24 +63,32 @@ const adminUsersItem = {
   link: "/admin/usuarios",
 };
 
-const adminAccessItems = [adminRequestsItem, adminUsersItem];
-
 const navigationByMode = {
   patient: [
     { name: "Inicio", icon: "mdi-view-dashboard-outline", link: "/dashboard" },
     { name: "Sesiones", icon: "mdi-calendar-month", link: "/sesiones" },
+    {
+      name: "Emociones",
+      icon: "mdi-emoticon-outline",
+      link: "/registro-emocional",
+    },
     { name: "Progreso", icon: "mdi-finance", link: "/progreso" },
+    { name: "Herram.", icon: "mdi-tools", link: "/herramientas" },
     {
       name: "Historial",
       icon: "mdi-book-open-page-variant",
       link: "/historial",
     },
-    { name: "Herram.", icon: "mdi-tools", link: "/herramientas" },
   ],
   psychologist: [
     { name: "Agenda", icon: "mdi-account-tie", link: "/psicologo/sesiones" },
     { name: "Pacientes", icon: "mdi-account-group", link: "/pacientes" },
     { name: "Seguim.", icon: "mdi-finance", link: "/progreso" },
+    {
+      name: "Emociones",
+      icon: "mdi-emoticon-outline",
+      link: "/registro-emocional",
+    },
     {
       name: "Historial",
       icon: "mdi-book-open-page-variant",
@@ -96,20 +104,9 @@ const navigationByMode = {
   ],
 };
 
-const items = computed(() => {
-  const baseItems =
-    navigationByMode[appContext.activeMode] || navigationByMode.patient;
-
-  if (!appContext.isAdmin) {
-    return baseItems;
-  }
-
-  const missingAdminItems = adminAccessItems.filter(
-    (adminItem) => !baseItems.some((item) => item.link === adminItem.link)
-  );
-
-  return [...baseItems, ...missingAdminItems];
-});
+const items = computed(
+  () => navigationByMode[appContext.activeMode] || navigationByMode.patient
+);
 
 const primaryItems = computed(() => items.value.slice(0, 3));
 const overflowItems = computed(() => items.value.slice(3));
@@ -169,7 +166,7 @@ onBeforeUnmount(() => {
   width: 100vw !important;
 }
 
-:global(.v-theme--light) .bottom-nav-mobile {
+:global(.v-theme--light .bottom-nav-mobile) {
   background: var(--pf-floating-surface) !important;
   border-top-color: var(--pf-floating-border);
 }
@@ -268,7 +265,7 @@ onBeforeUnmount(() => {
   -webkit-backdrop-filter: blur(var(--pf-floating-blur)) saturate(1.08);
 }
 
-:global(.v-theme--dark) :global(.bottom-nav-popover) {
+:global(.v-theme--dark .bottom-nav-popover) {
   border-color: rgba(160, 224, 216, 0.22);
   background: rgba(26, 58, 56, 0.62);
   box-shadow: 0 18px 42px rgba(0, 0, 0, 0.28);

@@ -30,7 +30,7 @@
     :headers="headers"
     :items="filteredItems"
     class="card-backgoundcustom appointments-table"
-    :items-per-page="10"
+    :items-per-page="itemsPerPage"
     :loading="loading"
     :sort-by="[{ key: 'fechaOrden', order: 'desc' }]"
   >
@@ -142,6 +142,7 @@
 import { computed, ref, watch } from "vue";
 import { storeToRefs } from "pinia";
 import { useAuthStore } from "@/store/auth";
+import { useAppContextStore } from "@/store/appContext";
 import CitaDialog from "@/components/Terapias/CitaDialog.vue";
 import {
   confirmAppointment,
@@ -156,7 +157,12 @@ import {
 } from "@/utils/tableLoadingTimeout";
 
 const authStore = useAuthStore();
+const appContext = useAppContextStore();
 const { currentUser } = storeToRefs(authStore);
+
+const itemsPerPage = computed(() =>
+  appContext.activeMode === "patient" ? 25 : 10
+);
 
 const search = ref("");
 const items = ref([]);

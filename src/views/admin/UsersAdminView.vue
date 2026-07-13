@@ -1,37 +1,40 @@
 <template>
   <LayoutDefault layout>
-    <v-container class="admin-users-view">
-      <div
-        class="d-flex flex-column flex-md-row justify-space-between align-md-center ga-4 mb-6"
-      >
-        <div>
-          <p class="text-overline text-secondary mb-1">Administración</p>
-          <h1 class="text-h4 font-weight-bold">Usuarios y permisos</h1>
-          <p class="text-body-1 text-medium-emphasis mt-2 mb-0">
-            Gestiona perfiles, roles de acceso y permisos administrativos.
-          </p>
+    <v-container class="admin-users-view pa-0">
+      <div class="page-header">
+        <div class="page-header__row">
+          <div class="page-header__copy">
+            <p class="page-header__eyebrow text-overline text-secondary mb-1">
+              Administración
+            </p>
+            <h1 class="text-h4 font-weight-bold">Usuarios y permisos</h1>
+            <p class="text-body-1 text-medium-emphasis mt-2 mb-0">
+              Gestiona perfiles, roles de acceso y permisos administrativos.
+            </p>
+          </div>
+          <div class="page-header__actions">
+            <v-btn
+              color="secondary"
+              variant="tonal"
+              prepend-icon="mdi-refresh"
+              :loading="loading"
+              class="pf-btn-secondary"
+              @click="loadUsers"
+            >
+              Actualizar
+            </v-btn>
+            <v-btn
+              color="secondary"
+              variant="tonal"
+              prepend-icon="mdi-account-plus-outline"
+              class="pf-btn-primary"
+              @click="openCreateDialog"
+            >
+              Crear perfil
+            </v-btn>
+          </div>
         </div>
-        <div class="d-flex flex-wrap ga-2 align-self-start align-self-md-center">
-          <v-btn
-            color="secondary"
-            variant="tonal"
-            prepend-icon="mdi-refresh"
-            :loading="loading"
-            class="pf-btn-secondary"
-            @click="loadUsers"
-          >
-            Actualizar
-          </v-btn>
-          <v-btn
-            color="secondary"
-            variant="tonal"
-            prepend-icon="mdi-account-plus-outline"
-            class="pf-btn-primary"
-            @click="openCreateDialog"
-          >
-            Crear perfil
-          </v-btn>
-        </div>
+        <v-divider class="page-header-divider" />
       </div>
 
       <v-alert
@@ -629,9 +632,4 @@ function professionalStatusColor(status = "") {
   border-radius: 8px;
 }
 
-@media (max-width: 600px) {
-  .admin-users-view {
-    padding-inline: 16px;
-  }
-}
 </style>

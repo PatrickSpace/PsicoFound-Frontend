@@ -85,9 +85,9 @@
           </v-btn>
           <v-btn
             v-if="canViewRecommendations"
-            class="recommendations-button pf-btn-ghost"
-            variant="text"
-            color="secondary"
+            class="recommendations-button pf-btn-primary"
+            variant="flat"
+            color="primary"
             size="small"
             append-icon="mdi-arrow-right"
             @click="goToRecommendations"
@@ -631,7 +631,7 @@ function notifyError(message) {
   box-shadow: var(--pf-shadow-lg);
 }
 
-:global(.v-theme--light) .chat-layout {
+:global(.v-theme--light .chat-layout) {
   --chat-surface: rgb(var(--v-theme-surface));
   background: var(--chat-surface);
   border-color: rgb(var(--v-theme-border-subtle));
@@ -646,7 +646,7 @@ function notifyError(message) {
   border-bottom: 1px solid rgba(var(--v-theme-border-subtle), 0.1);
 }
 
-:global(.v-theme--light) .chat-header {
+:global(.v-theme--light .chat-header) {
   border-bottom-color: rgba(var(--v-theme-border-subtle), 0.1);
 }
 
@@ -705,7 +705,7 @@ function notifyError(message) {
   width: fit-content;
 }
 
-:global(.v-theme--light) .profile-status {
+:global(.v-theme--light .profile-status) {
   color: var(--color-primary-dark);
   background: var(--color-primary-soft);
   border-color: color-mix(in srgb, var(--color-primary) 28%, transparent);
@@ -726,7 +726,7 @@ function notifyError(message) {
   backdrop-filter: blur(var(--pf-blur-md));
 }
 
-:global(.v-theme--light) .profile-popover {
+:global(.v-theme--light .profile-popover) {
   color: rgba(var(--v-theme-text-primary), 0.88);
   background: rgba(var(--v-theme-surface-elevated), 0.98);
   border-color: rgba(
@@ -762,7 +762,7 @@ function notifyError(message) {
   color: rgba(var(--v-theme-text-secondary), 0.58);
 }
 
-:global(.v-theme--light) .profile-popover-row span {
+:global(.v-theme--light .profile-popover-row span) {
   color: rgba(var(--v-theme-text-secondary), 0.56);
 }
 
@@ -778,7 +778,7 @@ function notifyError(message) {
   line-height: 1.4;
 }
 
-:global(.v-theme--light) .profile-popover-empty {
+:global(.v-theme--light .profile-popover-empty) {
   color: rgba(var(--v-theme-text-secondary), 0.6);
 }
 
@@ -814,7 +814,7 @@ function notifyError(message) {
   border-radius: 999px;
 }
 
-:global(.v-theme--light) .messages-panel::-webkit-scrollbar-track {
+:global(.v-theme--light .messages-panel::-webkit-scrollbar-track) {
   background: rgba(var(--v-theme-surface-hover), 0.08);
 }
 
@@ -823,7 +823,7 @@ function notifyError(message) {
   border-radius: 999px;
 }
 
-:global(.v-theme--light) .messages-panel::-webkit-scrollbar-thumb {
+:global(.v-theme--light .messages-panel::-webkit-scrollbar-thumb) {
   background: rgba(var(--v-theme-brand-secondary), 0.5);
 }
 
@@ -885,7 +885,7 @@ function notifyError(message) {
   border: 1px solid rgb(var(--v-theme-border-subtle));
 }
 
-:global(.v-theme--light) .message-bubble {
+:global(.v-theme--light .message-bubble) {
   background: rgb(var(--v-theme-background-secondary));
   border-color: rgb(var(--v-theme-border-subtle));
 }
@@ -896,7 +896,7 @@ function notifyError(message) {
   border-color: transparent;
 }
 
-:global(.v-theme--light) .message-row.is-user .message-bubble {
+:global(.v-theme--light .message-row.is-user .message-bubble) {
   color: rgb(var(--v-theme-on-secondary));
   background: rgb(var(--v-theme-secondary));
 }
@@ -908,7 +908,7 @@ function notifyError(message) {
   color: rgba(var(--v-theme-text-secondary), 0.72);
 }
 
-:global(.v-theme--light) .message-author {
+:global(.v-theme--light .message-author) {
   color: rgba(var(--v-theme-text-secondary), 0.72);
 }
 
@@ -925,7 +925,7 @@ function notifyError(message) {
   color: rgba(var(--v-theme-text-secondary), 0.62);
 }
 
-:global(.v-theme--light) .message-status {
+:global(.v-theme--light .message-status) {
   color: rgba(var(--v-theme-text-secondary), 0.56);
 }
 
@@ -967,25 +967,25 @@ function notifyError(message) {
   opacity: 0.46;
 }
 
-:global(.v-theme--light) .message-option {
+:global(.v-theme--light .message-option) {
   color: var(--color-primary-dark);
   background: var(--color-button-secondary-bg);
   border-color: color-mix(in srgb, var(--color-primary) 28%, transparent);
 }
 
-:global(.v-theme--light) .message-option:hover:not(:disabled),
-:global(.v-theme--light) .message-option:focus-visible:not(:disabled) {
+:global(.v-theme--light .message-option:hover:not(:disabled)),
+:global(.v-theme--light .message-option:focus-visible:not(:disabled)) {
   background: var(--color-button-secondary-hover);
   color: var(--color-primary-dark);
 }
 
-:global(.v-theme--dark) .message-option {
+:global(.v-theme--dark .message-option) {
   color: rgb(var(--v-theme-text-primary));
   border-color: rgba(var(--v-theme-border-subtle), 0.28);
 }
 
-:global(.v-theme--dark) .message-option:hover:not(:disabled),
-:global(.v-theme--dark) .message-option:focus-visible:not(:disabled) {
+:global(.v-theme--dark .message-option:hover:not(:disabled)),
+:global(.v-theme--dark .message-option:focus-visible:not(:disabled)) {
   color: rgb(var(--v-theme-text-primary));
   border-color: rgba(var(--v-theme-border-default), 0.48);
 }
@@ -1000,7 +1000,7 @@ function notifyError(message) {
   box-shadow: var(--pf-shadow-sm);
 }
 
-:global(.v-theme--light) .composer-shell {
+:global(.v-theme--light .composer-shell) {
   background: rgb(var(--v-theme-surface));
   border-color: rgb(var(--v-theme-border-subtle));
   box-shadow: var(--pf-shadow-xs);
@@ -1045,7 +1045,7 @@ function notifyError(message) {
   line-height: 1.35;
 }
 
-:global(.v-theme--light) .composer-footer {
+:global(.v-theme--light .composer-footer) {
   color: rgba(var(--v-theme-text-secondary), 0.58);
 }
 
@@ -1068,7 +1068,7 @@ function notifyError(message) {
   animation: pulse 1s infinite ease-in-out;
 }
 
-:global(.v-theme--light) .typing-dots span {
+:global(.v-theme--light .typing-dots span) {
   background: rgba(var(--v-theme-brand-primary), 0.72);
 }
 

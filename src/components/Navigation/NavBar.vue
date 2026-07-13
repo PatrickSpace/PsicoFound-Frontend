@@ -75,10 +75,12 @@
 
         <v-btn
           icon
-          class="nav-icon-btn"
+          class="nav-icon-btn nav-icon-btn--settings"
           aria-label="Configuración"
           variant="text"
           to="/configuracion"
+          :active="isSettingsRoute"
+          active-class="nav-icon-btn--active"
         >
           <v-icon>mdi-cog-outline</v-icon>
         </v-btn>
@@ -98,7 +100,7 @@
 <script setup>
 import { computed, onBeforeUnmount, ref, watch } from "vue";
 import { storeToRefs } from "pinia";
-import { useRouter } from "vue-router";
+import { useRoute, useRouter } from "vue-router";
 import FeedbackDialog from "@/components/Navigation/FeedbackDialog.vue";
 import { useAuthStore } from "@/store/auth";
 import {
@@ -107,6 +109,7 @@ import {
 } from "@/services/notificationService";
 
 const router = useRouter();
+const route = useRoute();
 const authStore = useAuthStore();
 const { currentUser } = storeToRefs(authStore);
 const isFeedbackDialogOpen = ref(false);
@@ -114,6 +117,8 @@ const showFeedbackSaved = ref(false);
 const notifications = ref([]);
 const openingNotificationId = ref("");
 let unsubscribeNotifications = null;
+
+const isSettingsRoute = computed(() => route.name === "configuracion");
 
 const unreadNotificationsCount = computed(
   () => notifications.value.filter((notification) => !notification.readAt).length
@@ -208,7 +213,7 @@ function notificationIcon(type = "") {
   z-index: 1100;
 }
 
-:global(.v-theme--light) .app-top-nav {
+:global(.v-theme--light .app-top-nav) {
   background:
     linear-gradient(
       180deg,
@@ -218,7 +223,7 @@ function notificationIcon(type = "") {
     );
 }
 
-:global(.v-theme--dark) .app-top-nav {
+:global(.v-theme--dark .app-top-nav) {
   background:
     linear-gradient(
       180deg,
@@ -272,6 +277,19 @@ function notificationIcon(type = "") {
   opacity: 1;
 }
 
+.nav-icon-btn--settings.v-btn--active,
+.nav-icon-btn--settings.nav-icon-btn--active {
+  background: var(--color-primary) !important;
+  border: 1px solid color-mix(in srgb, var(--color-primary) 18%, #ffffff);
+  border-radius: 14px !important;
+  color: #ffffff !important;
+}
+
+.nav-icon-btn--settings.v-btn--active :deep(.v-icon),
+.nav-icon-btn--settings.nav-icon-btn--active :deep(.v-icon) {
+  color: #ffffff !important;
+}
+
 @media (max-width: 600px) {
   .app-top-nav {
     min-height: 64px;
@@ -299,8 +317,8 @@ function notificationIcon(type = "") {
 
 @media (min-width: 1280px) {
   .app-top-nav {
-    left: 320px;
-    width: calc(100vw - 320px);
+    left: var(--app-drawer-width, 320px);
+    width: calc(100vw - var(--app-drawer-width, 320px));
   }
 }
 </style>

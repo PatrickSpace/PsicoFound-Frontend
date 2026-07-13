@@ -11,6 +11,7 @@ import SignUpview from "@/views/Auth/SingUp.vue";
 import ElegirTerapeutaView from "@/views/encuesta/ElegirTerapeuta.vue";
 import SesionesView from "@/views/mainviews/MisSesionesView.vue";
 import ProgresoView from "@/views/mainviews/ProgresoView.vue";
+import RegistroEmocionalView from "@/views/mainviews/RegistroEmocionalView.vue";
 import HistorialView from "@/views/mainviews/HistorialView.vue";
 import HerramientasView from "@/views/mainviews/HerramientasView.vue";
 import ConfiguracionView from "@/views/mainviews/ConfiguracionView.vue";
@@ -99,6 +100,12 @@ const router = createRouter({
       path: "/progreso",
       name: "progreso",
       component: ProgresoView,
+      meta: { modes: ["patient", "psychologist"] },
+    },
+    {
+      path: "/registro-emocional",
+      name: "registro-emocional",
+      component: RegistroEmocionalView,
       meta: { modes: ["patient", "psychologist"] },
     },
     {

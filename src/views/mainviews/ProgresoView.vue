@@ -1,22 +1,28 @@
 <template>
   <LayoutDefault layout>
-    <v-container class="progress-view">
-      <div class="d-flex flex-column flex-md-row justify-space-between align-md-center ga-4 mb-6">
-        <div>
-          <p class="text-overline text-secondary mb-1">Seguimiento terapéutico</p>
-          <h1 class="text-h4 font-weight-bold">Progreso</h1>
-          <p class="text-body-1 text-medium-emphasis mt-2 mb-0">
-            Tu perfil inicial y tus sesiones ayudan a construir continuidad en tu proceso.
-          </p>
+    <v-container class="progress-view pa-0">
+      <div class="page-header">
+        <div class="page-header__row">
+          <div class="page-header__copy">
+            <p class="page-header__eyebrow text-overline text-secondary mb-1">
+              Seguimiento terapéutico
+            </p>
+            <h1 class="text-h4 font-weight-bold">Progreso</h1>
+            <p class="text-body-1 text-medium-emphasis mt-2 mb-0">
+              Tu perfil inicial y tus sesiones ayudan a construir continuidad en tu proceso.
+            </p>
+          </div>
+          <div class="page-header__actions">
+            <v-chip
+              :color="isProfileReady ? 'success' : 'warning'"
+              variant="tonal"
+              :prepend-icon="isProfileReady ? 'mdi-account-check-outline' : 'mdi-clock-outline'"
+            >
+              {{ isProfileReady ? "Perfil listo" : "Perfil en progreso" }}
+            </v-chip>
+          </div>
         </div>
-        <v-chip
-          :color="isProfileReady ? 'success' : 'warning'"
-          variant="tonal"
-          :prepend-icon="isProfileReady ? 'mdi-account-check-outline' : 'mdi-clock-outline'"
-          class="align-self-start"
-        >
-          {{ isProfileReady ? "Perfil listo" : "Perfil en progreso" }}
-        </v-chip>
+        <v-divider class="page-header-divider" />
       </div>
 
       <v-alert
@@ -29,88 +35,14 @@
         {{ profileError }}
       </v-alert>
 
-      <v-card class="pa-4 mb-6 card-backgoundcustom" elevation="2" variant="text">
-        <v-card-title class="d-flex align-center ga-2 text-h6 font-weight-bold px-0 pt-0">
-          <v-icon color="secondary" size="small">mdi-clipboard-account-outline</v-icon>
-          Perfil psicológico inicial
-        </v-card-title>
-        <v-card-text>
-          <v-divider class="mb-4"></v-divider>
-
-          <div v-if="loadingProfile" class="py-8 d-flex justify-center">
-            <v-progress-circular indeterminate color="secondary" />
-          </div>
-
-          <v-empty-state
-            v-else-if="!profile"
-            headline="Aún no tienes perfil inicial"
-            text="Completa la entrevista conversacional para generar una primera orientación no diagnóstica."
-              icon="mdi-message-question-outline"
-          >
-            <template #actions>
-              <v-btn
-                color="secondary"
-                variant="tonal"
-                to="/encuesta"
-                prepend-icon="mdi-chat-outline"
-
-        class="pf-btn-secondary">
-                Completar entrevista
-              </v-btn>
-            </template>
-          </v-empty-state>
-
-          <v-row v-else>
-            <v-col cols="12" md="7">
-              <div class="text-subtitle-1 font-weight-medium mb-2">
-                Motivo y temas principales
-              </div>
-              <p class="text-body-2 text-medium-emphasis mb-4">
-                {{ profile.motivoConsulta || "Aún no se registró un motivo principal." }}
-              </p>
-              <div class="d-flex flex-wrap ga-2">
-                <v-chip
-                  v-for="topic in profileTopics"
-                  :key="topic"
-                  color="secondary"
-                  variant="tonal"
-                  size="small"
-                >
-                  {{ topic }}
-                </v-chip>
-                <v-chip
-                  v-if="profileTopics.length === 0"
-                  color="secondary"
-                  variant="tonal"
-                  size="small"
-                >
-                  Sin temas registrados
-                </v-chip>
-              </div>
-            </v-col>
-
-            <v-col cols="12" md="5">
-              <v-list density="compact" class="bg-transparent">
-                <v-list-item title="Modalidad" :subtitle="displayValue(profile.modalidad)" />
-                <v-list-item title="Preferencia de género" :subtitle="displayValue(profile.preferenciaGenero)" />
-                <v-list-item title="Preferencia de edad" :subtitle="displayValue(profile.preferenciaEdad)" />
-                <v-list-item title="Enfoque" :subtitle="displayValue(profile.enfoque)" />
-                <v-list-item title="Urgencia" :subtitle="displayValue(profile.urgencia)" />
-              </v-list>
-            </v-col>
-
-            <v-col cols="12">
-              <v-alert
-                color="info"
-                variant="tonal"
-                icon="mdi-information-outline"
-              >
-                Este perfil organiza información para orientar el proceso. No constituye diagnóstico clínico.
-              </v-alert>
-            </v-col>
-          </v-row>
-        </v-card-text>
-      </v-card>
+      <ActiveTherapySummaryCard
+        v-if="isPatientMode && activeTherapy"
+        :therapy="activeTherapy"
+        :therapist="activeTherapyTherapist"
+        :main-reason="mainReason"
+        :loading-therapist="loadingActiveTherapist"
+        :learned-tools-count="learnedToolsCount"
+      />
 
       <v-card class="pa-4 mb-6 card-backgoundcustom" elevation="2" variant="text">
         <v-card-title class="d-flex align-center ga-2 text-h6 font-weight-bold px-0 pt-0">
@@ -361,269 +293,6 @@
         </v-card>
       </v-dialog>
 
-      <v-card class="pa-4 mb-6 card-backgoundcustom" elevation="2" variant="text">
-        <v-card-title class="d-flex align-center ga-2 text-h6 font-weight-bold px-0 pt-0">
-          <v-icon color="secondary" size="small">mdi-emoticon-outline</v-icon>
-          Registro emocional
-        </v-card-title>
-        <v-card-text>
-          <v-divider class="mb-4"></v-divider>
-
-          <v-alert
-            v-if="checkinsError"
-            class="mb-4"
-            color="warning"
-            variant="tonal"
-            icon="mdi-alert-outline"
-          >
-            {{ checkinsError }}
-          </v-alert>
-
-          <v-row class="mb-4" align="stretch">
-            <v-col cols="12" md="4" class="d-flex">
-              <v-card class="pa-4 card-backgoundcustom flex-grow-1 progress-stat-card" elevation="2" variant="text">
-                <div class="d-flex align-center justify-space-between ga-3">
-                  <div>
-                    <div class="text-body-2 text-medium-emphasis">Registros</div>
-                    <div class="text-h4 font-weight-bold mt-1">{{ checkins.length }}</div>
-                    <div class="text-caption text-medium-emphasis">Check-ins emocionales</div>
-                  </div>
-                  <v-avatar color="secondary" variant="tonal" rounded="lg">
-                    <v-icon>mdi-note-text-outline</v-icon>
-                  </v-avatar>
-                </div>
-              </v-card>
-            </v-col>
-            <v-col cols="12" md="4" class="d-flex">
-              <v-card class="pa-4 card-backgoundcustom flex-grow-1 progress-stat-card" elevation="2" variant="text">
-                <div class="d-flex align-center justify-space-between ga-3">
-                  <div>
-                    <div class="text-body-2 text-medium-emphasis">Intensidad</div>
-                    <div class="text-h4 font-weight-bold mt-1">{{ averageIntensity }}</div>
-                    <div class="text-caption text-medium-emphasis">Promedio registrado</div>
-                  </div>
-                  <v-avatar color="warning" variant="tonal" rounded="lg">
-                    <v-icon>mdi-pulse</v-icon>
-                  </v-avatar>
-                </div>
-              </v-card>
-            </v-col>
-            <v-col cols="12" md="4" class="d-flex">
-              <v-card class="pa-4 card-backgoundcustom flex-grow-1 progress-stat-card" elevation="2" variant="text">
-                <div class="d-flex align-center justify-space-between ga-3">
-                  <div>
-                    <div class="text-body-2 text-medium-emphasis">Último estado</div>
-                    <div class="text-h5 font-weight-bold mt-1">{{ latestMood }}</div>
-                    <div class="text-caption text-medium-emphasis">Registro reciente</div>
-                  </div>
-                  <v-avatar color="success" variant="tonal" rounded="lg">
-                    <v-icon>mdi-emoticon-outline</v-icon>
-                  </v-avatar>
-                </div>
-              </v-card>
-            </v-col>
-          </v-row>
-
-          <v-card
-            v-if="!therapist"
-            class="pa-4 mb-4 card-backgoundcustom"
-            elevation="2"
-            variant="text"
-          >
-            <div class="d-flex flex-column flex-md-row align-md-center justify-space-between ga-3">
-              <div>
-                <h3 class="text-subtitle-1 font-weight-bold mb-1">Agregar registro</h3>
-                <p class="text-body-2 text-medium-emphasis mb-0">
-                  Guarda un check-in emocional asociado a tu proceso terapéutico.
-                </p>
-              </div>
-              <v-btn
-                color="secondary"
-                variant="tonal"
-                prepend-icon="mdi-plus"
-                :disabled="!activeTherapy"
-                @click="checkinDialog = true"
-                class="pf-btn-secondary align-self-start align-self-md-center"
-              >
-                Agregar registro
-              </v-btn>
-            </div>
-            <v-alert
-              v-if="!activeTherapy"
-              class="mt-4 mb-0"
-              color="warning"
-              variant="tonal"
-              icon="mdi-information-outline"
-            >
-              Cuando tengas una terapia activa podrás registrar check-ins emocionales asociados a tu proceso.
-            </v-alert>
-          </v-card>
-
-          <div v-if="loadingCheckins" class="py-8 d-flex justify-center">
-            <v-progress-circular indeterminate color="secondary" />
-          </div>
-
-          <v-empty-state
-            v-else-if="checkins.length === 0"
-            headline="Aún no hay registros emocionales"
-            text="Los check-ins ayudan a observar continuidad entre sesiones sin reemplazar la evaluación clínica."
-            icon="mdi-emoticon-neutral-outline"
-          ></v-empty-state>
-
-          <v-list v-else class="bg-transparent" lines="three">
-            <v-list-item
-              v-for="checkin in recentCheckins"
-              :key="checkin.id"
-              class="checkin-item mb-2"
-            >
-              <template #prepend>
-                <v-avatar color="secondary" variant="tonal">
-                  <v-icon>mdi-emoticon-outline</v-icon>
-                </v-avatar>
-              </template>
-              <v-list-item-title>
-                {{ checkin.mood }} · intensidad {{ checkin.intensity }}/10
-              </v-list-item-title>
-              <v-list-item-subtitle>
-                Energía {{ checkin.energy }}/10 · Sueño {{ checkin.sleepQuality }}/10
-                <span v-if="checkin.pacienteNombre"> · {{ checkin.pacienteNombre }}</span>
-              </v-list-item-subtitle>
-              <p v-if="checkin.note" class="text-body-2 mt-2 mb-1">
-                {{ checkin.note }}
-              </p>
-              <div class="d-flex flex-wrap ga-2">
-                <v-chip
-                  v-for="tag in checkin.tags || []"
-                  :key="`${checkin.id}-${tag}`"
-                  size="x-small"
-                  color="secondary"
-                  variant="tonal"
-                >
-                  {{ tag }}
-                </v-chip>
-              </div>
-            </v-list-item>
-          </v-list>
-        </v-card-text>
-      </v-card>
-
-      <v-card class="pa-4 card-backgoundcustom" elevation="2" variant="text">
-        <v-card-title class="d-flex align-center ga-2 text-h6 font-weight-bold px-0 pt-0">
-          <v-icon color="secondary" size="small">mdi-calendar-check-outline</v-icon>
-          Sesiones y citas
-        </v-card-title>
-        <v-card-text>
-          <v-divider class="mb-4"></v-divider>
-          <CitasDatatable />
-        </v-card-text>
-      </v-card>
-
-      <v-dialog v-model="checkinDialog" class="bg-transparent" max-width="760">
-        <v-card class="pa-4 card-backgoundcustom" elevation="2" variant="text">
-          <v-card-title class="text-h6 font-weight-bold px-0 pt-0">
-            Agregar registro emocional
-          </v-card-title>
-          <v-card-text>
-            <v-alert
-              v-if="!activeTherapy"
-              class="mb-4"
-              color="warning"
-              variant="tonal"
-              icon="mdi-information-outline"
-            >
-              Cuando tengas una terapia activa podrás registrar check-ins emocionales asociados a tu proceso.
-            </v-alert>
-            <v-row>
-              <v-col cols="12" md="6">
-                <v-select
-                  v-model="checkinForm.mood"
-                  :items="moodOptions"
-                  label="Estado principal"
-                  variant="outlined"
-                  density="comfortable"
-                />
-              </v-col>
-              <v-col cols="12" md="6">
-                <v-combobox
-                  v-model="checkinForm.tags"
-                  :items="tagSuggestions"
-                  label="Temas del día"
-                  multiple
-                  chips
-                  closable-chips
-                  variant="outlined"
-                  density="comfortable"
-                />
-              </v-col>
-              <v-col cols="12" md="4">
-                <v-slider
-                  v-model="checkinForm.intensity"
-                  color="secondary"
-                  label="Intensidad"
-                  min="1"
-                  max="10"
-                  step="1"
-                  thumb-label
-                />
-              </v-col>
-              <v-col cols="12" md="4">
-                <v-slider
-                  v-model="checkinForm.energy"
-                  color="secondary"
-                  label="Energía"
-                  min="1"
-                  max="10"
-                  step="1"
-                  thumb-label
-                />
-              </v-col>
-              <v-col cols="12" md="4">
-                <v-slider
-                  v-model="checkinForm.sleepQuality"
-                  color="secondary"
-                  label="Sueño"
-                  min="1"
-                  max="10"
-                  step="1"
-                  thumb-label
-                />
-              </v-col>
-              <v-col cols="12">
-                <v-textarea
-                  v-model="checkinForm.note"
-                  label="Nota personal"
-                  rows="3"
-                  variant="outlined"
-                  density="comfortable"
-                />
-              </v-col>
-            </v-row>
-          </v-card-text>
-          <v-card-actions>
-            <v-spacer />
-            <v-btn
-              variant="text"
-              :disabled="savingCheckin"
-              @click="checkinDialog = false"
-              class="pf-btn-ghost"
-            >
-              Cancelar
-            </v-btn>
-            <v-btn
-              color="secondary"
-              variant="tonal"
-              prepend-icon="mdi-content-save-outline"
-              :loading="savingCheckin"
-              :disabled="!canCreateCheckin"
-              @click="saveCheckin"
-              class="pf-btn-secondary"
-            >
-              Guardar registro
-            </v-btn>
-          </v-card-actions>
-        </v-card>
-      </v-dialog>
-
       <v-dialog v-model="goalProgressDialog" class="bg-transparent" max-width="620">
         <v-card class="pa-4 card-backgoundcustom" elevation="2" variant="text">
           <v-card-title class="text-h6 font-weight-bold px-0 pt-0">Actualizar objetivo</v-card-title>
@@ -676,26 +345,25 @@
 import { computed, onBeforeUnmount, reactive, ref, watch } from "vue";
 import { storeToRefs } from "pinia";
 import LayoutDefault from "@/components/Layout/Layoutmain.vue";
-import CitasDatatable from "@/components/Terapias/CitasDatatable.vue";
+import ActiveTherapySummaryCard from "@/components/Terapias/ActiveTherapySummaryCard.vue";
 import { useAuthStore } from "@/store/auth";
 import { useAppContextStore } from "@/store/appContext";
 import { watchProfile } from "@/services/conversationService";
-import { getTherapistByUserUid } from "@/services/psicologoService";
+import {
+  getTherapistById,
+  getTherapistByUserUid,
+} from "@/services/psicologoService";
 import {
   getActiveTherapyByPatient,
   getTherapiesByTherapist,
 } from "@/services/terapiaService";
+import { getExercisesByPatient } from "@/services/exerciseService";
 import {
   createTherapyGoal,
   getGoalsByPatient,
   getGoalsByTherapist,
   updateTherapyGoalProgress,
 } from "@/services/therapyGoalService";
-import {
-  createEmotionalCheckin,
-  getCheckinsByPatient,
-  getCheckinsByTherapist,
-} from "@/services/emotionalCheckinService";
 import {
   getPermissionAwareMessage,
   isPermissionDeniedError,
@@ -707,46 +375,23 @@ const appContext = useAppContextStore();
 const { currentUser } = storeToRefs(authStore);
 const profile = ref(null);
 const profileError = ref("");
-const loadingProfile = ref(false);
 const loadingGoals = ref(false);
-const loadingCheckins = ref(false);
 const goalsError = ref("");
-const checkinsError = ref("");
 const goals = ref([]);
-const checkins = ref([]);
 const activeTherapy = ref(null);
+const activeTherapyTherapist = ref(null);
+const loadingActiveTherapist = ref(false);
+const learnedTools = ref([]);
 const therapist = ref(null);
 const therapistTherapies = ref([]);
 const savingGoal = ref(false);
-const savingCheckin = ref(false);
 const savingGoalProgress = ref(false);
 const goalDialog = ref(false);
-const checkinDialog = ref(false);
 const goalProgressDialog = ref(false);
 const selectedGoal = ref(null);
 let unsubscribeProfile = null;
-
-const moodOptions = [
-  "Tranquilo/a",
-  "Ansioso/a",
-  "Triste",
-  "Motivado/a",
-  "Irritable",
-  "Cansado/a",
-  "Confundido/a",
-  "Esperanzado/a",
-];
-
-const tagSuggestions = [
-  "Trabajo",
-  "Familia",
-  "Pareja",
-  "Sueño",
-  "Estudio",
-  "Salud",
-  "Relaciones",
-  "Autocuidado",
-];
+let activeTherapistRequestId = 0;
+let learnedToolsRequestId = 0;
 
 const goalForm = reactive({
   therapyId: "",
@@ -756,24 +401,27 @@ const goalForm = reactive({
   targetDate: "",
 });
 
-const checkinForm = reactive({
-  mood: "",
-  intensity: 5,
-  energy: 5,
-  sleepQuality: 5,
-  note: "",
-  tags: [],
-});
-
 const goalProgressForm = reactive({
   progress: 0,
   note: "",
   achieved: false,
 });
 
-const profileTopics = computed(() =>
-  Array.isArray(profile.value?.temas) ? profile.value.temas : []
-);
+const mainReason = computed(() => {
+  const reason = profile.value?.motivoConsulta?.toString().trim();
+  return reason || "En exploración";
+});
+
+const learnedToolsCount = computed(() => {
+  const therapyId = activeTherapy.value?.id;
+
+  if (!therapyId) return 0;
+
+  return learnedTools.value.filter((exercise) => {
+    const status = (exercise?.status || "").toString().trim().toLowerCase();
+    return exercise?.terapiaId === therapyId && status === "completed";
+  }).length;
+});
 
 const isProfileReady = computed(() =>
   isProfileReadyForRecommendations(profile.value)
@@ -786,23 +434,6 @@ const activeGoalsCount = computed(
 const achievedGoalsCount = computed(
   () => goals.value.filter((goal) => goal.status === "achieved").length
 );
-
-const recentCheckins = computed(() => checkins.value.slice(0, 6));
-
-const averageIntensity = computed(() => {
-  if (checkins.value.length === 0) {
-    return "-";
-  }
-
-  const total = checkins.value.reduce(
-    (sum, checkin) => sum + Number(checkin.intensity || 0),
-    0
-  );
-
-  return (total / checkins.value.length).toFixed(1);
-});
-
-const latestMood = computed(() => checkins.value[0]?.mood || "-");
 
 const therapistTherapyOptions = computed(() =>
   therapistTherapies.value.map((therapy) => ({
@@ -823,13 +454,11 @@ const canOpenGoalDialog = computed(() =>
   therapist.value ? therapistTherapies.value.length > 0 : Boolean(activeTherapy.value?.id)
 );
 
-const canCreateCheckin = computed(
-  () => Boolean(activeTherapy.value?.id) && checkinForm.mood.trim().length > 0
-);
-
 const isPsychologistMode = computed(
   () => appContext.activeMode === "psychologist"
 );
+
+const isPatientMode = computed(() => appContext.activeMode === "patient");
 
 watch(
   () => currentUser.value?.uid,
@@ -837,30 +466,25 @@ watch(
     unsubscribeProfile?.();
     profile.value = null;
     profileError.value = "";
+    loadLearnedTools();
 
     if (!uid) {
-      loadingProfile.value = false;
       resetGoalState();
-      resetCheckinState();
       return;
     }
 
-    loadingProfile.value = true;
     unsubscribeProfile = watchProfile(
       uid,
       (item) => {
         profile.value = item;
-        loadingProfile.value = false;
       },
       (error) => {
         console.error("Error loading profile progress:", error);
         profileError.value =
           "No pudimos cargar tu perfil inicial. Intenta nuevamente.";
-        loadingProfile.value = false;
       }
     );
     loadGoals();
-    loadCheckins();
   },
   { immediate: true }
 );
@@ -869,16 +493,75 @@ watch(
   () => appContext.activeMode,
   () => {
     loadGoals();
-    loadCheckins();
+    loadLearnedTools();
   }
+);
+
+watch(
+  [
+    () => activeTherapy.value?.terapeutaId,
+    () => isPatientMode.value,
+  ],
+  async ([therapistId, patientMode]) => {
+    const requestId = ++activeTherapistRequestId;
+    activeTherapyTherapist.value = null;
+
+    if (!therapistId || !patientMode) {
+      loadingActiveTherapist.value = false;
+      return;
+    }
+
+    loadingActiveTherapist.value = true;
+
+    try {
+      const publicTherapist = await getTherapistById(therapistId);
+
+      if (requestId === activeTherapistRequestId) {
+        activeTherapyTherapist.value = publicTherapist;
+      }
+    } catch (error) {
+      console.error("Error loading therapist public profile:", error);
+
+      if (requestId === activeTherapistRequestId) {
+        activeTherapyTherapist.value = null;
+      }
+    } finally {
+      if (requestId === activeTherapistRequestId) {
+        loadingActiveTherapist.value = false;
+      }
+    }
+  },
+  { immediate: true }
 );
 
 onBeforeUnmount(() => {
   unsubscribeProfile?.();
+  activeTherapistRequestId += 1;
+  learnedToolsRequestId += 1;
 });
 
-function displayValue(value) {
-  return (value || "").toString().trim() || "No definido";
+async function loadLearnedTools() {
+  const requestId = ++learnedToolsRequestId;
+  const uid = currentUser.value?.uid;
+
+  if (!uid || !isPatientMode.value) {
+    learnedTools.value = [];
+    return;
+  }
+
+  try {
+    const exercises = await getExercisesByPatient(uid);
+
+    if (requestId === learnedToolsRequestId) {
+      learnedTools.value = exercises;
+    }
+  } catch (error) {
+    console.error("Error loading learned tools for therapy summary:", error);
+
+    if (requestId === learnedToolsRequestId) {
+      learnedTools.value = [];
+    }
+  }
 }
 
 async function loadGoals() {
@@ -931,43 +614,6 @@ async function loadGoals() {
   }
 }
 
-async function loadCheckins() {
-  const uid = currentUser.value?.uid;
-
-  if (!uid) {
-    resetCheckinState();
-    return;
-  }
-
-  loadingCheckins.value = true;
-  checkinsError.value = "";
-
-  try {
-    const therapistProfile = isPsychologistMode.value
-      ? therapist.value || (await getTherapistByUserUid(uid))
-      : null;
-    let patientCheckins = [];
-    let therapistCheckins = [];
-
-    if (!therapistProfile?.id) {
-      patientCheckins = await getCheckinsByPatient(uid);
-    } else {
-      therapistCheckins = await getCheckinsByTherapist(therapistProfile.id);
-    }
-
-    checkins.value = mergeCheckins(patientCheckins, therapistCheckins);
-  } catch (error) {
-    console.error("Error loading emotional checkins:", error);
-    checkinsError.value = getPermissionAwareMessage(
-      error,
-      "No pudimos cargar los registros emocionales."
-    );
-    checkins.value = [];
-  } finally {
-    loadingCheckins.value = false;
-  }
-}
-
 function mergeGoals(patientGoals, therapistGoals) {
   const byId = new Map();
   [...patientGoals, ...therapistGoals].forEach((goal) => {
@@ -976,33 +622,11 @@ function mergeGoals(patientGoals, therapistGoals) {
   return Array.from(byId.values());
 }
 
-function mergeCheckins(patientCheckins, therapistCheckins) {
-  const byId = new Map();
-  [...patientCheckins, ...therapistCheckins].forEach((checkin) => {
-    byId.set(checkin.id, checkin);
-  });
-  return Array.from(byId.values()).sort(
-    (a, b) => toTimestamp(b.createdAt) - toTimestamp(a.createdAt)
-  );
-}
-
-function toTimestamp(value) {
-  if (!value) return 0;
-  if (typeof value.toDate === "function") return value.toDate().getTime();
-  const parsed = new Date(value);
-  return Number.isNaN(parsed.getTime()) ? 0 : parsed.getTime();
-}
-
 function resetGoalState() {
   activeTherapy.value = null;
   therapist.value = null;
   therapistTherapies.value = [];
   goals.value = [];
-}
-
-function resetCheckinState() {
-  checkins.value = [];
-  checkinsError.value = "";
 }
 
 async function saveGoal() {
@@ -1075,60 +699,6 @@ function resetGoalForm() {
   goalForm.targetDate = "";
 }
 
-async function saveCheckin() {
-  if (!canCreateCheckin.value || savingCheckin.value) {
-    return;
-  }
-
-  savingCheckin.value = true;
-
-  try {
-    await createEmotionalCheckin({
-      pacienteUid: activeTherapy.value.pacienteUid,
-      pacienteNombre: activeTherapy.value.pacienteNombre,
-      terapeutaId: activeTherapy.value.terapeutaId,
-      terapeutaNombre: activeTherapy.value.terapeutaNombre,
-      terapiaId: activeTherapy.value.id,
-      mood: checkinForm.mood.trim(),
-      intensity: checkinForm.intensity,
-      energy: checkinForm.energy,
-      sleepQuality: checkinForm.sleepQuality,
-      note: checkinForm.note.trim(),
-      tags: checkinForm.tags,
-    });
-
-    window.dispatchEvent(
-      new CustomEvent("ui-success", {
-        detail: {
-          title: "Registro guardado",
-          message: "El check-in emocional fue agregado al proceso.",
-        },
-      })
-    );
-
-    resetCheckinForm();
-    checkinDialog.value = false;
-    await loadCheckins();
-  } catch (error) {
-    console.error("Error creating emotional checkin:", error);
-    checkinsError.value = getPermissionAwareMessage(
-      error,
-      "No se pudo guardar el registro emocional."
-    );
-  } finally {
-    savingCheckin.value = false;
-  }
-}
-
-function resetCheckinForm() {
-  checkinForm.mood = "";
-  checkinForm.intensity = 5;
-  checkinForm.energy = 5;
-  checkinForm.sleepQuality = 5;
-  checkinForm.note = "";
-  checkinForm.tags = [];
-}
-
 function openGoalProgressDialog(goal) {
   selectedGoal.value = goal;
   goalProgressForm.progress = Number(goal.progress || 0);
@@ -1189,16 +759,7 @@ async function saveGoalProgress() {
   border-radius: 8px;
 }
 
-.checkin-item {
-  border: 1px solid rgba(var(--v-border-color), var(--v-border-opacity));
-  border-radius: 8px;
-}
-
 @media (max-width: 600px) {
-  .progress-view {
-    padding-inline: 16px;
-  }
-
   .progress-view :deep(.v-card-title) {
     line-height: 1.25;
   }
