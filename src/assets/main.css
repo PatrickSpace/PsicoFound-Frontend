@@ -60,7 +60,8 @@
   --v-theme-border-focus: 45, 114, 90;
 }
 
-.brand-system-scope {
+.brand-system-scope,
+.brand-system-scope.v-theme--light {
   --color-primary: var(--lurems-brand-primary);
   --color-primary-dark: var(--lurems-brand-dark);
   --color-primary-soft: var(--lurems-brand-subtle);
