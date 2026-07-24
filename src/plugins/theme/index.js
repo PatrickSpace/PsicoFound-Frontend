@@ -42,34 +42,28 @@ const vuetify = createVuetify({
       elevation: 0,
     },
     VTextField: {
-      variant: "solo-filled",
+      variant: "outlined",
       density: "comfortable",
-      flat: true,
     },
     VTextarea: {
-      variant: "solo-filled",
+      variant: "outlined",
       density: "comfortable",
-      flat: true,
     },
     VSelect: {
-      variant: "solo-filled",
+      variant: "outlined",
       density: "comfortable",
-      flat: true,
     },
     VAutocomplete: {
-      variant: "solo-filled",
+      variant: "outlined",
       density: "comfortable",
-      flat: true,
     },
     VCombobox: {
-      variant: "solo-filled",
+      variant: "outlined",
       density: "comfortable",
-      flat: true,
     },
     VFileInput: {
-      variant: "solo-filled",
+      variant: "outlined",
       density: "comfortable",
-      flat: true,
     },
   },
 });

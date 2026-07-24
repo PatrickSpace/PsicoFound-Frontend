@@ -19,7 +19,6 @@
   --pf-field-disabled-bg: #eef6f4;
   --pf-field-disabled-text: #8aa7a3;
   --pf-field-radius: 16px;
-  --pf-field-border-width: 2px;
   --pf-field-min-height: 58px;
   --pf-field-floating-input-padding-top: 15px;
   --pf-field-floating-input-padding-bottom: 2px;
@@ -49,35 +48,48 @@
 
 :is(.v-text-field, .v-textarea, .v-select, .v-autocomplete, .v-combobox, .v-file-input) .v-field:not(.v-field--variant-plain) {
   min-height: var(--pf-field-min-height);
-  border: var(--pf-field-border-width) solid var(--pf-field-border);
   border-radius: var(--pf-field-radius);
-  background: var(--pf-field-bg) !important;
+  background: transparent !important;
   color: var(--pf-field-text);
   box-shadow: none !important;
-  transition:
-    background-color 0.18s ease,
-    border-color 0.18s ease,
-    box-shadow 0.18s ease;
 }
 
 :is(.v-text-field, .v-textarea, .v-select, .v-autocomplete, .v-combobox, .v-file-input) .v-field:not(.v-field--variant-plain):hover {
-  background: var(--pf-field-bg-hover) !important;
-  border-color: var(--pf-field-border-hover);
+  background: transparent !important;
 }
 
 :is(.v-text-field, .v-textarea, .v-select, .v-autocomplete, .v-combobox, .v-file-input) .v-field.v-field--focused:not(.v-field--variant-plain) {
-  background: var(--pf-field-bg-focus) !important;
-  border-color: var(--pf-field-border-focus);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--pf-field-border-focus) 18%, transparent) !important;
+  background: transparent !important;
+  box-shadow: none !important;
 }
 
 :is(.v-text-field, .v-textarea, .v-select, .v-autocomplete, .v-combobox, .v-file-input) .v-field__overlay,
-:is(.v-text-field, .v-textarea, .v-select, .v-autocomplete, .v-combobox, .v-file-input) .v-field__outline,
 :is(.v-text-field, .v-textarea, .v-select, .v-autocomplete, .v-combobox, .v-file-input) .v-field__underlay {
   background: transparent !important;
   border: 0 !important;
-  color: transparent !important;
   opacity: 0 !important;
+}
+
+:is(.v-text-field, .v-textarea, .v-select, .v-autocomplete, .v-combobox, .v-file-input) .v-field--variant-outlined {
+  --v-field-border-opacity: 1;
+  --v-field-border-width: 1px;
+}
+
+:is(.v-text-field, .v-textarea, .v-select, .v-autocomplete, .v-combobox, .v-file-input) .v-field--variant-outlined .v-field__outline {
+  color: var(--pf-field-border);
+  transition: color 0.18s ease;
+}
+
+:is(.v-text-field, .v-textarea, .v-select, .v-autocomplete, .v-combobox, .v-file-input) .v-field--variant-outlined:hover .v-field__outline {
+  color: var(--pf-field-border-hover);
+}
+
+:is(.v-text-field, .v-textarea, .v-select, .v-autocomplete, .v-combobox, .v-file-input) .v-field--variant-outlined.v-field--focused {
+  --v-field-border-width: 2px;
+}
+
+:is(.v-text-field, .v-textarea, .v-select, .v-autocomplete, .v-combobox, .v-file-input) .v-field--variant-outlined.v-field--focused .v-field__outline {
+  color: var(--pf-field-border-focus);
 }
 
 :is(.v-text-field, .v-textarea, .v-select, .v-autocomplete, .v-combobox, .v-file-input) .v-field__input {
@@ -136,9 +148,12 @@
 }
 
 .v-input--error :is(.v-field:not(.v-field--variant-plain), .v-field:not(.v-field--variant-plain):hover, .v-field.v-field--focused:not(.v-field--variant-plain)) {
-  background: var(--pf-field-error-bg) !important;
-  border-color: var(--pf-field-error);
+  background: transparent !important;
   box-shadow: none !important;
+}
+
+.v-input--error .v-field--variant-outlined .v-field__outline {
+  color: var(--pf-field-error) !important;
 }
 
 .v-input--error :is(.v-field-label, .v-label, .v-messages__message, .v-input__details, .v-icon) {
@@ -146,8 +161,11 @@
 }
 
 :is(.v-input.text-success, .v-input.pf-field--success) .v-field:not(.v-field--variant-plain) {
-  background: var(--pf-field-success-bg) !important;
-  border-color: var(--pf-field-success);
+  background: transparent !important;
+}
+
+:is(.v-input.text-success, .v-input.pf-field--success) .v-field--variant-outlined .v-field__outline {
+  color: var(--pf-field-success);
 }
 
 :is(.v-input.text-success, .v-input.pf-field--success) :is(.v-field-label, .v-label, .v-messages__message, .v-input__details, .v-icon) {
@@ -159,9 +177,13 @@
 }
 
 .v-input--disabled .v-field:not(.v-field--variant-plain) {
-  background: var(--pf-field-disabled-bg) !important;
-  border-color: transparent;
+  background: transparent !important;
   color: var(--pf-field-disabled-text);
+}
+
+.v-input--disabled .v-field--variant-outlined .v-field__outline {
+  color: var(--pf-field-disabled-text);
+  opacity: 0.48;
 }
 
 .v-input--disabled :is(.v-field__input, input, textarea, .v-label, .v-field-label, .v-icon) {
