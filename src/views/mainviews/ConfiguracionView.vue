@@ -353,7 +353,22 @@
                 <v-text-field
                   v-model="psychologistRequestForm.licenseNumber"
                   label="Número de colegiatura"
-                  placeholder="Opcional para revisión"
+                  variant="outlined"
+                  density="comfortable"
+                />
+              </v-col>
+              <v-col cols="12" md="6">
+                <v-text-field
+                  v-model="psychologistRequestForm.country"
+                  label="País o jurisdicción profesional"
+                  variant="outlined"
+                  density="comfortable"
+                />
+              </v-col>
+              <v-col cols="12" md="6">
+                <v-text-field
+                  v-model="psychologistRequestForm.phone"
+                  label="Teléfono"
                   variant="outlined"
                   density="comfortable"
                 />
@@ -467,6 +482,12 @@ import {
   createPsychologistRequest,
   getLatestPsychologistRequestByUser,
 } from "@/services/psychologistRequestService";
+import {
+  APPROACH_OPTIONS,
+  GENDER_OPTIONS,
+  MODALITY_OPTIONS,
+  SPECIALTY_OPTIONS,
+} from "@/constants/professionalProfile";
 
 const router = useRouter();
 const authStore = useAuthStore();
@@ -491,6 +512,8 @@ const profileForm = reactive({
 const psychologistRequestForm = reactive({
   professionalName: "",
   licenseNumber: "",
+  country: "Perú",
+  phone: "",
   specialties: [],
   approaches: [],
   modalities: ["Remoto"],
@@ -499,24 +522,10 @@ const psychologistRequestForm = reactive({
   motivation: "",
 });
 
-const specialtyOptions = [
-  "Ansiedad",
-  "Depresión",
-  "Trauma",
-  "Autoestima",
-  "Pareja",
-  "Familia",
-  "Estrés laboral",
-];
-const approachOptions = [
-  "Cognitivo-Conductual",
-  "Humanista",
-  "Integrativo",
-  "Psicoanálisis",
-  "Terapia Familiar",
-];
-const modalityOptions = ["Remoto", "Presencial", "Híbrido"];
-const genderOptions = ["femenino", "masculino", "no especificado"];
+const specialtyOptions = SPECIALTY_OPTIONS;
+const approachOptions = APPROACH_OPTIONS;
+const modalityOptions = MODALITY_OPTIONS;
+const genderOptions = GENDER_OPTIONS;
 
 const activeMode = computed(
   () =>
@@ -533,8 +542,11 @@ const canSubmitPsychologistRequest = computed(
   () =>
     Boolean(currentUser.value?.uid) &&
     psychologistRequestForm.professionalName.trim().length > 0 &&
+    psychologistRequestForm.licenseNumber.trim().length > 0 &&
+    psychologistRequestForm.country.trim().length > 0 &&
     psychologistRequestForm.professionalSummary.trim().length > 0 &&
     psychologistRequestForm.specialties.length > 0 &&
+    psychologistRequestForm.approaches.length > 0 &&
     psychologistRequestForm.modalities.length > 0
 );
 
@@ -635,6 +647,8 @@ function resetPsychologistRequestForm() {
     userName.value ||
     "";
   psychologistRequestForm.licenseNumber = "";
+  psychologistRequestForm.country = "Perú";
+  psychologistRequestForm.phone = appContext.userProfile?.telefono || "";
   psychologistRequestForm.specialties = [];
   psychologistRequestForm.approaches = [];
   psychologistRequestForm.modalities = ["Remoto"];
@@ -686,6 +700,8 @@ async function submitPsychologistRequest() {
       userEmail: currentUser.value?.email || "",
       professionalName: psychologistRequestForm.professionalName.trim(),
       licenseNumber: psychologistRequestForm.licenseNumber.trim(),
+      country: psychologistRequestForm.country.trim(),
+      phone: psychologistRequestForm.phone.trim(),
       professionalSummary: psychologistRequestForm.professionalSummary.trim(),
       motivation: psychologistRequestForm.motivation.trim(),
       specialties: psychologistRequestForm.specialties,

@@ -19,8 +19,13 @@ import TerapiaDetailView from "@/views/terapias/TerapiaDetailView.vue";
 import PsicologoSesionesView from "@/views/psicologo/PsicologoSesionesView.vue";
 import PsychologistRequestsView from "@/views/admin/PsychologistRequestsView.vue";
 import UsersAdminView from "@/views/admin/UsersAdminView.vue";
+import OnboardingEntryView from "@/views/onboarding/OnboardingEntryView.vue";
+import PatientOnboardingView from "@/views/onboarding/PatientOnboardingView.vue";
+import PsychologistOnboardingView from "@/views/onboarding/PsychologistOnboardingView.vue";
+import PsychologistPendingView from "@/views/onboarding/PsychologistPendingView.vue";
 import { auth } from "@/plugins/Firebase/firebase";
 import { useAppContextStore } from "@/store/appContext";
+import { getBlockingOnboardingRoute } from "@/services/onboardingService";
 
 function getCurrentAuthUser() {
   if (auth.currentUser) {
@@ -83,6 +88,30 @@ const router = createRouter({
       name: "login",
       component: LogInView,
       meta: { public: true, guestOnly: true },
+    },
+    {
+      path: "/onboarding",
+      name: "onboarding",
+      component: OnboardingEntryView,
+      meta: { onboarding: true },
+    },
+    {
+      path: "/onboarding/paciente",
+      name: "patient-onboarding",
+      component: PatientOnboardingView,
+      meta: { onboarding: true },
+    },
+    {
+      path: "/onboarding/psicologo",
+      name: "psychologist-onboarding",
+      component: PsychologistOnboardingView,
+      meta: { onboarding: true },
+    },
+    {
+      path: "/onboarding/psicologo/pendiente",
+      name: "psychologist-onboarding-pending",
+      component: PsychologistPendingView,
+      meta: { onboarding: true },
     },
     {
       path: "/elegirterapeuta",
@@ -166,12 +195,23 @@ router.beforeEach(async (to) => {
   }
 
   if (user && isGuestOnlyRoute) {
-    return "/dashboard";
+    return "/onboarding";
   }
 
   if (user && !isPublicRoute) {
     const appContext = useAppContextStore();
     await appContext.loadForUser(user.uid);
+    const blockingOnboardingRoute = getBlockingOnboardingRoute(
+      appContext.userProfile || {}
+    );
+
+    if (
+      blockingOnboardingRoute &&
+      !to.meta.onboarding &&
+      to.path !== blockingOnboardingRoute
+    ) {
+      return blockingOnboardingRoute;
+    }
 
     const allowedModes = Array.isArray(to.meta.modes) ? to.meta.modes : [];
 
@@ -179,8 +219,12 @@ router.beforeEach(async (to) => {
       allowedModes.length > 0 &&
       !allowedModes.includes(appContext.activeMode)
     ) {
-      if (allowedModes.includes("admin") && appContext.isAdmin) {
-        appContext.setActiveMode("admin");
+      const availableMode = allowedModes.find((mode) =>
+        appContext.availableModes.some((item) => item.value === mode)
+      );
+
+      if (availableMode) {
+        appContext.setActiveMode(availableMode);
         return;
       }
 

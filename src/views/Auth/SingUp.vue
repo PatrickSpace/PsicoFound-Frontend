@@ -3,7 +3,7 @@
     <div class="auth-image" aria-hidden="true"></div>
 
     <main class="auth-content safe-bottom-mobile">
-      <div class="auth-form-shell">
+      <div class="auth-form-shell auth-form-shell--signup">
         <MainLogo class="auth-logo" :compact="smAndDown" />
         <h1 class="responsive-title-lg font-weight-medium theme-contrast-text">
           Registrarse
@@ -30,3 +30,9 @@ import { useDisplay } from "vuetify";
 
 const { smAndDown } = useDisplay();
 </script>
+
+<style scoped>
+.auth-form-shell--signup {
+  width: min(100%, 560px);
+}
+</style>

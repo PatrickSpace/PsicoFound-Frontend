@@ -56,33 +56,6 @@ export async function updateUserProfile(uid, data = {}) {
   };
 }
 
-export async function updateUserProfessionalAccess(uid, data = {}) {
-  if (!uid) {
-    throw new Error("No se encontró el usuario a actualizar.");
-  }
-
-  const userRef = doc(db, USERS_COLLECTION, uid);
-  const currentUser = await getUserById(uid);
-  const roles = normalizeRoles([
-    ...getUserRoles(currentUser, { defaultPatient: true }),
-    APP_ROLES.PSYCHOLOGIST,
-  ]);
-  const payload = {
-    roles,
-    rol: getLegacyRoleFromRoles(roles),
-    professionalAccessStatus: data.professionalAccessStatus || "approved",
-    professionalProfileId: data.professionalProfileId || "",
-    updatedAt: serverTimestamp(),
-  };
-
-  await setDoc(userRef, payload, { merge: true });
-
-  return {
-    id: uid,
-    ...payload,
-  };
-}
-
 export async function upsertUserByAdmin(uid, data = {}) {
   if (!uid) {
     throw new Error("El UID del usuario es obligatorio.");

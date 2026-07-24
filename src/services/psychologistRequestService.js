@@ -1,50 +1,35 @@
 import {
-  addDoc,
   collection,
-  doc,
   getDocs,
   orderBy,
   query,
-  serverTimestamp,
-  updateDoc,
   where,
 } from "firebase/firestore";
 import { db } from "@/plugins/Firebase/firestore";
-import { createTherapist } from "@/services/psicologoService";
-import { updateUserProfessionalAccess } from "@/services/userService";
-import { defaultTherapistGradient } from "@/plugins/theme/tokens";
+import {
+  reviewPsychologistApplication,
+  submitPsychologistApplication,
+} from "@/services/onboardingService";
 
 const REQUESTS_COLLECTION = "psychologist_requests";
 
 export async function createPsychologistRequest(data = {}) {
-  if (!data.userUid) {
-    throw new Error("No se encontró el usuario solicitante.");
-  }
-
-  const existingRequest = await getLatestPsychologistRequestByUser(data.userUid);
-  const existingStatus = normalizeStatus(existingRequest?.status);
-
-  if (["pending", "approved"].includes(existingStatus)) {
-    throw new Error(
-      existingStatus === "approved"
-        ? "Tu perfil profesional ya fue aprobado."
-        : "Ya tienes una solicitud pendiente de revisión."
-    );
-  }
-
-  const payload = sanitizeRequestPayload(data);
-  const docRef = await addDoc(collection(db, REQUESTS_COLLECTION), {
-    ...payload,
-    status: "pending",
-    createdAt: serverTimestamp(),
-    updatedAt: serverTimestamp(),
+  const result = await submitPsychologistApplication({
+    professionalName: data.professionalName || data.userName || "",
+    licenseNumber: data.licenseNumber || "",
+    country: data.country || "",
+    phone: data.phone || "",
+    yearsExperience: data.yearsExperience || 0,
+    professionalSummary: data.professionalSummary || "",
+    motivation: data.motivation || "",
+    specialties: data.specialties || [],
+    approaches: data.approaches || [],
+    modalities: data.modalities || [],
+    gender: data.gender || "",
+    practiceLocation: data.practiceLocation || "",
   });
 
-  return {
-    id: docRef.id,
-    ...payload,
-    status: "pending",
-  };
+  return result.request;
 }
 
 export async function getLatestPsychologistRequestByUser(userUid) {
@@ -75,35 +60,14 @@ export async function getPsychologistRequests() {
 }
 
 export async function approvePsychologistRequest(request) {
-  if (!request?.id || !request?.userUid) {
+  if (!request?.id) {
     throw new Error("Solicitud inválida.");
   }
 
-  const therapist = await createTherapist({
-    uid: request.userUid,
-    nombre: request.professionalName || request.userName || "",
-    description: request.professionalSummary || "",
-    mensaje: request.motivation || "",
-    especialidades: request.specialties || [],
-    enfoques: request.approaches || [],
-    genero: request.gender || "",
-    modalidades: request.modalities || [],
-    gradient: defaultTherapistGradient,
-    activo: true,
+  return reviewPsychologistApplication({
+    requestId: request.id,
+    action: "approve",
   });
-
-  await updateUserProfessionalAccess(request.userUid, {
-    professionalProfileId: therapist.id,
-    professionalAccessStatus: "approved",
-    rol: "psicologo",
-  });
-
-  await updatePsychologistRequestStatus(request.id, {
-    status: "approved",
-    therapistId: therapist.id,
-  });
-
-  return therapist;
 }
 
 export async function rejectPsychologistRequest(requestId, rejectionReason = "") {
@@ -111,45 +75,11 @@ export async function rejectPsychologistRequest(requestId, rejectionReason = "")
     throw new Error("Solicitud inválida.");
   }
 
-  await updatePsychologistRequestStatus(requestId, {
-    status: "rejected",
+  return reviewPsychologistApplication({
+    requestId,
+    action: "reject",
     rejectionReason: rejectionReason.trim(),
   });
-}
-
-async function updatePsychologistRequestStatus(requestId, data = {}) {
-  const requestRef = doc(db, REQUESTS_COLLECTION, requestId);
-  await updateDoc(requestRef, {
-    ...data,
-    reviewedAt: serverTimestamp(),
-    updatedAt: serverTimestamp(),
-  });
-}
-
-function sanitizeRequestPayload(data = {}) {
-  return {
-    userUid: data.userUid || "",
-    userName: data.userName || "",
-    userEmail: data.userEmail || "",
-    professionalName: data.professionalName || data.userName || "",
-    licenseNumber: data.licenseNumber || "",
-    professionalSummary: data.professionalSummary || "",
-    motivation: data.motivation || "",
-    specialties: normalizeStringArray(data.specialties),
-    approaches: normalizeStringArray(data.approaches),
-    modalities: normalizeStringArray(data.modalities),
-    gender: data.gender || "",
-  };
-}
-
-function normalizeStringArray(value) {
-  return Array.isArray(value)
-    ? value.map((item) => item.toString().trim()).filter(Boolean)
-    : [];
-}
-
-function normalizeStatus(status = "") {
-  return status.toString().trim().toLowerCase();
 }
 
 function sortRequestsByCreatedAt(requests = []) {

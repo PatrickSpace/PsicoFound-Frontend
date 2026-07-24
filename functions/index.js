@@ -9,6 +9,12 @@ const {
 const {
   getRecommendedTherapists,
 } = require("./src/matching/recommendTherapists");
+const {
+  completePatientOnboarding,
+  finalizeRegistration,
+  reviewPsychologistApplication,
+  submitPsychologistApplication,
+} = require("./src/onboarding/registrationHandlers");
 
 admin.initializeApp();
 
@@ -40,4 +46,36 @@ exports.getRecommendedTherapists = onCall(
       timeoutSeconds: 20,
     },
     getRecommendedTherapists,
+);
+
+exports.finalizeRegistration = onCall(
+    {
+      minInstances: 0,
+      timeoutSeconds: 20,
+    },
+    finalizeRegistration,
+);
+
+exports.completePatientOnboarding = onCall(
+    {
+      minInstances: 0,
+      timeoutSeconds: 20,
+    },
+    completePatientOnboarding,
+);
+
+exports.submitPsychologistApplication = onCall(
+    {
+      minInstances: 0,
+      timeoutSeconds: 20,
+    },
+    submitPsychologistApplication,
+);
+
+exports.reviewPsychologistApplication = onCall(
+    {
+      minInstances: 0,
+      timeoutSeconds: 30,
+    },
+    reviewPsychologistApplication,
 );

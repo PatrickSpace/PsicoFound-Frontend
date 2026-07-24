@@ -62,15 +62,22 @@
 <script setup>
 import { reactive, ref } from "vue";
 import { auth } from "@/plugins/Firebase/firebase";
-import { createUserInFirestore } from "@/plugins/Firebase/firestore";
 import {
   signInWithEmailAndPassword,
   GoogleAuthProvider,
   signInWithPopup,
 } from "firebase/auth";
 import { useRouter } from "vue-router";
+import { useAppContextStore } from "@/store/appContext";
+import { getUserById } from "@/services/userService";
+import {
+  finalizeRegistration,
+  getPostAuthenticationRoute,
+  REGISTRATION_INTENTS,
+} from "@/services/onboardingService";
 
 const router = useRouter();
+const appContext = useAppContextStore();
 
 const form = reactive({ usuario: "", password: "" });
 const valid = ref(false);
@@ -92,8 +99,7 @@ async function LogIn() {
       form.usuario,
       form.password
     );
-    console.log(userlogged.user);
-    router.push("/dashboard");
+    await routeAfterLogin(userlogged.user);
   } catch (e) {
     console.error("Login error:", e);
     alert("Error al iniciar sesión: " + e.message);
@@ -110,22 +116,41 @@ async function LoginGoogle() {
     const provider = new GoogleAuthProvider();
     const result = await signInWithPopup(auth, provider);
     const userlogged = result.user;
-    console.log("Google user:", userlogged);
-    const newUser = {
-      id: userlogged.uid,
-      email: userlogged.email,
-      nombre: userlogged.displayName || "Usuario",
-      rol: "paciente",
-      roles: ["patient"],
-    };
-    console.log("Google user:", newUser);
-    await createUserInFirestore(newUser);
-    await router.push("/dashboard");
+    await routeAfterLogin(userlogged);
   } catch (error) {
     console.error("Google login error:", error);
     alert("Error al iniciar sesión con Google: " + error.message);
   } finally {
     loadingGoogle.value = false;
   }
+}
+
+async function routeAfterLogin(user) {
+  let profile = await getUserById(user.uid);
+
+  if (!profile) {
+    const result = await finalizeRegistration({
+      intent: REGISTRATION_INTENTS.PATIENT,
+      displayName: user.displayName || "",
+    });
+    profile = result.profile;
+  }
+
+  await appContext.loadForUser(user.uid, { force: true });
+  const onboardingRoute = getPostAuthenticationRoute(profile);
+  const requestedRoute = router.currentRoute.value.query.redirect;
+  const target =
+    onboardingRoute === "/dashboard" && typeof requestedRoute === "string"
+      ? requestedRoute
+      : onboardingRoute;
+
+  if (
+    target.startsWith("/psicologo/") &&
+    appContext.hasPsychologistAccess
+  ) {
+    appContext.setActiveMode("psychologist");
+  }
+
+  await router.replace(target);
 }
 </script>
