@@ -1,34 +1,13 @@
 <template>
   <div class="signup-flow">
-    <div class="signup-role">
-      <p class="text-subtitle-2 font-weight-bold mb-3">
-        Quiero usar Lurems como
-      </p>
-      <v-btn-toggle
-        v-model="registrationIntent"
-        class="signup-role__toggle"
-        mandatory
-        divided
-      >
-        <v-btn
-          v-for="option in registrationOptions"
-          :key="option.value"
-          :value="option.value"
-          class="signup-role__option"
-          :class="{
-            'signup-role__option--active':
-              registrationIntent === option.value,
-          }"
-          variant="text"
-        >
-          <v-icon size="24">{{ option.icon }}</v-icon>
-          <span class="signup-role__copy">
-            <strong>{{ option.label }}</strong>
-            <small>{{ option.description }}</small>
-          </span>
-        </v-btn>
-      </v-btn-toggle>
-    </div>
+    <v-select
+      v-model="registrationIntent"
+      :items="registrationOptions"
+      item-title="label"
+      item-value="value"
+      label="Quiero usar Lurems como"
+      color="primary"
+    />
 
     <v-alert
       v-if="errorMessage"
@@ -248,57 +227,6 @@ function getRegistrationErrorMessage(error) {
   width: 100%;
 }
 
-.signup-role__toggle {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  width: 100%;
-  height: auto;
-  padding: 4px;
-  border: 1px solid var(--pf-field-border);
-  border-radius: 14px;
-  background: var(--pf-field-bg);
-}
-
-.signup-role__option {
-  width: 100%;
-  min-width: 0;
-  height: 76px !important;
-  border-radius: 10px !important;
-  color: var(--pf-field-helper) !important;
-}
-
-.signup-role__option--active {
-  background: var(--pf-btn-brand) !important;
-  color: #ffffff !important;
-}
-
-.signup-role__option :deep(.v-btn__content) {
-  display: grid;
-  grid-template-columns: 28px minmax(0, 1fr);
-  gap: 10px;
-  width: 100%;
-  text-align: left;
-}
-
-.signup-role__copy {
-  display: flex;
-  min-width: 0;
-  flex-direction: column;
-  gap: 2px;
-  white-space: normal;
-}
-
-.signup-role__copy strong {
-  font-size: 0.9rem;
-}
-
-.signup-role__copy small {
-  font-size: 0.7rem;
-  font-weight: 500;
-  line-height: 1.3;
-  opacity: 0.86;
-}
-
 .signup-divider {
   display: grid;
   grid-template-columns: 1fr auto 1fr;
@@ -310,15 +238,5 @@ function getRegistrationErrorMessage(error) {
 
 .signup-terms :deep(.v-label) {
   opacity: 1;
-}
-
-@media (max-width: 480px) {
-  .signup-role__toggle {
-    grid-template-columns: 1fr;
-  }
-
-  .signup-role__option {
-    height: 64px !important;
-  }
 }
 </style>
