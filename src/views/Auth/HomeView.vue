@@ -19,8 +19,7 @@
                   </v-btn>
                   <v-btn
                     to="/registro"
-                    class="pf-btn-ghost"
-                    variant="text"
+                    class="pf-btn-primary"
                   >
                     Registrarse
                   </v-btn>
