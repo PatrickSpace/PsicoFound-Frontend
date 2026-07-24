@@ -117,9 +117,23 @@ export function getCallableErrorMessage(
   error,
   fallback = "No pudimos completar la operación."
 ) {
-  return (
-    error?.details?.message ||
+  const detailsMessage =
+    typeof error?.details === "string"
+      ? error.details
+      : error?.details?.message;
+  const message = (
+    detailsMessage ||
     error?.message?.replace(/^Firebase:\s*/i, "") ||
-    fallback
-  );
+    ""
+  ).trim();
+  const normalizedMessage = message.toLowerCase();
+
+  if (
+    !message ||
+    ["internal", "unknown", "functions/internal"].includes(normalizedMessage)
+  ) {
+    return fallback;
+  }
+
+  return message;
 }

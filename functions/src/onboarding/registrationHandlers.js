@@ -42,7 +42,7 @@ async function finalizeRegistration(request) {
     updatedAt: now,
   };
 
-  if (!snapshot.exists()) {
+  if (!snapshot.exists) {
     payload.createdAt = now;
   }
 
@@ -81,7 +81,7 @@ async function completePatientOnboarding(request) {
         onboardingStatus: "complete",
         patientOnboardingStatus: "complete",
         updatedAt: now,
-        ...(!snapshot.exists() ? {createdAt: now} : {}),
+        ...(!snapshot.exists ? {createdAt: now} : {}),
       },
       {merge: true},
   );
@@ -142,7 +142,7 @@ async function submitPsychologistApplication(request) {
         professionalAccessStatus: "pending",
         latestPsychologistRequestId: requestRef.id,
         updatedAt: now,
-        ...(!userSnapshot.exists() ? {createdAt: now} : {}),
+        ...(!userSnapshot.exists ? {createdAt: now} : {}),
       },
       {merge: true},
   );
@@ -508,12 +508,45 @@ function getTimestamp(item) {
   return new Date(value).getTime() || 0;
 }
 
+function safeCallable(handler, publicMessage) {
+  return async (request) => {
+    try {
+      return await handler(request);
+    } catch (error) {
+      if (error instanceof HttpsError) {
+        throw error;
+      }
+
+      logger.error("Unhandled onboarding error", {
+        errorType: error && error.name ? error.name : "UnknownError",
+        errorMessage: error && error.message ?
+          error.message.slice(0, 240) :
+          "Unknown error",
+      });
+      throw new HttpsError("internal", publicMessage);
+    }
+  };
+}
+
 module.exports = {
-  completePatientOnboarding,
-  finalizeRegistration,
+  completePatientOnboarding: safeCallable(
+      completePatientOnboarding,
+      "No pudimos guardar tu perfil. Intenta nuevamente.",
+  ),
+  finalizeRegistration: safeCallable(
+      finalizeRegistration,
+      "Tu cuenta fue creada, pero no pudimos preparar tu perfil. " +
+        "Intenta continuar nuevamente.",
+  ),
   normalizeRegistrationIntent,
-  reviewPsychologistApplication,
+  reviewPsychologistApplication: safeCallable(
+      reviewPsychologistApplication,
+      "No pudimos actualizar la solicitud profesional. Intenta nuevamente.",
+  ),
   sanitizePatientProfile,
   sanitizeProfessionalApplication,
-  submitPsychologistApplication,
+  submitPsychologistApplication: safeCallable(
+      submitPsychologistApplication,
+      "No pudimos enviar tu solicitud profesional. Intenta nuevamente.",
+  ),
 };

@@ -217,6 +217,10 @@ function getRegistrationErrorMessage(error) {
     return "Se cerró la ventana de Google antes de completar el registro.";
   }
 
+  if (code.includes("internal")) {
+    return "Tu cuenta fue creada, pero no pudimos preparar tu perfil. Intenta pulsar Crear cuenta nuevamente o inicia sesión para continuar.";
+  }
+
   return getCallableErrorMessage(
     error,
     "No pudimos crear tu cuenta. Intenta nuevamente."
