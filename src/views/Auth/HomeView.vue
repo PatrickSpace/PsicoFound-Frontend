@@ -12,13 +12,15 @@
                   <v-spacer></v-spacer>
                   <v-btn
                     to="/login"
-                    class="pf-btn-primary"
+                    class="pf-btn-ghost"
+                    variant="text"
                   >
                     Iniciar sesión
                   </v-btn>
                   <v-btn
                     to="/registro"
-                    class="pf-btn-primary"
+                    class="pf-btn-ghost"
+                    variant="text"
                   >
                     Registrarse
                   </v-btn>
