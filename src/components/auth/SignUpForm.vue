@@ -1,12 +1,16 @@
 <template>
   <div class="signup-flow">
-    <v-select
+    <v-switch
       v-model="registrationIntent"
-      :items="registrationOptions"
-      item-title="label"
-      item-value="value"
-      label="Quiero usar Lurems como"
+      :true-value="REGISTRATION_INTENTS.PSYCHOLOGIST"
+      :false-value="REGISTRATION_INTENTS.PATIENT"
+      :label="
+        registrationIntent === REGISTRATION_INTENTS.PSYCHOLOGIST
+          ? 'Registro como psicólogo/a'
+          : 'Registro como paciente'
+      "
       color="primary"
+      hide-details
     />
 
     <v-alert
@@ -109,12 +113,10 @@ import {
   getCallableErrorMessage,
   REGISTRATION_INTENT_STORAGE_KEY,
   REGISTRATION_INTENTS,
-  REGISTRATION_OPTIONS,
 } from "@/services/onboardingService";
 
 const router = useRouter();
 const appContext = useAppContextStore();
-const registrationOptions = REGISTRATION_OPTIONS;
 const registrationIntent = ref(REGISTRATION_INTENTS.PATIENT);
 const form = reactive({ email: "", password: "" });
 const valid = ref(false);
