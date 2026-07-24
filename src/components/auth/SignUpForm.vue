@@ -20,9 +20,8 @@
       />
       <v-btn
         block
-        class="my-5 bg-transparent pf-btn-secondary"
+        class="my-5 pf-btn-primary"
         elevation="4"
-        variant="tonal"
         size="large"
         type="submit"
         :disabled="!valid || loading"

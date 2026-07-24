@@ -8,20 +8,17 @@
           <v-col cols="10">
             <v-row class="h-screen" justify="center">
               <v-col cols="12" class="d-flex" align-self="start">
-                <v-toolbar color="transparent">
+                <v-toolbar class="home-auth-toolbar" color="transparent">
                   <v-spacer></v-spacer>
                   <v-btn
                     to="/login"
-                    class="theme-contrast-text pf-btn-secondary"
-                    variant="tonal"
-                    rounded="0"
+                    class="pf-btn-primary"
                   >
-                    Iniciar sesion
+                    Iniciar sesión
                   </v-btn>
                   <v-btn
                     to="/registro"
-                    class="theme-contrast-text pf-btn-ghost"
-                    variant="text"
+                    class="pf-btn-primary"
                   >
                     Registrarse
                   </v-btn>
@@ -70,9 +67,6 @@
     </v-row>
   </div>
 </template>
-<script setup>
-import MainLogo from "@/components/Common/MainLogo.vue";
-</script>
 <style scoped>
 .bg-image {
   background-image: url("@/assets/img/bg-home.jpg");
@@ -85,5 +79,20 @@ import MainLogo from "@/components/Common/MainLogo.vue";
   display: block;
   height: auto;
   width: 280px;
+}
+
+.home-auth-toolbar :deep(.v-toolbar__content) {
+  gap: 12px;
+}
+
+@media (max-width: 420px) {
+  .home-auth-toolbar :deep(.v-toolbar__content) {
+    gap: 8px;
+  }
+
+  .home-auth-toolbar :deep(.v-btn) {
+    min-width: 0;
+    padding-inline: 14px !important;
+  }
 }
 </style>
