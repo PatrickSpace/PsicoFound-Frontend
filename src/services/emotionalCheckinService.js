@@ -1,7 +1,6 @@
 import {
   addDoc,
   collection,
-  getDocs,
   query,
   serverTimestamp,
   where,
@@ -9,6 +8,8 @@ import {
 import { auth } from "@/plugins/Firebase/firebase";
 import { db } from "@/plugins/Firebase/firestore";
 import { appendLongitudinalEvent } from "@/services/longitudinalHistoryService";
+import { readQuery, trackWrite } from "@/repositories/firestoreRepository";
+import { CACHE_TTL, getOrFetch, invalidateCachePrefix } from "@/utils/requestCache";
 
 const CHECKINS_COLLECTION = "emotional_checkins";
 
@@ -34,46 +35,60 @@ export async function createEmotionalCheckin(data = {}) {
     updatedAt: serverTimestamp(),
   };
 
-  const docRef = await addDoc(collection(db, CHECKINS_COLLECTION), payload);
+  const docRef = await trackWrite({
+    resource: CHECKINS_COLLECTION,
+    source: "createEmotionalCheckin",
+    operation: "addDoc",
+    write: () => addDoc(collection(db, CHECKINS_COLLECTION), payload),
+  });
   const checkin = { id: docRef.id, ...payload };
+  invalidateCachePrefix("checkins:");
 
   await safelyAppendCheckinEvent(checkin);
 
   return checkin;
 }
 
-export async function getCheckinsByPatient(pacienteUid) {
+export async function getCheckinsByPatient(pacienteUid, options = {}) {
   if (!pacienteUid) {
     return [];
   }
 
-  const checkinsRef = collection(db, CHECKINS_COLLECTION);
-  const checkinsQuery = query(
-    checkinsRef,
-    where("pacienteUid", "==", pacienteUid)
-  );
-  const snapshot = await getDocs(checkinsQuery);
-
-  return sortCheckins(
-    snapshot.docs.map((item) => ({ id: item.id, ...item.data() }))
-  );
+  return getOrFetch({
+    key: `checkins:patient:${pacienteUid}`,
+    ttl: CACHE_TTL.CLINICAL_LIST,
+    force: options.force,
+    resource: CHECKINS_COLLECTION,
+    source: "getCheckinsByPatient",
+    fetcher: async () => {
+      const snapshot = await readQuery(
+        query(collection(db, CHECKINS_COLLECTION), where("pacienteUid", "==", pacienteUid)),
+        { resource: CHECKINS_COLLECTION, source: "getCheckinsByPatient" }
+      );
+      return sortCheckins(snapshot.docs.map((item) => ({ id: item.id, ...item.data() })));
+    },
+  });
 }
 
-export async function getCheckinsByTherapist(terapeutaId) {
+export async function getCheckinsByTherapist(terapeutaId, options = {}) {
   if (!terapeutaId) {
     return [];
   }
 
-  const checkinsRef = collection(db, CHECKINS_COLLECTION);
-  const checkinsQuery = query(
-    checkinsRef,
-    where("terapeutaId", "==", terapeutaId)
-  );
-  const snapshot = await getDocs(checkinsQuery);
-
-  return sortCheckins(
-    snapshot.docs.map((item) => ({ id: item.id, ...item.data() }))
-  );
+  return getOrFetch({
+    key: `checkins:therapist:${terapeutaId}`,
+    ttl: CACHE_TTL.CLINICAL_LIST,
+    force: options.force,
+    resource: CHECKINS_COLLECTION,
+    source: "getCheckinsByTherapist",
+    fetcher: async () => {
+      const snapshot = await readQuery(
+        query(collection(db, CHECKINS_COLLECTION), where("terapeutaId", "==", terapeutaId)),
+        { resource: CHECKINS_COLLECTION, source: "getCheckinsByTherapist" }
+      );
+      return sortCheckins(snapshot.docs.map((item) => ({ id: item.id, ...item.data() })));
+    },
+  });
 }
 
 function sortCheckins(items = []) {

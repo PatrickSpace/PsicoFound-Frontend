@@ -82,7 +82,7 @@ defineProps({
   min-height: 100dvh;
   background:
     linear-gradient(rgba(26, 58, 56, 0.12), rgba(26, 58, 56, 0.3)),
-    url("@/assets/img/bg-home.jpg") center / cover no-repeat;
+    url("@/assets/img/bg-home.avif") center / cover no-repeat;
 }
 
 .onboarding-page__main {

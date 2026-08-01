@@ -194,13 +194,10 @@ import CitaDialog from "@/components/Terapias/CitaDialog.vue";
 import NextAppointmentCard from "@/components/Terapias/NextAppointmentCard.vue";
 import ActiveTherapySummaryCard from "@/components/Terapias/ActiveTherapySummaryCard.vue";
 import { useAuthStore } from "@/store/auth";
-import { watchProfile } from "@/services/conversationService";
+import { getProfileByUserId } from "@/services/userService";
 import { getTherapistById } from "@/services/psicologoService";
 import { getExercisesByPatient } from "@/services/exerciseService";
-import {
-  getActiveTherapyByPatient,
-  getTherapiesByPatient,
-} from "@/services/terapiaService";
+import { getTherapiesByPatient } from "@/services/terapiaService";
 
 const authStore = useAuthStore();
 const { currentUser, userName: username } = storeToRefs(authStore);
@@ -214,8 +211,8 @@ const loadingTherapist = ref(false);
 const dialog = ref(false);
 const dialogAppointment = ref(null);
 
-let unsubscribeProfile = null;
 let therapistRequestId = 0;
+let profileRequestId = 0;
 
 const activeTherapy = computed(() => activeTherapyData.value);
 
@@ -349,13 +346,15 @@ async function loadActiveTherapy() {
   }
 
   try {
-    const [activeTherapy, patientTherapies, patientExercises] = await Promise.all([
-      getActiveTherapyByPatient(pacienteUid),
+    const [patientTherapies, patientExercises] = await Promise.all([
       getTherapiesByPatient(pacienteUid),
       getExercisesByPatient(pacienteUid),
     ]);
 
-    activeTherapyData.value = activeTherapy;
+    activeTherapyData.value = patientTherapies.find(
+      (therapy) =>
+        (therapy.estado || "").toString().trim().toLowerCase() === "activo"
+    ) || null;
     therapies.value = patientTherapies;
     exercises.value = patientExercises;
   } catch (error) {
@@ -370,27 +369,26 @@ async function loadActiveTherapy() {
 
 watch(
   () => currentUser.value?.uid,
-  (uid) => {
-    unsubscribeProfile?.();
-    unsubscribeProfile = null;
+  async (uid) => {
+    const requestId = ++profileRequestId;
     profile.value = null;
     dialogAppointment.value = null;
-
-    if (uid) {
-      unsubscribeProfile = watchProfile(
-        uid,
-        (item) => {
-          profile.value = item;
-        },
-        (error) => {
-          console.error("Error loading profile for dashboard:", error);
-          profile.value = null;
-        }
-      );
-    }
-
     therapiesReady.value = false;
     loadActiveTherapy();
+
+    if (uid) {
+      try {
+        const item = await getProfileByUserId(uid);
+        if (requestId === profileRequestId) {
+          profile.value = item;
+        }
+      } catch (error) {
+        console.error("Error loading profile for dashboard:", error);
+        if (requestId === profileRequestId) {
+          profile.value = null;
+        }
+      }
+    }
   },
   { immediate: true }
 );
@@ -430,7 +428,7 @@ watch(
 );
 
 onBeforeUnmount(() => {
-  unsubscribeProfile?.();
+  profileRequestId += 1;
   therapistRequestId += 1;
 });
 </script>

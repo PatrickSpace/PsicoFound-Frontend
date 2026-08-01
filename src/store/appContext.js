@@ -12,6 +12,9 @@ export const useAppContextStore = defineStore("appContext", () => {
   const loading = ref(false);
   const loadedForUid = ref("");
   const activeMode = ref(readStoredMode());
+  let loadPromise = null;
+  let loadingUid = "";
+  let loadSequence = 0;
 
   const userRoles = computed(() =>
     getUserRoles(userProfile.value, { defaultPatient: Boolean(userProfile.value) })
@@ -70,38 +73,61 @@ export const useAppContextStore = defineStore("appContext", () => {
 
     if (loadedForUid.value === uid && !loading.value && !options.force) {
       ensureValidMode();
-      return;
+      return userProfile.value;
+    }
+
+    if (loadPromise && loadingUid === uid && !options.force) {
+      return loadPromise;
     }
 
     loading.value = true;
+    loadingUid = uid;
+    const requestId = ++loadSequence;
+    const currentPromise = Promise.all([
+      getUserById(uid, { force: options.force }),
+      getTherapistByUserUid(uid, { force: options.force }),
+    ])
+      .then(([user, therapist]) => {
+        if (requestId !== loadSequence) {
+          return userProfile.value;
+        }
 
-    try {
-      const [user, therapist] = await Promise.all([
-        getUserById(uid),
-        getTherapistByUserUid(uid),
-      ]);
+        userProfile.value = user || {
+          id: uid,
+          roles: [APP_ROLES.PATIENT],
+          rol: APP_ROLES.PATIENT,
+        };
+        therapistProfile.value = therapist;
+        loadedForUid.value = uid;
+        ensureValidMode();
+        return userProfile.value;
+      })
+      .catch((error) => {
+        if (requestId !== loadSequence) {
+          return userProfile.value;
+        }
 
-      userProfile.value = user || {
-        id: uid,
-        roles: [APP_ROLES.PATIENT],
-        rol: APP_ROLES.PATIENT,
-      };
-      therapistProfile.value = therapist;
-      loadedForUid.value = uid;
-      ensureValidMode();
-    } catch (error) {
-      console.error("Error loading app context:", error);
-      userProfile.value = {
-        id: uid,
-        roles: [APP_ROLES.PATIENT],
-        rol: APP_ROLES.PATIENT,
-      };
-      therapistProfile.value = null;
-      loadedForUid.value = uid;
-      ensureValidMode();
-    } finally {
-      loading.value = false;
-    }
+        console.error("Error loading app context:", error);
+        userProfile.value = {
+          id: uid,
+          roles: [APP_ROLES.PATIENT],
+          rol: APP_ROLES.PATIENT,
+        };
+        therapistProfile.value = null;
+        loadedForUid.value = uid;
+        ensureValidMode();
+        return userProfile.value;
+      })
+      .finally(() => {
+        if (loadPromise === currentPromise) {
+          loadPromise = null;
+          loadingUid = "";
+          loading.value = false;
+        }
+      });
+
+    loadPromise = currentPromise;
+    return currentPromise;
   }
 
   function setActiveMode(mode) {
@@ -131,6 +157,10 @@ export const useAppContextStore = defineStore("appContext", () => {
     userProfile.value = null;
     therapistProfile.value = null;
     loadedForUid.value = "";
+    loadPromise = null;
+    loadingUid = "";
+    loadSequence += 1;
+    loading.value = false;
     activeMode.value = readStoredMode();
   }
 

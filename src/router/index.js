@@ -1,44 +1,31 @@
 import { createRouter, createWebHistory } from "vue-router";
-import { onAuthStateChanged } from "firebase/auth";
-import InicioencuestaView from "@/views/encuesta/InicioEncuestaView.vue";
-import EncuestaView from "@/views/encuesta/EncuestaView.vue";
-import PsicologosView from "@/views/PsicologosView.vue";
-import PacientesView from "@/views/PacientesView.vue";
-import HomeView from "@/views/Auth/HomeView.vue";
-import DasboardView from "@/views/mainviews/DashboardView.vue";
-import LogInView from "@/views/Auth/LogIn.vue";
-import SignUpview from "@/views/Auth/SingUp.vue";
-import ElegirTerapeutaView from "@/views/encuesta/ElegirTerapeuta.vue";
-import SesionesView from "@/views/mainviews/MisSesionesView.vue";
-import ProgresoView from "@/views/mainviews/ProgresoView.vue";
-import RegistroEmocionalView from "@/views/mainviews/RegistroEmocionalView.vue";
-import HistorialView from "@/views/mainviews/HistorialView.vue";
-import HerramientasView from "@/views/mainviews/HerramientasView.vue";
-import ConfiguracionView from "@/views/mainviews/ConfiguracionView.vue";
-import TerapiaDetailView from "@/views/terapias/TerapiaDetailView.vue";
-import PsicologoSesionesView from "@/views/psicologo/PsicologoSesionesView.vue";
-import PsychologistRequestsView from "@/views/admin/PsychologistRequestsView.vue";
-import UsersAdminView from "@/views/admin/UsersAdminView.vue";
-import OnboardingEntryView from "@/views/onboarding/OnboardingEntryView.vue";
-import PatientOnboardingView from "@/views/onboarding/PatientOnboardingView.vue";
-import PsychologistOnboardingView from "@/views/onboarding/PsychologistOnboardingView.vue";
-import PsychologistPendingView from "@/views/onboarding/PsychologistPendingView.vue";
-import { auth } from "@/plugins/Firebase/firebase";
+import { useAuthStore } from "@/store/auth";
 import { useAppContextStore } from "@/store/appContext";
 import { getBlockingOnboardingRoute } from "@/services/onboardingService";
 
-function getCurrentAuthUser() {
-  if (auth.currentUser) {
-    return Promise.resolve(auth.currentUser);
-  }
-
-  return new Promise((resolve) => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      unsubscribe();
-      resolve(user);
-    });
-  });
-}
+const HomeView = () => import("@/views/Auth/HomeView.vue");
+const LogInView = () => import("@/views/Auth/LogIn.vue");
+const SignUpview = () => import("@/views/Auth/SingUp.vue");
+const InicioencuestaView = () => import("@/views/encuesta/InicioEncuestaView.vue");
+const EncuestaView = () => import("@/views/encuesta/EncuestaView.vue");
+const ElegirTerapeutaView = () => import("@/views/encuesta/ElegirTerapeuta.vue");
+const PsicologosView = () => import("@/views/PsicologosView.vue");
+const PacientesView = () => import("@/views/PacientesView.vue");
+const DasboardView = () => import("@/views/mainviews/DashboardView.vue");
+const SesionesView = () => import("@/views/mainviews/MisSesionesView.vue");
+const ProgresoView = () => import("@/views/mainviews/ProgresoView.vue");
+const RegistroEmocionalView = () => import("@/views/mainviews/RegistroEmocionalView.vue");
+const HistorialView = () => import("@/views/mainviews/HistorialView.vue");
+const HerramientasView = () => import("@/views/mainviews/HerramientasView.vue");
+const ConfiguracionView = () => import("@/views/mainviews/ConfiguracionView.vue");
+const TerapiaDetailView = () => import("@/views/terapias/TerapiaDetailView.vue");
+const PsicologoSesionesView = () => import("@/views/psicologo/PsicologoSesionesView.vue");
+const PsychologistRequestsView = () => import("@/views/admin/PsychologistRequestsView.vue");
+const UsersAdminView = () => import("@/views/admin/UsersAdminView.vue");
+const OnboardingEntryView = () => import("@/views/onboarding/OnboardingEntryView.vue");
+const PatientOnboardingView = () => import("@/views/onboarding/PatientOnboardingView.vue");
+const PsychologistOnboardingView = () => import("@/views/onboarding/PsychologistOnboardingView.vue");
+const PsychologistPendingView = () => import("@/views/onboarding/PsychologistPendingView.vue");
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -183,7 +170,8 @@ const router = createRouter({
 ]});
 
 router.beforeEach(async (to) => {
-  const user = await getCurrentAuthUser();
+  const authStore = useAuthStore();
+  const user = await authStore.waitUntilReady();
   const isPublicRoute = Boolean(to.meta.public);
   const isGuestOnlyRoute = Boolean(to.meta.guestOnly);
 

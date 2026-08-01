@@ -1,5 +1,7 @@
 import { getFunctions, httpsCallable } from "firebase/functions";
-import { app } from "@/plugins/Firebase/firebase";
+import { app, auth } from "@/plugins/Firebase/firebase";
+import { finOpsTracker } from "@/utils/finOpsTracker";
+import { CACHE_TTL, getOrFetch } from "@/utils/requestCache";
 
 const FUNCTIONS_REGION =
   import.meta.env.VITE_FIREBASE_FUNCTIONS_REGION || "southamerica-east1";
@@ -127,19 +129,48 @@ export function isProfileReadyForRecommendations(profile = {}) {
   );
 }
 
-export async function getRecommendedTherapists() {
-  try {
-    const result = await getRecommendedTherapistsCallable();
-    return {
-      therapists: Array.isArray(result.data?.therapists)
-        ? result.data.therapists
-        : [],
-      profile: result.data?.profile || null,
-      criteria: result.data?.criteria || null,
-    };
-  } catch (error) {
-    throw createMatchingError(error);
-  }
+export async function getRecommendedTherapists(options = {}) {
+  const scope = auth.currentUser?.uid || "anonymous";
+
+  return getOrFetch({
+    key: "matching:recommendations",
+    scope,
+    ttl: CACHE_TTL.MATCHING,
+    force: options.force,
+    resource: "matching",
+    source: "getRecommendedTherapists",
+    fetcher: async () => {
+      const startedAt = performance.now();
+
+      try {
+        const result = await getRecommendedTherapistsCallable();
+        finOpsTracker.track({
+          type: "external-request",
+          resource: "matching",
+          source: "getRecommendedTherapists",
+          operation: "getRecommendedTherapists",
+          durationMs: performance.now() - startedAt,
+        });
+        return {
+          therapists: Array.isArray(result.data?.therapists)
+            ? result.data.therapists
+            : [],
+          profile: result.data?.profile || null,
+          criteria: result.data?.criteria || null,
+        };
+      } catch (error) {
+        finOpsTracker.track({
+          type: "external-request-error",
+          resource: "matching",
+          source: "getRecommendedTherapists",
+          operation: "getRecommendedTherapists",
+          durationMs: performance.now() - startedAt,
+          errorType: error?.code || error?.name || "unknown",
+        });
+        throw createMatchingError(error);
+      }
+    },
+  });
 }
 
 function createMatchingError(error) {

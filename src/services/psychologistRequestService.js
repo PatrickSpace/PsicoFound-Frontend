@@ -1,11 +1,17 @@
 import {
   collection,
-  getDocs,
+  limit,
   orderBy,
   query,
   where,
 } from "firebase/firestore";
 import { db } from "@/plugins/Firebase/firestore";
+import { readQuery } from "@/repositories/firestoreRepository";
+import {
+  CACHE_TTL,
+  getOrFetch,
+  invalidateCachePrefix,
+} from "@/utils/requestCache";
 import {
   reviewPsychologistApplication,
   submitPsychologistApplication,
@@ -29,34 +35,58 @@ export async function createPsychologistRequest(data = {}) {
     practiceLocation: data.practiceLocation || "",
   });
 
+  invalidateCachePrefix("psychologist-request");
   return result.request;
 }
 
-export async function getLatestPsychologistRequestByUser(userUid) {
+export async function getLatestPsychologistRequestByUser(userUid, options = {}) {
   if (!userUid) {
     return null;
   }
 
-  const requestsRef = collection(db, REQUESTS_COLLECTION);
-  const requestsQuery = query(requestsRef, where("userUid", "==", userUid));
-  const snapshot = await getDocs(requestsQuery);
-  const requests = snapshot.docs.map((item) => ({
-    id: item.id,
-    ...item.data(),
-  }));
-
-  return sortRequestsByCreatedAt(requests)[0] || null;
+  return getOrFetch({
+    key: `psychologist-request:latest:${userUid}`,
+    ttl: CACHE_TTL.PROFILE,
+    force: options.force,
+    resource: REQUESTS_COLLECTION,
+    source: "getLatestPsychologistRequestByUser",
+    fetcher: async () => {
+      const requestsQuery = query(
+        collection(db, REQUESTS_COLLECTION),
+        where("userUid", "==", userUid),
+        orderBy("createdAt", "desc"),
+        limit(1)
+      );
+      const snapshot = await readQuery(requestsQuery, {
+        resource: REQUESTS_COLLECTION,
+        source: "getLatestPsychologistRequestByUser",
+      });
+      const item = snapshot.docs[0];
+      return item ? { id: item.id, ...item.data() } : null;
+    },
+  });
 }
 
-export async function getPsychologistRequests() {
-  const requestsRef = collection(db, REQUESTS_COLLECTION);
-  const requestsQuery = query(requestsRef, orderBy("createdAt", "desc"));
-  const snapshot = await getDocs(requestsQuery);
-
-  return snapshot.docs.map((item) => ({
-    id: item.id,
-    ...item.data(),
-  }));
+export async function getPsychologistRequests(options = {}) {
+  return getOrFetch({
+    key: "psychologist-request:admin-list",
+    ttl: CACHE_TTL.ADMIN_LIST,
+    force: options.force,
+    resource: REQUESTS_COLLECTION,
+    source: "getPsychologistRequests",
+    fetcher: async () => {
+      const requestsQuery = query(
+        collection(db, REQUESTS_COLLECTION),
+        orderBy("createdAt", "desc"),
+        limit(100)
+      );
+      const snapshot = await readQuery(requestsQuery, {
+        resource: REQUESTS_COLLECTION,
+        source: "getPsychologistRequests",
+      });
+      return snapshot.docs.map((item) => ({ id: item.id, ...item.data() }));
+    },
+  });
 }
 
 export async function approvePsychologistRequest(request) {
@@ -64,10 +94,12 @@ export async function approvePsychologistRequest(request) {
     throw new Error("Solicitud inválida.");
   }
 
-  return reviewPsychologistApplication({
+  const result = await reviewPsychologistApplication({
     requestId: request.id,
     action: "approve",
   });
+  invalidateCachePrefix("psychologist-request");
+  return result;
 }
 
 export async function rejectPsychologistRequest(requestId, rejectionReason = "") {
@@ -75,25 +107,11 @@ export async function rejectPsychologistRequest(requestId, rejectionReason = "")
     throw new Error("Solicitud inválida.");
   }
 
-  return reviewPsychologistApplication({
+  const result = await reviewPsychologistApplication({
     requestId,
     action: "reject",
     rejectionReason: rejectionReason.trim(),
   });
-}
-
-function sortRequestsByCreatedAt(requests = []) {
-  return [...requests].sort((a, b) => getTime(b.createdAt) - getTime(a.createdAt));
-}
-
-function getTime(value) {
-  if (!value) {
-    return 0;
-  }
-
-  if (typeof value.toMillis === "function") {
-    return value.toMillis();
-  }
-
-  return new Date(value).getTime() || 0;
+  invalidateCachePrefix("psychologist-request");
+  return result;
 }

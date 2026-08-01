@@ -2,7 +2,6 @@ import {
   addDoc,
   collection,
   doc,
-  getDoc,
   runTransaction,
   serverTimestamp,
   updateDoc,
@@ -19,6 +18,8 @@ import {
 import { appendLongitudinalEvent } from "@/services/longitudinalHistoryService";
 import { createNotification } from "@/services/notificationService";
 import { getTherapistById } from "@/services/psicologoService";
+import { readDocument, trackWrite } from "@/repositories/firestoreRepository";
+import { invalidateCachePrefix } from "@/utils/requestCache";
 
 const APPOINTMENTS_COLLECTION = "citas";
 const AVAILABILITY_COLLECTION = "therapist_availability";
@@ -64,7 +65,12 @@ export async function createAppointment(data = {}) {
 
   const docRef = appointmentData.availabilitySlotId
     ? await createAppointmentFromAvailabilitySlot(payload)
-    : await addDoc(collection(db, APPOINTMENTS_COLLECTION), payload);
+    : await trackWrite({
+        resource: APPOINTMENTS_COLLECTION,
+        source: "createAppointment",
+        operation: "addDoc",
+        write: () => addDoc(collection(db, APPOINTMENTS_COLLECTION), payload),
+      });
 
   await appendAppointmentToTherapy(therapy.id, {
     citaId: docRef.id,
@@ -260,17 +266,22 @@ export async function updateAppointment({
   const meetingLinkChanged = meetingUrl !== currentAppointment?.meetingUrl;
 
   const appointmentRef = doc(db, APPOINTMENTS_COLLECTION, citaId);
-  await updateDoc(appointmentRef, {
-    fecha: nextSchedule.fecha,
-    hora: nextSchedule.hora,
-    notas: notas || "",
-    modalidad: nextSchedule.modalidad || "",
-    ubicacion: nextSchedule.ubicacion || "",
-    meetingProvider: meetingProvider || "",
-    meetingUrl: meetingUrl || "",
-    meetingUrlUpdatedAt: meetingUrl ? serverTimestamp() : null,
-    availabilitySlotId: nextSchedule.availabilitySlotId || "",
-    estado: nextStatus,
+  await trackWrite({
+    resource: APPOINTMENTS_COLLECTION,
+    source: "updateAppointment",
+    operation: "updateDoc",
+    write: () => updateDoc(appointmentRef, {
+      fecha: nextSchedule.fecha,
+      hora: nextSchedule.hora,
+      notas: notas || "",
+      modalidad: nextSchedule.modalidad || "",
+      ubicacion: nextSchedule.ubicacion || "",
+      meetingProvider: meetingProvider || "",
+      meetingUrl: meetingUrl || "",
+      meetingUrlUpdatedAt: meetingUrl ? serverTimestamp() : null,
+      availabilitySlotId: nextSchedule.availabilitySlotId || "",
+      estado: nextStatus,
+    }),
   });
 
   const citasActualizadas = (Array.isArray(therapy?.citas) ? therapy.citas : []).map((cita) =>
@@ -360,7 +371,10 @@ export async function updateAppointment({
 
 async function hydrateAppointmentDataFromSlot(data = {}) {
   const slotRef = doc(db, AVAILABILITY_COLLECTION, data.availabilitySlotId);
-  const slotSnapshot = await getDoc(slotRef);
+  const slotSnapshot = await readDocument(slotRef, {
+    resource: AVAILABILITY_COLLECTION,
+    source: "hydrateAppointmentDataFromSlot",
+  });
 
   if (!slotSnapshot.exists()) {
     throw new Error("Este horario ya no está disponible.");
@@ -385,37 +399,43 @@ async function createAppointmentFromAvailabilitySlot(payload) {
   const appointmentRef = doc(collection(db, APPOINTMENTS_COLLECTION));
   const slotRef = doc(db, AVAILABILITY_COLLECTION, payload.availabilitySlotId);
 
-  await runTransaction(db, async (transaction) => {
-    const slotSnapshot = await transaction.get(slotRef);
+  await trackWrite({
+    resource: APPOINTMENTS_COLLECTION,
+    source: "createAppointmentFromAvailabilitySlot",
+    operation: "runTransaction",
+    write: () => runTransaction(db, async (transaction) => {
+      const slotSnapshot = await transaction.get(slotRef);
 
-    if (!slotSnapshot.exists()) {
-      throw new Error("Este horario ya no está disponible.");
-    }
+      if (!slotSnapshot.exists()) {
+        throw new Error("Este horario ya no está disponible.");
+      }
 
-    const slot = slotSnapshot.data();
-    const status = (slot.status || "").toString().trim().toLowerCase();
+      const slot = slotSnapshot.data();
+      const status = (slot.status || "").toString().trim().toLowerCase();
 
-    if (status !== "available") {
-      throw new Error("Este horario ya fue reservado. Elige otro bloque.");
-    }
+      if (status !== "available") {
+        throw new Error("Este horario ya fue reservado. Elige otro bloque.");
+      }
 
-    if ((slot.therapistId || "") !== (payload.terapeutaId || "")) {
-      throw new Error("El horario no pertenece a este psicólogo.");
-    }
+      if ((slot.therapistId || "") !== (payload.terapeutaId || "")) {
+        throw new Error("El horario no pertenece a este psicólogo.");
+      }
 
-    payload.fecha = slot.date || payload.fecha;
-    payload.hora = slot.startTime || payload.hora;
-    payload.modalidad = slot.modality || payload.modalidad;
-    payload.ubicacion = slot.location || payload.ubicacion;
+      payload.fecha = slot.date || payload.fecha;
+      payload.hora = slot.startTime || payload.hora;
+      payload.modalidad = slot.modality || payload.modalidad;
+      payload.ubicacion = slot.location || payload.ubicacion;
 
-    transaction.set(appointmentRef, payload);
-    transaction.update(slotRef, {
-      status: "booked",
-      bookedBy: payload.pacienteUid,
-      appointmentId: appointmentRef.id,
-      updatedAt: serverTimestamp(),
-    });
+      transaction.set(appointmentRef, payload);
+      transaction.update(slotRef, {
+        status: "booked",
+        bookedBy: payload.pacienteUid,
+        appointmentId: appointmentRef.id,
+        updatedAt: serverTimestamp(),
+      });
+    }),
   });
+  invalidateCachePrefix("availability:");
 
   return appointmentRef;
 }
@@ -433,55 +453,62 @@ async function reserveSlotForExistingAppointment({
       ? doc(db, AVAILABILITY_COLLECTION, previousSlotId)
       : null;
 
-  return runTransaction(db, async (transaction) => {
-    const slotSnapshot = await transaction.get(slotRef);
-    const previousSlotSnapshot = previousSlotRef
-      ? await transaction.get(previousSlotRef)
-      : null;
+  const result = await trackWrite({
+    resource: AVAILABILITY_COLLECTION,
+    source: "reserveSlotForExistingAppointment",
+    operation: "runTransaction",
+    write: () => runTransaction(db, async (transaction) => {
+      const slotSnapshot = await transaction.get(slotRef);
+      const previousSlotSnapshot = previousSlotRef
+        ? await transaction.get(previousSlotRef)
+        : null;
 
-    if (!slotSnapshot.exists()) {
-      throw new Error("Este horario ya no está disponible.");
-    }
+      if (!slotSnapshot.exists()) {
+        throw new Error("Este horario ya no está disponible.");
+      }
 
-    const slot = slotSnapshot.data();
-    const status = (slot.status || "").toString().trim().toLowerCase();
+      const slot = slotSnapshot.data();
+      const status = (slot.status || "").toString().trim().toLowerCase();
 
-    if (status !== "available") {
-      throw new Error("Este horario ya fue reservado. Elige otro bloque.");
-    }
+      if (status !== "available") {
+        throw new Error("Este horario ya fue reservado. Elige otro bloque.");
+      }
 
-    if ((slot.therapistId || "") !== (terapeutaId || "")) {
-      throw new Error("El horario no pertenece a este psicólogo.");
-    }
+      if ((slot.therapistId || "") !== (terapeutaId || "")) {
+        throw new Error("El horario no pertenece a este psicólogo.");
+      }
 
-    transaction.update(slotRef, {
-      status: "booked",
-      bookedBy: pacienteUid || "",
-      appointmentId: citaId,
-      updatedAt: serverTimestamp(),
-    });
-
-    if (
-      previousSlotRef &&
-      previousSlotSnapshot?.exists() &&
-      previousSlotSnapshot.data().appointmentId === citaId
-    ) {
-      transaction.update(previousSlotRef, {
-        status: "available",
-        bookedBy: "",
-        appointmentId: "",
+      transaction.update(slotRef, {
+        status: "booked",
+        bookedBy: pacienteUid || "",
+        appointmentId: citaId,
         updatedAt: serverTimestamp(),
       });
-    }
 
-    return {
-      fecha: slot.date || "",
-      hora: slot.startTime || "",
-      modalidad: slot.modality || "",
-      ubicacion: slot.location || "",
-      availabilitySlotId: slotId,
-    };
+      if (
+        previousSlotRef &&
+        previousSlotSnapshot?.exists() &&
+        previousSlotSnapshot.data().appointmentId === citaId
+      ) {
+        transaction.update(previousSlotRef, {
+          status: "available",
+          bookedBy: "",
+          appointmentId: "",
+          updatedAt: serverTimestamp(),
+        });
+      }
+
+      return {
+        fecha: slot.date || "",
+        hora: slot.startTime || "",
+        modalidad: slot.modality || "",
+        ubicacion: slot.location || "",
+        availabilitySlotId: slotId,
+      };
+    }),
   });
+  invalidateCachePrefix("availability:");
+  return result;
 }
 
 async function updateAppointmentStatus({
@@ -502,9 +529,14 @@ async function updateAppointmentStatus({
   }
 
   const appointmentRef = doc(db, APPOINTMENTS_COLLECTION, citaId);
-  await updateDoc(appointmentRef, {
-    estado,
-    ...extraFields,
+  await trackWrite({
+    resource: APPOINTMENTS_COLLECTION,
+    source: "updateAppointmentStatus",
+    operation: "updateDoc",
+    write: () => updateDoc(appointmentRef, {
+      estado,
+      ...extraFields,
+    }),
   });
 
   const therapy = await getTherapyById(terapiaId);

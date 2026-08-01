@@ -3,9 +3,7 @@ import {
   addDoc,
   deleteDoc,
   doc,
-  getDoc,
-  getDocs,
-  onSnapshot,
+  limit,
   orderBy,
   query,
   serverTimestamp,
@@ -13,6 +11,12 @@ import {
   where,
 } from "firebase/firestore";
 import { db } from "@/plugins/Firebase/firestore";
+import { readDocument, readQuery, trackWrite } from "@/repositories/firestoreRepository";
+import {
+  CACHE_TTL,
+  getOrFetch,
+  invalidateCachePrefix,
+} from "@/utils/requestCache";
 
 const THERAPISTS_COLLECTION = "therapists";
 
@@ -34,76 +38,85 @@ function sanitizeTherapistPayload(therapist = {}) {
   };
 }
 
-export async function getTherapists() {
-  const therapistsRef = collection(db, THERAPISTS_COLLECTION);
-  const therapistsQuery = query(therapistsRef, orderBy("nombre"));
-  const snapshot = await getDocs(therapistsQuery);
+export async function getTherapists(options = {}) {
+  return getOrFetch({
+    key: "therapists:all",
+    ttl: CACHE_TTL.DIRECTORY,
+    force: options.force,
+    resource: THERAPISTS_COLLECTION,
+    source: "getTherapists",
+    fetcher: async () => {
+      const therapistsRef = collection(db, THERAPISTS_COLLECTION);
+      const therapistsQuery = query(therapistsRef, orderBy("nombre"));
+      const snapshot = await readQuery(therapistsQuery, {
+        resource: THERAPISTS_COLLECTION,
+        source: "getTherapists",
+      });
 
-  return snapshot.docs.map((item) => ({
-    id: item.id,
-    ...item.data(),
-  }));
+      return snapshot.docs.map((item) => ({ id: item.id, ...item.data() }));
+    },
+  });
 }
 
-export async function getTherapistById(id) {
+export async function getTherapistById(id, options = {}) {
   if (!id) return null;
 
-  const therapistRef = doc(db, THERAPISTS_COLLECTION, id);
-  const snapshot = await getDoc(therapistRef);
-
-  if (!snapshot.exists()) {
-    return null;
-  }
-
-  return {
-    id: snapshot.id,
-    ...snapshot.data(),
-  };
+  return getOrFetch({
+    key: `therapist:id:${id}`,
+    ttl: CACHE_TTL.DIRECTORY,
+    force: options.force,
+    resource: THERAPISTS_COLLECTION,
+    source: "getTherapistById",
+    fetcher: async () => {
+      const snapshot = await readDocument(doc(db, THERAPISTS_COLLECTION, id), {
+        resource: THERAPISTS_COLLECTION,
+        source: "getTherapistById",
+      });
+      return snapshot.exists() ? { id: snapshot.id, ...snapshot.data() } : null;
+    },
+  });
 }
 
-export async function getTherapistByUserUid(uid) {
+export async function getTherapistByUserUid(uid, options = {}) {
   if (!uid) return null;
 
-  const therapistsRef = collection(db, THERAPISTS_COLLECTION);
-  const therapistsQuery = query(therapistsRef, where("uid", "==", uid));
-  const snapshot = await getDocs(therapistsQuery);
-  const item = snapshot.docs[0];
-
-  return item
-    ? {
-        id: item.id,
-        ...item.data(),
-      }
-    : null;
-}
-
-export function watchTherapists(onData, onError) {
-  const therapistsRef = collection(db, THERAPISTS_COLLECTION);
-  const therapistsQuery = query(therapistsRef, orderBy("nombre"));
-
-  return onSnapshot(
-    therapistsQuery,
-    (snapshot) => {
-      const therapists = snapshot.docs.map((item) => ({
-        id: item.id,
-        ...item.data(),
-      }));
-
-      onData(therapists);
+  return getOrFetch({
+    key: `therapist:uid:${uid}`,
+    ttl: CACHE_TTL.PROFILE,
+    force: options.force,
+    resource: THERAPISTS_COLLECTION,
+    source: "getTherapistByUserUid",
+    fetcher: async () => {
+      const therapistsQuery = query(
+        collection(db, THERAPISTS_COLLECTION),
+        where("uid", "==", uid),
+        limit(1)
+      );
+      const snapshot = await readQuery(therapistsQuery, {
+        resource: THERAPISTS_COLLECTION,
+        source: "getTherapistByUserUid",
+      });
+      const item = snapshot.docs[0];
+      return item ? { id: item.id, ...item.data() } : null;
     },
-    onError
-  );
+  });
 }
 
 export async function createTherapist(therapist) {
   const payload = sanitizeTherapistPayload(therapist);
   const therapistsRef = collection(db, THERAPISTS_COLLECTION);
 
-  const docRef = await addDoc(therapistsRef, {
-    ...payload,
-    createdAt: serverTimestamp(),
-    updatedAt: serverTimestamp(),
+  const docRef = await trackWrite({
+    resource: THERAPISTS_COLLECTION,
+    source: "createTherapist",
+    operation: "addDoc",
+    write: () => addDoc(therapistsRef, {
+      ...payload,
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
+    }),
   });
+  invalidateTherapistCaches();
 
   return {
     id: docRef.id,
@@ -115,10 +128,16 @@ export async function updateTherapist(id, therapist) {
   const payload = sanitizeTherapistPayload(therapist);
   const therapistRef = doc(db, THERAPISTS_COLLECTION, id);
 
-  await updateDoc(therapistRef, {
-    ...payload,
-    updatedAt: serverTimestamp(),
+  await trackWrite({
+    resource: THERAPISTS_COLLECTION,
+    source: "updateTherapist",
+    operation: "updateDoc",
+    write: () => updateDoc(therapistRef, {
+      ...payload,
+      updatedAt: serverTimestamp(),
+    }),
   });
+  invalidateTherapistCaches();
 
   return {
     id,
@@ -128,5 +147,15 @@ export async function updateTherapist(id, therapist) {
 
 export async function deleteTherapist(id) {
   const therapistRef = doc(db, THERAPISTS_COLLECTION, id);
-  await deleteDoc(therapistRef);
+  await trackWrite({
+    resource: THERAPISTS_COLLECTION,
+    source: "deleteTherapist",
+    operation: "deleteDoc",
+    write: () => deleteDoc(therapistRef),
+  });
+  invalidateTherapistCaches();
+}
+
+function invalidateTherapistCaches() {
+  invalidateCachePrefix("therapist");
 }

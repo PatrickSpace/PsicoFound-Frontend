@@ -183,9 +183,9 @@ import LayoutDefault from "@/components/Layout/Layoutmain.vue";
 import { useAuthStore } from "@/store/auth";
 import { useAppContextStore } from "@/store/appContext";
 import { getTherapistByUserUid } from "@/services/psicologoService";
-import { getPatientUsers, getProfileByUserId } from "@/services/userService";
+import { getPatientUsers, getProfilesByUserIds } from "@/services/userService";
 import {
-  getTherapiesByPatient,
+  getTherapiesByPatients,
   getTherapiesByTherapist,
 } from "@/services/terapiaService";
 import { isProfileReadyForRecommendations } from "@/services/matchingService";
@@ -270,7 +270,19 @@ async function loadPatients() {
 
 async function loadAdminPatients() {
   const users = await getPatientUsers();
-  return Promise.all(users.map(buildPatientRow));
+  const userIds = users.map((user) => user.id || user.uid).filter(Boolean);
+  const [profilesByUser, therapiesByPatient] = await Promise.all([
+    getProfilesByUserIds(userIds),
+    getTherapiesByPatients(userIds),
+  ]);
+
+  return users.map((user) =>
+    buildPatientRow(
+      user,
+      profilesByUser.get(user.id || user.uid) || null,
+      therapiesByPatient.get(user.id || user.uid) || []
+    )
+  );
 }
 
 async function loadTherapistPatients(uid) {
@@ -319,12 +331,8 @@ async function loadTherapistPatients(uid) {
   return Array.from(byPatient.values());
 }
 
-async function buildPatientRow(user) {
+function buildPatientRow(user, profile, therapies) {
   const uid = user.id || user.uid;
-  const [profile, therapies] = await Promise.all([
-    getProfileByUserId(uid),
-    getTherapiesByPatient(uid),
-  ]);
   const activeTherapy =
     therapies.find(
       (therapy) =>

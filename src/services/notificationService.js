@@ -3,7 +3,6 @@ import {
   collection,
   doc,
   limit,
-  onSnapshot,
   orderBy,
   query,
   serverTimestamp,
@@ -12,6 +11,7 @@ import {
 } from "firebase/firestore";
 import { auth } from "@/plugins/Firebase/firebase";
 import { db } from "@/plugins/Firebase/firestore";
+import { subscribeQuery, trackWrite } from "@/repositories/firestoreRepository";
 
 const NOTIFICATIONS_COLLECTION = "notifications";
 
@@ -34,7 +34,12 @@ export async function createNotification(data = {}) {
     createdAt: serverTimestamp(),
   };
 
-  const docRef = await addDoc(collection(db, NOTIFICATIONS_COLLECTION), payload);
+  const docRef = await trackWrite({
+    resource: NOTIFICATIONS_COLLECTION,
+    source: "createNotification",
+    operation: "addDoc",
+    write: () => addDoc(collection(db, NOTIFICATIONS_COLLECTION), payload),
+  });
 
   return {
     id: docRef.id,
@@ -56,8 +61,13 @@ export function watchNotifications(recipientUid, onData, onError) {
     limit(20)
   );
 
-  return onSnapshot(
+  return subscribeQuery(
     notificationsQuery,
+    {
+      key: `notifications:${recipientUid}`,
+      resource: NOTIFICATIONS_COLLECTION,
+      source: "watchNotifications",
+    },
     (snapshot) => {
       onData(
         snapshot.docs.map((item) => ({
@@ -76,8 +86,13 @@ export async function markNotificationAsRead(notificationId) {
   }
 
   const notificationRef = doc(db, NOTIFICATIONS_COLLECTION, notificationId);
-  await updateDoc(notificationRef, {
-    readAt: serverTimestamp(),
+  await trackWrite({
+    resource: NOTIFICATIONS_COLLECTION,
+    source: "markNotificationAsRead",
+    operation: "updateDoc",
+    write: () => updateDoc(notificationRef, {
+      readAt: serverTimestamp(),
+    }),
   });
 }
 

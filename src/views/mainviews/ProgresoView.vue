@@ -348,7 +348,7 @@ import LayoutDefault from "@/components/Layout/Layoutmain.vue";
 import ActiveTherapySummaryCard from "@/components/Terapias/ActiveTherapySummaryCard.vue";
 import { useAuthStore } from "@/store/auth";
 import { useAppContextStore } from "@/store/appContext";
-import { watchProfile } from "@/services/conversationService";
+import { getProfileByUserId } from "@/services/userService";
 import {
   getTherapistById,
   getTherapistByUserUid,
@@ -389,9 +389,9 @@ const savingGoalProgress = ref(false);
 const goalDialog = ref(false);
 const goalProgressDialog = ref(false);
 const selectedGoal = ref(null);
-let unsubscribeProfile = null;
 let activeTherapistRequestId = 0;
 let learnedToolsRequestId = 0;
+let profileRequestId = 0;
 
 const goalForm = reactive({
   therapyId: "",
@@ -462,8 +462,8 @@ const isPatientMode = computed(() => appContext.activeMode === "patient");
 
 watch(
   () => currentUser.value?.uid,
-  (uid) => {
-    unsubscribeProfile?.();
+  async (uid) => {
+    const requestId = ++profileRequestId;
     profile.value = null;
     profileError.value = "";
     loadLearnedTools();
@@ -473,18 +473,20 @@ watch(
       return;
     }
 
-    unsubscribeProfile = watchProfile(
-      uid,
-      (item) => {
+    loadGoals();
+
+    try {
+      const item = await getProfileByUserId(uid);
+      if (requestId === profileRequestId) {
         profile.value = item;
-      },
-      (error) => {
-        console.error("Error loading profile progress:", error);
+      }
+    } catch (error) {
+      console.error("Error loading profile progress:", error);
+      if (requestId === profileRequestId) {
         profileError.value =
           "No pudimos cargar tu perfil inicial. Intenta nuevamente.";
       }
-    );
-    loadGoals();
+    }
   },
   { immediate: true }
 );
@@ -535,7 +537,7 @@ watch(
 );
 
 onBeforeUnmount(() => {
-  unsubscribeProfile?.();
+  profileRequestId += 1;
   activeTherapistRequestId += 1;
   learnedToolsRequestId += 1;
 });

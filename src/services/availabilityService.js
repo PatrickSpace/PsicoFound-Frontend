@@ -2,7 +2,8 @@ import {
   addDoc,
   collection,
   doc,
-  getDocs,
+  limit,
+  orderBy,
   query,
   serverTimestamp,
   updateDoc,
@@ -10,6 +11,12 @@ import {
 } from "firebase/firestore";
 import { auth } from "@/plugins/Firebase/firebase";
 import { db } from "@/plugins/Firebase/firestore";
+import { readQuery, trackWrite } from "@/repositories/firestoreRepository";
+import {
+  CACHE_TTL,
+  getOrFetch,
+  invalidateCachePrefix,
+} from "@/utils/requestCache";
 
 const AVAILABILITY_COLLECTION = "therapist_availability";
 export const SLOT_DURATION_MINUTES = 60;
@@ -51,7 +58,13 @@ export async function createAvailabilitySlot({
     updatedAt: serverTimestamp(),
   };
 
-  const docRef = await addDoc(collection(db, AVAILABILITY_COLLECTION), payload);
+  const docRef = await trackWrite({
+    resource: AVAILABILITY_COLLECTION,
+    source: "createAvailabilitySlot",
+    operation: "addDoc",
+    write: () => addDoc(collection(db, AVAILABILITY_COLLECTION), payload),
+  });
+  invalidateAvailabilityCaches(therapistId);
 
   return {
     id: docRef.id,
@@ -59,32 +72,63 @@ export async function createAvailabilitySlot({
   };
 }
 
-export async function getAvailabilityByTherapist(therapistId) {
+export async function getAvailabilityByTherapist(therapistId, options = {}) {
   if (!therapistId) {
     return [];
   }
 
-  const availabilityQuery = query(
-    collection(db, AVAILABILITY_COLLECTION),
-    where("therapistId", "==", therapistId)
-  );
-  const snapshot = await getDocs(availabilityQuery);
+  return getOrFetch({
+    key: `availability:${therapistId}:future`,
+    ttl: CACHE_TTL.AVAILABILITY,
+    force: options.force,
+    resource: AVAILABILITY_COLLECTION,
+    source: "getAvailabilityByTherapist",
+    fetcher: async () => {
+      const availabilityQuery = query(
+        collection(db, AVAILABILITY_COLLECTION),
+        where("therapistId", "==", therapistId),
+        where("date", ">=", todayDateKey()),
+        orderBy("date", "asc"),
+        limit(200)
+      );
+      const snapshot = await readQuery(availabilityQuery, {
+        resource: AVAILABILITY_COLLECTION,
+        source: "getAvailabilityByTherapist",
+      });
 
-  return snapshot.docs
-    .map((item) => normalizeSlot(item.id, item.data()))
-    .sort(compareSlots);
+      return snapshot.docs
+        .map((item) => normalizeSlot(item.id, item.data()))
+        .sort(compareSlots);
+    },
+  });
 }
 
-export async function getAvailableSlotsByTherapist(therapistId) {
-  const slots = await getAvailabilityByTherapist(therapistId);
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
+export async function getAvailableSlotsByTherapist(therapistId, options = {}) {
+  if (!therapistId) return [];
 
-  return slots.filter((slot) => {
-    const status = (slot.status || "").toString().trim().toLowerCase();
-    const slotDate = parseDateOnly(slot.date);
-
-    return status === "available" && slotDate && slotDate >= today;
+  return getOrFetch({
+    key: `availability:${therapistId}:available`,
+    ttl: CACHE_TTL.AVAILABILITY,
+    force: options.force,
+    resource: AVAILABILITY_COLLECTION,
+    source: "getAvailableSlotsByTherapist",
+    fetcher: async () => {
+      const availabilityQuery = query(
+        collection(db, AVAILABILITY_COLLECTION),
+        where("therapistId", "==", therapistId),
+        where("status", "==", "available"),
+        where("date", ">=", todayDateKey()),
+        orderBy("date", "asc"),
+        limit(100)
+      );
+      const snapshot = await readQuery(availabilityQuery, {
+        resource: AVAILABILITY_COLLECTION,
+        source: "getAvailableSlotsByTherapist",
+      });
+      return snapshot.docs
+        .map((item) => normalizeSlot(item.id, item.data()))
+        .sort(compareSlots);
+    },
   });
 }
 
@@ -93,10 +137,16 @@ export async function closeAvailabilitySlot(slotId) {
     throw new Error("Falta el bloque de disponibilidad.");
   }
 
-  await updateDoc(doc(db, AVAILABILITY_COLLECTION, slotId), {
-    status: "closed",
-    updatedAt: serverTimestamp(),
+  await trackWrite({
+    resource: AVAILABILITY_COLLECTION,
+    source: "closeAvailabilitySlot",
+    operation: "updateDoc",
+    write: () => updateDoc(doc(db, AVAILABILITY_COLLECTION, slotId), {
+      status: "closed",
+      updatedAt: serverTimestamp(),
+    }),
   });
+  invalidateCachePrefix("availability:");
 }
 
 export function addMinutesToTime(time, minutes) {
@@ -140,11 +190,16 @@ function normalizeLocation(modality, location) {
   return location || "";
 }
 
-function parseDateOnly(value) {
-  if (!value) {
-    return null;
-  }
+function todayDateKey() {
+  const today = new Date();
+  const year = today.getFullYear();
+  const month = `${today.getMonth() + 1}`.padStart(2, "0");
+  const day = `${today.getDate()}`.padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
 
-  const parsed = new Date(`${value}T00:00`);
-  return Number.isNaN(parsed.getTime()) ? null : parsed;
+function invalidateAvailabilityCaches(therapistId) {
+  if (therapistId) {
+    invalidateCachePrefix(`availability:${therapistId}:`);
+  }
 }

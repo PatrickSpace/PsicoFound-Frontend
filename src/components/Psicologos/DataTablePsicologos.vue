@@ -387,8 +387,8 @@
 import {
   createTherapist,
   deleteTherapist,
+  getTherapists,
   updateTherapist,
-  watchTherapists,
 } from "@/services/psicologoService";
 import {
   TABLE_LOADING_TIMEOUT_MESSAGE,
@@ -445,7 +445,6 @@ export default {
     deleting: false,
     loadingError: "",
     loadingTimeoutId: null,
-    unsubscribeTherapists: null,
     editedIndex: -1,
     editedItem: {
       id: null,
@@ -510,7 +509,6 @@ export default {
 
   beforeUnmount() {
     this.clearLoadingTimeout();
-    this.unsubscribeTherapists?.();
   },
 
   methods: {
@@ -569,36 +567,30 @@ export default {
       };
     },
 
-    initialize() {
+    async initialize() {
       this.loading = true;
       this.loadingError = "";
       this.clearLoadingTimeout();
-      this.unsubscribeTherapists?.();
       this.loadingTimeoutId = window.setTimeout(() => {
         this.loading = false;
         this.loadingError = TABLE_LOADING_TIMEOUT_MESSAGE;
         this.therapists = [];
-        this.unsubscribeTherapists?.();
-        this.unsubscribeTherapists = null;
         notifyTableLoadingTimeout(TABLE_LOADING_TIMEOUT_MESSAGE);
       }, TABLE_LOADING_TIMEOUT_MS);
-      this.unsubscribeTherapists = watchTherapists(
-        (therapistsFromDb) => {
-          this.clearLoadingTimeout();
-          this.therapists = therapistsFromDb.map((item, index) =>
-            this.normalizeItem(item, index)
-          );
-          this.loadingError = "";
-          this.loading = false;
-        },
-        (error) => {
-          this.clearLoadingTimeout();
-          console.error("Error loading therapists:", error);
-          this.therapists = [];
-          this.loadingError = "No se pudieron cargar los psicólogos.";
-          this.loading = false;
-        }
-      );
+
+      try {
+        const therapistsFromDb = await getTherapists();
+        this.therapists = therapistsFromDb.map((item, index) =>
+          this.normalizeItem(item, index)
+        );
+      } catch (error) {
+        console.error("Error loading therapists:", error);
+        this.therapists = [];
+        this.loadingError = "No se pudieron cargar los psicólogos.";
+      } finally {
+        this.clearLoadingTimeout();
+        this.loading = false;
+      }
     },
 
     clearLoadingTimeout() {

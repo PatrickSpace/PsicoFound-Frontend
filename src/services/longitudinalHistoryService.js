@@ -1,12 +1,17 @@
 import {
   addDoc,
   collection,
-  getDocs,
   query,
   serverTimestamp,
   where,
 } from "firebase/firestore";
 import { db } from "@/plugins/Firebase/firestore";
+import { readQuery, trackWrite } from "@/repositories/firestoreRepository";
+import {
+  CACHE_TTL,
+  getOrFetch,
+  invalidateCachePrefix,
+} from "@/utils/requestCache";
 
 const LONGITUDINAL_HISTORY_COLLECTION = "longitudinal_history";
 
@@ -30,10 +35,16 @@ export async function appendLongitudinalEvent(data = {}) {
     createdAt: serverTimestamp(),
   };
 
-  const docRef = await addDoc(
-    collection(db, LONGITUDINAL_HISTORY_COLLECTION),
-    payload
-  );
+  const docRef = await trackWrite({
+    resource: LONGITUDINAL_HISTORY_COLLECTION,
+    source: "appendLongitudinalEvent",
+    operation: "addDoc",
+    write: () => addDoc(
+      collection(db, LONGITUDINAL_HISTORY_COLLECTION),
+      payload
+    ),
+  });
+  invalidateCachePrefix("longitudinal-history:");
 
   return {
     id: docRef.id,
@@ -41,41 +52,105 @@ export async function appendLongitudinalEvent(data = {}) {
   };
 }
 
-export async function getLongitudinalHistoryByPatient(pacienteUid) {
+export async function getLongitudinalHistoryByPatient(pacienteUid, options = {}) {
   if (!pacienteUid) {
     return [];
   }
 
-  const historyRef = collection(db, LONGITUDINAL_HISTORY_COLLECTION);
-  const historyQuery = query(
-    historyRef,
-    where("pacienteUid", "==", pacienteUid)
-  );
-  const snapshot = await getDocs(historyQuery);
-
-  return snapshot.docs
-    .map((item) => ({
-      id: item.id,
-      ...item.data(),
-    }))
-    .sort((a, b) => toDate(b.occurredAt) - toDate(a.occurredAt));
+  return getOrFetch({
+    key: `longitudinal-history:patient:${pacienteUid}`,
+    ttl: CACHE_TTL.CLINICAL_LIST,
+    force: options.force,
+    resource: LONGITUDINAL_HISTORY_COLLECTION,
+    source: "getLongitudinalHistoryByPatient",
+    fetcher: async () => {
+      const historyQuery = query(
+        collection(db, LONGITUDINAL_HISTORY_COLLECTION),
+        where("pacienteUid", "==", pacienteUid)
+      );
+      const snapshot = await readQuery(historyQuery, {
+        resource: LONGITUDINAL_HISTORY_COLLECTION,
+        source: "getLongitudinalHistoryByPatient",
+      });
+      return mapAndSortHistory(snapshot.docs);
+    },
+  });
 }
 
-export async function getLongitudinalHistoryByTherapy(terapiaId) {
+export async function getLongitudinalHistoryByTherapy(terapiaId, options = {}) {
   if (!terapiaId) {
     return [];
   }
 
-  const historyRef = collection(db, LONGITUDINAL_HISTORY_COLLECTION);
-  const historyQuery = query(historyRef, where("terapiaId", "==", terapiaId));
-  const snapshot = await getDocs(historyQuery);
+  return getOrFetch({
+    key: `longitudinal-history:therapy:${terapiaId}`,
+    ttl: CACHE_TTL.CLINICAL_LIST,
+    force: options.force,
+    resource: LONGITUDINAL_HISTORY_COLLECTION,
+    source: "getLongitudinalHistoryByTherapy",
+    fetcher: async () => {
+      const historyQuery = query(
+        collection(db, LONGITUDINAL_HISTORY_COLLECTION),
+        where("terapiaId", "==", terapiaId)
+      );
+      const snapshot = await readQuery(historyQuery, {
+        resource: LONGITUDINAL_HISTORY_COLLECTION,
+        source: "getLongitudinalHistoryByTherapy",
+      });
+      return mapAndSortHistory(snapshot.docs);
+    },
+  });
+}
 
-  return snapshot.docs
-    .map((item) => ({
-      id: item.id,
-      ...item.data(),
-    }))
+export async function getLongitudinalHistoryByTherapies(
+  therapyIds = [],
+  options = {}
+) {
+  const uniqueIds = [...new Set(therapyIds.filter(Boolean))].sort();
+
+  if (!uniqueIds.length) return [];
+
+  return getOrFetch({
+    key: `longitudinal-history:therapies:${uniqueIds.join(",")}`,
+    ttl: CACHE_TTL.CLINICAL_LIST,
+    force: options.force,
+    resource: LONGITUDINAL_HISTORY_COLLECTION,
+    source: "getLongitudinalHistoryByTherapies",
+    fetcher: async () => {
+      const idGroups = chunk(uniqueIds, 30);
+      const snapshots = await Promise.all(
+        idGroups.map((ids) =>
+          readQuery(
+            query(
+              collection(db, LONGITUDINAL_HISTORY_COLLECTION),
+              where("terapiaId", "in", ids)
+            ),
+            {
+              resource: LONGITUDINAL_HISTORY_COLLECTION,
+              source: "getLongitudinalHistoryByTherapies",
+            }
+          )
+        )
+      );
+      return mapAndSortHistory(snapshots.flatMap((snapshot) => snapshot.docs));
+    },
+  });
+}
+
+function mapAndSortHistory(documents) {
+  return documents
+    .map((item) => ({ id: item.id, ...item.data() }))
     .sort((a, b) => toDate(b.occurredAt) - toDate(a.occurredAt));
+}
+
+function chunk(items, size) {
+  const groups = [];
+
+  for (let index = 0; index < items.length; index += size) {
+    groups.push(items.slice(index, index + size));
+  }
+
+  return groups;
 }
 
 function toDate(value) {

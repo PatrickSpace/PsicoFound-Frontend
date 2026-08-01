@@ -1,7 +1,9 @@
 import { getFunctions, httpsCallable } from "firebase/functions";
 import { app } from "@/plugins/Firebase/firebase";
+import { finOpsTracker } from "@/utils/finOpsTracker";
 
-const FUNCTIONS_REGION = "southamerica-east1";
+const FUNCTIONS_REGION =
+  import.meta.env.VITE_FIREBASE_FUNCTIONS_REGION || "southamerica-east1";
 const functions = getFunctions(app, FUNCTIONS_REGION);
 
 const finalizeRegistrationCallable = httpsCallable(
@@ -45,23 +47,61 @@ export const REGISTRATION_OPTIONS = [
 ];
 
 export async function finalizeRegistration(data = {}) {
-  const result = await finalizeRegistrationCallable(data);
-  return result.data;
+  return callOnboardingFunction(
+    finalizeRegistrationCallable,
+    data,
+    "finalizeRegistration"
+  );
 }
 
 export async function completePatientOnboarding(data = {}) {
-  const result = await completePatientOnboardingCallable(data);
-  return result.data;
+  return callOnboardingFunction(
+    completePatientOnboardingCallable,
+    data,
+    "completePatientOnboarding"
+  );
 }
 
 export async function submitPsychologistApplication(data = {}) {
-  const result = await submitPsychologistApplicationCallable(data);
-  return result.data;
+  return callOnboardingFunction(
+    submitPsychologistApplicationCallable,
+    data,
+    "submitPsychologistApplication"
+  );
 }
 
 export async function reviewPsychologistApplication(data = {}) {
-  const result = await reviewPsychologistApplicationCallable(data);
-  return result.data;
+  return callOnboardingFunction(
+    reviewPsychologistApplicationCallable,
+    data,
+    "reviewPsychologistApplication"
+  );
+}
+
+async function callOnboardingFunction(callable, data, operation) {
+  const startedAt = performance.now();
+
+  try {
+    const result = await callable(data);
+    finOpsTracker.track({
+      type: "external-request",
+      resource: "onboarding",
+      source: "onboardingService",
+      operation,
+      durationMs: performance.now() - startedAt,
+    });
+    return result.data;
+  } catch (error) {
+    finOpsTracker.track({
+      type: "external-request-error",
+      resource: "onboarding",
+      source: "onboardingService",
+      operation,
+      durationMs: performance.now() - startedAt,
+      errorType: error?.code || error?.name || "unknown",
+    });
+    throw error;
+  }
 }
 
 export function getBlockingOnboardingRoute(profile = {}) {

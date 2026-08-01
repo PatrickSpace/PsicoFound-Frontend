@@ -2,7 +2,6 @@ import {
   addDoc,
   collection,
   doc,
-  getDocs,
   query,
   serverTimestamp,
   updateDoc,
@@ -11,6 +10,8 @@ import {
 import { auth } from "@/plugins/Firebase/firebase";
 import { db } from "@/plugins/Firebase/firestore";
 import { appendLongitudinalEvent } from "@/services/longitudinalHistoryService";
+import { readQuery, trackWrite } from "@/repositories/firestoreRepository";
+import { CACHE_TTL, getOrFetch, invalidateCachePrefix } from "@/utils/requestCache";
 
 const EXERCISES_COLLECTION = "exercises";
 
@@ -38,8 +39,14 @@ export async function createExercise(data = {}) {
     updatedAt: serverTimestamp(),
   };
 
-  const docRef = await addDoc(collection(db, EXERCISES_COLLECTION), payload);
+  const docRef = await trackWrite({
+    resource: EXERCISES_COLLECTION,
+    source: "createExercise",
+    operation: "addDoc",
+    write: () => addDoc(collection(db, EXERCISES_COLLECTION), payload),
+  });
   const exercise = { id: docRef.id, ...payload };
+  invalidateCachePrefix("exercises:");
 
   await safelyAppendExerciseEvent({
     eventType: "exercise_assigned",
@@ -51,34 +58,46 @@ export async function createExercise(data = {}) {
   return exercise;
 }
 
-export async function getExercisesByPatient(pacienteUid) {
+export async function getExercisesByPatient(pacienteUid, options = {}) {
   if (!pacienteUid) {
     return [];
   }
 
-  const exercisesRef = collection(db, EXERCISES_COLLECTION);
-  const exercisesQuery = query(
-    exercisesRef,
-    where("pacienteUid", "==", pacienteUid)
-  );
-  const snapshot = await getDocs(exercisesQuery);
-
-  return sortExercises(snapshot.docs.map((item) => ({ id: item.id, ...item.data() })));
+  return getOrFetch({
+    key: `exercises:patient:${pacienteUid}`,
+    ttl: CACHE_TTL.CLINICAL_LIST,
+    force: options.force,
+    resource: EXERCISES_COLLECTION,
+    source: "getExercisesByPatient",
+    fetcher: async () => {
+      const snapshot = await readQuery(
+        query(collection(db, EXERCISES_COLLECTION), where("pacienteUid", "==", pacienteUid)),
+        { resource: EXERCISES_COLLECTION, source: "getExercisesByPatient" }
+      );
+      return sortExercises(snapshot.docs.map((item) => ({ id: item.id, ...item.data() })));
+    },
+  });
 }
 
-export async function getExercisesByTherapist(terapeutaId) {
+export async function getExercisesByTherapist(terapeutaId, options = {}) {
   if (!terapeutaId) {
     return [];
   }
 
-  const exercisesRef = collection(db, EXERCISES_COLLECTION);
-  const exercisesQuery = query(
-    exercisesRef,
-    where("terapeutaId", "==", terapeutaId)
-  );
-  const snapshot = await getDocs(exercisesQuery);
-
-  return sortExercises(snapshot.docs.map((item) => ({ id: item.id, ...item.data() })));
+  return getOrFetch({
+    key: `exercises:therapist:${terapeutaId}`,
+    ttl: CACHE_TTL.CLINICAL_LIST,
+    force: options.force,
+    resource: EXERCISES_COLLECTION,
+    source: "getExercisesByTherapist",
+    fetcher: async () => {
+      const snapshot = await readQuery(
+        query(collection(db, EXERCISES_COLLECTION), where("terapeutaId", "==", terapeutaId)),
+        { resource: EXERCISES_COLLECTION, source: "getExercisesByTherapist" }
+      );
+      return sortExercises(snapshot.docs.map((item) => ({ id: item.id, ...item.data() })));
+    },
+  });
 }
 
 export async function completeExercise({ exerciseId, patientNotes = "" }) {
@@ -89,12 +108,18 @@ export async function completeExercise({ exerciseId, patientNotes = "" }) {
   const exerciseRef = doc(db, EXERCISES_COLLECTION, exerciseId);
   const completedAt = new Date().toISOString();
 
-  await updateDoc(exerciseRef, {
-    status: "completed",
-    patientNotes,
-    completedAt,
-    updatedAt: serverTimestamp(),
+  await trackWrite({
+    resource: EXERCISES_COLLECTION,
+    source: "completeExercise",
+    operation: "updateDoc",
+    write: () => updateDoc(exerciseRef, {
+      status: "completed",
+      patientNotes,
+      completedAt,
+      updatedAt: serverTimestamp(),
+    }),
   });
+  invalidateCachePrefix("exercises:");
 
   return {
     id: exerciseId,

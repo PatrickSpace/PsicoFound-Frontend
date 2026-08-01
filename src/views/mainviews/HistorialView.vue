@@ -163,7 +163,7 @@ import { getTherapistByUserUid } from "@/services/psicologoService";
 import { getTherapiesByTherapist } from "@/services/terapiaService";
 import {
   getLongitudinalHistoryByPatient,
-  getLongitudinalHistoryByTherapy,
+  getLongitudinalHistoryByTherapies,
 } from "@/services/longitudinalHistoryService";
 
 const authStore = useAuthStore();
@@ -218,18 +218,19 @@ async function loadTherapistHistory(uid) {
   }
 
   const therapies = await getTherapiesByTherapist(therapist.id);
-  const historyGroups = await Promise.all(
-    therapies.map(async (therapy) => {
-      const events = await getLongitudinalHistoryByTherapy(therapy.id);
-      return events.map((event) => ({
-        ...event,
-        pacienteNombre: therapy.pacienteNombre || event.pacienteNombre || "",
-      }));
-    })
+  const therapiesById = new Map(therapies.map((therapy) => [therapy.id, therapy]));
+  const events = await getLongitudinalHistoryByTherapies(
+    therapies.map((therapy) => therapy.id)
   );
 
-  return historyGroups
-    .flat()
+  return events
+    .map((event) => ({
+      ...event,
+      pacienteNombre:
+        therapiesById.get(event.terapiaId)?.pacienteNombre ||
+        event.pacienteNombre ||
+        "",
+    }))
     .sort((a, b) => toDate(b.occurredAt) - toDate(a.occurredAt));
 }
 

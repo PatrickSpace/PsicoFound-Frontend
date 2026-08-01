@@ -2,7 +2,6 @@ import {
   addDoc,
   collection,
   doc,
-  getDocs,
   query,
   serverTimestamp,
   updateDoc,
@@ -11,6 +10,8 @@ import {
 import { auth } from "@/plugins/Firebase/firebase";
 import { db } from "@/plugins/Firebase/firestore";
 import { appendLongitudinalEvent } from "@/services/longitudinalHistoryService";
+import { readQuery, trackWrite } from "@/repositories/firestoreRepository";
+import { CACHE_TTL, getOrFetch, invalidateCachePrefix } from "@/utils/requestCache";
 
 const GOALS_COLLECTION = "therapy_goals";
 
@@ -36,8 +37,14 @@ export async function createTherapyGoal(data = {}) {
     updatedAt: serverTimestamp(),
   };
 
-  const docRef = await addDoc(collection(db, GOALS_COLLECTION), payload);
+  const docRef = await trackWrite({
+    resource: GOALS_COLLECTION,
+    source: "createTherapyGoal",
+    operation: "addDoc",
+    write: () => addDoc(collection(db, GOALS_COLLECTION), payload),
+  });
   const goal = { id: docRef.id, ...payload };
+  invalidateCachePrefix("goals:");
 
   await safelyAppendGoalEvent({
     eventType: "goal_created",
@@ -49,28 +56,46 @@ export async function createTherapyGoal(data = {}) {
   return goal;
 }
 
-export async function getGoalsByPatient(pacienteUid) {
+export async function getGoalsByPatient(pacienteUid, options = {}) {
   if (!pacienteUid) {
     return [];
   }
 
-  const goalsRef = collection(db, GOALS_COLLECTION);
-  const goalsQuery = query(goalsRef, where("pacienteUid", "==", pacienteUid));
-  const snapshot = await getDocs(goalsQuery);
-
-  return sortGoals(snapshot.docs.map((item) => ({ id: item.id, ...item.data() })));
+  return getOrFetch({
+    key: `goals:patient:${pacienteUid}`,
+    ttl: CACHE_TTL.CLINICAL_LIST,
+    force: options.force,
+    resource: GOALS_COLLECTION,
+    source: "getGoalsByPatient",
+    fetcher: async () => {
+      const snapshot = await readQuery(
+        query(collection(db, GOALS_COLLECTION), where("pacienteUid", "==", pacienteUid)),
+        { resource: GOALS_COLLECTION, source: "getGoalsByPatient" }
+      );
+      return sortGoals(snapshot.docs.map((item) => ({ id: item.id, ...item.data() })));
+    },
+  });
 }
 
-export async function getGoalsByTherapist(terapeutaId) {
+export async function getGoalsByTherapist(terapeutaId, options = {}) {
   if (!terapeutaId) {
     return [];
   }
 
-  const goalsRef = collection(db, GOALS_COLLECTION);
-  const goalsQuery = query(goalsRef, where("terapeutaId", "==", terapeutaId));
-  const snapshot = await getDocs(goalsQuery);
-
-  return sortGoals(snapshot.docs.map((item) => ({ id: item.id, ...item.data() })));
+  return getOrFetch({
+    key: `goals:therapist:${terapeutaId}`,
+    ttl: CACHE_TTL.CLINICAL_LIST,
+    force: options.force,
+    resource: GOALS_COLLECTION,
+    source: "getGoalsByTherapist",
+    fetcher: async () => {
+      const snapshot = await readQuery(
+        query(collection(db, GOALS_COLLECTION), where("terapeutaId", "==", terapeutaId)),
+        { resource: GOALS_COLLECTION, source: "getGoalsByTherapist" }
+      );
+      return sortGoals(snapshot.docs.map((item) => ({ id: item.id, ...item.data() })));
+    },
+  });
 }
 
 export async function updateTherapyGoalProgress({
@@ -87,13 +112,19 @@ export async function updateTherapyGoalProgress({
   const nextStatus = status || (normalizedProgress >= 100 ? "achieved" : "active");
   const goalRef = doc(db, GOALS_COLLECTION, goal.id);
 
-  await updateDoc(goalRef, {
-    progress: normalizedProgress,
-    status: nextStatus,
-    lastNote: note,
-    achievedAt: nextStatus === "achieved" ? new Date().toISOString() : "",
-    updatedAt: serverTimestamp(),
+  await trackWrite({
+    resource: GOALS_COLLECTION,
+    source: "updateTherapyGoalProgress",
+    operation: "updateDoc",
+    write: () => updateDoc(goalRef, {
+      progress: normalizedProgress,
+      status: nextStatus,
+      lastNote: note,
+      achievedAt: nextStatus === "achieved" ? new Date().toISOString() : "",
+      updatedAt: serverTimestamp(),
+    }),
   });
+  invalidateCachePrefix("goals:");
 
   const updatedGoal = {
     ...goal,

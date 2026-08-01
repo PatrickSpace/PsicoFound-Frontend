@@ -2,12 +2,22 @@ import { getFunctions, httpsCallable } from "firebase/functions";
 import {
   collection,
   doc,
-  onSnapshot,
   orderBy,
   query,
+  where,
 } from "firebase/firestore";
-import { app } from "@/plugins/Firebase/firebase";
+import { app, auth } from "@/plugins/Firebase/firebase";
 import { db } from "@/plugins/Firebase/firestore";
+import {
+  subscribeDocument,
+  subscribeQuery,
+} from "@/repositories/firestoreRepository";
+import { finOpsTracker } from "@/utils/finOpsTracker";
+import {
+  CACHE_TTL,
+  invalidateCachePrefix,
+  setCachedValue,
+} from "@/utils/requestCache";
 
 const FUNCTIONS_REGION =
   import.meta.env.VITE_FIREBASE_FUNCTIONS_REGION || "southamerica-east1";
@@ -22,21 +32,18 @@ const resetProfileChatConversationCallable = httpsCallable(
 );
 
 export async function sendProfileChatMessage(message) {
-  try {
-    const result = await sendProfileChatMessageCallable({ message });
-    return result.data;
-  } catch (error) {
-    throw createProfileChatError(error);
-  }
+  return callProfileFunction({
+    callable: sendProfileChatMessageCallable,
+    payload: { message },
+    operation: "sendProfileChatMessage",
+  });
 }
 
 export async function resetProfileChatConversation() {
-  try {
-    const result = await resetProfileChatConversationCallable();
-    return result.data;
-  } catch (error) {
-    throw createProfileChatError(error);
-  }
+  return callProfileFunction({
+    callable: resetProfileChatConversationCallable,
+    operation: "resetProfileChatConversation",
+  });
 }
 
 export function watchProfile(uid, onData, onError) {
@@ -46,10 +53,24 @@ export function watchProfile(uid, onData, onError) {
 
   const profileRef = doc(db, "profiles", uid);
 
-  return onSnapshot(
+  return subscribeDocument(
     profileRef,
+    {
+      key: `profile:${uid}`,
+      resource: "profiles",
+      source: "watchProfile",
+    },
     (snapshot) => {
-      onData(snapshot.exists() ? { id: snapshot.id, ...snapshot.data() } : null);
+      const profile = snapshot.exists()
+        ? { id: snapshot.id, ...snapshot.data() }
+        : null;
+      setCachedValue({
+        key: "initial-profile",
+        scope: uid,
+        value: profile,
+        ttl: CACHE_TTL.PROFILE,
+      });
+      onData(profile);
     },
     onError
   );
@@ -62,8 +83,13 @@ export function watchConversation(uid, onData, onError) {
 
   const conversationRef = doc(db, "conversations", uid);
 
-  return onSnapshot(
+  return subscribeDocument(
     conversationRef,
+    {
+      key: `conversation:${uid}`,
+      resource: "conversations",
+      source: "watchConversation",
+    },
     (snapshot) => {
       onData(snapshot.exists() ? { id: snapshot.id, ...snapshot.data() } : null);
     },
@@ -72,27 +98,66 @@ export function watchConversation(uid, onData, onError) {
 }
 
 export function watchConversationMessages(uid, activeSessionId, onData, onError) {
-  if (!uid) {
+  if (!uid || !activeSessionId) {
+    onData?.([]);
     return () => {};
   }
 
   const messagesRef = collection(db, "conversations", uid, "messages");
-  const messagesQuery = query(messagesRef, orderBy("createdAt", "asc"));
+  const messagesQuery = query(
+    messagesRef,
+    where("sessionId", "==", activeSessionId),
+    orderBy("createdAt", "asc")
+  );
 
-  return onSnapshot(
+  return subscribeQuery(
     messagesQuery,
+    {
+      key: `conversation-messages:${uid}:${activeSessionId}`,
+      resource: "conversation-messages",
+      source: "watchConversationMessages",
+    },
     (snapshot) => {
       onData(
-        snapshot.docs
-          .map((item) => ({
-            id: item.id,
-            ...item.data(),
-          }))
-          .filter((item) => item.sessionId === activeSessionId)
+        snapshot.docs.map((item) => ({
+          id: item.id,
+          ...item.data(),
+        }))
       );
     },
     onError
   );
+}
+
+async function callProfileFunction({ callable, payload, operation }) {
+  const startedAt = performance.now();
+
+  try {
+    const result = await callable(payload);
+    finOpsTracker.track({
+      type: "external-request",
+      resource: "profile-chat",
+      source: "conversationService",
+      operation,
+      durationMs: performance.now() - startedAt,
+    });
+    invalidateCachePrefix("matching:", authScope());
+    return result.data;
+  } catch (error) {
+    finOpsTracker.track({
+      type: "external-request-error",
+      resource: "profile-chat",
+      source: "conversationService",
+      operation,
+      durationMs: performance.now() - startedAt,
+      errorType: error?.code || error?.name || "unknown",
+    });
+    throw createProfileChatError(error);
+  }
+}
+
+function authScope() {
+  return auth.currentUser?.uid || "anonymous";
 }
 
 function createProfileChatError(error) {

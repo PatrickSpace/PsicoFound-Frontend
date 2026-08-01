@@ -30,37 +30,54 @@ async function getActiveTherapists(db, availableTherapistIds = new Set()) {
     return [];
   }
 
-  const snapshot = await db.collection("therapists").orderBy("nombre").get();
+  const therapistIdGroups = chunk([...availableTherapistIds], 30);
+  const snapshots = await Promise.all(
+      therapistIdGroups.map((ids) =>
+        db.collection("therapists")
+            .where(admin.firestore.FieldPath.documentId(), "in", ids)
+            .get(),
+      ),
+  );
 
-  return snapshot.docs
+  return snapshots
+      .flatMap((snapshot) => snapshot.docs)
       .map((doc) => ({
         id: doc.id,
         ...doc.data(),
       }))
-      .filter((therapist) =>
-        therapist.activo !== false && availableTherapistIds.has(therapist.id),
-      );
+      .filter((therapist) => therapist.activo !== false)
+      .sort((a, b) => (a.nombre || "").localeCompare(b.nombre || ""));
 }
 
 async function getTherapistIdsWithAvailableSlots(db) {
+  const today = getTodayISOForLima();
   const snapshot = await db
       .collection("therapist_availability")
       .where("status", "==", "available")
+      .where("date", ">=", today)
+      .select("therapistId")
       .get();
-  const today = getTodayISOForLima();
   const therapistIds = new Set();
 
   snapshot.docs.forEach((doc) => {
     const slot = doc.data();
     const therapistId = (slot.therapistId || "").toString().trim();
-    const date = (slot.date || "").toString().trim();
-
-    if (therapistId && date && date >= today) {
+    if (therapistId) {
       therapistIds.add(therapistId);
     }
   });
 
   return therapistIds;
+}
+
+function chunk(items, size) {
+  const groups = [];
+
+  for (let index = 0; index < items.length; index += size) {
+    groups.push(items.slice(index, index + size));
+  }
+
+  return groups;
 }
 
 function sanitizeTherapistForClient(therapist = {}) {

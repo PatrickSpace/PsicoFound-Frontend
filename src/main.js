@@ -7,7 +7,6 @@ import "./assets/overlays.css";
 import { createApp } from "vue";
 import App from "./App.vue";
 import router from "./router";
-import apiClient from "./plugins/axios";
 import vuetify, { applyDesignTokenCssVars } from "./plugins/vuetify";
 import { createPinia } from "pinia";
 import "./plugins/Firebase/firebase";
@@ -21,9 +20,6 @@ applyDesignTokenCssVars();
 app.use(pinia);
 app.use(router);
 app.use(vuetify);
-
-// Configuracion global disponible antes del mount.
-app.config.globalProperties.$axios = apiClient;
 
 const authStore = useAuthStore(pinia);
 authStore.initAuth();

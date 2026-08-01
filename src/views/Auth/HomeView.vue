@@ -70,7 +70,7 @@
 </template>
 <style scoped>
 .bg-image {
-  background-image: url("@/assets/img/bg-home.jpg");
+  background-image: url("@/assets/img/bg-home.avif");
   background-size: cover;
   background-repeat: no-repeat;
   background-position-y: bottom;

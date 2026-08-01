@@ -5,12 +5,17 @@ import {
   doc,
   serverTimestamp,
   updateDoc,
-  getDocs,
   query,
   where,
-  getDoc,
+  limit,
 } from "firebase/firestore";
 import { db } from "@/plugins/Firebase/firestore";
+import { readDocument, readQuery, trackWrite } from "@/repositories/firestoreRepository";
+import {
+  CACHE_TTL,
+  getOrFetch,
+  invalidateCachePrefix,
+} from "@/utils/requestCache";
 
 const THERAPIES_COLLECTION = "terapias";
 const ACTIVE_THERAPY_STATUS = "activo";
@@ -42,7 +47,13 @@ export async function createTherapy(data = {}) {
     updatedAt: serverTimestamp(),
   };
 
-  const docRef = await addDoc(therapiesRef, payload);
+  const docRef = await trackWrite({
+    resource: THERAPIES_COLLECTION,
+    source: "createTherapy",
+    operation: "addDoc",
+    write: () => addDoc(therapiesRef, payload),
+  });
+  invalidateTherapyCaches();
 
   return {
     id: docRef.id,
@@ -53,83 +64,169 @@ export async function createTherapy(data = {}) {
 export async function appendAppointmentToTherapy(terapiaId, appointmentSummary) {
   const therapyRef = doc(db, THERAPIES_COLLECTION, terapiaId);
 
-  await updateDoc(therapyRef, {
-    citas: arrayUnion(appointmentSummary),
-    updatedAt: serverTimestamp(),
+  await trackWrite({
+    resource: THERAPIES_COLLECTION,
+    source: "appendAppointmentToTherapy",
+    operation: "updateDoc",
+    write: () => updateDoc(therapyRef, {
+      citas: arrayUnion(appointmentSummary),
+      updatedAt: serverTimestamp(),
+    }),
   });
+  invalidateTherapyCaches();
 }
 
 export async function replaceTherapyAppointments(terapiaId, citas = []) {
   const therapyRef = doc(db, THERAPIES_COLLECTION, terapiaId);
 
-  await updateDoc(therapyRef, {
-    citas,
-    updatedAt: serverTimestamp(),
+  await trackWrite({
+    resource: THERAPIES_COLLECTION,
+    source: "replaceTherapyAppointments",
+    operation: "updateDoc",
+    write: () => updateDoc(therapyRef, {
+      citas,
+      updatedAt: serverTimestamp(),
+    }),
+  });
+  invalidateTherapyCaches();
+}
+
+export async function getTherapyById(terapiaId, options = {}) {
+  if (!terapiaId) return null;
+
+  return getOrFetch({
+    key: `therapy:id:${terapiaId}`,
+    ttl: CACHE_TTL.THERAPY,
+    force: options.force,
+    resource: THERAPIES_COLLECTION,
+    source: "getTherapyById",
+    fetcher: async () => {
+      const snapshot = await readDocument(
+        doc(db, THERAPIES_COLLECTION, terapiaId),
+        { resource: THERAPIES_COLLECTION, source: "getTherapyById" }
+      );
+      return snapshot.exists() ? { id: snapshot.id, ...snapshot.data() } : null;
+    },
   });
 }
 
-export async function getTherapyById(terapiaId) {
-  const therapyRef = doc(db, THERAPIES_COLLECTION, terapiaId);
-  const snapshot = await getDoc(therapyRef);
-
-  if (!snapshot.exists()) {
-    return null;
-  }
-
-  return {
-    id: snapshot.id,
-    ...snapshot.data(),
-  };
-}
-
-export async function getTherapiesByPatient(pacienteUid) {
+export async function getTherapiesByPatient(pacienteUid, options = {}) {
   if (!pacienteUid) {
     return [];
   }
 
-  const therapiesRef = collection(db, THERAPIES_COLLECTION);
-  const therapiesQuery = query(
-    therapiesRef,
-    where("pacienteUid", "==", pacienteUid)
-  );
-
-  const snapshot = await getDocs(therapiesQuery);
-
-  return snapshot.docs.map((item) => ({
-    id: item.id,
-    ...item.data(),
-  }));
+  return getOrFetch({
+    key: `therapies:patient:${pacienteUid}`,
+    ttl: CACHE_TTL.THERAPY,
+    force: options.force,
+    resource: THERAPIES_COLLECTION,
+    source: "getTherapiesByPatient",
+    fetcher: async () => {
+      const therapiesQuery = query(
+        collection(db, THERAPIES_COLLECTION),
+        where("pacienteUid", "==", pacienteUid)
+      );
+      const snapshot = await readQuery(therapiesQuery, {
+        resource: THERAPIES_COLLECTION,
+        source: "getTherapiesByPatient",
+      });
+      return snapshot.docs.map((item) => ({ id: item.id, ...item.data() }));
+    },
+  });
 }
 
-export async function getTherapiesByTherapist(terapeutaId) {
+export async function getTherapiesByPatients(patientUids = [], options = {}) {
+  const uniqueIds = [...new Set(patientUids.filter(Boolean))].sort();
+
+  if (!uniqueIds.length) return new Map();
+
+  return getOrFetch({
+    key: `therapies:patients:${uniqueIds.join(",")}`,
+    ttl: CACHE_TTL.ADMIN_LIST,
+    force: options.force,
+    resource: THERAPIES_COLLECTION,
+    source: "getTherapiesByPatients",
+    fetcher: async () => {
+      const snapshots = await Promise.all(
+        chunk(uniqueIds, 30).map((uids) =>
+          readQuery(
+            query(
+              collection(db, THERAPIES_COLLECTION),
+              where("pacienteUid", "in", uids)
+            ),
+            {
+              resource: THERAPIES_COLLECTION,
+              source: "getTherapiesByPatients",
+            }
+          )
+        )
+      );
+      const byPatient = new Map(uniqueIds.map((uid) => [uid, []]));
+
+      snapshots
+        .flatMap((snapshot) => snapshot.docs)
+        .forEach((item) => {
+          const therapy = { id: item.id, ...item.data() };
+          const patientUid = therapy.pacienteUid;
+          if (byPatient.has(patientUid)) {
+            byPatient.get(patientUid).push(therapy);
+          }
+        });
+
+      return byPatient;
+    },
+  });
+}
+
+export async function getTherapiesByTherapist(terapeutaId, options = {}) {
   if (!terapeutaId) {
     return [];
   }
 
-  const therapiesRef = collection(db, THERAPIES_COLLECTION);
-  const therapiesQuery = query(
-    therapiesRef,
-    where("terapeutaId", "==", terapeutaId)
-  );
-
-  const snapshot = await getDocs(therapiesQuery);
-
-  return snapshot.docs.map((item) => ({
-    id: item.id,
-    ...item.data(),
-  }));
+  return getOrFetch({
+    key: `therapies:therapist:${terapeutaId}`,
+    ttl: CACHE_TTL.THERAPY,
+    force: options.force,
+    resource: THERAPIES_COLLECTION,
+    source: "getTherapiesByTherapist",
+    fetcher: async () => {
+      const therapiesQuery = query(
+        collection(db, THERAPIES_COLLECTION),
+        where("terapeutaId", "==", terapeutaId)
+      );
+      const snapshot = await readQuery(therapiesQuery, {
+        resource: THERAPIES_COLLECTION,
+        source: "getTherapiesByTherapist",
+      });
+      return snapshot.docs.map((item) => ({ id: item.id, ...item.data() }));
+    },
+  });
 }
 
-export async function getActiveTherapyByPatient(pacienteUid) {
-  const therapies = await getTherapiesByPatient(pacienteUid);
+export async function getActiveTherapyByPatient(pacienteUid, options = {}) {
+  if (!pacienteUid) return null;
 
-  return (
-    therapies.find(
-      (therapy) =>
-        (therapy.estado || "").toString().trim().toLowerCase() ===
-        ACTIVE_THERAPY_STATUS
-    ) || null
-  );
+  return getOrFetch({
+    key: `therapy:active:${pacienteUid}`,
+    ttl: CACHE_TTL.THERAPY,
+    force: options.force,
+    resource: THERAPIES_COLLECTION,
+    source: "getActiveTherapyByPatient",
+    fetcher: async () => {
+      const activeTherapyQuery = query(
+        collection(db, THERAPIES_COLLECTION),
+        where("pacienteUid", "==", pacienteUid),
+        where("estado", "==", ACTIVE_THERAPY_STATUS),
+        limit(1)
+      );
+      const snapshot = await readQuery(activeTherapyQuery, {
+        resource: THERAPIES_COLLECTION,
+        source: "getActiveTherapyByPatient",
+      });
+      const item = snapshot.docs[0];
+      return item ? { id: item.id, ...item.data() } : null;
+    },
+  });
 }
 
 export async function getTherapyByIdForPatient(terapiaId, pacienteUid) {
@@ -171,8 +268,28 @@ export async function updateTherapyStatus(terapiaId, estado) {
 
   const therapyRef = doc(db, THERAPIES_COLLECTION, terapiaId);
 
-  await updateDoc(therapyRef, {
-    estado,
-    updatedAt: serverTimestamp(),
+  await trackWrite({
+    resource: THERAPIES_COLLECTION,
+    source: "updateTherapyStatus",
+    operation: "updateDoc",
+    write: () => updateDoc(therapyRef, {
+      estado,
+      updatedAt: serverTimestamp(),
+    }),
   });
+  invalidateTherapyCaches();
+}
+
+function invalidateTherapyCaches() {
+  invalidateCachePrefix("therap");
+}
+
+function chunk(items, size) {
+  const groups = [];
+
+  for (let index = 0; index < items.length; index += size) {
+    groups.push(items.slice(index, index + size));
+  }
+
+  return groups;
 }

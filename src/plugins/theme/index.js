@@ -1,8 +1,6 @@
 import "vuetify/styles";
-import "@mdi/font/css/materialdesignicons.css";
+import "@/assets/mdi-subset.css";
 import { createVuetify } from "vuetify";
-import * as components from "vuetify/components";
-import * as directives from "vuetify/directives";
 import { aliases, mdi } from "vuetify/iconsets/mdi";
 import { darkTheme } from "./dark";
 import { lightTheme } from "./light";
@@ -22,7 +20,6 @@ export function applyDesignTokenCssVars(target = document.documentElement) {
 }
 
 const vuetify = createVuetify({
-  components,
   theme: {
     defaultTheme: "light",
     themes: {
@@ -30,7 +27,6 @@ const vuetify = createVuetify({
       light: lightTheme,
     },
   },
-  directives,
   icons: {
     defaultSet: "mdi",
     aliases,
