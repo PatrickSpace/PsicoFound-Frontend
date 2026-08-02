@@ -143,7 +143,18 @@
           </span>
         </template>
       </v-checkbox>
-      <div class="d-flex justify-end mt-5">
+      <div class="onboarding-actions mt-5">
+        <v-btn
+          class="pf-btn-secondary"
+          size="large"
+          type="button"
+          prepend-icon="mdi-account-heart-outline"
+          :disabled="processing"
+          :loading="switchingToPatient"
+          @click="registerAsPatient"
+        >
+          Registrarme como paciente
+        </v-btn>
         <v-btn
           class="pf-btn-primary"
           size="large"
@@ -172,7 +183,9 @@ import {
   SPECIALTY_OPTIONS,
 } from "@/constants/professionalProfile";
 import {
+  finalizeRegistration,
   getCallableErrorMessage,
+  REGISTRATION_INTENTS,
   submitPsychologistApplication,
 } from "@/services/onboardingService";
 import { getLatestPsychologistRequestByUser } from "@/services/psychologistRequestService";
@@ -186,6 +199,7 @@ const modalityOptions = MODALITY_OPTIONS;
 const genderOptions = GENDER_OPTIONS;
 const valid = ref(false);
 const saving = ref(false);
+const switchingToPatient = ref(false);
 const declarationAccepted = ref(false);
 const errorMessage = ref("");
 const rejectionReason = ref("");
@@ -210,11 +224,12 @@ const rules = {
     (Array.isArray(value) && value.length > 0) || "Selecciona al menos una opción",
 };
 
+const processing = computed(
+  () => saving.value || switchingToPatient.value
+);
+
 const canSubmit = computed(
-  () =>
-    valid.value &&
-    declarationAccepted.value &&
-    !saving.value
+  () => valid.value && declarationAccepted.value && !processing.value
 );
 
 onMounted(async () => {
@@ -279,4 +294,51 @@ async function submit() {
     saving.value = false;
   }
 }
+
+async function registerAsPatient() {
+  if (processing.value) return;
+
+  switchingToPatient.value = true;
+  errorMessage.value = "";
+
+  try {
+    const result = await finalizeRegistration({
+      intent: REGISTRATION_INTENTS.PATIENT,
+      displayName:
+        form.professionalName ||
+        auth.currentUser?.displayName ||
+        "",
+    });
+    await appContext.loadForUser(auth.currentUser.uid, { force: true });
+    appContext.setActiveMode("patient");
+    await router.replace(result.nextRoute || "/onboarding/paciente");
+  } catch (error) {
+    console.error("Patient registration switch error:", error);
+    errorMessage.value = getCallableErrorMessage(
+      error,
+      "No pudimos cambiar el registro a paciente. Intenta nuevamente."
+    );
+  } finally {
+    switchingToPatient.value = false;
+  }
+}
 </script>
+
+<style scoped>
+.onboarding-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+@media (max-width: 600px) {
+  .onboarding-actions {
+    flex-direction: column;
+  }
+
+  .onboarding-actions :deep(.v-btn) {
+    width: 100%;
+  }
+}
+</style>
