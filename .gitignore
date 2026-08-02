@@ -20,6 +20,11 @@ coverage
 .env
 .env.*
 !.env.example
+!.env.local.example
+!functions/.env.example
+runtime-secrets.json
+service-account*.json
+firebase-admin*.json
 .vercel
 .agents/
 .claude/

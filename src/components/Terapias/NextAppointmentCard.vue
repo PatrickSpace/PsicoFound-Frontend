@@ -106,6 +106,16 @@
       >
         Reprogramar
       </v-btn>
+      <v-btn
+        v-if="cancellable"
+        class="pf-btn-ghost"
+        color="error"
+        variant="text"
+        prepend-icon="mdi-calendar-remove-outline"
+        @click="emit('cancel')"
+      >
+        Cancelar
+      </v-btn>
     </v-card-actions>
   </v-card>
 </template>
@@ -122,9 +132,13 @@ const props = defineProps({
     type: Boolean,
     default: true,
   },
+  cancellable: {
+    type: Boolean,
+    default: false,
+  },
 });
 
-const emit = defineEmits(["reschedule"]);
+const emit = defineEmits(["reschedule", "cancel"]);
 
 const appointmentDate = computed(() => {
   if (!props.appointment?.fecha) return null;

@@ -1,7 +1,14 @@
 const admin = require("firebase-admin");
 const {setGlobalOptions} = require("firebase-functions/v2");
-const {onCall} = require("firebase-functions/v2/https");
+const {onCall, onRequest} = require("firebase-functions/v2/https");
+const {onSchedule} = require("firebase-functions/v2/scheduler");
 const {GEMINI_API_KEY} = require("./src/config");
+const {
+  MERCADO_PAGO_ACCESS_TOKEN,
+  MERCADO_PAGO_CLIENT_SECRET,
+  MERCADO_PAGO_WEBHOOK_SECRET,
+  PAYMENT_TOKEN_ENCRYPTION_KEY,
+} = require("./src/payments/config/paymentConfig");
 const {
   resetProfileChatConversation,
   sendProfileChatMessage,
@@ -15,6 +22,7 @@ const {
   reviewPsychologistApplication,
   submitPsychologistApplication,
 } = require("./src/onboarding/registrationHandlers");
+const paymentHandlers = require("./src/payments/paymentHandlers");
 
 admin.initializeApp();
 
@@ -78,4 +86,93 @@ exports.reviewPsychologistApplication = onCall(
       timeoutSeconds: 30,
     },
     reviewPsychologistApplication,
+);
+
+const paymentSecrets = [
+  MERCADO_PAGO_ACCESS_TOKEN,
+  MERCADO_PAGO_CLIENT_SECRET,
+  MERCADO_PAGO_WEBHOOK_SECRET,
+  PAYMENT_TOKEN_ENCRYPTION_KEY,
+];
+const paymentCallableOptions = {
+  minInstances: 0,
+  timeoutSeconds: 60,
+  secrets: paymentSecrets,
+};
+
+exports.createPaymentAccountConnection = onCall(
+    paymentCallableOptions,
+    paymentHandlers.createPaymentAccountConnection,
+);
+exports.createMercadoPagoAuthorizationUrl = onCall(
+    paymentCallableOptions,
+    paymentHandlers.createMercadoPagoAuthorizationUrl,
+);
+exports.getPaymentAccountStatus = onCall(
+    paymentCallableOptions,
+    paymentHandlers.getPaymentAccountStatus,
+);
+exports.updatePsychologistPaymentSettings = onCall(
+    paymentCallableOptions,
+    paymentHandlers.updatePsychologistPaymentSettings,
+);
+exports.disconnectPaymentAccount = onCall(
+    paymentCallableOptions,
+    paymentHandlers.disconnectPaymentAccount,
+);
+exports.createBookingHold = onCall(
+    paymentCallableOptions,
+    paymentHandlers.createBookingHold,
+);
+exports.createBookingPayment = onCall(
+    paymentCallableOptions,
+    paymentHandlers.createBookingPayment,
+);
+exports.getBookingPaymentStatus = onCall(
+    paymentCallableOptions,
+    paymentHandlers.getBookingPaymentStatus,
+);
+exports.listMyPaymentBookings = onCall(
+    paymentCallableOptions,
+    paymentHandlers.listMyPaymentBookings,
+);
+exports.expireBookingHold = onCall(
+    paymentCallableOptions,
+    paymentHandlers.expireBookingHold,
+);
+exports.cancelBooking = onCall(
+    paymentCallableOptions,
+    paymentHandlers.cancelBooking,
+);
+exports.requestBookingRefund = onCall(
+    paymentCallableOptions,
+    paymentHandlers.requestBookingRefund,
+);
+exports.refundBookingPayment = onCall(
+    paymentCallableOptions,
+    paymentHandlers.requestBookingRefund,
+);
+exports.simulatePaymentEvent = onCall(
+    paymentCallableOptions,
+    paymentHandlers.simulatePaymentEvent,
+);
+exports.mercadoPagoOAuthCallback = onRequest(
+    {timeoutSeconds: 60, secrets: paymentSecrets},
+    paymentHandlers.mercadoPagoOAuthCallback,
+);
+exports.mercadoPagoWebhook = onRequest(
+    {timeoutSeconds: 30, secrets: paymentSecrets},
+    paymentHandlers.mercadoPagoWebhook,
+);
+exports.expirePendingBookingHolds = onSchedule(
+    {schedule: "every 1 minutes", timeoutSeconds: 60, secrets: paymentSecrets},
+    paymentHandlers.expirePendingBookingHolds,
+);
+exports.reconcilePayments = onSchedule(
+    {
+      schedule: "every 30 minutes",
+      timeoutSeconds: 300,
+      secrets: paymentSecrets,
+    },
+    paymentHandlers.reconcilePayments,
 );

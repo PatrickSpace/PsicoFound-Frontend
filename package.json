@@ -6,6 +6,12 @@
   "scripts": {
     "dev": "vite --host",
     "build": "vite build",
+    "lint": "npm --prefix functions run lint",
+    "typecheck": "npm --prefix functions run typecheck",
+    "test:payments": "npm --prefix functions run test:payments",
+    "test:payments:emulator": "firebase emulators:exec --only firestore 'npm --prefix functions run test:payments'",
+    "test:rules": "firebase emulators:exec --only firestore 'node --test test/firestore/*.test.mjs'",
+    "emulators": "firebase emulators:start",
     "preview": "vite preview",
     "icons:build": "node scripts/generate-mdi-subset.mjs",
     "test": "node --test \"tests/**/*.test.js\""
@@ -19,6 +25,7 @@
     "vuetify": "^3.11.6"
   },
   "devDependencies": {
+    "@firebase/rules-unit-testing": "^5.0.1",
     "@mdi/font": "^7.4.47",
     "@vitejs/plugin-vue": "^5.0.4",
     "vite": "^5.1.5",

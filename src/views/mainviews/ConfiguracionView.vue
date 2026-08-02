@@ -74,6 +74,15 @@
           </v-card>
         </v-col>
 
+        <v-col
+          v-if="appContext.hasPsychologistAccess"
+          cols="12"
+          md="6"
+          class="d-flex"
+        >
+          <PaymentAccountCard class="flex-grow-1" />
+        </v-col>
+
         <v-col cols="12" md="6" class="d-flex">
           <v-card
             class="pa-4 card-backgoundcustom flex-grow-1"
@@ -474,6 +483,7 @@ import { storeToRefs } from "pinia";
 import { signOut } from "firebase/auth";
 import { useRouter } from "vue-router";
 import LayoutDefault from "@/components/Layout/Layoutmain.vue";
+import PaymentAccountCard from "@/components/Payments/PaymentAccountCard.vue";
 import { auth } from "@/plugins/Firebase/firebase";
 import { useAppContextStore } from "@/store/appContext";
 import { useAuthStore } from "@/store/auth";

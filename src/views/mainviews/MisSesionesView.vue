@@ -25,8 +25,39 @@
             </v-btn>
           </div>
         </div>
-        <v-divider class="page-header-divider" />
+      <v-divider class="page-header-divider" />
       </div>
+
+      <v-alert
+        v-for="booking in visiblePaymentBookings"
+        :key="booking.id"
+        class="mb-4"
+        :color="paymentStatusColor(booking.paymentStatus)"
+        variant="tonal"
+        :icon="paymentStatusIcon(booking.paymentStatus)"
+      >
+        <div class="d-flex flex-wrap align-center justify-space-between ga-3">
+          <div>
+            <strong>{{ paymentStatusLabel(booking.paymentStatus) }}</strong>
+            <div class="text-body-2">
+              {{ booking.date }} · {{ booking.startTime }} · {{ formatMoney(booking.priceAmount) }}
+            </div>
+          </div>
+          <v-chip size="small" variant="tonal">
+            {{ booking.modality === "virtual" ? "Online" : "Presencial" }}
+          </v-chip>
+          <v-btn
+            v-if="canRetryPayment(booking)"
+            color="secondary"
+            variant="outlined"
+            class="pf-btn-secondary"
+            prepend-icon="mdi-credit-card-refresh-outline"
+            @click="checkoutBooking = booking"
+          >
+            Reintentar pago
+          </v-btn>
+        </div>
+      </v-alert>
 
       <v-card
         v-if="!nextAppointment && activeTherapy"
@@ -56,8 +87,10 @@
         v-if="nextAppointment"
         class="mb-5"
         :appointment="nextAppointment"
-        :reschedulable="Boolean(editableAppointment)"
+        :reschedulable="Boolean(editableAppointment) && !isPaidAppointment"
+        :cancellable="isPaidAppointment"
         @reschedule="openRescheduleDialog"
+        @cancel="cancelDialog = true"
       />
 
       <v-row align="stretch">
@@ -151,6 +184,44 @@
         :redirect-on-save="false"
         @saved="handleDialogSaved"
       />
+
+      <v-dialog v-model="checkoutDialog" class="bg-transparent" max-width="720">
+        <v-card v-if="checkoutBooking" class="card-backgoundcustom pa-5">
+          <v-card-title class="d-flex align-center justify-space-between ga-3">
+            Completar pago
+            <v-btn icon="mdi-close" variant="text" @click="checkoutBooking = null" />
+          </v-card-title>
+          <v-card-text>
+            <BookingPaymentPanel
+              :booking="checkoutBooking"
+              :therapist-name="checkoutBooking.psychologistName"
+              :payer-email="currentUser?.email || ''"
+              @completed="handlePaymentCompleted"
+            />
+          </v-card-text>
+        </v-card>
+      </v-dialog>
+
+      <v-dialog v-model="cancelDialog" class="bg-transparent" max-width="520">
+        <v-card class="card-backgoundcustom pa-5">
+          <v-card-title>Cancelar cita</v-card-title>
+          <v-card-text>
+            La política de cancelación se evaluará en el backend. El reembolso solo se mostrará como completado cuando el proveedor lo confirme.
+          </v-card-text>
+          <v-card-actions>
+            <v-spacer />
+            <v-btn variant="text" @click="cancelDialog = false">Volver</v-btn>
+            <v-btn
+              color="error"
+              class="pf-btn-destructive"
+              :loading="cancelling"
+              @click="confirmCancellation"
+            >
+              Cancelar cita
+            </v-btn>
+          </v-card-actions>
+        </v-card>
+      </v-dialog>
     </v-container>
   </LayoutDefault>
 </template>
@@ -163,8 +234,14 @@ import LayoutDefault from "@/components/Layout/Layoutmain.vue";
 import CitaDialog from "@/components/Terapias/CitaDialog.vue";
 import NextAppointmentCard from "@/components/Terapias/NextAppointmentCard.vue";
 import TherapyAppointmentsTable from "@/components/Terapias/TherapyAppointmentsTable.vue";
+import BookingPaymentPanel from "@/components/Payments/BookingPaymentPanel.vue";
 import { useAuthStore } from "@/store/auth";
 import { getTherapiesByPatient } from "@/services/terapiaService";
+import {
+  cancelPaidBooking,
+  getMyPaymentBookings,
+  paymentErrorMessage,
+} from "@/services/paymentService";
 
 const router = useRouter();
 const authStore = useAuthStore();
@@ -172,6 +249,23 @@ const { currentUser } = storeToRefs(authStore);
 const therapies = ref([]);
 const dialog = ref(false);
 const dialogAppointment = ref(null);
+const paymentBookings = ref([]);
+const checkoutBooking = ref(null);
+const cancelDialog = ref(false);
+const cancelling = ref(false);
+
+const checkoutDialog = computed({
+  get: () => Boolean(checkoutBooking.value),
+  set: (value) => {
+    if (!value) checkoutBooking.value = null;
+  },
+});
+
+const visiblePaymentBookings = computed(() => paymentBookings.value.filter(
+  (booking) => !["confirmed", "expired", "cancelled_by_patient",
+    "cancelled_by_psychologist", "cancelled_by_platform", "refunded"]
+    .includes(booking.status)
+));
 
 function parseAppointmentDate(appointment) {
   if (!appointment?.fecha) return null;
@@ -234,6 +328,10 @@ const editableAppointment = computed(() => {
   };
 });
 
+const isPaidAppointment = computed(() =>
+  nextAppointment.value?.paymentStatus === "approved"
+);
+
 const activeTherapy = computed(
   () =>
     therapies.value.find(
@@ -259,6 +357,40 @@ function openScheduleDialog() {
 function handleDialogSaved() {
   dialogAppointment.value = null;
   loadTherapies();
+  loadPaymentBookings();
+}
+
+function handlePaymentCompleted() {
+  checkoutBooking.value = null;
+  loadTherapies();
+  loadPaymentBookings();
+}
+
+function canRetryPayment(booking) {
+  return ["created", "rejected", "provider_error"].includes(booking.paymentStatus) &&
+    booking.status !== "expired";
+}
+
+async function confirmCancellation() {
+  if (!nextAppointment.value?.citaId || cancelling.value) return;
+  cancelling.value = true;
+  try {
+    const result = await cancelPaidBooking(nextAppointment.value.citaId);
+    cancelDialog.value = false;
+    window.dispatchEvent(new CustomEvent("ui-success", { detail: {
+      title: "Cita cancelada",
+      message: result.status === "refunded" ?
+        "La cita se canceló y el reembolso fue procesado." :
+        "La cita se canceló. Revisa el estado del pago en esta vista.",
+    }}));
+    await Promise.all([loadTherapies(), loadPaymentBookings()]);
+  } catch (error) {
+    window.dispatchEvent(new CustomEvent("api-error", { detail: {
+      message: paymentErrorMessage(error),
+    }}));
+  } finally {
+    cancelling.value = false;
+  }
 }
 
 function openActiveTherapy() {
@@ -288,11 +420,55 @@ async function loadTherapies() {
   }
 }
 
+async function loadPaymentBookings() {
+  if (!currentUser.value?.uid) {
+    paymentBookings.value = [];
+    return;
+  }
+  try {
+    const result = await getMyPaymentBookings();
+    paymentBookings.value = result.bookings || [];
+  } catch (error) {
+    console.error("Error loading payment bookings:", error);
+    paymentBookings.value = [];
+  }
+}
+
+function paymentStatusLabel(status) {
+  return ({
+    created: "Pago pendiente",
+    pending: "Estamos confirmando tu pago",
+    processing: "Pago en proceso",
+    rejected: "Pago rechazado",
+    provider_error: "Servicio de pagos no disponible",
+    refund_pending: "Reembolso en proceso",
+    manual_review: "Pago en revisión",
+  })[status] || "Reserva pendiente";
+}
+
+function paymentStatusColor(status) {
+  if (["rejected", "provider_error"].includes(status)) return "error";
+  if (["manual_review", "refund_pending"].includes(status)) return "warning";
+  return "info";
+}
+
+function paymentStatusIcon(status) {
+  if (["rejected", "provider_error"].includes(status)) return "mdi-alert-outline";
+  if (status === "refund_pending") return "mdi-cash-refund";
+  return "mdi-clock-outline";
+}
+
+function formatMoney(cents) {
+  return new Intl.NumberFormat("es-PE", { style: "currency", currency: "PEN" })
+    .format(Number(cents || 0) / 100);
+}
+
 watch(
   () => currentUser.value?.uid,
   () => {
     dialogAppointment.value = null;
     loadTherapies();
+    loadPaymentBookings();
   },
   { immediate: true }
 );

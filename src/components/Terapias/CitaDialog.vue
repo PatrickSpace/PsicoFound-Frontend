@@ -30,7 +30,14 @@
       </div>
 
       <v-card-text class="appointment-body">
-        <v-container class="pa-0">
+        <BookingPaymentPanel
+          v-if="bookingHold"
+          :booking="bookingHold"
+          :therapist-name="terapeutaNombre || therapist?.nombre"
+          :payer-email="props.pacienteEmail || currentUser?.email || ''"
+          @completed="handlePaymentCompleted"
+        />
+        <v-container v-else class="pa-0">
           <v-row>
             <v-col v-if="!showAvailabilityPicker" cols="12">
               <div class="text-subtitle-1 font-weight-bold">
@@ -242,7 +249,7 @@
           </v-row>
         </v-container>
       </v-card-text>
-      <v-card-actions class="appointment-actions px-6 pb-5">
+      <v-card-actions v-if="!bookingHold" class="appointment-actions px-6 pb-5">
         <v-btn
           color="secondary"
           variant="tonal"
@@ -269,6 +276,8 @@ import { createAppointment, updateAppointment } from "@/services/citaService";
 import { getAvailableSlotsByTherapist } from "@/services/availabilityService";
 import { getTherapistById } from "@/services/psicologoService";
 import { getTherapyById } from "@/services/terapiaService";
+import { createBookingHold } from "@/services/paymentService";
+import BookingPaymentPanel from "@/components/Payments/BookingPaymentPanel.vue";
 
 const props = defineProps({
   modelValue: {
@@ -328,6 +337,7 @@ const therapist = ref(null);
 const therapy = ref(null);
 const availabilitySlots = ref([]);
 const selectedSlotId = ref("");
+const bookingHold = ref(null);
 const availabilityRange = ref("month");
 const form = reactive({
   fecha: "",
@@ -511,6 +521,7 @@ watch(
   () => props.modelValue,
   async (isOpen) => {
     if (isOpen) {
+      bookingHold.value = null;
       await loadSources();
       form.fecha = props.initialAppointment?.fecha || "";
       form.hora = props.initialAppointment?.hora || "";
@@ -754,6 +765,14 @@ async function submitAppointment() {
         meetingUrl: meetingUrlForSave.value,
         availabilitySlotId: selectedSlotId.value,
       });
+    } else if (showAvailabilityPicker.value) {
+      bookingHold.value = await createBookingHold({
+        slotId: selectedSlotId.value,
+        terapiaId: props.terapiaId || "",
+        notes: form.notas,
+        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || "America/Lima",
+      });
+      return;
     } else {
       const appointmentPatientUid = props.pacienteUid || currentUser.value.uid;
       savedAppointment = await createAppointment({
@@ -804,6 +823,14 @@ async function submitAppointment() {
     );
   } finally {
     saving.value = false;
+  }
+}
+
+function handlePaymentCompleted(paymentStatus) {
+  emit("saved", paymentStatus?.booking || bookingHold.value);
+  emit("update:modelValue", false);
+  if (props.redirectOnSave) {
+    router.push("/sesiones");
   }
 }
 

@@ -4,6 +4,8 @@
   "scripts": {
     "lint": "eslint .",
     "test": "node --test \"src/**/*.test.js\"",
+    "test:payments": "node --test \"src/payments/**/*.test.js\"",
+    "typecheck": "node --check index.js && find src/payments -name '*.js' ! -name '*.test.js' -print0 | xargs -0 -n1 node --check",
     "serve": "firebase emulators:start --only functions",
     "shell": "firebase functions:shell",
     "start": "npm run shell",

@@ -88,6 +88,17 @@ service cloud.firestore {
         assignedTherapist(request.resource.data.terapeutaId);
     }
 
+    function financialAppointmentFieldsUnchanged() {
+      return request.resource.data.diff(resource.data).affectedKeys().hasNone([
+        "bookingId",
+        "paymentId",
+        "paymentStatus",
+        "priceAmount",
+        "currency",
+        "commissionRuleSnapshot"
+      ]);
+    }
+
     function assignedTherapistForTherapy(therapyId) {
       return signedIn() &&
         exists(/databases/$(database)/documents/terapias/$(therapyId)) &&
@@ -185,34 +196,6 @@ service cloud.firestore {
           "updatedAt"
         ]) &&
         request.resource.data.status in ["available", "closed"]
-      ) || (
-        signedIn() &&
-        resource.data.status == "available" &&
-        request.resource.data.status == "booked" &&
-        request.resource.data.therapistId == resource.data.therapistId &&
-        request.resource.data.bookedBy == request.auth.uid &&
-        request.resource.data.appointmentId is string &&
-        request.resource.data.appointmentId != "" &&
-        request.resource.data.diff(resource.data).affectedKeys().hasOnly([
-          "status",
-          "bookedBy",
-          "appointmentId",
-          "updatedAt"
-        ])
-      ) || (
-        signedIn() &&
-        resource.data.status == "booked" &&
-        resource.data.bookedBy == request.auth.uid &&
-        request.resource.data.status == "available" &&
-        request.resource.data.therapistId == resource.data.therapistId &&
-        request.resource.data.bookedBy == "" &&
-        request.resource.data.appointmentId == "" &&
-        request.resource.data.diff(resource.data).affectedKeys().hasOnly([
-          "status",
-          "bookedBy",
-          "appointmentId",
-          "updatedAt"
-        ])
       );
       allow delete: if false;
     }
@@ -242,7 +225,7 @@ service cloud.firestore {
         ownsExistingTherapistDoc() ||
         isAdmin();
       allow create: if ownsIncomingPatientDoc();
-      allow update: if (
+      allow update: if financialAppointmentFieldsUnchanged() && ((
         ownsExistingPatientDoc() &&
         ownsIncomingPatientDoc() &&
         request.resource.data.pacienteUid == resource.data.pacienteUid
@@ -250,8 +233,63 @@ service cloud.firestore {
         ownsExistingTherapistDoc() &&
         ownsIncomingTherapistDoc() &&
         request.resource.data.pacienteUid == resource.data.pacienteUid
-      );
+      ));
       allow delete: if false;
+    }
+
+    match /payment_accounts/{psychologistId} {
+      allow read: if isAdmin() || (
+        signedIn() &&
+        resource.data.psychologistUid == request.auth.uid
+      );
+      allow write: if false;
+    }
+
+    match /bookings/{bookingId} {
+      allow read: if isAdmin() || (
+        signedIn() &&
+        (
+          resource.data.patientId == request.auth.uid ||
+          resource.data.psychologistUid == request.auth.uid
+        )
+      );
+      allow write: if false;
+    }
+
+    match /refunds/{refundId} {
+      allow read: if isAdmin() || (
+        signedIn() &&
+        resource.data.requestedByUserId == request.auth.uid
+      );
+      allow write: if false;
+    }
+
+    match /payments/{paymentId} {
+      allow read, write: if false;
+    }
+
+    match /payment_attempts/{attemptId} {
+      allow read, write: if false;
+    }
+
+    match /payment_events/{eventId} {
+      allow read, write: if false;
+    }
+
+    match /ledger_entries/{entryId} {
+      allow read, write: if false;
+    }
+
+    match /commission_rules/{ruleId} {
+      allow read, write: if false;
+    }
+
+    match /payment_oauth_states/{stateId} {
+      allow read, write: if false;
+    }
+
+    match /payment_account_secrets/{psychologistId} {
+      allow read, write: if false;
     }
 
     match /terapias/{terapiaId} {
