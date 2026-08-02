@@ -46,8 +46,8 @@ VITE_APP_BASE_URL=https://app.lurems.lat
 VITE_FIREBASE_AUTH_DOMAIN=psicosaas-3c819.firebaseapp.com
 ```
 
-Usa [.env.production.example](../../.env.production.example) para completar el
-resto de las variables y realiza un nuevo deploy para aplicar los cambios.
+Usa [.env.example](../../.env.example) como inventario del resto de las variables
+y realiza un nuevo deploy para aplicar los cambios.
 
 ## 4. Configurar Cloud Functions
 
@@ -59,8 +59,8 @@ APP_BASE_URL=https://app.lurems.lat
 ```
 
 La referencia completa se encuentra en
-[functions/.env.production.example](../../functions/.env.production.example).
-Despliega Functions despues de actualizar la configuracion.
+[functions/.env.example](../../functions/.env.example). Despliega Functions
+despues de actualizar la configuracion.
 
 ## 5. Mantener separados los endpoints de Mercado Pago
 

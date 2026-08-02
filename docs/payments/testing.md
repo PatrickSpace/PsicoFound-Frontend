@@ -2,7 +2,7 @@
 
 ## Proveedor simulado
 
-Configura las plantillas `.env.local.example` y `functions/.env.example`, manteniendo `PAYMENT_USE_FAKE_PROVIDER=true`. El panel del psicólogo mostrará “Cuenta simulada para desarrollo”. En desarrollo, el checkout permite elegir `approved`, `pending`, `rejected`, `provider_error` o webhook duplicado.
+Configura las plantillas `.env.example` y `functions/.env.example`, manteniendo `PAYMENT_USE_FAKE_PROVIDER=true`. El panel del psicólogo mostrará “Cuenta simulada para desarrollo”. En desarrollo, el checkout permite elegir `approved`, `pending`, `rejected`, `provider_error` o webhook duplicado.
 
 El escenario `delayed_webhook` deja el pago pendiente y habilita una acción de
 desarrollo que entrega posteriormente un evento `approved` por el mismo
