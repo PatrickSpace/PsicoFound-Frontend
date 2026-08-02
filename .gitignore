@@ -21,7 +21,9 @@ coverage
 .env.*
 !.env.example
 !.env.local.example
+!.env.production.example
 !functions/.env.example
+!functions/.env.production.example
 runtime-secrets.json
 service-account*.json
 firebase-admin*.json
