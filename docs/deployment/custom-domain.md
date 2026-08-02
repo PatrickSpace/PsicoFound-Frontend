@@ -1,25 +1,37 @@
 # Dominio de produccion `app.lurems.lat`
 
-La aplicacion se sirve desde Vercel, usa Firebase Authentication y recibe los
-callbacks financieros mediante Cloud Functions. Cada servicio necesita una
-configuracion distinta; autorizar el dominio en uno no lo registra en los otros.
+La aplicacion se sirve desde el sitio Firebase Hosting `luremsapp`, usa Firebase
+Authentication y recibe los callbacks financieros mediante Cloud Functions. Cada
+servicio necesita una configuracion distinta; autorizar el dominio en uno no lo
+registra automaticamente en los otros.
 
-## 1. Asociar el dominio en Vercel
+## 1. Desplegar Firebase Hosting
 
-1. Abre el proyecto de Lurems en Vercel.
-2. Ve a **Settings > Domains**.
-3. Agrega `app.lurems.lat`.
-4. En el proveedor DNS de `lurems.lat`, crea el registro CNAME exacto que Vercel
-   muestre para el subdominio `app`.
-5. Espera a que Vercel muestre la configuracion como valida y emita el certificado
-   TLS.
-6. Marca `app.lurems.lat` como dominio principal del entorno Production si deseas
-   que Vercel redirija hacia este dominio.
+El target `app` del repositorio apunta al sitio `luremsapp`. Para compilar y
+publicar solamente el frontend:
 
-No copies a ciegas un destino CNAME generico: usa el valor que Vercel presenta en
-el proyecto, porque puede variar segun su configuracion.
+```bash
+npm run build
+firebase deploy --only hosting:app --project psicosaas-3c819
+```
 
-## 2. Autorizarlo en Firebase Authentication
+La URL predeterminada del sitio es `https://luremsapp.web.app`.
+
+## 2. Asociar `app.lurems.lat` en Firebase Hosting
+
+1. Abre Firebase Console para el proyecto `psicosaas-3c819`.
+2. Ve a **Hosting** y selecciona el sitio `luremsapp`.
+3. Selecciona **Add custom domain**.
+4. Agrega `app.lurems.lat`.
+5. Crea en el proveedor DNS los registros que Firebase indique para verificar y
+   conectar el dominio.
+6. Espera a que Firebase confirme el DNS y emita el certificado TLS.
+
+Usa exactamente los registros mostrados por Firebase Console. No mantengas al
+mismo tiempo un CNAME de Vercel para `app`, porque un subdominio no puede apuntar
+a ambos proveedores.
+
+## 3. Autorizarlo en Firebase Authentication
 
 1. Abre Firebase Console para el proyecto `psicosaas-3c819`.
 2. Ve a **Authentication > Settings > Authorized domains**.
@@ -36,9 +48,9 @@ No establezcas `app.lurems.lat` como `authDomain` sin implementar primero un pro
 para `/__/auth/*` o alojar el dominio mediante Firebase Hosting. Autorizar el
 dominio de la aplicacion en Firebase es suficiente para el flujo popup actual.
 
-## 3. Configurar el frontend en Vercel
+## 4. Configurar el frontend
 
-Agrega o actualiza estas variables para el entorno **Production**:
+Configura estas variables antes del build de produccion:
 
 ```env
 VITE_APP_ENVIRONMENT=production
@@ -47,9 +59,9 @@ VITE_FIREBASE_AUTH_DOMAIN=psicosaas-3c819.firebaseapp.com
 ```
 
 Usa [.env.example](../../.env.example) como inventario del resto de las variables
-y realiza un nuevo deploy para aplicar los cambios.
+y vuelve a desplegar Hosting para aplicar los cambios compilados.
 
-## 4. Configurar Cloud Functions
+## 5. Configurar Cloud Functions
 
 Functions usa `APP_BASE_URL` para regresar al panel despues del callback OAuth:
 
@@ -62,7 +74,7 @@ La referencia completa se encuentra en
 [functions/.env.example](../../functions/.env.example). Despliega Functions
 despues de actualizar la configuracion.
 
-## 5. Mantener separados los endpoints de Mercado Pago
+## 6. Mantener separados los endpoints de Mercado Pago
 
 El dominio de la aplicacion no reemplaza automaticamente los endpoints HTTPS del
 backend. En Mercado Pago registra exactamente:
@@ -79,7 +91,7 @@ La URL OAuth debe coincidir exactamente con la registrada en Mercado Pago. El
 callback de Functions redirigira finalmente a
 `https://app.lurems.lat/configuracion` mediante `APP_BASE_URL`.
 
-## 6. Verificacion
+## 7. Verificacion
 
 ```bash
 dig app.lurems.lat
@@ -97,7 +109,7 @@ Comprueba tambien:
 
 ## Rollback
 
-Si el dominio presenta problemas, conserva temporalmente el dominio generado por
-Vercel, revierte `APP_BASE_URL` y `VITE_APP_BASE_URL` a la URL anterior y realiza
-un nuevo deploy. No elimines el dominio anterior hasta completar toda la lista de
+Si el dominio presenta problemas, conserva temporalmente `luremsapp.web.app`,
+revierte `APP_BASE_URL` y `VITE_APP_BASE_URL` a la URL anterior y realiza un nuevo
+deploy. No elimines el dominio anterior hasta completar toda la lista de
 verificacion.

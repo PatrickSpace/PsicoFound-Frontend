@@ -1,5 +1,14 @@
 {
   "projects": {
     "default": "psicosaas-3c819"
+  },
+  "targets": {
+    "psicosaas-3c819": {
+      "hosting": {
+        "app": [
+          "luremsapp"
+        ]
+      }
+    }
   }
 }
