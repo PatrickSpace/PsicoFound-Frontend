@@ -27,12 +27,14 @@
           />
         </v-col>
         <v-col cols="12" md="6">
-          <v-text-field
+          <v-date-input
             v-model="form.fechaNacimiento"
             label="Fecha de nacimiento"
-            type="date"
             :max="today"
             :rules="[rules.required]"
+            clearable
+            hide-actions
+            show-adjacent-months
           />
         </v-col>
         <v-col cols="12" md="6">
@@ -80,6 +82,7 @@
 <script setup>
 import { onMounted, reactive, ref } from "vue";
 import { useRouter } from "vue-router";
+import { VDateInput } from "vuetify/labs/VDateInput";
 import OnboardingShell from "@/components/onboarding/OnboardingShell.vue";
 import { auth } from "@/plugins/Firebase/firebase";
 import { useAppContextStore } from "@/store/appContext";
@@ -94,10 +97,10 @@ const appContext = useAppContextStore();
 const valid = ref(false);
 const saving = ref(false);
 const errorMessage = ref("");
-const today = new Date().toISOString().slice(0, 10);
+const today = startOfLocalDay(new Date());
 const form = reactive({
   nombre: "",
-  fechaNacimiento: "",
+  fechaNacimiento: null,
   telefono: "",
   pais: "Perú",
   zonaHoraria:
@@ -115,7 +118,7 @@ onMounted(async () => {
     auth.currentUser?.displayName ||
     auth.currentUser?.email?.split("@")[0] ||
     "";
-  form.fechaNacimiento = profile?.fechaNacimiento || "";
+  form.fechaNacimiento = parseIsoDate(profile?.fechaNacimiento);
   form.telefono = profile?.telefono || "";
   form.pais = profile?.pais || form.pais;
   form.zonaHoraria = profile?.zonaHoraria || form.zonaHoraria;
@@ -128,7 +131,10 @@ async function submit() {
   errorMessage.value = "";
 
   try {
-    const result = await completePatientOnboarding({ ...form });
+    const result = await completePatientOnboarding({
+      ...form,
+      fechaNacimiento: formatIsoDate(form.fechaNacimiento),
+    });
     await appContext.loadForUser(auth.currentUser.uid, { force: true });
     await router.replace(result.nextRoute || "/encuesta");
   } catch (error) {
@@ -140,5 +146,31 @@ async function submit() {
   } finally {
     saving.value = false;
   }
+}
+
+function startOfLocalDay(date) {
+  return new Date(date.getFullYear(), date.getMonth(), date.getDate());
+}
+
+function parseIsoDate(value) {
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value || "");
+  if (!match) return null;
+
+  const date = new Date(
+    Number(match[1]),
+    Number(match[2]) - 1,
+    Number(match[3])
+  );
+
+  return Number.isNaN(date.getTime()) ? null : date;
+}
+
+function formatIsoDate(value) {
+  if (!(value instanceof Date) || Number.isNaN(value.getTime())) return "";
+
+  const year = value.getFullYear();
+  const month = String(value.getMonth() + 1).padStart(2, "0");
+  const day = String(value.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
 }
 </script>
