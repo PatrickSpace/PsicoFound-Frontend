@@ -89,13 +89,38 @@ service cloud.firestore {
     }
 
     function financialAppointmentFieldsUnchanged() {
-      return request.resource.data.diff(resource.data).affectedKeys().hasNone([
+      return !request.resource.data.diff(resource.data).affectedKeys().hasAny([
         "bookingId",
         "paymentId",
         "paymentStatus",
         "priceAmount",
         "currency",
         "commissionRuleSnapshot"
+      ]);
+    }
+
+    function therapyProtectedFieldsUnchanged() {
+      return !request.resource.data.diff(resource.data).affectedKeys().hasAny([
+        "usuarioId",
+        "pacienteUid",
+        "terapeutaId",
+        "intakeSnapshot",
+        "createdAt",
+        "fechaCreacion",
+        "bookingId",
+        "paymentId",
+        "paymentStatus",
+        "priceAmount",
+        "currency",
+        "commissionRuleSnapshot"
+      ]);
+    }
+
+    function therapyClinicalFieldsUnchanged() {
+      return !request.resource.data.diff(resource.data).affectedKeys().hasAny([
+        "motivoTerapia",
+        "detalleTerapia",
+        "objetivosIniciales"
       ]);
     }
 
@@ -296,15 +321,18 @@ service cloud.firestore {
       allow read: if ownsExistingPatientDoc() ||
         ownsExistingTherapistDoc() ||
         isAdmin();
-      allow create: if ownsIncomingPatientDoc();
-      allow update: if (
-        ownsExistingPatientDoc() &&
-        ownsIncomingPatientDoc() &&
-        request.resource.data.pacienteUid == resource.data.pacienteUid
-      ) || (
-        ownsExistingTherapistDoc() &&
-        ownsIncomingTherapistDoc() &&
-        request.resource.data.pacienteUid == resource.data.pacienteUid
+      allow create: if false;
+      allow update: if therapyProtectedFieldsUnchanged() && (
+        isAdmin() || (
+          ownsExistingTherapistDoc() &&
+          ownsIncomingTherapistDoc() &&
+          request.resource.data.pacienteUid == resource.data.pacienteUid
+        ) || (
+          therapyClinicalFieldsUnchanged() &&
+          ownsExistingPatientDoc() &&
+          ownsIncomingPatientDoc() &&
+          request.resource.data.pacienteUid == resource.data.pacienteUid
+        )
       );
       allow delete: if false;
     }

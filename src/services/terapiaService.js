@@ -1,5 +1,4 @@
 import {
-  addDoc,
   arrayUnion,
   collection,
   doc,
@@ -9,6 +8,8 @@ import {
   where,
   limit,
 } from "firebase/firestore";
+import { getFunctions, httpsCallable } from "firebase/functions";
+import { app } from "@/plugins/Firebase/firebase";
 import { db } from "@/plugins/Firebase/firestore";
 import { readDocument, readQuery, trackWrite } from "@/repositories/firestoreRepository";
 import {
@@ -19,6 +20,11 @@ import {
 
 const THERAPIES_COLLECTION = "terapias";
 const ACTIVE_THERAPY_STATUS = "activo";
+const functions = getFunctions(app, "southamerica-east1");
+const createTherapyFromProfileCallable = httpsCallable(
+  functions,
+  "createTherapyFromProfile"
+);
 
 export async function createTherapy(data = {}) {
   if (data.pacienteUid) {
@@ -31,34 +37,48 @@ export async function createTherapy(data = {}) {
     }
   }
 
-  const therapiesRef = collection(db, THERAPIES_COLLECTION);
   const payload = {
-    usuarioId: data.usuarioId || data.pacienteUid || "demo-user",
-    pacienteUid: data.pacienteUid || "demo-user",
     pacienteNombre: data.pacienteNombre || "Usuario demo",
     pacienteEmail: data.pacienteEmail || "",
     terapeutaId: data.terapeutaId || "",
     terapeutaNombre: data.terapeutaNombre || "",
     modalidad: data.modalidad || "",
-    estado: data.estado || "activo",
-    fechaCreacion: data.fechaCreacion || new Date().toISOString(),
-    citas: [],
-    createdAt: serverTimestamp(),
-    updatedAt: serverTimestamp(),
   };
 
-  const docRef = await trackWrite({
-    resource: THERAPIES_COLLECTION,
-    source: "createTherapy",
-    operation: "addDoc",
-    write: () => addDoc(therapiesRef, payload),
-  });
+  const result = await createTherapyFromProfileCallable(payload);
+  const therapyId = result.data?.id;
+
+  if (!therapyId) {
+    throw new Error("No se pudo crear la terapia.");
+  }
   invalidateTherapyCaches();
 
   return {
-    id: docRef.id,
+    id: therapyId,
     ...payload,
   };
+}
+
+export async function updateTherapyClinicalInfo(terapiaId, data = {}) {
+  if (!terapiaId) {
+    throw new Error("Missing terapiaId");
+  }
+
+  const therapyRef = doc(db, THERAPIES_COLLECTION, terapiaId);
+  const payload = {
+    motivoTerapia: cleanText(data.motivoTerapia, 2000),
+    detalleTerapia: cleanText(data.detalleTerapia, 6000),
+    objetivosIniciales: cleanStringArray(data.objetivosIniciales, 20, 500),
+    updatedAt: serverTimestamp(),
+  };
+
+  await trackWrite({
+    resource: THERAPIES_COLLECTION,
+    source: "updateTherapyClinicalInfo",
+    operation: "updateDoc",
+    write: () => updateDoc(therapyRef, payload),
+  });
+  invalidateTherapyCaches();
 }
 
 export async function appendAppointmentToTherapy(terapiaId, appointmentSummary) {
@@ -292,4 +312,17 @@ function chunk(items, size) {
   }
 
   return groups;
+}
+
+function cleanText(value, maxLength) {
+  return (value || "").toString().trim().slice(0, maxLength);
+}
+
+function cleanStringArray(value, maxItems, maxLength) {
+  if (!Array.isArray(value)) return [];
+
+  return value
+    .map((item) => cleanText(item, maxLength))
+    .filter(Boolean)
+    .slice(0, maxItems);
 }

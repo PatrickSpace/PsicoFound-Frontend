@@ -17,6 +17,9 @@ const {
   getRecommendedTherapists,
 } = require("./src/matching/recommendTherapists");
 const {
+  createTherapyFromProfile,
+} = require("./src/therapies/therapyHandlers");
+const {
   completePatientOnboarding,
   finalizeRegistration,
   reviewPsychologistApplication,
@@ -54,6 +57,14 @@ exports.getRecommendedTherapists = onCall(
       timeoutSeconds: 20,
     },
     getRecommendedTherapists,
+);
+
+exports.createTherapyFromProfile = onCall(
+    {
+      minInstances: 0,
+      timeoutSeconds: 20,
+    },
+    createTherapyFromProfile,
 );
 
 exports.finalizeRegistration = onCall(

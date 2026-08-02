@@ -6,6 +6,10 @@ const {PaymentDomainError} = require("../domain/paymentErrors");
 const {canTransitionPayment} = require("../domain/paymentStates");
 const {evaluateCancellationPolicy} = require("../domain/cancellationPolicy");
 const {decryptToken, encryptToken} = require("../security/tokenVault");
+const {
+  buildInitialTherapyFields,
+  buildIntakeSnapshot,
+} = require("../../therapies/intakeSnapshot");
 
 const FieldValue = admin.firestore.FieldValue;
 const Timestamp = admin.firestore.Timestamp;
@@ -516,6 +520,7 @@ class MarketplacePaymentService {
       const slotSnapshot = await transaction.get(slotRef);
       let therapyRef = null;
       let therapySnapshot = null;
+      let profileSnapshot = null;
       let therapyConflict = false;
       if (event.status === "approved") {
         const activeTherapyQuery = this.db.collection("terapias")
@@ -537,6 +542,11 @@ class MarketplacePaymentService {
               therapy.terapeutaId !== booking.psychologistId ||
               therapy.estado !== "activo";
           }
+        }
+        if (!therapySnapshot?.exists) {
+          profileSnapshot = await transaction.get(
+              this.db.collection("profiles").doc(booking.patientId),
+          );
         }
       } else if (["refunded", "charged_back"].includes(event.status) &&
         booking.terapiaId) {
@@ -629,6 +639,7 @@ class MarketplacePaymentService {
             therapySnapshot,
             payment.bookingId,
             booking,
+            profileSnapshot?.data() || {},
             now,
         );
         this.writeLegacyAppointment(
@@ -1073,7 +1084,7 @@ class MarketplacePaymentService {
   }
 
   writeTherapyProjection(transaction, therapyRef, therapySnapshot, bookingId,
-      booking, now) {
+      booking, profile, now) {
     const appointment = {
       citaId: bookingId,
       terapiaId: therapyRef.id,
@@ -1097,6 +1108,7 @@ class MarketplacePaymentService {
       });
       return;
     }
+    const intakeSnapshot = buildIntakeSnapshot(profile, now);
     transaction.create(therapyRef, {
       usuarioId: booking.patientId,
       pacienteUid: booking.patientId,
@@ -1108,6 +1120,8 @@ class MarketplacePaymentService {
       estado: "activo",
       fechaCreacion: new Date().toISOString(),
       citas: [appointment],
+      intakeSnapshot,
+      ...buildInitialTherapyFields(intakeSnapshot),
       createdAt: now,
       updatedAt: now,
     });

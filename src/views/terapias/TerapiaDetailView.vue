@@ -127,6 +127,122 @@
         </v-card-text>
       </v-card>
 
+      <v-row v-if="therapy" class="mt-2" align="stretch">
+        <v-col cols="12" md="6" class="d-flex">
+          <v-card class="pa-4 card-backgoundcustom flex-grow-1" elevation="2" variant="text">
+            <v-card-title class="d-flex align-center ga-2 text-h6 font-weight-bold px-0 pt-0">
+              <v-icon color="secondary" size="small">mdi-clipboard-text-clock-outline</v-icon>
+              Información inicial
+            </v-card-title>
+            <v-card-text>
+              <v-divider class="mb-4" />
+              <p class="text-body-2 text-medium-emphasis mb-4">
+                Información recopilada al iniciar esta terapia. Reiniciar la encuesta no modifica estos datos.
+              </p>
+              <v-list v-if="intakeEntries.length" density="compact" class="bg-transparent pa-0">
+                <v-list-item
+                  v-for="entry in intakeEntries"
+                  :key="entry.label"
+                  :title="entry.label"
+                  :subtitle="entry.value"
+                  class="px-0"
+                />
+              </v-list>
+              <p v-else class="text-body-2 text-medium-emphasis mb-0">
+                Esta terapia fue creada antes de incorporar el snapshot de la encuesta.
+              </p>
+            </v-card-text>
+          </v-card>
+        </v-col>
+
+        <v-col cols="12" md="6" class="d-flex">
+          <v-card class="pa-4 card-backgoundcustom flex-grow-1" elevation="2" variant="text">
+            <v-card-title class="d-flex align-center ga-2 text-h6 font-weight-bold px-0 pt-0">
+              <v-icon color="secondary" size="small">mdi-notebook-edit-outline</v-icon>
+              Información de la terapia
+              <v-spacer />
+              <v-btn
+                v-if="canEditClinicalInfo && !editingClinicalInfo"
+                icon="mdi-pencil-outline"
+                size="small"
+                variant="text"
+                aria-label="Editar información de la terapia"
+                @click="editingClinicalInfo = true"
+              />
+            </v-card-title>
+            <v-card-text>
+              <v-divider class="mb-4" />
+              <template v-if="editingClinicalInfo">
+                <v-textarea
+                  v-model="clinicalForm.motivoTerapia"
+                  label="Motivo de la terapia"
+                  rows="2"
+                  auto-grow
+                  counter="2000"
+                />
+                <v-textarea
+                  v-model="clinicalForm.detalleTerapia"
+                  label="Detalles del proceso"
+                  rows="4"
+                  auto-grow
+                  counter="6000"
+                  class="mt-3"
+                />
+                <v-textarea
+                  v-model="clinicalForm.objetivosInicialesText"
+                  label="Objetivos iniciales"
+                  hint="Escribe un objetivo por línea."
+                  persistent-hint
+                  rows="3"
+                  auto-grow
+                  class="mt-3"
+                />
+                <div class="d-flex justify-end ga-2 mt-5">
+                  <v-btn
+                    variant="text"
+                    :disabled="savingClinicalInfo"
+                    @click="cancelClinicalEdit"
+                  >
+                    Cancelar
+                  </v-btn>
+                  <v-btn
+                    class="pf-btn-primary"
+                    color="primary"
+                    :loading="savingClinicalInfo"
+                    @click="saveClinicalInfo"
+                  >
+                    Guardar
+                  </v-btn>
+                </div>
+              </template>
+              <v-list v-else density="compact" class="bg-transparent pa-0">
+                <v-list-item
+                  class="px-0"
+                  title="Motivo de la terapia"
+                  :subtitle="therapy.motivoTerapia || 'Aún no definido'"
+                />
+                <v-list-item
+                  class="px-0"
+                  title="Detalles del proceso"
+                  :subtitle="therapy.detalleTerapia || 'Aún no registrados'"
+                />
+                <v-list-item class="px-0" title="Objetivos iniciales">
+                  <template #subtitle>
+                    <ul v-if="initialGoals.length" class="therapy-goals-list mt-1">
+                      <li v-for="goal in initialGoals" :key="goal">{{ goal }}</li>
+                    </ul>
+                    <span v-else>Aún no registrados</span>
+                  </template>
+                </v-list-item>
+              </v-list>
+              <p v-if="!canEditClinicalInfo" class="text-caption text-medium-emphasis mt-4 mb-0">
+                Esta información la actualiza tu psicólogo durante el proceso.
+              </p>
+            </v-card-text>
+          </v-card>
+        </v-col>
+      </v-row>
+
       <v-card
         v-if="therapy"
         class="pa-4 mt-6 card-backgoundcustom"
@@ -175,6 +291,7 @@ import {
   getActiveTherapyByPatient,
   getTherapyById,
   getTherapyByIdForPatient,
+  updateTherapyClinicalInfo,
   updateTherapyStatus,
 } from "@/services/terapiaService";
 
@@ -186,6 +303,9 @@ const { currentUser } = storeToRefs(authStore);
 const therapy = ref(null);
 const dialog = ref(false);
 const changingStatus = ref("");
+const editingClinicalInfo = ref(false);
+const savingClinicalInfo = ref(false);
+const clinicalForm = ref(emptyClinicalForm());
 
 const formattedCreationDate = computed(() => {
   if (!therapy.value?.fechaCreacion) return "No definida";
@@ -201,6 +321,35 @@ const normalizedTherapyStatus = computed(() =>
 const isPatientMode = computed(() => appContext.activeMode === "patient");
 const isPsychologistMode = computed(() => appContext.activeMode === "psychologist");
 const isAdminMode = computed(() => appContext.activeMode === "admin");
+const canEditClinicalInfo = computed(
+  () => (isPsychologistMode.value || isAdminMode.value) && Boolean(therapy.value?.id)
+);
+const initialGoals = computed(() =>
+  Array.isArray(therapy.value?.objetivosIniciales)
+    ? therapy.value.objetivosIniciales.filter(Boolean)
+    : []
+);
+const intakeEntries = computed(() => {
+  const snapshot = therapy.value?.intakeSnapshot;
+  if (!snapshot || typeof snapshot !== "object") return [];
+
+  return [
+    ["Motivo de consulta", snapshot.motivoConsulta],
+    ["Temas", formatList(snapshot.temas)],
+    ["Modalidad", snapshot.modalidad],
+    ["Preferencia de género", snapshot.preferenciaGenero],
+    ["Preferencia de edad", snapshot.preferenciaEdad],
+    ["Enfoque", snapshot.enfoque],
+    ["Nivel de malestar", snapshot.nivelMalestar],
+    ["Urgencia", snapshot.urgencia],
+    ["Solo conversar", snapshot.soloConversar ? "Sí" : "No"],
+    ["Riesgo reportado", snapshot.riesgoSuicida ? "Sí" : "No"],
+    ["Observaciones", snapshot.observaciones],
+    ["Capturado", formatTimestamp(snapshot.capturedAt)],
+  ]
+    .filter(([, value]) => value !== "" && value != null)
+    .map(([label, value]) => ({ label, value: String(value) }));
+});
 const canCreateAppointment = computed(
   () => isPatientMode.value && normalizedTherapyStatus.value === "activo"
 );
@@ -254,11 +403,76 @@ async function loadTherapy() {
 
     if (!therapy.value) {
       router.replace(defaultRouteForMode(appContext.activeMode));
+      return;
     }
+
+    syncClinicalForm();
   } catch (error) {
     console.error("Error loading therapy detail:", error);
     therapy.value = null;
   }
+}
+
+function syncClinicalForm() {
+  clinicalForm.value = {
+    motivoTerapia: therapy.value?.motivoTerapia || "",
+    detalleTerapia: therapy.value?.detalleTerapia || "",
+    objetivosInicialesText: initialGoals.value.join("\n"),
+  };
+}
+
+function cancelClinicalEdit() {
+  syncClinicalForm();
+  editingClinicalInfo.value = false;
+}
+
+async function saveClinicalInfo() {
+  if (!therapy.value?.id || savingClinicalInfo.value) return;
+
+  savingClinicalInfo.value = true;
+  try {
+    await updateTherapyClinicalInfo(therapy.value.id, {
+      motivoTerapia: clinicalForm.value.motivoTerapia,
+      detalleTerapia: clinicalForm.value.detalleTerapia,
+      objetivosIniciales: clinicalForm.value.objetivosInicialesText.split("\n"),
+    });
+    editingClinicalInfo.value = false;
+    await loadTherapy();
+    window.dispatchEvent(new CustomEvent("ui-success", {
+      detail: {
+        title: "Información actualizada",
+        message: "Los datos de la terapia se guardaron correctamente.",
+      },
+    }));
+  } catch (error) {
+    console.error("Error updating therapy clinical information:", error);
+    window.dispatchEvent(new CustomEvent("api-error", {
+      detail: {
+        message: error?.message || "No se pudo actualizar la información de la terapia.",
+      },
+    }));
+  } finally {
+    savingClinicalInfo.value = false;
+  }
+}
+
+function emptyClinicalForm() {
+  return {
+    motivoTerapia: "",
+    detalleTerapia: "",
+    objetivosInicialesText: "",
+  };
+}
+
+function formatList(value) {
+  return Array.isArray(value) ? value.filter(Boolean).join(", ") : "";
+}
+
+function formatTimestamp(value) {
+  const date = value?.toDate?.() || (value ? new Date(value) : null);
+  return date && !Number.isNaN(date.getTime())
+    ? date.toLocaleDateString("es-PE")
+    : "";
 }
 
 async function loadTherapyForActiveMode(therapyId, uid) {
@@ -344,6 +558,10 @@ watch(
 
 .therapy-appointments-table {
   border-radius: 8px;
+}
+
+.therapy-goals-list {
+  padding-inline-start: 20px;
 }
 
 @media (max-width: 600px) {
