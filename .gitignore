@@ -25,6 +25,7 @@ runtime-secrets.json
 service-account*.json
 firebase-admin*.json
 .vercel
+.firebase/
 .agents/
 .claude/
 skills-lock.json
