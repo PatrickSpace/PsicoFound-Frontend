@@ -18,7 +18,7 @@ La Redirect URI enviada durante OAuth debe coincidir con la registrada. Configur
 
 ## 3. Frontend
 
-En Vercel configura:
+En el entorno de build de Firebase Hosting configura:
 
 ```dotenv
 VITE_PAYMENT_PROVIDER=mercado_pago
@@ -62,7 +62,7 @@ Producción falla de forma explícita si detecta fake, sandbox, placeholders, se
 
 | Variable | Ubicación | Sensible | Estado versionado | Acción |
 |---|---|---:|---|---|
-| `VITE_MERCADO_PAGO_PUBLIC_KEY` | Vercel | No | Placeholder | Reemplazar |
+| `VITE_MERCADO_PAGO_PUBLIC_KEY` | Build frontend | No | Placeholder | Reemplazar |
 | `MERCADO_PAGO_ACCESS_TOKEN` | Firebase Secret | Sí | No configurado | Configurar |
 | `MERCADO_PAGO_CLIENT_ID` | Functions env | No | Placeholder | Reemplazar |
 | `MERCADO_PAGO_CLIENT_SECRET` | Firebase Secret | Sí | No configurado | Configurar |

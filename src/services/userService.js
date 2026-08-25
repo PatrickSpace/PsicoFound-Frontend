@@ -1,14 +1,17 @@
 import {
   collection,
-  deleteDoc,
   doc,
   documentId,
+  limit,
+  orderBy,
   query,
   serverTimestamp,
-  setDoc,
+  startAfter,
   updateDoc,
   where,
 } from "firebase/firestore";
+import { getFunctions, httpsCallable } from "firebase/functions";
+import { app } from "@/plugins/Firebase/firebase";
 import { db } from "@/plugins/Firebase/firestore";
 import { readDocument, readQuery, trackWrite } from "@/repositories/firestoreRepository";
 import {
@@ -26,6 +29,19 @@ import {
 
 const USERS_COLLECTION = "users";
 const PROFILES_COLLECTION = "profiles";
+const functions = getFunctions(
+  app,
+  import.meta.env.VITE_FIREBASE_FUNCTIONS_REGION || "southamerica-east1"
+);
+const upsertUserByAdminCallable = httpsCallable(functions, "upsertUserByAdmin");
+const setUserAccountStatusByAdminCallable = httpsCallable(
+  functions,
+  "setUserAccountStatusByAdmin"
+);
+const seedQaMarketplaceDataCallable = httpsCallable(
+  functions,
+  "seedQaMarketplaceData"
+);
 
 export async function getUserById(uid, options = {}) {
   if (!uid) {
@@ -86,28 +102,16 @@ export async function upsertUserByAdmin(uid, data = {}) {
   }
 
   const roles = normalizeRoles(data.roles?.length ? data.roles : [APP_ROLES.PATIENT]);
-  const userRef = doc(db, USERS_COLLECTION, uid);
   const payload = {
-    id: uid,
+    uid,
     email: data.email || "",
     nombre: data.nombre || "",
     fechaNacimiento: data.fechaNacimiento || "",
     telefono: data.telefono || "",
     roles,
     rol: getLegacyRoleFromRoles(roles),
-    updatedAt: serverTimestamp(),
   };
-
-  if (data.includeCreatedAt) {
-    payload.createdAt = serverTimestamp();
-  }
-
-  await trackWrite({
-    resource: USERS_COLLECTION,
-    source: "upsertUserByAdmin",
-    operation: "setDoc",
-    write: () => setDoc(userRef, payload, { merge: true }),
-  });
+  await upsertUserByAdminCallable(payload);
   invalidateUserCaches(uid);
 
   return {
@@ -127,68 +131,69 @@ export async function updateUserRolesByAdmin(uid, roles = []) {
     throw new Error("El usuario debe tener al menos un rol.");
   }
 
-  const userRef = doc(db, USERS_COLLECTION, uid);
-  const payload = {
-    roles: normalizedRoles,
-    rol: getLegacyRoleFromRoles(normalizedRoles),
-    updatedAt: serverTimestamp(),
-  };
-
-  await trackWrite({
-    resource: USERS_COLLECTION,
-    source: "updateUserRolesByAdmin",
-    operation: "setDoc",
-    write: () => setDoc(userRef, payload, { merge: true }),
-  });
+  const result = await upsertUserByAdminCallable({uid, roles: normalizedRoles});
   invalidateUserCaches(uid);
 
   return {
     id: uid,
-    ...payload,
+    ...result.data,
   };
 }
 
-export async function deleteUserProfileByAdmin(uid) {
+export async function setUserAccountStatusByAdmin(uid, status) {
   if (!uid) {
-    throw new Error("No se encontró el usuario a eliminar.");
+    throw new Error("No se encontró el usuario a actualizar.");
   }
-
-  await trackWrite({
-    resource: USERS_COLLECTION,
-    source: "deleteUserProfileByAdmin",
-    operation: "deleteDoc",
-    write: () => deleteDoc(doc(db, USERS_COLLECTION, uid)),
-  });
+  const result = await setUserAccountStatusByAdminCallable({uid, status});
   invalidateUserCaches(uid);
+  return result.data;
+}
+
+export async function seedQaMarketplaceData(temporaryPassword) {
+  const result = await seedQaMarketplaceDataCallable({temporaryPassword});
+  invalidateCachePrefix("users:");
+  invalidateCachePrefix("therap");
+  invalidateCachePrefix("availability:");
+  return result.data;
 }
 
 export async function getUsers(options = {}) {
+  const pageSize = Math.min(Math.max(Number(options.pageSize || 50), 1), 100);
+  const cursor = (options.cursor || "").toString();
   return getOrFetch({
-    key: "users:all",
+    key: `users:page:${cursor || "first"}:${pageSize}`,
     ttl: CACHE_TTL.ADMIN_LIST,
     force: options.force,
     resource: USERS_COLLECTION,
     source: "getUsers",
     fetcher: async () => {
-      const usersRef = collection(db, USERS_COLLECTION);
-      const snapshot = await readQuery(usersRef, {
+      const constraints = [orderBy(documentId()), limit(pageSize + 1)];
+      if (cursor) constraints.splice(1, 0, startAfter(cursor));
+      const usersQuery = query(collection(db, USERS_COLLECTION), ...constraints);
+      const snapshot = await readQuery(usersQuery, {
         resource: USERS_COLLECTION,
         source: "getUsers",
       });
 
-      return snapshot.docs
+      const pageDocuments = snapshot.docs.slice(0, pageSize);
+      const users = pageDocuments
         .map((item) => ({ id: item.id, ...item.data() }))
         .sort((a, b) =>
           (a.nombre || a.displayName || a.email || "").localeCompare(
             b.nombre || b.displayName || b.email || ""
           )
         );
+      return {
+        users,
+        nextCursor: pageDocuments.at(-1)?.id || "",
+        hasMore: snapshot.size > pageSize,
+      };
     },
   });
 }
 
 export async function getPatientUsers() {
-  const users = await getUsers();
+  const {users} = await getUsers({pageSize: 100});
 
   return users.filter((user) => {
     return getUserRoles(user, { defaultPatient: true }).includes(APP_ROLES.PATIENT);

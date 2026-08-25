@@ -30,8 +30,11 @@ const {
   normalizeMessage,
   normalizeReply,
 } = require("../utils/text");
+const {enforceRateLimit} = require("../security/rateLimit");
+const {requireAppCheckIfEnabled} = require("../security/appCheck");
 
 async function sendProfileChatMessage(request) {
+  requireAppCheckIfEnabled(request);
   if (!request.auth) {
     throw new HttpsError("unauthenticated", "Debes iniciar sesion.");
   }
@@ -54,6 +57,13 @@ async function sendProfileChatMessage(request) {
   }
 
   const db = admin.firestore();
+  await enforceRateLimit({
+    db,
+    uid,
+    action: "profile-chat",
+    limit: 30,
+    windowMs: 60 * 1000,
+  });
   const conversationRef = db.collection("conversations").doc(uid);
   const messagesRef = conversationRef.collection("messages");
   const profileRef = db.collection("profiles").doc(uid);
@@ -182,7 +192,6 @@ async function sendProfileChatMessage(request) {
     completado: mergedProfile.completado,
     replyLooksReady: initialReplyLooksReady,
     cleanDataKeys: Object.keys(cleanData),
-    profileState: getProfileStateForLogs(mergedProfile),
   });
 
   await profileRef.set(
@@ -290,6 +299,7 @@ async function sendProfileChatMessage(request) {
 }
 
 async function resetProfileChatConversation(request) {
+  requireAppCheckIfEnabled(request);
   if (!request.auth) {
     throw new HttpsError("unauthenticated", "Debes iniciar sesion.");
   }
@@ -646,42 +656,22 @@ function isIndifferentValue(value = "") {
 
 async function hasSubstantiveUserMessage(messagesRef, sessionId) {
   const snapshot = await messagesRef
+      .where("sessionId", "==", sessionId)
       .orderBy("createdAt", "desc")
       .limit(30)
       .get();
 
   return snapshot.docs
       .map((doc) => doc.data())
-      .filter((item) => item.sessionId === sessionId && item.role === "user")
+      .filter((item) => item.role === "user")
       .some((item) => {
         const normalizedText = normalizePlainText(item.text);
         return normalizedText && !isLowInformationMessage(normalizedText);
       });
 }
 
-function getProfileStateForLogs(profile = {}) {
-  return {
-    riesgoSuicida: Boolean(profile.riesgoSuicida),
-    soloConversar: Boolean(profile.soloConversar),
-    temasCount: Array.isArray(profile.temas) ? profile.temas.length : 0,
-    hasModalidad: hasValue(profile.modalidad),
-    hasPreferenciaGenero: hasValue(profile.preferenciaGenero),
-    hasEnfoque: hasValue(profile.enfoque),
-    hasPreferenciaEdad: hasValue(profile.preferenciaEdad),
-    modalidad: sanitizeLogValue(profile.modalidad),
-    preferenciaGenero: sanitizeLogValue(profile.preferenciaGenero),
-    enfoque: sanitizeLogValue(profile.enfoque),
-    preferenciaEdad: sanitizeLogValue(profile.preferenciaEdad),
-  };
-}
-
 function hasValue(value) {
   return (value || "").toString().trim().length > 0;
-}
-
-function sanitizeLogValue(value) {
-  const cleanValue = (value || "").toString().trim();
-  return cleanValue.length > 40 ? `${cleanValue.slice(0, 40)}...` : cleanValue;
 }
 
 async function appendLongitudinalEvent(db, uid, event = {}) {

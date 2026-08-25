@@ -46,9 +46,8 @@ No se ejecutó porque no hay credenciales. Debe validarse tokenización, `applic
 
 - Lint: aprobado.
 - Chequeo sintáctico: aprobado.
-- Pruebas Node: 36 aprobadas; 2 de integración omitidas sin emulador.
+- Pruebas de pagos: 19 aprobadas, incluidas 2 transaccionales con emulador.
 - Pruebas frontend: 3 aprobadas.
 - Build de producción: aprobado.
-- Pruebas de Firestore Rules y transacciones: no ejecutadas; Java no está
-  instalado en la máquina.
+- Pruebas de Firestore Rules: 3 suites aprobadas con Firestore Emulator.
 - Pago sandbox real: no ejecutado; no existen credenciales.

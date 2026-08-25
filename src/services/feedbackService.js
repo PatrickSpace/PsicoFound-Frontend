@@ -2,7 +2,7 @@ import { addDoc, collection, serverTimestamp } from "firebase/firestore";
 import { db } from "@/plugins/Firebase/firestore";
 import { trackWrite } from "@/repositories/firestoreRepository";
 
-const FEEDBACK_COLLECTION = "feddback";
+const FEEDBACK_COLLECTION = "feedback";
 
 export async function createFeedback(data = {}) {
   const payload = {

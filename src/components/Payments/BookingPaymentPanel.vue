@@ -13,6 +13,16 @@
     </div>
 
     <v-alert
+      v-if="!completed && remainingSeconds > 0"
+      class="mb-4"
+      color="info"
+      variant="tonal"
+      icon="mdi-timer-sand"
+    >
+      Conservaremos este horario durante <strong>{{ remainingLabel }}</strong>.
+    </v-alert>
+
+    <v-alert
       v-if="errorMessage"
       class="mb-4"
       color="error"
@@ -78,14 +88,24 @@
         </div>
       </v-alert>
 
+      <v-alert
+        v-else-if="holdExpired"
+        color="warning"
+        variant="tonal"
+        icon="mdi-calendar-remove-outline"
+      >
+        La reserva temporal venció. Vuelve a elegir el horario antes de pagar.
+      </v-alert>
+
       <template v-else>
-        <v-checkbox
-          v-model="acceptedTerms"
-          color="secondary"
-          label="Acepto los términos de pago y la política de cancelación."
-          hide-details
-          class="mb-3"
-        />
+        <v-checkbox v-model="acceptedTerms" color="secondary" hide-details class="mb-3">
+          <template #label>
+            <span>
+              Acepto los <RouterLink to="/terminos" target="_blank">términos de pago</RouterLink>
+              y la política de cancelación.
+            </span>
+          </template>
+        </v-checkbox>
         <p class="text-caption text-medium-emphasis mb-4">
           Cancelaciones con más de 24 horas pueden recibir reembolso completo. La confirmación depende de la validación del backend.
         </p>
@@ -128,6 +148,7 @@
 
 <script setup>
 import { computed, nextTick, onBeforeUnmount, onMounted, ref } from "vue";
+import { RouterLink } from "vue-router";
 import { paymentClientConfig, assertPaymentClientConfig } from "@/config/paymentClientConfig";
 import {
   createBookingPayment,
@@ -151,6 +172,10 @@ const fakeScenario = ref("approved");
 const brickController = ref(null);
 const brickContainerId = `payment-brick-${props.booking.id}`;
 const isDevelopment = import.meta.env.DEV;
+const nowMs = ref(Date.now());
+let clockTimer = null;
+let statusTimer = null;
+const PAYMENT_CONSENT_VERSION = "2026-08-24";
 const fakeScenarios = [
   { title: "Aprobado", value: "approved" },
   { title: "Pendiente", value: "pending" },
@@ -168,12 +193,29 @@ const formattedPrice = computed(() => new Intl.NumberFormat("es-PE", {
 }).format(Number(props.booking.priceAmount || 0) / 100));
 const modalityLabel = computed(() => props.booking.modality === "virtual" ?
   "Online" : "Presencial");
+const holdExpiresAtMs = computed(() => Date.parse(props.booking.holdExpiresAt || "") || 0);
+const remainingSeconds = computed(() => Math.max(
+  0,
+  Math.ceil((holdExpiresAtMs.value - nowMs.value) / 1000)
+));
+const remainingLabel = computed(() => {
+  const minutes = Math.floor(remainingSeconds.value / 60);
+  const seconds = remainingSeconds.value % 60;
+  return `${minutes}:${String(seconds).padStart(2, "0")}`;
+});
+const holdExpired = computed(() => holdExpiresAtMs.value > 0 && remainingSeconds.value === 0);
 
 onMounted(async () => {
-  if (!paymentClientConfig.useFakeProvider) await initializePaymentBrick();
+  clockTimer = window.setInterval(() => { nowMs.value = Date.now(); }, 1000);
+  await refreshPaymentStatus();
+  if (!paymentClientConfig.useFakeProvider && !holdExpired.value) {
+    await initializePaymentBrick();
+  }
 });
 
 onBeforeUnmount(async () => {
+  window.clearInterval(clockTimer);
+  window.clearTimeout(statusTimer);
   await brickController.value?.unmount?.();
 });
 
@@ -241,10 +283,13 @@ async function submitPayment(paymentData) {
   try {
     status.value = await createBookingPayment({
       bookingId: props.booking.id,
+      paymentTermsAccepted: acceptedTerms.value,
+      paymentConsentVersion: PAYMENT_CONSENT_VERSION,
       ...paymentData,
     });
     if (status.value?.payment?.status === "pending") {
       errorMessage.value = "Estamos confirmando tu pago. Puedes revisar el estado en Mis sesiones.";
+      statusTimer = window.setTimeout(refreshPaymentStatus, 5000);
     }
     if (["rejected", "provider_error"].includes(status.value?.payment?.status)) {
       errorMessage.value = "No pudimos procesar el pago. Verifica los datos o intenta nuevamente.";
@@ -258,6 +303,21 @@ async function submitPayment(paymentData) {
     }
   } finally {
     processing.value = false;
+  }
+}
+
+async function refreshPaymentStatus() {
+  try {
+    status.value = await getBookingPaymentStatus(props.booking.id);
+    if (status.value?.payment?.status === "approved") return;
+    if (
+      ["pending", "processing"].includes(status.value?.payment?.status) &&
+      remainingSeconds.value > 0
+    ) {
+      statusTimer = window.setTimeout(refreshPaymentStatus, 5000);
+    }
+  } catch {
+    // La vista puede continuar y reintentar después de enviar el pago.
   }
 }
 

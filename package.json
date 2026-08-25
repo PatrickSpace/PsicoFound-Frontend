@@ -8,6 +8,7 @@
     "build": "vite build",
     "lint": "npm --prefix functions run lint",
     "typecheck": "npm --prefix functions run typecheck",
+    "verify": "npm run lint && npm run typecheck && npm test && npm --prefix functions test && npm run build",
     "test:payments": "npm --prefix functions run test:payments",
     "test:payments:emulator": "firebase emulators:exec --only firestore 'npm --prefix functions run test:payments'",
     "test:rules": "firebase emulators:exec --only firestore 'node --test test/firestore/*.test.mjs'",

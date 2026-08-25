@@ -349,14 +349,16 @@ watch(
                 reconcileOptimisticMessages();
                 scrollToBottom();
               },
-              () => {
-                notifyError("No pudimos cargar el historial de conversación.");
+              (error) => {
+                console.error("Error loading conversation history:", error);
+                notifyError(getConversationHistoryErrorMessage(error));
               }
             )
           : null;
       },
-      () => {
-        notifyError("No pudimos cargar la conversación actual.");
+      (error) => {
+        console.error("Error loading current conversation:", error);
+        notifyError(getConversationLoadErrorMessage(error));
       }
     );
 
@@ -374,8 +376,9 @@ watch(
           });
         }
       },
-      () => {
-        notifyError("No pudimos cargar tu perfil de búsqueda.");
+      (error) => {
+        console.error("Error loading profile:", error);
+        notifyError(getProfileLoadErrorMessage(error));
       }
     );
   },
@@ -590,6 +593,46 @@ async function scrollToBottom() {
 
 function getReadableErrorMessage(err) {
   return (err?.message || "").toString().trim();
+}
+
+function getConversationHistoryErrorMessage(error) {
+  if (error?.code === "failed-precondition") {
+    return [
+      "Firestore necesita un índice para cargar el historial de conversación.",
+      "Despliega los índices y vuelve a intentarlo.",
+    ].join(" ");
+  }
+
+  if (error?.code === "permission-denied") {
+    return [
+      "No tienes permisos para leer el historial de esta conversación.",
+      "Vuelve a iniciar sesión e inténtalo nuevamente.",
+    ].join(" ");
+  }
+
+  return "No pudimos cargar el historial de conversación.";
+}
+
+function getConversationLoadErrorMessage(error) {
+  if (error?.code === "permission-denied") {
+    return [
+      "No tienes permisos para leer la conversación actual.",
+      "Vuelve a iniciar sesión e inténtalo nuevamente.",
+    ].join(" ");
+  }
+
+  return "No pudimos cargar la conversación actual.";
+}
+
+function getProfileLoadErrorMessage(error) {
+  if (error?.code === "permission-denied") {
+    return [
+      "No tienes permisos para leer tu perfil de búsqueda.",
+      "Vuelve a iniciar sesión e inténtalo nuevamente.",
+    ].join(" ");
+  }
+
+  return "No pudimos cargar tu perfil de búsqueda.";
 }
 
 function notifyError(message) {

@@ -34,7 +34,10 @@
     >
       <template #label>
         <span class="text-caption">
-          Acepto los términos de uso y la política de privacidad.
+          Acepto los
+          <RouterLink to="/terminos" target="_blank">términos de uso</RouterLink>
+          y la
+          <RouterLink to="/privacidad" target="_blank">política de privacidad</RouterLink>.
         </span>
       </template>
     </v-checkbox>
@@ -106,6 +109,7 @@ import {
   signInWithPopup,
 } from "firebase/auth";
 import { useRouter } from "vue-router";
+import { RouterLink } from "vue-router";
 import { auth } from "@/plugins/Firebase/firebase";
 import { useAppContextStore } from "@/store/appContext";
 import {
@@ -124,6 +128,7 @@ const termsAccepted = ref(false);
 const loadingEmail = ref(false);
 const loadingGoogle = ref(false);
 const errorMessage = ref("");
+const CONSENT_VERSION = "2026-08-24";
 
 const rules = {
   required: (value) => Boolean(value) || "Requerido",
@@ -193,6 +198,9 @@ async function finishRegistration(user) {
   const result = await finalizeRegistration({
     intent: registrationIntent.value,
     displayName: user.displayName || "",
+    termsAccepted: termsAccepted.value,
+    consentVersion: CONSENT_VERSION,
+    consentSource: "registration",
   });
   sessionStorage.removeItem(REGISTRATION_INTENT_STORAGE_KEY);
   await appContext.loadForUser(user.uid, { force: true });

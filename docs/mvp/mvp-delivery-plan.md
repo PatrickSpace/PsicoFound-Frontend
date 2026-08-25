@@ -2,26 +2,25 @@
 
 ## Objetivo
 
-Terminar un MVP funcional de PsicoFound que demuestre un flujo de valor completo
-sin pagos:
+Terminar un MVP funcional de Lurems que demuestre un flujo de valor completo
+con reserva y pago marketplace verificado:
 
 ```text
 Paciente
   -> encuesta conversacional
   -> recomendacion de psicologos
-  -> agenda cita
+  -> reserva horario y paga
   -> psicologo gestiona la sesion
   -> paciente recibe enlace externo
   -> sesion realizada
   -> seguimiento basico
 ```
 
-El MVP debe permitir probar el producto con usuarios reales usando Firebase,
-Firestore, Cloud Functions, Vercel y la instancia actual de IA.
+El MVP debe permitir probar el producto con cuentas QA usando Firebase,
+Firestore, Cloud Functions, Firebase Hosting y la instancia actual de IA.
 
 ## Fuera De Alcance Para MVP
 
-- Pagos, Stripe o cualquier modulo de cobro.
 - Login con Apple o Microsoft.
 - Videollamada integrada propia.
 - Calendario avanzado con disponibilidad granular.
@@ -37,15 +36,16 @@ Firestore manualmente:
 1. Un paciente crea cuenta o inicia sesion.
 2. El paciente completa la encuesta conversacional.
 3. El sistema muestra psicologos recomendados.
-4. El paciente agenda una cita sin pago.
-5. Si el paciente no tiene terapia activa con ese psicologo, se crea una.
-6. El psicologo ve la cita en su agenda.
-7. El psicologo confirma, reprograma o agrega un enlace externo de sesion.
-8. El paciente ve fecha, modalidad y enlace de sesion.
-9. El psicologo marca la sesion como realizada.
-10. El historial, progreso y sesiones reflejan el cambio.
-11. Las reglas de Firestore protegen datos por rol.
-12. El flujo funciona en desktop y movil.
+4. El paciente reserva un horario y paga mediante Mercado Pago.
+5. El backend confirma importe, moneda, referencia y estado del pago.
+6. Si el paciente no tiene terapia activa con ese psicologo, se crea una.
+7. El psicologo ve la cita en su agenda.
+8. El psicologo confirma, reprograma o agrega un enlace externo de sesion.
+9. El paciente ve fecha, modalidad y enlace de sesion.
+10. El psicologo marca la sesion como realizada.
+11. El historial, progreso y sesiones reflejan el cambio.
+12. Las reglas de Firestore protegen datos por rol.
+13. El flujo funciona en desktop y movil.
 
 El analisis UX por journey queda documentado en
 `docs/mvp/ux-journey-analysis.md`.
@@ -83,8 +83,8 @@ El analisis UX por journey queda documentado en
 
 ### Objetivo
 
-Garantizar que un paciente nuevo pueda pasar de conversacion IA a cita agendada
-sin pago.
+Garantizar que un paciente nuevo pueda pasar de conversacion IA a cita pagada y
+confirmada por backend.
 
 ### Tareas
 
@@ -247,25 +247,25 @@ Dejar el MVP listo para pruebas reales.
 
 ### Tareas
 
-- [ ] Crear usuario paciente de prueba.
-- [ ] Crear usuario psicologo de prueba.
-- [ ] Crear usuario admin de prueba.
-- [ ] Crear al menos 5 psicologos con perfiles completos.
+- [x] Crear generador restringido de cuentas y escenarios QA.
+- [x] Crear pacientes de prueba con y sin terapia activa.
+- [x] Crear psicologos de prueba con distintos estados de cobro.
 - [ ] Probar flujo completo en desktop.
 - [ ] Probar flujo completo en mobile.
 - [x] Documentar journeys UX separados para paciente y psicologo.
 - [ ] Probar modo oscuro.
 - [ ] Probar modo claro.
-- [ ] Ejecutar `npm run build`.
+- [x] Ejecutar `npm run build`.
 - [x] Ejecutar tests de Functions.
+- [x] Ejecutar tests de reglas y pagos con Firestore Emulator.
 - [ ] Deploy de Functions si hubo cambios.
 - [ ] Deploy de reglas Firestore si hubo cambios.
 - [ ] Deploy de indices Firestore si hubo cambios.
-- [ ] Push a `main` para publicar en Vercel.
+- [ ] Fusionar la rama aprobada y publicar en Firebase Hosting.
 
 ### Criterio De Salida
 
-El MVP puede probarse desde Vercel con datos reales de prueba y sin pasos
+El MVP puede probarse desde Firebase Hosting con datos QA aislados y sin pasos
 manuales no documentados.
 
 ## Orden Recomendado De Implementacion
@@ -282,7 +282,7 @@ manuales no documentados.
 
 - [ ] Paciente puede completar encuesta.
 - [ ] Paciente recibe recomendaciones.
-- [ ] Paciente agenda cita sin pago.
+- [ ] Paciente reserva, paga y recibe confirmacion validada por backend.
 - [ ] Terapia se crea automaticamente si corresponde.
 - [ ] Psicologo ve la cita.
 - [ ] Psicologo agrega link externo.
@@ -295,14 +295,14 @@ manuales no documentados.
 - [ ] Indices Firestore publicados.
 - [ ] Functions publicadas si cambiaron.
 - [ ] Build de frontend exitoso.
-- [ ] Vercel publica `main`.
+- [ ] Firebase Hosting publica el commit aprobado.
 
 ## Riesgos
 
 - Las reglas de Firestore pueden bloquear flujos validos si no se prueban con
   roles reales.
-- La agenda actual no modela disponibilidad completa; para MVP se acepta
-  agendamiento simple.
+- Mercado Pago real requiere credenciales, habilitacion Split 1:1 y prueba
+  sandbox antes de aceptar cobros.
 - Las notificaciones pueden retrasar el MVP si se intenta resolver FCM completo
   antes de validar in-app.
 - El matching depende de perfiles de psicologos bien cargados.

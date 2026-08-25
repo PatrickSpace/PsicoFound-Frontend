@@ -15,6 +15,15 @@
           <div class="page-header__actions">
             <v-btn
               color="secondary"
+              variant="outlined"
+              prepend-icon="mdi-flask-outline"
+              class="pf-btn-secondary"
+              @click="qaDialog = true"
+            >
+              Datos QA
+            </v-btn>
+            <v-btn
+              color="secondary"
               variant="tonal"
               prepend-icon="mdi-refresh"
               :loading="loading"
@@ -146,11 +155,11 @@
                   @click="openEditDialog(item)"
                 />
                 <v-btn
-                  icon="mdi-delete-outline"
+                  :icon="item.accountStatus === 'disabled' ? 'mdi-account-check-outline' : 'mdi-account-cancel-outline'"
                   size="small"
                   variant="text"
-                  color="error"
-                  aria-label="Eliminar perfil"
+                  :color="item.accountStatus === 'disabled' ? 'success' : 'error'"
+                  :aria-label="item.accountStatus === 'disabled' ? 'Reactivar cuenta' : 'Desactivar cuenta'"
                   class="pf-btn-icon"
                   :disabled="item.id === currentUser?.uid"
                   @click="openDeleteDialog(item)"
@@ -158,6 +167,17 @@
               </div>
             </template>
           </v-data-table>
+          <div v-if="hasMoreUsers" class="d-flex justify-center mt-4">
+            <v-btn
+              variant="outlined"
+              color="secondary"
+              class="pf-btn-secondary"
+              :loading="loadingMore"
+              @click="loadMoreUsers"
+            >
+              Cargar más usuarios
+            </v-btn>
+          </div>
         </v-card-text>
       </v-card>
 
@@ -178,13 +198,8 @@
             >
               {{ formError }}
             </v-alert>
-            <v-alert
-              class="mb-4"
-              color="info"
-              variant="tonal"
-              icon="mdi-information-outline"
-            >
-              Crear un perfil aquí no crea una cuenta de Firebase Auth. Para usuarios nuevos, usa el UID real de Authentication.
+            <v-alert class="mb-4" color="info" variant="tonal" icon="mdi-information-outline">
+              El UID debe pertenecer a una cuenta existente de Firebase Authentication.
             </v-alert>
 
             <v-row>
@@ -281,14 +296,16 @@
       <v-dialog v-model="deleteDialog" class="bg-transparent" max-width="520">
         <v-card class="pa-4 card-backgoundcustom" elevation="2" variant="text">
           <v-card-title class="text-h6 font-weight-bold px-0 pt-0">
-            Eliminar perfil
+            {{ selectedUser?.accountStatus === "disabled" ? "Reactivar cuenta" : "Desactivar cuenta" }}
           </v-card-title>
           <v-card-text>
             <v-divider class="mb-4" />
             <p class="text-body-2 text-medium-emphasis mb-0">
-              Se eliminará el documento de usuario en Firestore para
+              {{ selectedUser?.accountStatus === "disabled"
+                ? "Se restaurará el acceso a Lurems para"
+                : "Se bloqueará el acceso a Firebase Authentication para" }}
               <strong>{{ selectedUser?.email || selectedUser?.nombre || selectedUser?.id }}</strong>.
-              La cuenta de Firebase Auth no se elimina desde esta acción.
+              Los historiales clínicos y financieros se conservarán para mantener la integridad de auditoría.
             </p>
           </v-card-text>
           <v-card-actions>
@@ -305,12 +322,60 @@
             <v-btn
               color="error"
               variant="tonal"
-              prepend-icon="mdi-delete-outline"
+              :prepend-icon="selectedUser?.accountStatus === 'disabled' ? 'mdi-account-check-outline' : 'mdi-account-cancel-outline'"
               class="pf-btn-destructive"
               :loading="deletingUser"
               @click="deleteSelectedUser"
             >
-              Eliminar
+              {{ selectedUser?.accountStatus === "disabled" ? "Reactivar" : "Desactivar" }}
+            </v-btn>
+          </v-card-actions>
+        </v-card>
+      </v-dialog>
+
+      <v-dialog v-model="qaDialog" class="bg-transparent" max-width="620">
+        <v-card class="pa-4 card-backgoundcustom" elevation="2" variant="text">
+          <v-card-title class="text-h6 font-weight-bold d-flex align-center ga-2 px-0 pt-0">
+            <v-icon color="secondary">mdi-flask-outline</v-icon>
+            Preparar cuentas QA
+          </v-card-title>
+          <v-card-text>
+            <v-divider class="mb-4" />
+            <v-alert color="warning" variant="tonal" icon="mdi-alert-outline" class="mb-4">
+              Esta acción solo funciona si tu UID está autorizado en la configuración del backend.
+              Las cuentas serán visibles únicamente para tu sesión administrativa.
+            </v-alert>
+            <v-text-field
+              v-model="qaTemporaryPassword"
+              label="Contraseña temporal compartida"
+              type="password"
+              autocomplete="new-password"
+              hint="Mínimo 12 caracteres. No se guarda en Firestore ni en logs."
+              persistent-hint
+            />
+            <v-alert v-if="qaError" color="error" variant="tonal" class="mt-4">
+              {{ qaError }}
+            </v-alert>
+            <v-list v-if="qaAccounts.length" class="bg-transparent mt-4">
+              <v-list-item
+                v-for="account in qaAccounts"
+                :key="account.uid"
+                :title="account.email"
+                :subtitle="account.therapistId || 'Paciente de prueba'"
+              />
+            </v-list>
+          </v-card-text>
+          <v-card-actions>
+            <v-spacer />
+            <v-btn variant="text" class="pf-btn-ghost" @click="qaDialog = false">Cerrar</v-btn>
+            <v-btn
+              color="secondary"
+              class="pf-btn-primary"
+              :loading="seedingQa"
+              :disabled="qaTemporaryPassword.length < 12"
+              @click="seedQaAccounts"
+            >
+              Crear o actualizar
             </v-btn>
           </v-card-actions>
         </v-card>
@@ -326,8 +391,9 @@ import LayoutDefault from "@/components/Layout/Layoutmain.vue";
 import { useAppContextStore } from "@/store/appContext";
 import { useAuthStore } from "@/store/auth";
 import {
-  deleteUserProfileByAdmin,
   getUsers,
+  seedQaMarketplaceData,
+  setUserAccountStatusByAdmin,
   upsertUserByAdmin,
 } from "@/services/userService";
 import {
@@ -352,6 +418,14 @@ const isCreating = ref(false);
 const savingUser = ref(false);
 const deletingUser = ref(false);
 const formError = ref("");
+const nextUsersCursor = ref("");
+const hasMoreUsers = ref(false);
+const loadingMore = ref(false);
+const qaDialog = ref(false);
+const qaTemporaryPassword = ref("");
+const qaAccounts = ref([]);
+const qaError = ref("");
+const seedingQa = ref(false);
 
 const roleOptions = ROLE_OPTIONS;
 
@@ -436,23 +510,41 @@ watch(
   { immediate: true }
 );
 
-async function loadUsers() {
+async function loadUsers(options = {}) {
   if (appContext.activeMode !== "admin") {
     users.value = [];
     return;
   }
 
-  loading.value = true;
+  const append = Boolean(options.append);
+  if (append) loadingMore.value = true;
+  else loading.value = true;
   errorMessage.value = "";
 
   try {
-    users.value = await getUsers();
+    const result = await getUsers({
+      cursor: append ? nextUsersCursor.value : "",
+      pageSize: 50,
+      force: true,
+    });
+    users.value = append
+      ? [...users.value, ...(result.users || [])]
+      : result.users || [];
+    nextUsersCursor.value = result.nextCursor || "";
+    hasMoreUsers.value = Boolean(result.hasMore);
   } catch (error) {
     console.error("Error loading users:", error);
     errorMessage.value = error?.message || "No pudimos cargar los usuarios.";
     users.value = [];
   } finally {
     loading.value = false;
+    loadingMore.value = false;
+  }
+}
+
+function loadMoreUsers() {
+  if (!loadingMore.value && hasMoreUsers.value) {
+    loadUsers({append: true});
   }
 }
 
@@ -566,12 +658,17 @@ async function deleteSelectedUser() {
   deletingUser.value = true;
 
   try {
-    await deleteUserProfileByAdmin(selectedUser.value.id);
+    const nextStatus = selectedUser.value.accountStatus === "disabled"
+      ? "active"
+      : "disabled";
+    await setUserAccountStatusByAdmin(selectedUser.value.id, nextStatus);
     window.dispatchEvent(
       new CustomEvent("ui-success", {
         detail: {
-          title: "Perfil eliminado",
-          message: "El documento de usuario fue eliminado de Firestore.",
+          title: nextStatus === "disabled" ? "Cuenta desactivada" : "Cuenta reactivada",
+          message: nextStatus === "disabled"
+            ? "El usuario ya no puede iniciar sesión. Sus historiales se conservaron."
+            : "El usuario puede volver a iniciar sesión.",
         },
       })
     );
@@ -589,6 +686,29 @@ async function deleteSelectedUser() {
     );
   } finally {
     deletingUser.value = false;
+  }
+}
+
+async function seedQaAccounts() {
+  if (seedingQa.value || qaTemporaryPassword.value.length < 12) return;
+  seedingQa.value = true;
+  qaError.value = "";
+  try {
+    const result = await seedQaMarketplaceData(qaTemporaryPassword.value);
+    qaAccounts.value = result.accounts || [];
+    qaTemporaryPassword.value = "";
+    await loadUsers();
+    window.dispatchEvent(new CustomEvent("ui-success", {
+      detail: {
+        title: "Datos QA preparados",
+        message: "Las cuentas, perfiles y horarios de prueba quedaron actualizados.",
+      },
+    }));
+  } catch (error) {
+    console.error("Error seeding QA accounts:", error);
+    qaError.value = error?.message || "No pudimos preparar las cuentas QA.";
+  } finally {
+    seedingQa.value = false;
   }
 }
 

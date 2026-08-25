@@ -3,19 +3,29 @@ const {HttpsError} = require("firebase-functions/v2/https");
 const {buildSearchCriteriaFromProfile} = require("./criteria");
 const {findMatchingTherapists} = require("./therapistMatching");
 const {getCurrentProfile} = require("../profiles/profile");
+const {enforceRateLimit} = require("../security/rateLimit");
+const {requireAppCheckIfEnabled} = require("../security/appCheck");
 
 async function getRecommendedTherapists(request) {
+  requireAppCheckIfEnabled(request);
   if (!request.auth) {
     throw new HttpsError("unauthenticated", "Debes iniciar sesion.");
   }
 
   const uid = request.auth.uid;
   const db = admin.firestore();
+  await enforceRateLimit({
+    db,
+    uid,
+    action: "therapist-matching",
+    limit: 10,
+    windowMs: 60 * 1000,
+  });
   const profileRef = db.collection("profiles").doc(uid);
   const profile = await getCurrentProfile(profileRef);
   const criteria = buildSearchCriteriaFromProfile(profile);
   const availableTherapistIds = await getTherapistIdsWithAvailableSlots(db);
-  const therapists = await getActiveTherapists(db, availableTherapistIds);
+  const therapists = await getActiveTherapists(db, availableTherapistIds, uid);
   const recommendations = findMatchingTherapists(therapists, criteria);
 
   return {
@@ -25,7 +35,11 @@ async function getRecommendedTherapists(request) {
   };
 }
 
-async function getActiveTherapists(db, availableTherapistIds = new Set()) {
+async function getActiveTherapists(
+    db,
+    availableTherapistIds = new Set(),
+    uid = "",
+) {
   if (!availableTherapistIds.size) {
     return [];
   }
@@ -46,6 +60,9 @@ async function getActiveTherapists(db, availableTherapistIds = new Set()) {
         ...doc.data(),
       }))
       .filter((therapist) => therapist.activo !== false)
+      .filter((therapist) => !therapist.isTestAccount ||
+        (Array.isArray(therapist.testAudienceUids) &&
+          therapist.testAudienceUids.includes(uid)))
       .sort((a, b) => (a.nombre || "").localeCompare(b.nombre || ""));
 }
 

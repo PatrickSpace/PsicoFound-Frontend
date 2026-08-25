@@ -23,6 +23,8 @@ test("fake payment confirms one booking and creates ledger once", {
     paymentToken: "fake-token",
     paymentMethodId: "fake-card",
     fakeScenario: "approved",
+    paymentTermsAccepted: true,
+    paymentConsentVersion: "2026-08-24",
   });
   assert.equal(result.payment.status, "approved");
   assert.equal(result.booking.status, "confirmed");
@@ -38,6 +40,8 @@ test("fake payment confirms one booking and creates ledger once", {
     bookingId: booking.id,
     paymentToken: "fake-token",
     paymentMethodId: "fake-card",
+    paymentTermsAccepted: true,
+    paymentConsentVersion: "2026-08-24",
   });
   assert.equal(retry.status, "approved");
   const ledgerAfterRetry = await db.collection("ledger_entries")
@@ -74,6 +78,8 @@ test("rejected payment expires and releases its slot", {
     paymentToken: "fake-token",
     paymentMethodId: "fake-card",
     fakeScenario: "rejected",
+    paymentTermsAccepted: true,
+    paymentConsentVersion: "2026-08-24",
   });
   assert.equal(result.payment.status, "rejected");
   assert.equal(result.booking.status, "payment_failed");

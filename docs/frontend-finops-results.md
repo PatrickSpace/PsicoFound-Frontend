@@ -13,13 +13,13 @@ No se desplegaron Functions, índices ni cambios a producción. Las métricas de
 
 | Métrica | Antes | Después | Variación | Método de medición |
 |---|---:|---:|---:|---|
-| Bundle inicial JS + CSS comprimido | 550.05 KiB | 255.11 KiB | -294.94 KiB | Suma gzip reportada por Vite |
-| JS inicial comprimido | 417.42 KiB | 212.63 KiB | -204.79 KiB | `npm run build` |
+| Bundle inicial JS + CSS comprimido | 550.05 KiB | 259.94 KiB | -290.11 KiB | Suma gzip reportada por Vite |
+| JS inicial comprimido | 417.42 KiB | 217.46 KiB | -199.96 KiB | `npm run build` |
 | CSS inicial comprimido | 132.63 KiB | 42.48 KiB | -90.15 KiB | `npm run build` |
-| Tamaño total del build | 8,068 KiB | 2,744 KiB | -5,324 KiB | `du -sk dist` |
-| Número de chunks JS | 1 | 68 | +67, por división intencional de rutas | Conteo de archivos en `dist/assets` |
-| Número de chunks CSS | 1 | 48 | +47, cargados según los componentes usados | Conteo de archivos en `dist/assets` |
-| Módulos transformados | 758 | 506 | -252 | Salida de Vite |
+| Tamaño total del build | 8,068 KiB | 2,900 KiB | -5,168 KiB | `du -sk dist` |
+| Número de chunks JS | 1 | 77 | +76, por división intencional de rutas | Conteo de archivos en `dist/assets` |
+| Número de chunks CSS | 1 | 58 | +57, cargados según los componentes usados | Conteo de archivos en `dist/assets` |
+| Módulos transformados | 758 | 581 | -177 | Salida de Vite |
 | Fondo principal | 1,827,674 B JPG | 298,111 B AVIF | -1,529,563 B | `stat` sobre el asset generado |
 | Fuente local de iconos | 3,606,740 B en 4 formatos | 8,872 B WOFF2 | -3,597,868 B | Suma de archivos antes; `stat` después |
 | Consultas en login | No medido de forma concluyente | No medido de forma concluyente | Se centralizó Auth y se deduplicó el contexto | Inspección de código y prueba sin credenciales |
@@ -27,7 +27,7 @@ No se desplegaron Functions, índices ni cambios a producción. Las métricas de
 | Listeners activos | No medido de forma concluyente | No medido de forma concluyente | Tres listeners estáticos eliminados; suscripciones equivalentes se comparten | Inventario de `onSnapshot` y revisión de desmontaje |
 | Solicitudes duplicadas | No medido de forma concluyente | No medido de forma concluyente | Mitigadas mediante promesas en curso compartidas | Instrumentación de desarrollo y revisión de código |
 | Recursos estáticos | JPG de 1.83 MB y familia MDI completa | AVIF de 298 KB y subset WOFF2 de 8.9 KB | Reducción medida por recurso | Build local y `stat` |
-| Vulnerabilidades npm | 8 (2 moderadas, 4 altas, 2 críticas) | 3 del toolchain Vite 5 (2 moderadas, 1 alta) | 5 corregidas; ninguna crítica pendiente | `npm audit` después de actualizaciones compatibles |
+| Vulnerabilidades npm frontend | 8 (2 moderadas, 4 altas, 2 críticas) | 2 del toolchain Vite 5 (1 moderada, 1 alta) | 6 corregidas; ninguna crítica pendiente | `npm audit` después de actualizar `nanoid` |
 
 El aumento de chunks es deliberado: pacientes, psicólogos, administración, onboarding y componentes Vuetify ya no se descargan como un único archivo inicial. El navegador solicita únicamente los chunks de la ruta visitada y puede cachearlos de forma independiente.
 
@@ -112,7 +112,7 @@ La instrumentación no registra UID, nombres, mensajes, prompts, notas, diagnós
 | Tests unitarios de Cloud Functions | Correcto: 19 de 19 |
 | Validación JSON de Vercel e índices | Correcto |
 | Árbol de dependencias npm | Correcto, sin dependencias faltantes |
-| Auditoría npm compatible | Se corrigieron alertas transitivas sin cambios mayores; quedan 3 del toolchain Vite 5 |
+| Auditoría npm compatible | Se corrigieron alertas transitivas sin cambios mayores; quedan 2 del toolchain Vite 5 |
 | Login público en preview de producción | Correcto, sin errores ni warnings de consola |
 | Protección de `/dashboard` sin sesión | Correcto, redirige a `/login?redirect=/dashboard` |
 | Home móvil 430 x 932 | Correcto, sin overflow horizontal ni iconos faltantes |
@@ -138,7 +138,13 @@ La instrumentación no registra UID, nombres, mensajes, prompts, notas, diagnós
 - Las listas clínicas conservan su comportamiento completo para no ocultar datos antiguos. La paginación con cursor debe introducirse junto con orden estable, UX de “cargar más” y pruebas sobre datos reales.
 - Las listas admin de usuarios y solicitudes siguen cargando una página amplia en memoria; la proyección administrativa propuesta evitará exponer campos clínicos y permitirá cursor fiable.
 - El chunk inicial JS conserva Firebase, Vue, Pinia, router y Vuetify y supera 500 KB sin comprimir, aunque queda en 212.63 KiB gzip. Separarlo más requiere medir la latencia real para no generar fragmentación excesiva.
-- Actualizar a Vite 8 eliminaría las alertas restantes de `esbuild`, pero es un cambio mayor y se dejó fuera de una optimización conservadora.
+- Actualizar a Vite 8 eliminaría las 2 alertas restantes del servidor de
+  desarrollo (`vite`/`esbuild`), pero es un cambio mayor y se dejó fuera de una
+  optimización conservadora. El bundle estático desplegado no ejecuta ese servidor.
+- El árbol de Functions reporta 9 avisos moderados transitivos en SDKs de Google;
+  las correcciones sugeridas por npm implican degradar versiones mayores de
+  Firebase. Deben resolverse mediante una actualización oficial compatible, no
+  con `--force` antes del lanzamiento.
 - Debe ejecutarse una prueba autenticada por cada rol contra emuladores o un entorno de staging antes de fusionar.
 
 ## Posibles regresiones verificadas

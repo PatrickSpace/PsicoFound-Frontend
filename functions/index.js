@@ -26,6 +26,7 @@ const {
   submitPsychologistApplication,
 } = require("./src/onboarding/registrationHandlers");
 const paymentHandlers = require("./src/payments/paymentHandlers");
+const adminHandlers = require("./src/admin/adminHandlers");
 
 admin.initializeApp();
 
@@ -97,6 +98,21 @@ exports.reviewPsychologistApplication = onCall(
       timeoutSeconds: 30,
     },
     reviewPsychologistApplication,
+);
+
+exports.upsertUserByAdmin = onCall(
+    {minInstances: 0, timeoutSeconds: 30},
+    adminHandlers.upsertUserByAdmin,
+);
+
+exports.setUserAccountStatusByAdmin = onCall(
+    {minInstances: 0, timeoutSeconds: 30},
+    adminHandlers.setUserAccountStatusByAdmin,
+);
+
+exports.seedQaMarketplaceData = onCall(
+    {minInstances: 0, timeoutSeconds: 120},
+    adminHandlers.seedQaMarketplaceData,
 );
 
 const paymentSecrets = [

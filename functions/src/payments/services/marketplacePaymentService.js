@@ -313,6 +313,10 @@ class MarketplacePaymentService {
 
   async createBookingPayment(uid, data) {
     await this.requireRole(uid, "patient");
+    if (data.paymentTermsAccepted !== true ||
+      cleanText(data.paymentConsentVersion, 40) !== "2026-08-24") {
+      throw new PaymentDomainError("PAYMENT_CONFIGURATION_INVALID");
+    }
     const bookingId = cleanText(data.bookingId, 180);
     const bookingRef = this.db.collection("bookings").doc(bookingId);
     const paymentRef = this.db.collection("payments").doc(bookingId);
@@ -352,6 +356,12 @@ class MarketplacePaymentService {
     await paymentRef.set({
       status: "processing",
       attemptCount: attemptNumber,
+      paymentConsent: {
+        version: "2026-08-24",
+        accepted: true,
+        acceptedAt: FieldValue.serverTimestamp(),
+        acceptedBy: uid,
+      },
       updatedAt: FieldValue.serverTimestamp(),
     }, {merge: true});
     let providerPayment;
@@ -391,7 +401,29 @@ class MarketplacePaymentService {
       providerAccountId: providerPayment.providerAccountId || account.providerAccountId,
       updatedAt: FieldValue.serverTimestamp(),
     }, {merge: true});
-    await this.processPaymentProviderEvent(providerPayment);
+    if (this.config.useFakeProvider) {
+      await this.processPaymentProviderEvent(providerPayment);
+    } else {
+      try {
+        const verifiedPayment = await this.provider.getPayment({
+          providerPaymentId: providerPayment.providerPaymentId,
+          sellerAccessToken,
+        });
+        await this.processPaymentProviderEvent(verifiedPayment);
+      } catch (error) {
+        logger.warn("Payment created but immediate verification is pending", paymentLog({
+          paymentId: paymentRef.id,
+          providerPaymentId: providerPayment.providerPaymentId,
+          errorType: error.code || error.name,
+        }));
+        await Promise.all([
+          paymentRef.set({status: "pending", updatedAt: FieldValue.serverTimestamp()},
+              {merge: true}),
+          bookingRef.set({status: "payment_processing", paymentStatus: "pending",
+            updatedAt: FieldValue.serverTimestamp()}, {merge: true}),
+        ]);
+      }
+    }
     if (this.config.useFakeProvider &&
       providerPayment.metadata?.scenario === "duplicate_webhook") {
       await this.processPaymentProviderEvent(providerPayment);

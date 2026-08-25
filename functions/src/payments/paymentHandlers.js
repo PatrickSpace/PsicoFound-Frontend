@@ -8,6 +8,8 @@ const {
 const {
   MarketplacePaymentService,
 } = require("./services/marketplacePaymentService");
+const {requireAppCheckIfEnabled} = require("../security/appCheck");
+const {enforceRateLimit} = require("../security/rateLimit");
 
 function createService() {
   const config = getPaymentConfig();
@@ -18,11 +20,20 @@ function createService() {
   });
 }
 
-function callable(handler) {
+function callable(handler, rateLimit = null) {
   return async (request) => {
     try {
+      requireAppCheckIfEnabled(request);
       if (!request.auth?.uid) throw new PaymentDomainError("AUTH_REQUIRED");
-      return await handler(createService(), request.auth.uid, request.data || {});
+      const service = createService();
+      if (rateLimit) {
+        await enforceRateLimit({
+          db: service.db,
+          uid: request.auth.uid,
+          ...rateLimit,
+        });
+      }
+      return await handler(service, request.auth.uid, request.data || {});
     } catch (error) {
       logger.error("Marketplace payment callable failed", {
         errorType: error.code || error.name,
@@ -47,11 +58,15 @@ const updatePsychologistPaymentSettings = callable((service, uid, data) =>
 const disconnectPaymentAccount = callable((service, uid) =>
   service.disconnectPaymentAccount(uid));
 
-const createBookingHold = callable((service, uid, data) =>
-  service.createBookingHold(uid, data));
+const createBookingHold = callable(
+    (service, uid, data) => service.createBookingHold(uid, data),
+    {action: "booking-hold", limit: 8, windowMs: 60 * 1000},
+);
 
-const createBookingPayment = callable((service, uid, data) =>
-  service.createBookingPayment(uid, data));
+const createBookingPayment = callable(
+    (service, uid, data) => service.createBookingPayment(uid, data),
+    {action: "booking-payment", limit: 6, windowMs: 60 * 1000},
+);
 
 const getBookingPaymentStatus = callable((service, uid, data) =>
   service.getBookingPaymentStatus(uid, data));
@@ -67,11 +82,15 @@ const expireBookingHold = callable(async (service, uid, data) => {
 const cancelBooking = callable((service, uid, data) =>
   service.cancelBooking(uid, data));
 
-const requestBookingRefund = callable((service, uid, data) =>
-  service.refundBookingPayment(uid, data));
+const requestBookingRefund = callable(
+    (service, uid, data) => service.refundBookingPayment(uid, data),
+    {action: "booking-refund", limit: 4, windowMs: 60 * 60 * 1000},
+);
 
-const simulatePaymentEvent = callable((service, uid, data) =>
-  service.simulatePaymentEvent(uid, data));
+const simulatePaymentEvent = callable(
+    (service, uid, data) => service.simulatePaymentEvent(uid, data),
+    {action: "payment-simulation", limit: 20, windowMs: 60 * 1000},
+);
 
 async function mercadoPagoOAuthCallback(request, response) {
   try {

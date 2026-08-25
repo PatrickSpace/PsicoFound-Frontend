@@ -2,6 +2,7 @@ import { createRouter, createWebHistory } from "vue-router";
 import { useAuthStore } from "@/store/auth";
 import { useAppContextStore } from "@/store/appContext";
 import { getBlockingOnboardingRoute } from "@/services/onboardingService";
+import { getUserById } from "@/services/userService";
 
 const HomeView = () => import("@/views/Auth/HomeView.vue");
 const LogInView = () => import("@/views/Auth/LogIn.vue");
@@ -26,6 +27,9 @@ const OnboardingEntryView = () => import("@/views/onboarding/OnboardingEntryView
 const PatientOnboardingView = () => import("@/views/onboarding/PatientOnboardingView.vue");
 const PsychologistOnboardingView = () => import("@/views/onboarding/PsychologistOnboardingView.vue");
 const PsychologistPendingView = () => import("@/views/onboarding/PsychologistPendingView.vue");
+const TermsView = () => import("@/views/legal/TermsView.vue");
+const PrivacyView = () => import("@/views/legal/PrivacyView.vue");
+const NotFoundView = () => import("@/views/NotFoundView.vue");
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -75,6 +79,18 @@ const router = createRouter({
       name: "login",
       component: LogInView,
       meta: { public: true, guestOnly: true },
+    },
+    {
+      path: "/terminos",
+      name: "terms",
+      component: TermsView,
+      meta: { public: true },
+    },
+    {
+      path: "/privacidad",
+      name: "privacy",
+      component: PrivacyView,
+      meta: { public: true },
     },
     {
       path: "/onboarding",
@@ -166,6 +182,12 @@ const router = createRouter({
       component: UsersAdminView,
       meta: { modes: ["admin"] },
     },
+    {
+      path: "/:pathMatch(.*)*",
+      name: "not-found",
+      component: NotFoundView,
+      meta: { public: true },
+    },
  
 ]});
 
@@ -183,6 +205,10 @@ router.beforeEach(async (to) => {
   }
 
   if (user && isGuestOnlyRoute) {
+    if (to.path === "/registro" && to.query.complete === "1") {
+      const profile = await getUserById(user.uid, {force: true});
+      if (!profile) return;
+    }
     return "/onboarding";
   }
 

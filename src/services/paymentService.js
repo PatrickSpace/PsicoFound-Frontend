@@ -87,8 +87,12 @@ export function paymentErrorMessage(error) {
       "El servicio de pagos no está disponible temporalmente.",
     PAYMENT_CONFIGURATION_INVALID:
       "Los pagos aún no están configurados para este entorno.",
+    "resource-exhausted":
+      "Has realizado demasiados intentos. Espera un momento y vuelve a intentarlo.",
+    "failed-precondition":
+      "No pudimos verificar la aplicación o el estado de la reserva.",
   };
-  return messages[code] || error?.message || "No pudimos completar el pago.";
+  return messages[code] || "No pudimos completar el pago. Intenta nuevamente.";
 }
 
 function unwrap(result) {

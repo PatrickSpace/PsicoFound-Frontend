@@ -1,11 +1,13 @@
 const admin = require("firebase-admin");
 const logger = require("firebase-functions/logger");
 const {HttpsError} = require("firebase-functions/v2/https");
+const {requireAppCheckIfEnabled} = require("../security/appCheck");
 
 const PATIENT_ROLE = "patient";
 const PSYCHOLOGIST_ROLE = "psychologist";
 const ADMIN_ROLES = ["admin", "psicofound-admin"];
 const REGISTRATION_INTENTS = ["patient", "psychologist"];
+const CURRENT_CONSENT_VERSION = "2026-08-24";
 const DEFAULT_THERAPIST_GRADIENT =
   "linear-gradient(to bottom right, #45A99A, #72CBBF)";
 
@@ -14,6 +16,18 @@ async function finalizeRegistration(request) {
   const data = request.data || {};
   const token = auth.token || {};
   const intent = normalizeRegistrationIntent(data.intent);
+  if (
+    data.termsAccepted !== true ||
+    data.consentVersion !== CURRENT_CONSENT_VERSION
+  ) {
+    throw new HttpsError(
+        "failed-precondition",
+        [
+          "Debes aceptar los términos de uso y la política",
+          "de privacidad vigentes.",
+        ].join(" "),
+    );
+  }
   const db = admin.firestore();
   const userRef = db.collection("users").doc(auth.uid);
   const snapshot = await userRef.get();
@@ -39,6 +53,13 @@ async function finalizeRegistration(request) {
     patientOnboardingStatus:
       existing.patientOnboardingStatus || "pending",
     professionalAccessStatus: professionalStatus,
+    consent: {
+      version: CURRENT_CONSENT_VERSION,
+      termsAccepted: true,
+      privacyAccepted: true,
+      acceptedAt: now,
+      source: cleanText(data.consentSource, 40) || "registration",
+    },
     updatedAt: now,
   };
 
@@ -287,6 +308,7 @@ async function reviewPsychologistApplication(request) {
 }
 
 function requireAuth(request) {
+  requireAppCheckIfEnabled(request);
   if (!request.auth) {
     throw new HttpsError("unauthenticated", "Debes iniciar sesion.");
   }
