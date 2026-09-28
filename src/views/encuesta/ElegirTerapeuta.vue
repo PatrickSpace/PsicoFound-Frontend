@@ -33,54 +33,64 @@
       -->
     </v-app-bar>
     <v-main class="therapist-match-main safe-bottom-mobile">
-      <v-alert
+      <div
         v-if="isCrisisMode"
-        class="mx-auto mt-6 crisis-support-alert"
-        color="error"
-        variant="tonal"
-        icon="mdi-alert-circle-outline"
-        title="No tienes que atravesar esto a solas"
+        :class="[
+          'crisis-support-stage',
+          { 'crisis-support-stage--centered': !loading && therapists.length === 0 },
+        ]"
       >
-        <p class="mb-4">
-          Lo más importante ahora es que recibas apoyo inmediato. En Perú puedes
-          llamar gratis a la Línea 113 Salud, opción 5, donde profesionales de
-          salud mental están disponibles las 24 horas.
-        </p>
-        <p class="mb-4">
-          Si estás en peligro inmediato, acude al establecimiento de salud más
-          cercano o pide a una persona de confianza que te acompañe.
-        </p>
-        <div class="crisis-support-actions">
-          <v-btn
-            href="tel:113"
-            color="error"
-            variant="flat"
-            prepend-icon="mdi-phone"
-          >
-            Llamar al 113
-          </v-btn>
-          <v-btn
-            href="https://wa.me/51955557000"
-            target="_blank"
-            rel="noopener noreferrer"
-            color="error"
-            variant="outlined"
-            prepend-icon="mdi-whatsapp"
-          >
-            Escribir por WhatsApp
-          </v-btn>
-          <v-btn
-            href="https://www.gob.pe/saludmental"
-            target="_blank"
-            rel="noopener noreferrer"
-            color="error"
-            variant="text"
-            append-icon="mdi-open-in-new"
-          >
-            Buscar un centro de salud
-          </v-btn>
-        </div>
-      </v-alert>
+        <v-alert
+          class="crisis-support-alert"
+          color="primary"
+          variant="tonal"
+          icon="mdi-heart-outline"
+          title="No tienes que atravesar esto a solas"
+        >
+          <p class="mb-4">
+            Lo más importante ahora es que recibas apoyo inmediato. En Perú puedes
+            llamar gratis a la Línea 113 Salud, opción 5, donde profesionales de
+            salud mental están disponibles las 24 horas.
+          </p>
+          <p class="mb-4">
+            Si estás en peligro inmediato, acude al establecimiento de salud más
+            cercano o pide a una persona de confianza que te acompañe.
+          </p>
+          <div class="crisis-support-actions">
+            <v-btn
+              href="tel:113"
+              class="pf-btn-primary"
+              color="primary"
+              variant="flat"
+              prepend-icon="mdi-phone"
+            >
+              Llamar al 113
+            </v-btn>
+            <v-btn
+              href="https://wa.me/51955557000"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="pf-btn-secondary"
+              color="secondary"
+              variant="outlined"
+              prepend-icon="mdi-whatsapp"
+            >
+              Escribir por WhatsApp
+            </v-btn>
+            <v-btn
+              href="https://www.gob.pe/saludmental"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="pf-btn-ghost"
+              color="secondary"
+              variant="text"
+              append-icon="mdi-open-in-new"
+            >
+              Buscar un centro de salud
+            </v-btn>
+          </div>
+        </v-alert>
+      </div>
       <v-alert
         v-if="errorMessage && !isCrisisMode"
         class="mx-auto mt-6 therapist-match-alert"
@@ -204,15 +214,27 @@ onMounted(() => {
 }
 
 .therapist-match-alert,
-.crisis-support-alert,
 .therapist-match-header {
   max-width: 1120px;
+}
+
+.crisis-support-stage {
+  display: flex;
+  justify-content: center;
+  padding: 24px;
+}
+
+.crisis-support-stage--centered {
+  align-items: center;
+  min-height: calc(100dvh - 88px);
 }
 
 .crisis-support-alert {
   font-size: 1rem;
   line-height: 1.55;
+  max-width: 920px;
   padding: 24px;
+  width: 100%;
 }
 
 .crisis-support-actions {
@@ -259,8 +281,15 @@ onMounted(() => {
   }
 
   .crisis-support-alert {
-    margin-inline: 16px;
     padding: 18px;
+  }
+
+  .crisis-support-stage {
+    padding: 16px;
+  }
+
+  .crisis-support-stage--centered {
+    min-height: calc(100dvh - 76px);
   }
 
   .crisis-support-actions {
