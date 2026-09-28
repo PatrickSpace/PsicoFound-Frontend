@@ -13,7 +13,7 @@
       indeterminate
     />
     <v-main class="layout-main-content">
-      <v-container class="layout-container">
+      <v-container class="layout-container px-10">
         <slot name="default"></slot>
       </v-container>
     </v-main>

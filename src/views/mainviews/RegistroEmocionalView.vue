@@ -339,7 +339,7 @@ const tagSuggestions = [
 ];
 
 const form = reactive({
-  mood: "",
+  mood: null,
   intensity: 5,
   energy: 5,
   sleepQuality: 5,
@@ -364,7 +364,10 @@ const averageIntensity = computed(() => {
 const latestMood = computed(() => checkins.value[0]?.mood || "-");
 
 const canSave = computed(
-  () => Boolean(activeTherapy.value?.id) && form.mood.trim().length > 0
+  () =>
+    Boolean(activeTherapy.value?.id) &&
+    typeof form.mood === "string" &&
+    form.mood.trim().length > 0
 );
 
 watch(
@@ -468,7 +471,7 @@ async function saveCheckin() {
 }
 
 function resetForm() {
-  form.mood = "";
+  form.mood = null;
   form.intensity = 5;
   form.energy = 5;
   form.sleepQuality = 5;

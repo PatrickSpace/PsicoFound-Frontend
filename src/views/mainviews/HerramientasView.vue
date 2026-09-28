@@ -344,7 +344,7 @@ const completionNotes = ref("");
 const categoryOptions = ["Reflexión", "Respiración", "Registro emocional", "Hábitos", "Seguimiento"];
 
 const assignment = reactive({
-  therapyId: "",
+  therapyId: null,
   title: "",
   category: "Seguimiento",
   frequency: "",
@@ -486,7 +486,7 @@ async function assignExercise() {
 }
 
 function resetAssignment() {
-  assignment.therapyId = "";
+  assignment.therapyId = null;
   assignment.title = "";
   assignment.category = "Seguimiento";
   assignment.frequency = "";

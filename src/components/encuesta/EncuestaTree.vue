@@ -151,10 +151,10 @@ const especialidades = ref([
 ]);
 
 const especialidad = ref([]);
-const enfoque = ref("");
-const genero = ref("");
-const modalidad = ref("");
-const edad = ref("");
+const enfoque = ref(null);
+const genero = ref(null);
+const modalidad = ref(null);
+const edad = ref(null);
 
 function guardarCriteriosBusqueda() {
   const payload = {

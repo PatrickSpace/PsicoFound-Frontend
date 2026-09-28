@@ -517,7 +517,7 @@ const psychologistRequestForm = reactive({
   specialties: [],
   approaches: [],
   modalities: ["Remoto"],
-  gender: "",
+  gender: null,
   professionalSummary: "",
   motivation: "",
 });
@@ -652,7 +652,7 @@ function resetPsychologistRequestForm() {
   psychologistRequestForm.specialties = [];
   psychologistRequestForm.approaches = [];
   psychologistRequestForm.modalities = ["Remoto"];
-  psychologistRequestForm.gender = "";
+  psychologistRequestForm.gender = null;
   psychologistRequestForm.professionalSummary = "";
   psychologistRequestForm.motivation = "";
 }
@@ -707,7 +707,7 @@ async function submitPsychologistRequest() {
       specialties: psychologistRequestForm.specialties,
       approaches: psychologistRequestForm.approaches,
       modalities: psychologistRequestForm.modalities,
-      gender: psychologistRequestForm.gender,
+      gender: psychologistRequestForm.gender || "",
     });
     psychologistRequestDialog.value = false;
 

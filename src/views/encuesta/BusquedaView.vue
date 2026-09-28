@@ -6,7 +6,7 @@
       <v-col cols="12" md="6">
         <h2 class="text-h6 text-sm-h5">Ingresa tus datos</h2>
         <v-form class="mx-0 mx-md-10">
-          <v-text-field variant="underlined" label="Nombre"> </v-text-field>
+          <v-text-field variant="outlined" label="Nombre"> </v-text-field>
           <v-combobox
             label="Enfoque"
             :items="[
@@ -17,7 +17,7 @@
               'Enfoque5',
               'Enfoque6',
             ]"
-            variant="underlined"
+            variant="outlined"
           ></v-combobox>
           <v-combobox
             label="Especialidad"
@@ -28,17 +28,17 @@
               'Terapia de Pareja',
               'Autosabotaje',
             ]"
-            variant="underlined"
+            variant="outlined"
           ></v-combobox>
           <v-combobox
             label="Preferencia del genero del Psicologo"
             :items="['Hombre', 'Mujer']"
-            variant="underlined"
+            variant="outlined"
           ></v-combobox>
           <v-combobox
             label="Color favorito"
             :items="['Rojo', 'Azul', 'Morado', 'Verde', 'Amarillo']"
-            variant="underlined"
+            variant="outlined"
           ></v-combobox>
           <!-- <v-btn class="mt-2 pf-btn-primary" color="teal" block>Buscar</v-btn> -->
         </v-form>

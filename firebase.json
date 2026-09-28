@@ -29,5 +29,20 @@
         "supportEmail": "jplosta01@gmail.com"
       }
     }
+  },
+  "hosting": {
+    "site": "luremsapp",
+    "public": "dist",
+    "ignore": [
+      "firebase.json",
+      "**/.*",
+      "**/node_modules/**"
+    ],
+    "rewrites": [
+      {
+        "source": "**",
+        "destination": "/index.html"
+      }
+    ]
   }
 }

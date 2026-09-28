@@ -1,5 +1,5 @@
 <template>
-  <Analytics />
+  <Analytics v-if="analyticsEnabled" />
   <v-app :data-user-role="appContext.activeMode" data-theme="light">
     <!-- Contenido principal -->
     <RouterView />
@@ -48,6 +48,7 @@ import { useAppContextStore } from "@/store/appContext";
 
 const { initializeAppTheme } = useAppTheme();
 const appContext = useAppContextStore();
+const analyticsEnabled = import.meta.env.VITE_VERCEL_ANALYTICS_ENABLED === "true";
 initializeAppTheme();
 
 // Estado del snackbar global

@@ -457,7 +457,7 @@ export default {
       direccion: "",
       especialidades: [],
       enfoques: [],
-      genero: "",
+      genero: null,
       edad: null,
       modalidades: [],
       colorInicio: defaultGradientStart,
@@ -475,7 +475,7 @@ export default {
       direccion: "",
       especialidades: [],
       enfoques: [],
-      genero: "",
+      genero: null,
       edad: null,
       modalidades: [],
       colorInicio: defaultGradientStart,
@@ -533,7 +533,7 @@ export default {
           : Array.isArray(item.enfoque)
           ? [...item.enfoque]
           : [],
-        genero: item.genero ?? "",
+        genero: item.genero || null,
         edad: item.edad ?? null,
         modalidades: Array.isArray(item.modalidades)
           ? [...item.modalidades]
@@ -716,6 +716,7 @@ export default {
         especialidades: [...(this.editedItem.especialidades || [])],
         enfoques: [...(this.editedItem.enfoques || [])],
         modalidades: [...(this.editedItem.modalidades || [])],
+        genero: this.editedItem.genero || "",
         gradient: this.buildGradient(this.editedItem),
         activo: this.editedItem.activo ?? true,
       };

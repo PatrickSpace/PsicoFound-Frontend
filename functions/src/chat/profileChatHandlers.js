@@ -310,7 +310,6 @@ async function resetProfileChatConversation(request) {
         lastMessage: "",
         updatedAt: admin.firestore.FieldValue.serverTimestamp(),
       },
-      {merge: true},
   );
 
   await profileRef.set(
@@ -320,7 +319,6 @@ async function resetProfileChatConversation(request) {
         uid,
         updatedAt: admin.firestore.FieldValue.serverTimestamp(),
       },
-      {merge: true},
   );
 
   return {

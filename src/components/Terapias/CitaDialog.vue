@@ -335,7 +335,7 @@ const form = reactive({
   notas: "",
   modalidad: "",
   ubicacion: "",
-  meetingProvider: "",
+  meetingProvider: null,
   meetingUrl: "",
 });
 
@@ -494,7 +494,7 @@ const meetingProviderForSave = computed(() => {
   }
 
   return canEditMeetingLink.value
-    ? form.meetingProvider
+    ? form.meetingProvider || ""
     : props.initialAppointment?.meetingProvider || "";
 });
 const meetingUrlForSave = computed(() => {
@@ -522,7 +522,7 @@ watch(
       form.ubicacion =
         props.initialAppointment?.ubicacion ||
         defaultLocationForModalidad(form.modalidad);
-      form.meetingProvider = props.initialAppointment?.meetingProvider || "";
+      form.meetingProvider = props.initialAppointment?.meetingProvider || null;
       form.meetingUrl = props.initialAppointment?.meetingUrl || "";
       selectedSlotId.value = props.initialAppointment?.availabilitySlotId || "";
 
@@ -544,7 +544,7 @@ watch(
       return;
     }
 
-    form.meetingProvider = "";
+    form.meetingProvider = null;
     form.meetingUrl = "";
 
     if (

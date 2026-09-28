@@ -394,7 +394,7 @@ let activeTherapistRequestId = 0;
 let learnedToolsRequestId = 0;
 
 const goalForm = reactive({
-  therapyId: "",
+  therapyId: null,
   title: "",
   description: "",
   category: "Proceso terapéutico",
@@ -692,7 +692,7 @@ function resolveSelectedTherapy() {
 }
 
 function resetGoalForm() {
-  goalForm.therapyId = "";
+  goalForm.therapyId = null;
   goalForm.title = "";
   goalForm.description = "";
   goalForm.category = "Proceso terapéutico";

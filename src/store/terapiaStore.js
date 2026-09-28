@@ -207,6 +207,7 @@ export const useTerapiaStore = defineStore("terapia", () => {
     preferencia_edad_max,
     terapia,
     setTerapia,
+    resetCriterios,
     buscarterapeutas,
     buscarterapeutaejemplo,
     getTopTerapeutas,

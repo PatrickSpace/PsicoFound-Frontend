@@ -21,6 +21,7 @@ coverage
 .env.*
 !.env.example
 .vercel
+.firebase/
 .agents/
 .claude/
 skills-lock.json

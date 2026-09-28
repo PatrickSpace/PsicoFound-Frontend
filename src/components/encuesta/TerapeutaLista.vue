@@ -165,7 +165,21 @@
             headline="No hay horarios disponibles"
             text="Por ahora no encontramos psicólogos afines con bloques abiertos para agendar. Puedes revisar nuevamente más tarde."
             icon="mdi-calendar-clock-outline"
-          ></v-empty-state>
+          >
+            <template #actions>
+              <v-btn
+                class="pf-btn-secondary"
+                color="secondary"
+                variant="tonal"
+                prepend-icon="mdi-refresh"
+                :loading="resetting"
+                :disabled="resetting"
+                @click="emit('restart-survey')"
+              >
+                Reiniciar encuesta
+              </v-btn>
+            </template>
+          </v-empty-state>
         </div>
       </v-col>
     </v-row>
@@ -187,7 +201,13 @@ const props = defineProps({
     type: Array,
     default: () => [],
   },
+  resetting: {
+    type: Boolean,
+    default: false,
+  },
 });
+
+const emit = defineEmits(["restart-survey"]);
 
 const topTherapists = computed(() =>
   Array.isArray(props.terapeutas) ? props.terapeutas.slice(0, 5) : []
