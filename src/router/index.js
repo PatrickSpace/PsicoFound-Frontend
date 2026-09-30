@@ -19,6 +19,7 @@ import TerapiaDetailView from "@/views/terapias/TerapiaDetailView.vue";
 import PsicologoSesionesView from "@/views/psicologo/PsicologoSesionesView.vue";
 import PsychologistRequestsView from "@/views/admin/PsychologistRequestsView.vue";
 import UsersAdminView from "@/views/admin/UsersAdminView.vue";
+import PaymentRatesView from "@/views/admin/PaymentRatesView.vue";
 import OnboardingEntryView from "@/views/onboarding/OnboardingEntryView.vue";
 import PatientOnboardingView from "@/views/onboarding/PatientOnboardingView.vue";
 import PsychologistOnboardingView from "@/views/onboarding/PsychologistOnboardingView.vue";
@@ -177,6 +178,12 @@ const router = createRouter({
       path: "/admin/usuarios",
       name: "admin-users",
       component: UsersAdminView,
+      meta: { modes: ["admin"] },
+    },
+    {
+      path: "/admin/cobros",
+      name: "admin-payment-rates",
+      component: PaymentRatesView,
       meta: { modes: ["admin"] },
     },
  

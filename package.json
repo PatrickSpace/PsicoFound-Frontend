@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "vite --host",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test:payment-rules": "firebase emulators:exec --only firestore --project demo-lurems-rates \"node --test tests/paymentRates.integration.test.mjs\""
   },
   "dependencies": {
     "@vercel/analytics": "^2.0.1",

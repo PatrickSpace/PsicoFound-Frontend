@@ -159,7 +159,33 @@ service cloud.firestore {
 
     match /therapists/{therapistId} {
       allow read: if signedIn();
-      allow create, update, delete: if isAdmin();
+      allow create: if isAdmin() &&
+        !request.resource.data.keys().hasAny([
+          "paymentRateId", "paymentRateSelectionVersion", "paymentRateUpdatedAt"
+        ]);
+      allow update: if isAdmin() &&
+        !request.resource.data.diff(resource.data).affectedKeys().hasAny([
+          "paymentRateId", "paymentRateSelectionVersion", "paymentRateUpdatedAt"
+        ]);
+      allow delete: if isAdmin();
+
+      match /rate_history/{versionId} {
+        allow read: if isAdmin() || assignedTherapist(therapistId);
+        allow write: if false;
+      }
+    }
+
+    match /payment_rates/{rateId} {
+      allow read: if isAdmin() || userHasRole("psychologist") || (
+        signedIn() &&
+        currentUserDoc().data.rol in ["psicologo", "psicólogo", "psicóloga"]
+      );
+      allow write: if false;
+
+      match /versions/{versionId} {
+        allow read: if isAdmin();
+        allow write: if false;
+      }
     }
 
     match /psychologist_requests/{requestId} {

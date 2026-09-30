@@ -10,6 +10,10 @@ const {
   getRecommendedTherapists,
 } = require("./src/matching/recommendTherapists");
 const {
+  savePaymentRate,
+  setPsychologistPaymentRate,
+} = require("./src/payments/paymentRateHandlers");
+const {
   completePatientOnboarding,
   finalizeRegistration,
   reviewPsychologistApplication,
@@ -78,4 +82,14 @@ exports.reviewPsychologistApplication = onCall(
       timeoutSeconds: 30,
     },
     reviewPsychologistApplication,
+);
+
+exports.savePaymentRate = onCall(
+    {minInstances: 0, timeoutSeconds: 20},
+    savePaymentRate,
+);
+
+exports.setPsychologistPaymentRate = onCall(
+    {minInstances: 0, timeoutSeconds: 20},
+    setPsychologistPaymentRate,
 );
