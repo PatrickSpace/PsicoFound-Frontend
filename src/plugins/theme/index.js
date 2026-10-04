@@ -7,12 +7,7 @@ import { aliases, mdi } from "vuetify/iconsets/mdi";
 import { darkTheme } from "./dark";
 import { lightTheme } from "./light";
 import {
-  defaultTherapistGradient,
-  defaultTherapistGradientStops,
   designTokenCssVars,
-  designTokens,
-  tokenGroups,
-  therapistGradients,
 } from "./tokens";
 
 export function applyDesignTokenCssVars(target = document.documentElement) {
@@ -68,11 +63,4 @@ const vuetify = createVuetify({
   },
 });
 
-export {
-  defaultTherapistGradient,
-  defaultTherapistGradientStops,
-  designTokens,
-  tokenGroups,
-  therapistGradients,
-};
 export default vuetify;

@@ -33,7 +33,7 @@ const LEGACY_ROLE_MAP = {
   "psicofound-admin": APP_ROLES.ADMIN,
 };
 
-export function normalizeRole(role = "") {
+function normalizeRole(role = "") {
   const normalized = role.toString().trim().toLowerCase();
   return LEGACY_ROLE_MAP[normalized] || normalized;
 }
@@ -66,10 +66,6 @@ export function getUserRoles(user = {}, options = {}) {
   }
 
   return normalizedRoles;
-}
-
-export function hasRole(user = {}, role) {
-  return getUserRoles(user).includes(normalizeRole(role));
 }
 
 export function getLegacyRoleFromRoles(roles = []) {

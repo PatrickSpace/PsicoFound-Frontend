@@ -299,8 +299,9 @@ async function resetProfileChatConversation(request) {
   const conversationRef = db.collection("conversations").doc(uid);
   const profileRef = db.collection("profiles").doc(uid);
   const chatSession = createChatSession();
+  const batch = db.batch();
 
-  await conversationRef.set(
+  batch.set(conversationRef,
       {
         uid,
         type: "profile-survey",
@@ -312,7 +313,7 @@ async function resetProfileChatConversation(request) {
       },
   );
 
-  await profileRef.set(
+  batch.set(profileRef,
       {
         ...PROFILE_DEFAULTS,
         sessionId: chatSession.id,
@@ -320,6 +321,8 @@ async function resetProfileChatConversation(request) {
         updatedAt: admin.firestore.FieldValue.serverTimestamp(),
       },
   );
+
+  await batch.commit();
 
   return {
     activeSessionId: chatSession.id,

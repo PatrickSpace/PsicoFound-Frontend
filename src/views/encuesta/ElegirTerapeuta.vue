@@ -159,12 +159,10 @@
 <script setup>
 import MainLogo from "@/components/Common/MainLogo.vue";
 import TerapeutaLista from "@/components/encuesta/TerapeutaLista.vue";
-import { useTerapiaStore } from "@/store/terapiaStore";
 import { computed, onMounted, ref } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { resetProfileChatConversation } from "@/services/conversationService";
 import { getRecommendedTherapists } from "@/services/matchingService";
-const terapiaStore = useTerapiaStore();
 const route = useRoute();
 const router = useRouter();
 const therapists = ref([]);
@@ -179,7 +177,6 @@ async function buscarTerapeutas() {
 
   try {
     const { therapists: results } = await getRecommendedTherapists();
-    terapiaStore.setTopTerapeutas(results);
     therapists.value = results;
   } catch (error) {
     console.error("Error buscando terapeutas:", error);
@@ -187,7 +184,6 @@ async function buscarTerapeutas() {
       error?.message ||
       "Ocurrió un error al obtener los psicólogos recomendados.";
     therapists.value = [];
-    terapiaStore.setTopTerapeutas([]);
   } finally {
     loading.value = false;
   }
@@ -201,8 +197,6 @@ async function handleRestartSurvey() {
 
   try {
     await resetProfileChatConversation();
-    terapiaStore.resetCriterios();
-    terapiaStore.setTopTerapeutas([]);
     therapists.value = [];
     await router.replace({ path: "/encuesta" });
   } catch (error) {

@@ -296,20 +296,6 @@ export const designTokenCssVars = {
   "--pf-social-apple": "0, 0, 1",
 };
 
-export const therapistGradients = [
-  `linear-gradient(to bottom right, ${palette.teal500}, ${palette.teal300})`,
-  `linear-gradient(to bottom right, ${palette.patient500}, ${palette.teal300})`,
-  `linear-gradient(to bottom right, ${palette.psychologist500}, ${palette.psychologist100})`,
-  `linear-gradient(to bottom right, ${palette.teal600}, ${palette.teal200})`,
-  `linear-gradient(to bottom right, ${palette.info}, ${palette.teal300})`,
-  `linear-gradient(to bottom right, ${palette.success}, ${palette.teal600})`,
-  `linear-gradient(to bottom right, ${palette.warning}, ${palette.teal400})`,
-  `linear-gradient(to bottom right, ${palette.error}, ${palette.psychologist500})`,
-  `linear-gradient(to bottom right, ${palette.teal400}, ${palette.teal100})`,
-  `linear-gradient(to bottom right, ${palette.teal800}, ${palette.success})`,
-];
-
-export const defaultTherapistGradient = therapistGradients[0];
 export const defaultTherapistGradientStops = {
   start: palette.teal500,
   end: palette.teal300,

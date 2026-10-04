@@ -21,11 +21,7 @@ class AIService {
 
   async executeWithFallback(method, input = {}) {
     const primaryProvider = this.providerFactory.createPrimaryProvider();
-    const fallbackProvider = this.providerFactory.createFallbackProvider();
-    const providers = fallbackProvider &&
-      fallbackProvider.name !== primaryProvider.name ?
-      [primaryProvider, fallbackProvider] :
-      [primaryProvider];
+    const providers = [primaryProvider];
     const errors = [];
 
     for (let index = 0; index < providers.length; index += 1) {
@@ -62,9 +58,20 @@ class AIService {
           error,
         });
 
-        if (index === providers.length - 1 || !isRetryableAIError(error)) {
+        if (fallbackAttempt || !isRetryableAIError(error)) {
           throw error;
         }
+
+        // A broken or unused fallback must never block a successful primary.
+        const fallback = this.providerFactory.createFallbackProvider();
+        const sameModel = fallback &&
+          (input.model || fallback.defaultModel) ===
+          (input.model || primaryProvider.defaultModel);
+        if (!fallback ||
+            (fallback.name === primaryProvider.name && sameModel)) {
+          throw error;
+        }
+        providers.push(fallback);
       }
     }
 

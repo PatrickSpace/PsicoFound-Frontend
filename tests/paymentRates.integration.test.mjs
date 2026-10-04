@@ -10,6 +10,7 @@ import {
 const require = createRequire(import.meta.url);
 const admin = require("../functions/node_modules/firebase-admin");
 const { savePaymentRate, setPsychologistPaymentRate } = require("../functions/src/payments/paymentRateHandlers.js");
+const { resetProfileChatConversation } = require("../functions/src/chat/profileChatHandlers.js");
 const projectId = "demo-lurems-rates";
 const clients = new Map();
 let adminApp;
@@ -113,4 +114,19 @@ test("selection is audited, private to its owner/admin and leaves old appointmen
   assert.deepEqual((await db.doc("citas/existing").get()).data(), {
     pacienteUid: "patient", amountMinor: 12000, estado: "confirmada",
   });
+});
+
+test("survey reset persists an empty profile with the same new session", async () => {
+  await db.doc("conversations/patient").set({ uid: "patient", activeSessionId: "old", lastMessage: "old" });
+  await db.doc("profiles/patient").set({ uid: "patient", sessionId: "old", temas: ["Ansiedad"], riesgoSuicida: true, completado: true });
+  const result = await resetProfileChatConversation({ auth: { uid: "patient" } });
+  const conversation = (await db.doc("conversations/patient").get()).data();
+  const profile = (await db.doc("profiles/patient").get()).data();
+  assert.notEqual(result.activeSessionId, "old");
+  assert.equal(conversation.activeSessionId, result.activeSessionId);
+  assert.equal(profile.sessionId, result.activeSessionId);
+  assert.deepEqual(profile.temas, []);
+  assert.equal(profile.riesgoSuicida, false);
+  assert.equal(profile.completado, false);
+  assert.equal(conversation.lastMessage, "");
 });

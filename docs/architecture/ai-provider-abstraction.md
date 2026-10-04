@@ -85,6 +85,11 @@ del entorno de Functions. Nunca deben exponerse en el cliente.
 retryable, como disponibilidad, timeout o rate limit, intenta el proveedor
 secundario.
 
+El secundario se instancia solamente tras ese error. Si tiene el mismo nombre
+y modelo efectivo que el principal, no se repite la llamada. Un modelo distinto
+del mismo proveedor si puede actuar como respaldo. El default actual (Gemini
+con el mismo modelo) hace una sola peticion y no duplica costo/latencia.
+
 Errores retryable:
 
 - `AIProviderUnavailableError`

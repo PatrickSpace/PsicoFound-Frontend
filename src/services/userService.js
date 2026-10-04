@@ -86,32 +86,6 @@ export async function upsertUserByAdmin(uid, data = {}) {
   };
 }
 
-export async function updateUserRolesByAdmin(uid, roles = []) {
-  if (!uid) {
-    throw new Error("No se encontró el usuario a actualizar.");
-  }
-
-  const normalizedRoles = normalizeRoles(roles);
-
-  if (!normalizedRoles.length) {
-    throw new Error("El usuario debe tener al menos un rol.");
-  }
-
-  const userRef = doc(db, USERS_COLLECTION, uid);
-  const payload = {
-    roles: normalizedRoles,
-    rol: getLegacyRoleFromRoles(normalizedRoles),
-    updatedAt: serverTimestamp(),
-  };
-
-  await setDoc(userRef, payload, { merge: true });
-
-  return {
-    id: uid,
-    ...payload,
-  };
-}
-
 export async function deleteUserProfileByAdmin(uid) {
   if (!uid) {
     throw new Error("No se encontró el usuario a eliminar.");

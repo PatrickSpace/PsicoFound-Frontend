@@ -34,17 +34,6 @@ function sanitizeTherapistPayload(therapist = {}) {
   };
 }
 
-export async function getTherapists() {
-  const therapistsRef = collection(db, THERAPISTS_COLLECTION);
-  const therapistsQuery = query(therapistsRef, orderBy("nombre"));
-  const snapshot = await getDocs(therapistsQuery);
-
-  return snapshot.docs.map((item) => ({
-    id: item.id,
-    ...item.data(),
-  }));
-}
-
 export async function getTherapistById(id) {
   if (!id) return null;
 

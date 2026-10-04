@@ -264,5 +264,4 @@ module.exports = {
   getCurrentProfile,
   isProfileComplete,
   sanitizeModelProfileData,
-  sanitizeProfileData,
 };

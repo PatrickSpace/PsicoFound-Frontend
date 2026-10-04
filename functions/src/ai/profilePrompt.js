@@ -222,5 +222,4 @@ function buildProfileChatMessages(input = {}) {
 
 module.exports = {
   buildProfileChatMessages,
-  buildPrompt,
 };

@@ -95,6 +95,98 @@ function createProvider(name, implementation) {
   };
 }
 
+test("successful primary never constructs a broken fallback", async () => {
+  const service = new AIService({
+    providerFactory: {
+      createPrimaryProvider: () => createProvider("gemini", async () =>
+        ({text: "ok"})),
+      createFallbackProvider: () => {
+        throw new AIProviderConfigurationError("invalid fallback");
+      },
+    },
+    logger: createSilentLogger(),
+  });
+  assert.equal((await service.generateText()).text, "ok");
+});
+
+test("non-retryable errors never initialize fallback", async () => {
+  const error = new AIProviderConfigurationError("invalid primary");
+  let attempts = 0;
+  const service = new AIService({
+    providerFactory: {
+      createPrimaryProvider: () => createProvider("gemini", async () => {
+        throw error;
+      }),
+      createFallbackProvider: () => attempts++,
+    },
+    logger: createSilentLogger(),
+  });
+  await assert.rejects(service.generateText(), (value) => value === error);
+  assert.equal(attempts, 0);
+});
+
+test("same provider and effective model is never called twice", async () => {
+  const error = new AIProviderUnavailableError("timeout");
+  let calls = 0;
+  const primary = createProvider("gemini", async () => {
+    calls++;
+    throw error;
+  });
+  const service = new AIService({
+    providerFactory: {
+      createPrimaryProvider: () => primary,
+      createFallbackProvider: () => primary,
+    },
+    logger: createSilentLogger(),
+  });
+  await assert.rejects(service.generateText(), (value) => value === error);
+  assert.equal(calls, 1);
+});
+
+test("same provider with a different model can be a fallback", async () => {
+  const error = new AIProviderUnavailableError("timeout");
+  let calls = 0;
+  const service = new AIService({
+    providerFactory: {
+      createPrimaryProvider: () => createProvider("gemini", async () => {
+        throw error;
+      }),
+      createFallbackProvider: () => ({
+        ...createProvider("gemini", async () => {
+          calls++;
+          return {text: "ok"};
+        }),
+        defaultModel: "other-model",
+      }),
+    },
+    logger: createSilentLogger(),
+  });
+  assert.equal((await service.generateText()).fallbackUsed, true);
+  assert.equal(calls, 1);
+  await assert.rejects(service.generateText({model: "explicit-model"}),
+      (value) => value === error);
+  assert.equal(calls, 1);
+});
+
+test("fallback failure is propagated without further attempts", async () => {
+  const finalError = new AIProviderUnavailableError("fallback unavailable");
+  let attempts = 0;
+  const service = new AIService({
+    providerFactory: {
+      createPrimaryProvider: () => createProvider("primary", async () => {
+        throw new AIProviderUnavailableError("primary unavailable");
+      }),
+      createFallbackProvider: () => createProvider("fallback", async () => {
+        attempts++;
+        throw finalError;
+      }),
+    },
+    logger: createSilentLogger(),
+  });
+  await assert.rejects(service.generateText(), (value) => value === finalError);
+  assert.equal(attempts, 1);
+});
+
 function createSilentLogger() {
   return {
     info: () => {},

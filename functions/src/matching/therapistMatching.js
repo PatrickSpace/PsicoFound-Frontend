@@ -91,6 +91,10 @@ function scoreTherapist(therapist, request) {
 function parseAgeRange(value) {
   const normalized = (value || "").toString().trim();
 
+  if (normalized === "18-25") {
+    return {minEdad: 18, maxEdad: 25};
+  }
+
   if (normalized === "25-35") {
     return {minEdad: 25, maxEdad: 35};
   }

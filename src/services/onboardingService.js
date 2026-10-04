@@ -29,21 +29,6 @@ export const REGISTRATION_INTENTS = {
 export const REGISTRATION_INTENT_STORAGE_KEY =
   "lurems-registration-intent";
 
-export const REGISTRATION_OPTIONS = [
-  {
-    value: REGISTRATION_INTENTS.PATIENT,
-    label: "Paciente",
-    description: "Quiero encontrar apoyo psicológico.",
-    icon: "mdi-account-heart-outline",
-  },
-  {
-    value: REGISTRATION_INTENTS.PSYCHOLOGIST,
-    label: "Psicólogo/a",
-    description: "Quiero ofrecer atención profesional.",
-    icon: "mdi-account-tie-outline",
-  },
-];
-
 export async function finalizeRegistration(data = {}) {
   const result = await finalizeRegistrationCallable(data);
   return result.data;

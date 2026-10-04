@@ -209,7 +209,6 @@
 import { computed, nextTick, onBeforeUnmount, ref, watch } from "vue";
 import { useRouter } from "vue-router";
 import { useAuthStore } from "@/store/auth";
-import { useTerapiaStore } from "@/store/terapiaStore";
 import {
   resetProfileChatConversation,
   sendProfileChatMessage,
@@ -218,13 +217,11 @@ import {
   watchProfile,
 } from "@/services/conversationService";
 import {
-  applyProfileToTerapiaStore,
   isProfileReadyForRecommendations,
 } from "@/services/matchingService";
 
 const router = useRouter();
 const authStore = useAuthStore();
-const terapiaStore = useTerapiaStore();
 
 const draft = ref("");
 const loading = ref(false);
@@ -367,7 +364,6 @@ watch(
 
         if (item?.riesgoSuicida && !crisisRouteTriggered.value) {
           crisisRouteTriggered.value = true;
-          applyProfileToTerapiaStore(item, terapiaStore);
           router.push({
             path: "/elegirterapeuta",
             query: { crisis: "1" },
@@ -556,7 +552,6 @@ function getMessageCreatedAt(message) {
 }
 
 function goToRecommendations() {
-  applyProfileToTerapiaStore(profile.value, terapiaStore);
   router.push("/elegirterapeuta");
 }
 

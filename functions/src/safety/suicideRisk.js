@@ -61,5 +61,4 @@ function hasClearSuicideRisk(message) {
 
 module.exports = {
   getCrisisResult,
-  hasClearSuicideRisk,
 };

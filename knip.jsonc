@@ -1,0 +1,22 @@
+{
+  "$schema": "https://unpkg.com/knip@6/schema-jsonc.json",
+  // This test explicitly loads the admin SDK installed in functions/node_modules.
+  "ignoreIssues": {
+    "tests/paymentRates.integration.test.mjs": ["unlisted"]
+  },
+  "workspaces": {
+    ".": {
+      // Keep runtime entries explicit for --production, even if Vite detects them.
+      "entry": ["src/main.js!", "tests/**/*.test.mjs"],
+      "project": ["src/**/*.{js,vue}!", "tests/**/*.mjs"],
+      "paths": { "@/*": ["./src/*"] },
+      // Firebase CLI is installed separately, as documented in README.
+      "ignoreBinaries": ["firebase"]
+    },
+    "functions": {
+      "entry": ["index.js!", "src/**/*.test.js"],
+      "project": ["src/**/*.js!", "!src/**/*.test.js!"],
+      "ignoreBinaries": ["firebase"]
+    }
+  }
+}

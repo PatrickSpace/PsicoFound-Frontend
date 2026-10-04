@@ -51,7 +51,6 @@ function isRetryableAIError(error) {
 
 module.exports = {
   AIProviderConfigurationError,
-  AIProviderError,
   AIProviderInvalidResponseError,
   AIProviderRateLimitError,
   AIProviderUnavailableError,

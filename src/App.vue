@@ -67,7 +67,7 @@ const snackOk = ref({
   message: "",
 });
 
-// Listener del evento global emitido por axios.js: `window.dispatchEvent(new CustomEvent('api-error', { detail }))`
+// Los servicios y formularios comparten este canal de notificaciones.
 const onApiError = (e) => {
   const err = e?.detail ?? {};
   snack.value.title = err.status ? `Error ${err.status}` : "Error";

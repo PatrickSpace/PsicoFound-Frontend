@@ -12,7 +12,7 @@ import { auth } from "@/plugins/Firebase/firebase";
 import { db } from "@/plugins/Firebase/firestore";
 
 const AVAILABILITY_COLLECTION = "therapist_availability";
-export const SLOT_DURATION_MINUTES = 60;
+const SLOT_DURATION_MINUTES = 60;
 
 export async function createAvailabilitySlot({
   therapistId,
@@ -99,7 +99,7 @@ export async function closeAvailabilitySlot(slotId) {
   });
 }
 
-export function addMinutesToTime(time, minutes) {
+function addMinutesToTime(time, minutes) {
   const [hours = "0", mins = "0"] = (time || "00:00").split(":");
   const date = new Date(2000, 0, 1, Number(hours), Number(mins));
   date.setMinutes(date.getMinutes() + minutes);
@@ -110,7 +110,7 @@ export function addMinutesToTime(time, minutes) {
     .padStart(2, "0")}`;
 }
 
-export function normalizeSlot(id, data = {}) {
+function normalizeSlot(id, data = {}) {
   return {
     id,
     therapistId: data.therapistId || "",
@@ -126,7 +126,7 @@ export function normalizeSlot(id, data = {}) {
   };
 }
 
-export function compareSlots(a, b) {
+function compareSlots(a, b) {
   return `${a.date}T${a.startTime}`.localeCompare(`${b.date}T${b.startTime}`);
 }
 
