@@ -1,3 +1,4 @@
+import { adminApps, adminFirestore } from "./helpers/admin-sdk.mjs";
 import { after, before, test } from "node:test";
 import assert from "node:assert/strict";
 import { createRequire } from "node:module";
@@ -8,7 +9,6 @@ import {
 } from "firebase/firestore";
 
 const require = createRequire(import.meta.url);
-const admin = require("../functions/node_modules/firebase-admin");
 const { savePaymentRate, setPsychologistPaymentRate } = require("../functions/src/payments/paymentRateHandlers.js");
 const { resetProfileChatConversation } = require("../functions/src/chat/profileChatHandlers.js");
 const projectId = "demo-lurems-rates";
@@ -26,13 +26,14 @@ before(async () => {
   assert.match(process.env.FIRESTORE_EMULATOR_HOST || "", /^(127\.0\.0\.1|localhost):\d+$/,
     "Run via npm run test:payment-rules. Production access is forbidden.");
   process.env.GCLOUD_PROJECT = projectId;
-  adminApp = admin.initializeApp({ projectId });
-  db = admin.firestore();
+  adminApp = adminApps.initializeApp({ projectId });
+  db = adminFirestore.getFirestore();
   for (const [uid, roles] of [
     ["admin", ["admin"]], ["psychologist", ["psychologist"]],
     ["other", ["psychologist"]], ["patient", ["patient"]],
   ]) {
-    await db.doc(`users/${uid}`).set({ roles });
+    await db.doc(`users/${uid}`).set({ roles, fechaNacimiento: "1990-01-01", patientOnboardingStatus: "complete",
+      legalAcceptance: {version: "review-2026-10-06", termsUrl: "https://example.test/terms", privacyUrl: "https://example.test/privacy", acceptedAt: "2026-10-10"} });
   }
   await db.doc("users/legacy").set({ rol: "psicologo" });
   await db.doc("therapists/professional").set({ uid: "psychologist", activo: true, nombre: "Prueba" });
@@ -56,7 +57,7 @@ after(async () => {
     await terminate(firestore);
     await deleteApp(app);
   }
-  if (adminApp) await adminApp.delete();
+  if (adminApp) await adminApps.deleteApp(adminApp);
 });
 
 test("catalog reads are limited to admins and professionals, including legacy roles", async () => {
@@ -81,7 +82,7 @@ test("professional selection cannot be forged through direct profile edits", asy
   for (const uid of ["admin", "psychologist", "patient"]) {
     await assert.rejects(updateDoc(doc(clients.get(uid).firestore, "therapists/professional"), { paymentRateId: "premium" }), denied);
   }
-  await updateDoc(doc(clients.get("admin").firestore, "therapists/professional"), { description: "Perfil editado" });
+  await assert.rejects(updateDoc(doc(clients.get("admin").firestore, "therapists/professional"), { description: "Perfil editado" }), denied);
   await assert.rejects(setDoc(doc(clients.get("admin").firestore, "therapists/forged"), {
     uid: "admin", paymentRateId: "premium",
   }), denied);
@@ -119,7 +120,7 @@ test("selection is audited, private to its owner/admin and leaves old appointmen
 test("survey reset persists an empty profile with the same new session", async () => {
   await db.doc("conversations/patient").set({ uid: "patient", activeSessionId: "old", lastMessage: "old" });
   await db.doc("profiles/patient").set({ uid: "patient", sessionId: "old", temas: ["Ansiedad"], riesgoSuicida: true, completado: true });
-  const result = await resetProfileChatConversation({ auth: { uid: "patient" } });
+  const result = await resetProfileChatConversation({ auth: { uid: "patient", token: {email_verified: true} }, data: {requestId: "reset-rate-test"} });
   const conversation = (await db.doc("conversations/patient").get()).data();
   const profile = (await db.doc("profiles/patient").get()).data();
   assert.notEqual(result.activeSessionId, "old");

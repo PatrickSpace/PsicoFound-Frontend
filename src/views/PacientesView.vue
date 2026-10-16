@@ -57,9 +57,9 @@
           <v-card class="pa-4 card-backgoundcustom flex-grow-1 patients-stat-card" elevation="2" variant="text">
             <div class="d-flex align-center justify-space-between ga-3">
               <div>
-                <div class="text-body-2 text-medium-emphasis">Perfiles listos</div>
+                <div class="text-body-2 text-medium-emphasis">{{ professional ? "Resúmenes disponibles" : "Perfiles listos" }}</div>
                 <div class="text-h4 font-weight-bold mt-1">{{ completedProfilesCount }}</div>
-                <div class="text-caption text-medium-emphasis">Con entrevista suficiente</div>
+                <div class="text-caption text-medium-emphasis">{{ professional ? "Motivo o temas compartidos" : "Con entrevista suficiente" }}</div>
               </div>
               <v-avatar color="success" variant="tonal" rounded="lg">
                 <v-icon>mdi-account-check-outline</v-icon>
@@ -118,11 +118,11 @@
 
             <template #item.profileStatus="{ item }">
               <v-chip
-                :color="isProfileReady(item.profile) ? 'success' : 'warning'"
+                :color="professional ? (item.summary?.status === 'available' ? 'success' : 'warning') : (isProfileReady(item.profile) ? 'success' : 'warning')"
                 size="small"
                 variant="tonal"
               >
-                {{ isProfileReady(item.profile) ? "Listo" : "En progreso" }}
+                {{ professional ? summaryLabels[item.summary?.status] : (isProfileReady(item.profile) ? "Listo" : "En progreso") }}
               </v-chip>
             </template>
 
@@ -134,7 +134,7 @@
                 </div>
               </div>
               <v-chip v-else size="small" color="secondary" variant="tonal">
-                Sin terapia
+                Sin terapia activa
               </v-chip>
             </template>
 
@@ -150,7 +150,7 @@
                   {{ topic }}
                 </v-chip>
                 <span v-if="item.topics.length === 0" class="text-caption">
-                  Sin temas
+                  {{ professional && item.summary?.status !== "available" ? summaryLabels[item.summary?.status] : "Sin temas registrados" }}
                 </span>
               </div>
             </template>
@@ -160,8 +160,8 @@
                 icon
                 variant="text"
                 color="secondary"
-                aria-label="Abrir detalle de terapia"
-                :disabled="!item.activeTherapy?.id"
+                :aria-label="`Abrir paciente ${item.nombre}`"
+                :disabled="!item.therapies.length"
                 @click="openTherapy(item)"
 
         class="pf-btn-icon">
@@ -176,7 +176,7 @@
 </template>
 
 <script setup>
-import { computed, ref, watch } from "vue";
+import { computed, onBeforeUnmount, ref, watch } from "vue";
 import { useRouter } from "vue-router";
 import { storeToRefs } from "pinia";
 import LayoutDefault from "@/components/Layout/Layoutmain.vue";
@@ -188,6 +188,8 @@ import {
   getTherapiesByPatient,
   getTherapiesByTherapist,
 } from "@/services/terapiaService";
+import { getTherapySharedSummary } from "@/services/followupService";
+import { createRequestGate } from "@/utils/therapyContext";
 import { isProfileReadyForRecommendations } from "@/services/matchingService";
 
 const router = useRouter();
@@ -198,11 +200,15 @@ const loading = ref(false);
 const errorMessage = ref("");
 const search = ref("");
 const patients = ref([]);
+const gate = createRequestGate();
+onBeforeUnmount(() => gate.next());
+const professional = computed(() => appContext.activeMode === "psychologist");
+const summaryLabels = { available: "Resumen disponible", absent: "Resumen no disponible", restricted: "Acceso restringido", error: "Error de carga" };
 
 const headers = [
   { title: "Paciente", value: "nombre" },
   { title: "Correo", value: "email" },
-  { title: "Perfil", key: "profileStatus", sortable: false },
+  { title: "Resumen inicial", key: "profileStatus", sortable: false },
   { title: "Temas", key: "topics", sortable: false },
   { title: "Terapia activa", key: "activeTherapy", sortable: false },
   { title: "Citas", value: "appointmentsCount" },
@@ -210,7 +216,7 @@ const headers = [
 ];
 
 const filteredPatients = computed(() => {
-  const q = search.value.toString().trim().toLowerCase();
+  const q = (search.value || "").toString().trim().toLowerCase();
 
   if (!q) {
     return patients.value;
@@ -230,7 +236,7 @@ const filteredPatients = computed(() => {
 });
 
 const completedProfilesCount = computed(
-  () => patients.value.filter((patient) => isProfileReady(patient.profile)).length
+  () => patients.value.filter((patient) => professional.value ? patient.summary?.status === "available" : isProfileReady(patient.profile)).length
 );
 
 const activeTherapiesCount = computed(
@@ -242,10 +248,13 @@ watch(
   () => {
     loadPatients();
   },
-  { immediate: true }
+  { immediate: true, flush: "sync" }
 );
 
 async function loadPatients() {
+  const ticket = gate.next();
+  const selectedMode = appContext.activeMode;
+  patients.value = [];
   if (!currentUser.value?.uid) {
     patients.value = [];
     return;
@@ -255,16 +264,18 @@ async function loadPatients() {
   errorMessage.value = "";
 
   try {
-    patients.value = appContext.activeMode === "admin"
+    const loaded = selectedMode === "admin"
       ? await loadAdminPatients()
       : await loadTherapistPatients(currentUser.value.uid);
+    if (gate.isCurrent(ticket)) patients.value = loaded;
   } catch (error) {
+    if (!gate.isCurrent(ticket)) return;
     console.error("Error loading patients:", error);
     errorMessage.value =
       error?.message || "No pudimos cargar la lista de pacientes.";
     patients.value = [];
   } finally {
-    loading.value = false;
+    if (gate.isCurrent(ticket)) loading.value = false;
   }
 }
 
@@ -316,7 +327,16 @@ async function loadTherapistPatients(uid) {
     byPatient.set(pacienteUid, current);
   });
 
-  return Array.from(byPatient.values());
+  return Promise.all(Array.from(byPatient.values()).map(async (patient) => {
+    const therapy = patient.activeTherapy || patient.therapies[0];
+    try {
+      patient.summary = await getTherapySharedSummary(therapy.id, "psychologist");
+      patient.topics = patient.summary.topics || [];
+    } catch (error) {
+      patient.summary = { status: error.code?.includes("permission-denied") ? "restricted" : "error" };
+    }
+    return patient;
+  }));
 }
 
 async function buildPatientRow(user) {
@@ -348,13 +368,14 @@ async function buildPatientRow(user) {
 }
 
 function openTherapy(item) {
-  if (!item.activeTherapy?.id) {
+  const selected = item.activeTherapy || item.therapies[0];
+  if (!selected?.id) {
     return;
   }
 
   router.push({
     path: "/terapiadetail",
-    query: { id: item.activeTherapy.id },
+    query: { id: selected.id, patientUid: item.uid, contextMode: appContext.activeMode },
   });
 }
 

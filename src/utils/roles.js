@@ -49,6 +49,7 @@ export function normalizeRoles(roles = []) {
 }
 
 export function getUserRoles(user = {}, options = {}) {
+  if (!user) return [];
   const roles = [];
 
   if (Array.isArray(user.roles)) {

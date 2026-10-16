@@ -31,6 +31,7 @@
 
       <v-card-text class="appointment-body">
         <v-container class="pa-0">
+          <p class="text-caption mb-3">{{ AGENDA_NOTICE }}</p>
           <v-row>
             <v-col v-if="!showAvailabilityPicker" cols="12">
               <div class="text-subtitle-1 font-weight-bold">
@@ -41,7 +42,7 @@
               </div>
             </v-col>
 
-            <v-col v-if="showAvailabilityPicker" cols="12">
+            <v-col v-if="showAvailabilityPicker && !bookingQuote" cols="12">
               <div class="appointment-therapist-card">
                 <v-avatar class="appointment-therapist-card__avatar" size="58">
                   <v-icon size="34">mdi-account-heart-outline</v-icon>
@@ -64,7 +65,7 @@
               </div>
             </v-col>
 
-            <v-col v-if="showAvailabilityPicker" cols="12">
+            <v-col v-if="showAvailabilityPicker && !bookingQuote" cols="12">
               <div class="appointment-location-card">
                 <div>
                   <div class="text-subtitle-1 font-weight-bold">
@@ -78,7 +79,7 @@
               </div>
             </v-col>
 
-            <v-col v-if="showAvailabilityPicker" cols="12">
+            <v-col v-if="showAvailabilityPicker && !bookingQuote" cols="12">
               <div class="availability-filter">
                 <button
                   v-for="option in availabilityRangeOptions"
@@ -138,11 +139,94 @@
                       @click="selectAvailabilitySlot(slot)"
                     >
                       <span class="availability-slot__radio"></span>
-                      <span>{{ slot.startTime }} hs</span>
+                      <span>{{ slot.startTime }} · hora de Lima</span>
                     </button>
                   </div>
                 </section>
               </div>
+            </v-col>
+
+            <v-col v-if="form.fecha && form.hora" cols="12">
+              <v-alert type="info" variant="tonal">
+                Horario de la cita: {{ form.fecha }} · {{ form.hora }} · hora de Lima.
+                {{ AGENDA_NOTICE }}
+              </v-alert>
+            </v-col>
+
+            <v-col v-if="bookingQuote" cols="12">
+              <v-card class="booking-quote pa-4" variant="outlined">
+                <div class="d-flex align-center justify-space-between ga-3 mb-3">
+                  <div>
+                    <div class="text-caption text-medium-emphasis">
+                      Cotización para esta reserva
+                    </div>
+                    <div class="text-h5 font-weight-bold">
+                      {{ formatPaymentAmount(bookingQuote.amountMinor) }}
+                    </div>
+                  </div>
+                  <v-chip color="secondary" variant="tonal">
+                    {{ bookingQuote.currency }}
+                  </v-chip>
+                </div>
+                <v-list class="bg-transparent" density="compact">
+                  <v-list-item title="Tarifa" :subtitle="bookingQuote.name" />
+                  <v-list-item
+                    title="Profesional"
+                    :subtitle="terapeutaNombre || therapist?.nombre"
+                  />
+                  <v-list-item
+                    title="Horario"
+                  >
+                    <p class="text-body-2 text-medium-emphasis text-wrap mb-0" data-testid="booking-quote-schedule">
+                      {{ form.fecha }} · {{ form.hora }} · hora de Lima · {{ form.modalidad }}
+                    </p>
+                  </v-list-item>
+                  <v-list-item
+                    title="Conciliación"
+                    subtitle="Administrativa y manual contra una operación verificable del proveedor"
+                  />
+                </v-list>
+                <v-alert
+                  v-if="bookingQuote.isTest"
+                  color="warning"
+                  variant="tonal"
+                  class="mb-3"
+                >
+                  Tarifa marcada como prueba. No abras el enlace durante pruebas
+                  automatizadas; el enlace puede representar un cobro real.
+                </v-alert>
+                <p class="text-caption text-medium-emphasis mb-2">
+                  Al confirmar se reservará el bloque y se creará una operación
+                  pendiente con esta tarifa y versión. Abrir el enlace o volver
+                  a Lurems no acredita el pago.
+                </p>
+                <p class="text-caption text-medium-emphasis mb-0">
+                  Política {{ bookingQuote.commercialPolicy.version }}.
+                  Plazo para informar el pago: {{ bookingQuote.conditions.holdMinutes }} minutos
+                  como máximo, antes del inicio de la cita.
+                  Cancelación: hasta {{ bookingQuote.conditions.patientCancellationCutoffMinutes }} minutos antes.
+                  Reprogramación: hasta {{ bookingQuote.conditions.patientRescheduleCutoffMinutes }} minutos antes.
+                  {{ bookingQuote.commercialPolicy.patientPastCancellation === 'allow'
+                    ? 'Una cita pasada abierta también admite cancelación explícita.'
+                    : 'Una cita pasada requiere revisión de soporte para cancelarla.' }}
+                  {{ bookingQuote.commercialPolicy.patientPastReschedule === 'allow'
+                    ? 'Una cita pasada abierta admite reprogramación si el plazo de pago sigue vigente.'
+                    : 'Reprogramar una cita pasada requiere revisión de soporte.' }}
+                  Las devoluciones requieren revisión; no se realizan automáticamente.
+                  {{ bookingQuote.conditions.submittedExpiration === 'preserve_for_review'
+                    ? 'El pago informado queda pendiente de conciliación sin vencer automáticamente.'
+                    : 'Informar el pago no extiende el plazo de reserva.' }}
+                </p>
+                <v-btn
+                  class="mt-3 pf-btn-ghost"
+                  color="secondary"
+                  variant="text"
+                  prepend-icon="mdi-arrow-left"
+                  @click="bookingQuote = null"
+                >
+                  Cambiar horario
+                </v-btn>
+              </v-card>
             </v-col>
 
             <v-col v-if="!showAvailabilityPicker" cols="12" md="6">
@@ -230,7 +314,7 @@
               </v-alert>
             </v-col>
 
-            <v-col cols="12">
+            <v-col v-if="!bookingQuote" cols="12">
               <v-textarea
                 v-model="form.notas"
                 :label="showAvailabilityPicker ? 'Notas para el psicólogo' : 'Notas para la cita'"
@@ -247,12 +331,12 @@
           color="secondary"
           variant="tonal"
           block
-          :loading="saving"
+          :loading="saving || loadingQuote"
           :disabled="!canSubmitAppointment"
-          @click="submitAppointment"
+          @click="handlePrimaryAction"
 
         class="pf-btn-secondary">
-          {{ showAvailabilityPicker ? "Siguiente paso" : citaId ? "Guardar cambios" : "Registrar cita" }}
+          {{ primaryActionLabel }}
         </v-btn>
       </v-card-actions>
     </v-card>
@@ -260,15 +344,24 @@
 </template>
 
 <script setup>
+import { useAgendaClock } from "@/composables/useAgendaClock";
+const agendaNow = useAgendaClock();
+import { DEFAULT_TIME_ZONE, AGENDA_NOTICE, agendaPresentation, inAgendaRange } from "@/utils/dateTime";
 import { computed, reactive, ref, watch } from "vue";
 import { storeToRefs } from "pinia";
 import { useRouter } from "vue-router";
 import { useAuthStore } from "@/store/auth";
 import { useAppContextStore } from "@/store/appContext";
-import { createAppointment, updateAppointment } from "@/services/citaService";
+import {
+  createAppointment,
+  createOperationId,
+  updateAppointment,
+} from "@/services/citaService";
 import { getAvailableSlotsByTherapist } from "@/services/availabilityService";
 import { getTherapistById } from "@/services/psicologoService";
 import { getTherapyById } from "@/services/terapiaService";
+import { getBookingQuote } from "@/services/paymentService";
+import { formatPaymentAmount } from "@/utils/paymentRates";
 
 const props = defineProps({
   modelValue: {
@@ -323,11 +416,14 @@ const saving = ref(false);
 const loadingTherapist = ref(false);
 const loadingTherapy = ref(false);
 const loadingAvailability = ref(false);
+const loadingQuote = ref(false);
 const availabilityError = ref("");
 const therapist = ref(null);
 const therapy = ref(null);
 const availabilitySlots = ref([]);
 const selectedSlotId = ref("");
+const operationRequestId = ref("");
+const bookingQuote = ref(null);
 const availabilityRange = ref("month");
 const form = reactive({
   fecha: "",
@@ -397,6 +493,7 @@ const appointmentDialogTitle = computed(() => {
 const selectedSlot = computed(() =>
   availabilitySlots.value.find((slot) => slot.id === selectedSlotId.value) || null
 );
+const scheduleTimeZone = computed(() => DEFAULT_TIME_ZONE);
 const selectedSlotLocation = computed(() => {
   const slotLocation = selectedSlot.value?.location || form.ubicacion;
 
@@ -426,18 +523,8 @@ const therapistSpecialty = computed(() => {
 
   return rawSpecialty;
 });
-const filteredAvailabilitySlots = computed(() => {
-  const now = new Date();
-  const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  const start = rangeStartDate(availabilityRange.value, startOfToday);
-  const end = rangeEndDate(availabilityRange.value, startOfToday);
-
-  return availabilitySlots.value.filter((slot) => {
-    const slotDate = parseDateOnly(slot.date);
-
-    return slotDate && slotDate >= start && slotDate <= end;
-  });
-});
+const filteredAvailabilitySlots = computed(() => availabilitySlots.value.filter((slot) =>
+  inAgendaRange(slot, availabilityRange.value, agendaNow.value)));
 const filteredAvailabilityGroups = computed(() => {
   const groups = new Map();
 
@@ -465,10 +552,21 @@ const canSubmitAppointment = computed(() => {
   }
 
   if (showAvailabilityPicker.value) {
-    return Boolean(selectedSlotId.value);
+    return Boolean(bookingQuote.value || selectedSlotId.value);
   }
 
   return Boolean(form.fecha && form.hora);
+});
+const requiresBookingQuote = computed(
+  () => showAvailabilityPicker.value && !props.citaId
+);
+const primaryActionLabel = computed(() => {
+  if (requiresBookingQuote.value && !bookingQuote.value) {
+    return "Revisar cotización";
+  }
+  if (requiresBookingQuote.value) return "Confirmar reserva";
+  if (props.citaId) return "Guardar cambios";
+  return "Registrar cita";
 });
 const meetingProviderHint = computed(() => {
   if (!isRemote.value) {
@@ -511,9 +609,14 @@ watch(
   () => props.modelValue,
   async (isOpen) => {
     if (isOpen) {
+      agendaNow.value = new Date();
+      bookingQuote.value = null;
+      operationRequestId.value = createOperationId(
+        props.citaId ? "appointment_update" : "appointment_reserve"
+      );
       await loadSources();
-      form.fecha = props.initialAppointment?.fecha || "";
-      form.hora = props.initialAppointment?.hora || "";
+      form.fecha = props.initialAppointment ? agendaPresentation(props.initialAppointment).fecha : "";
+      form.hora = props.initialAppointment ? agendaPresentation(props.initialAppointment).hora : "";
       form.notas = props.initialAppointment?.notas || "";
       form.modalidad =
         normalizeDisplayModalidad(props.initialAppointment?.modalidad) ||
@@ -696,8 +799,33 @@ async function loadAvailabilitySlots() {
 }
 
 function selectAvailabilitySlot(slot) {
+  bookingQuote.value = null;
   selectedSlotId.value = slot.id;
   applySlotToForm(slot);
+}
+
+async function handlePrimaryAction() {
+  if (requiresBookingQuote.value && !bookingQuote.value) {
+    await loadBookingQuote();
+    return;
+  }
+  await submitAppointment();
+}
+
+async function loadBookingQuote() {
+  if (!selectedSlotId.value || loadingQuote.value) return;
+  loadingQuote.value = true;
+  try {
+    bookingQuote.value = await getBookingQuote(props.terapeutaId, selectedSlotId.value);
+  } catch (error) {
+    window.dispatchEvent(new CustomEvent("api-error", {
+      detail: {
+        message: error?.message || "No pudimos preparar la cotización.",
+      },
+    }));
+  } finally {
+    loadingQuote.value = false;
+  }
 }
 
 function applySlotToForm(slot) {
@@ -752,7 +880,14 @@ async function submitAppointment() {
         ubicacion: form.ubicacion,
         meetingProvider: meetingProviderForSave.value,
         meetingUrl: meetingUrlForSave.value,
-        availabilitySlotId: selectedSlotId.value,
+        availabilitySlotId: showAvailabilityPicker.value ? selectedSlotId.value : "",
+        timeZone: scheduleTimeZone.value,
+        reschedule:
+          form.fecha !== (props.initialAppointment ? agendaPresentation(props.initialAppointment).fecha : "") ||
+          form.hora !== (props.initialAppointment ? agendaPresentation(props.initialAppointment).hora : "") ||
+          selectedSlotId.value !==
+            (props.initialAppointment?.availabilitySlotId || ""),
+        requestId: operationRequestId.value,
       });
     } else {
       const appointmentPatientUid = props.pacienteUid || currentUser.value.uid;
@@ -773,6 +908,10 @@ async function submitAppointment() {
         meetingUrl: meetingUrlForSave.value,
         availabilitySlotId: selectedSlotId.value,
         estado: "pendiente",
+        timeZone: scheduleTimeZone.value,
+        mode: appContext.activeMode,
+        requestId: operationRequestId.value,
+        quoteId: bookingQuote.value?.quoteId || "",
       });
     }
 
@@ -788,6 +927,7 @@ async function submitAppointment() {
     );
 
     emit("saved", savedAppointment);
+    operationRequestId.value = "";
     emit("update:modelValue", false);
     if (props.redirectOnSave) {
       router.push("/sesiones");
@@ -812,31 +952,8 @@ function parseDateOnly(value) {
     return null;
   }
 
-  const parsed = new Date(`${value}T00:00`);
+  const parsed = new Date(`${value}T00:00:00Z`);
   return Number.isNaN(parsed.getTime()) ? null : parsed;
-}
-
-function rangeEndDate(range, startDate) {
-  const end = new Date(startDate);
-
-  if (range === "week") {
-    end.setDate(end.getDate() + 7);
-    return end;
-  }
-
-  if (range === "next") {
-    return new Date(end.getFullYear(), end.getMonth() + 2, 0);
-  }
-
-  return new Date(end.getFullYear(), end.getMonth() + 1, 0);
-}
-
-function rangeStartDate(range, startDate) {
-  if (range === "next") {
-    return new Date(startDate.getFullYear(), startDate.getMonth() + 1, 1);
-  }
-
-  return startDate;
 }
 
 function formatWeekday(date) {
@@ -846,7 +963,7 @@ function formatWeekday(date) {
     return "Fecha";
   }
 
-  return new Intl.DateTimeFormat("es", { weekday: "long" })
+  return new Intl.DateTimeFormat("es", { weekday: "long", timeZone: "UTC" })
     .format(parsed)
     .replace(/^\w/, (letter) => letter.toUpperCase());
 }
@@ -859,6 +976,7 @@ function formatDisplayDate(date) {
   }
 
   return new Intl.DateTimeFormat("es-PE", {
+    timeZone: "UTC",
     day: "2-digit",
     month: "2-digit",
     year: "numeric",

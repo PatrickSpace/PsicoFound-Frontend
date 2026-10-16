@@ -50,3 +50,20 @@ test("no criteria returns at most five without requiring topics", () => {
   assert.deepEqual(findMatchingTherapists(null), []);
   assert.deepEqual(findMatchingTherapists([]), []);
 });
+
+test("mandatory criteria never get silently relaxed", () => {
+  const therapists = [
+    {id: "remote-woman", modalidad: "Online", genero: "Femenino"},
+    {id: "office-woman", modalidad: "Presencial", genero: "Femenino"},
+    {id: "remote-man", modalidad: "Online", genero: "Masculino"},
+  ];
+  const criteria = buildSearchCriteriaFromProfile({
+    modalidad: "Online",
+    preferenciaGenero: "Femenino",
+  });
+  assert.deepEqual(
+      findMatchingTherapists(therapists, criteria, ["modalidad", "genero"])
+          .map((item) => item.id),
+      ["remote-woman"],
+  );
+});

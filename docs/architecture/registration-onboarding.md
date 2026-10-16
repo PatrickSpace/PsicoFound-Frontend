@@ -50,7 +50,9 @@ perfil público de terapeuta.
 
 ## Compatibilidad
 
-Los usuarios existentes sin `registrationIntent` se consideran perfiles
-legados completos y no son obligados a repetir el onboarding. Si una cuenta
+Los usuarios existentes sin `registrationIntent` conservan el tratamiento de
+onboarding legado. Eso no exime de elegibilidad, correo verificado ni consentimiento
+vigente: las comprobaciones de acceso posteriores se describen en
+[cuenta y privacidad](../operations/pilot-privacy.md). Si una cuenta
 existente entra por el registro y elige el recorrido profesional, puede iniciar
 la solicitud sin perder sus roles actuales.

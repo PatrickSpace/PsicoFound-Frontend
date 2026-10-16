@@ -1,8 +1,6 @@
 import {
-  addDoc,
   collection,
   doc,
-  limit,
   onSnapshot,
   orderBy,
   query,
@@ -10,37 +8,9 @@ import {
   updateDoc,
   where,
 } from "firebase/firestore";
-import { auth } from "@/plugins/Firebase/firebase";
 import { db } from "@/plugins/Firebase/firestore";
 
 const NOTIFICATIONS_COLLECTION = "notifications";
-
-export async function createNotification(data = {}) {
-  const recipientUid = data.recipientUid || "";
-
-  if (!recipientUid) {
-    return null;
-  }
-
-  const payload = {
-    recipientUid,
-    actorUid: data.actorUid || auth.currentUser?.uid || "",
-    type: data.type || "general",
-    title: data.title || "Notificación",
-    message: data.message || "",
-    route: data.route || "",
-    readAt: null,
-    metadata: sanitizeMetadata(data.metadata),
-    createdAt: serverTimestamp(),
-  };
-
-  const docRef = await addDoc(collection(db, NOTIFICATIONS_COLLECTION), payload);
-
-  return {
-    id: docRef.id,
-    ...payload,
-  };
-}
 
 export function watchNotifications(recipientUid, onData, onError) {
   if (!recipientUid) {
@@ -52,8 +22,7 @@ export function watchNotifications(recipientUid, onData, onError) {
   const notificationsQuery = query(
     notificationsRef,
     where("recipientUid", "==", recipientUid),
-    orderBy("createdAt", "desc"),
-    limit(20)
+    orderBy("createdAt", "desc")
   );
 
   return onSnapshot(
@@ -62,7 +31,7 @@ export function watchNotifications(recipientUid, onData, onError) {
       onData(
         snapshot.docs.map((item) => ({
           id: item.id,
-          ...item.data(),
+          ...presentNotification(item.data()),
         }))
       );
     },
@@ -81,12 +50,15 @@ export async function markNotificationAsRead(notificationId) {
   });
 }
 
-function sanitizeMetadata(metadata = {}) {
-  return {
-    citaId: metadata.citaId || "",
-    terapiaId: metadata.terapiaId || "",
-    terapeutaId: metadata.terapeutaId || "",
-    appointmentStatus: metadata.appointmentStatus || "",
-    hasMeetingUrl: Boolean(metadata.hasMeetingUrl),
-  };
+function presentNotification(data) {
+  if (!data.type?.startsWith("appointment_")) return data;
+  const scheduleMessage = data.metadata?.scheduleLabel
+    ? `${data.title} · ${data.metadata.scheduleLabel}`
+    : `${data.title} · Consulta la cita para verificar su horario en hora de Lima; el aviso histórico no conserva un instante verificable.`;
+  const rejectionMessage = data.type === "appointment_rejected" && data.metadata?.rescheduleRequested
+    ? ` · ${data.metadata.cancellationReason || "Tu profesional no podrá atenderte en este horario."} · Elige un nuevo horario desde Mis sesiones. Si ya pagaste, el pago requiere revisión y no se aplica automáticamente a otra reserva.`
+    : "";
+  const attendanceMessage = data.metadata?.attendanceAction
+    ? ` · ${data.metadata.attendanceReason || 'Consulta el registro de atención.'} · Puedes revisar los datos y el historial de cambios desde tu proceso.` : "";
+  return {...data, message: scheduleMessage + rejectionMessage + attendanceMessage};
 }

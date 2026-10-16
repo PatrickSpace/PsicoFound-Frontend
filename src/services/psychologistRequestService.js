@@ -1,13 +1,11 @@
 import {
   collection,
   getDocs,
-  orderBy,
   query,
   where,
 } from "firebase/firestore";
 import { db } from "@/plugins/Firebase/firestore";
 import {
-  reviewPsychologistApplication,
   submitPsychologistApplication,
 } from "@/services/onboardingService";
 
@@ -46,40 +44,6 @@ export async function getLatestPsychologistRequestByUser(userUid) {
   }));
 
   return sortRequestsByCreatedAt(requests)[0] || null;
-}
-
-export async function getPsychologistRequests() {
-  const requestsRef = collection(db, REQUESTS_COLLECTION);
-  const requestsQuery = query(requestsRef, orderBy("createdAt", "desc"));
-  const snapshot = await getDocs(requestsQuery);
-
-  return snapshot.docs.map((item) => ({
-    id: item.id,
-    ...item.data(),
-  }));
-}
-
-export async function approvePsychologistRequest(request) {
-  if (!request?.id) {
-    throw new Error("Solicitud inválida.");
-  }
-
-  return reviewPsychologistApplication({
-    requestId: request.id,
-    action: "approve",
-  });
-}
-
-export async function rejectPsychologistRequest(requestId, rejectionReason = "") {
-  if (!requestId) {
-    throw new Error("Solicitud inválida.");
-  }
-
-  return reviewPsychologistApplication({
-    requestId,
-    action: "reject",
-    rejectionReason: rejectionReason.trim(),
-  });
 }
 
 function sortRequestsByCreatedAt(requests = []) {

@@ -8,6 +8,7 @@ const HomeView = () => import("@/views/Auth/HomeView.vue");
 const DasboardView = () => import("@/views/mainviews/DashboardView.vue");
 const LogInView = () => import("@/views/Auth/LogIn.vue");
 const SignUpview = () => import("@/views/Auth/SingUp.vue");
+const VerifyEmailView = () => import("@/views/Auth/VerifyEmailView.vue");
 const ElegirTerapeutaView = () => import("@/views/encuesta/ElegirTerapeuta.vue");
 const SesionesView = () => import("@/views/mainviews/MisSesionesView.vue");
 const ProgresoView = () => import("@/views/mainviews/ProgresoView.vue");
@@ -20,6 +21,8 @@ const PsicologoSesionesView = () => import("@/views/psicologo/PsicologoSesionesV
 const PsychologistRequestsView = () => import("@/views/admin/PsychologistRequestsView.vue");
 const UsersAdminView = () => import("@/views/admin/UsersAdminView.vue");
 const PaymentRatesView = () => import("@/views/admin/PaymentRatesView.vue");
+const SupportRequestsView = () => import("@/views/admin/SupportRequestsView.vue");
+const PaymentOperationsView = () => import("@/views/admin/PaymentOperationsView.vue");
 const OnboardingEntryView = () => import("@/views/onboarding/OnboardingEntryView.vue");
 const PatientOnboardingView = () => import("@/views/onboarding/PatientOnboardingView.vue");
 const PsychologistOnboardingView = () => import("@/views/onboarding/PsychologistOnboardingView.vue");
@@ -76,19 +79,25 @@ const router = createRouter({
       path: "/pacientes",
       name: "pacientes",
       component: PacientesView,
-      meta: { modes: ["psychologist", "admin"] },
+      meta: { modes: ["psychologist"] },
     },
     {
       path: "/dashboard",
       name: "dashboard",
       component: DasboardView,
-      meta: { modes: ["patient", "admin"] },
+      meta: { modes: ["patient"] },
     },
     {
       path: "/login",
       name: "login",
       component: LogInView,
       meta: { public: true, guestOnly: true },
+    },
+    {
+      path: "/verificar-correo",
+      name: "verify-email",
+      component: VerifyEmailView,
+      meta: { emailVerification: true },
     },
     {
       path: "/onboarding",
@@ -160,7 +169,7 @@ const router = createRouter({
       path: "/terapiadetail",
       name: "terapiadetail",
       component: TerapiaDetailView,
-      meta: { modes: ["patient", "psychologist", "admin"] },
+      meta: { modes: ["patient", "psychologist"] },
     },
     {
       path: "/psicologo/sesiones",
@@ -186,6 +195,18 @@ const router = createRouter({
       component: PaymentRatesView,
       meta: { modes: ["admin"] },
     },
+    {
+      path: "/admin/soporte",
+      name: "admin-support-requests",
+      component: SupportRequestsView,
+      meta: { modes: ["admin"] },
+    },
+    {
+      path: "/admin/conciliacion",
+      name: "admin-payment-operations",
+      component: PaymentOperationsView,
+      meta: { modes: ["admin"] },
+    },
  
 ]});
 
@@ -201,13 +222,37 @@ router.beforeEach(async (to) => {
     };
   }
 
+  const usesPassword = user?.providerData?.some(
+    (provider) => provider.providerId === "password"
+  );
+  if (
+    user &&
+    usesPassword &&
+    !user.emailVerified &&
+    !to.meta.emailVerification
+  ) {
+    return {
+      path: "/verificar-correo",
+      query: { redirect: to.fullPath },
+    };
+  }
+
+  if (user?.emailVerified && to.meta.emailVerification) {
+    return typeof to.query.redirect === "string"
+      ? to.query.redirect
+      : "/onboarding";
+  }
+
   if (user && isGuestOnlyRoute) {
     return "/onboarding";
   }
 
+  // Verification needs Auth only; profile queries must not delay this screen.
+  if (to.meta.emailVerification) return;
+
   if (user && !isPublicRoute) {
     const appContext = useAppContextStore();
-    await appContext.loadForUser(user.uid);
+    await appContext.loadForUser(user.uid, { force: true });
     const blockingOnboardingRoute = getBlockingOnboardingRoute(
       appContext.userProfile || {}
     );

@@ -1,6 +1,6 @@
 const {test, afterEach, mock} = require("node:test");
 const assert = require("node:assert/strict");
-const admin = require("firebase-admin");
+const firestoreAdmin = require("firebase-admin/firestore");
 const {
   normalizePaymentRate,
   normalizePaymentUrl,
@@ -66,14 +66,14 @@ function setup() {
   const firestore = Object.assign(() => db, {
     FieldValue: {serverTimestamp: () => "server-time"},
   });
-  mock.getter(admin, "firestore", () => firestore);
+  mock.method(firestoreAdmin, "getFirestore", firestore);
   return documents;
 }
 
 test("splits 110, 120 and 1.10 PEN and preserves every cent", () => {
   for (const [total, psychologist, platform] of [
     [11000, 7700, 3300], [12000, 8400, 3600], [110, 77, 33],
-    [1, 1, 0], [111, 78, 33],
+    [1, 0, 1], [111, 77, 34],
   ]) {
     const result = splitPaymentAmount(total);
     assert.equal(result.psychologistAmountMinor, psychologist);

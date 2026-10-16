@@ -16,11 +16,6 @@ const submitPsychologistApplicationCallable = httpsCallable(
   functions,
   "submitPsychologistApplication"
 );
-const reviewPsychologistApplicationCallable = httpsCallable(
-  functions,
-  "reviewPsychologistApplication"
-);
-
 export const REGISTRATION_INTENTS = {
   PATIENT: "patient",
   PSYCHOLOGIST: "psychologist",
@@ -41,11 +36,6 @@ export async function completePatientOnboarding(data = {}) {
 
 export async function submitPsychologistApplication(data = {}) {
   const result = await submitPsychologistApplicationCallable(data);
-  return result.data;
-}
-
-export async function reviewPsychologistApplication(data = {}) {
-  const result = await reviewPsychologistApplicationCallable(data);
   return result.data;
 }
 

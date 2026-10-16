@@ -9,13 +9,18 @@
             </p>
             <h1 class="text-h4 font-weight-bold">Detalle de terapia</h1>
             <p class="text-body-1 text-medium-emphasis mt-2 mb-0">
-              Revisa el estado del proceso, agenda nuevas citas y consulta sesiones asociadas.
+              {{ isPsychologistMode ? "Consulta las terapias vinculadas a tu atención y continúa el seguimiento." : "Revisa el estado del proceso y consulta sesiones asociadas." }}
             </p>
           </div>
         </div>
         <v-divider class="page-header-divider" />
       </div>
 
+      <v-progress-linear v-if="loading" indeterminate class="mb-4" />
+      <v-alert v-if="loadError" type="error" class="mb-4">{{ loadError }}</v-alert>
+      <TherapySelect v-if="isPsychologistMode && therapy" :model-value="therapy.id" :items="therapyOptions"
+        label="Terapia del paciente" variant="outlined" @update:model-value="selectTherapy" />
+      <SharedInitialSummary v-if="isPsychologistMode && therapy" :therapy-id="therapy.id" :mode="appContext.activeMode" />
       <v-row v-if="therapy" align="stretch">
         <v-col cols="12" md="8" class="d-flex">
           <v-card class="pa-4 card-backgoundcustom flex-grow-1" elevation="2" variant="text">
@@ -62,6 +67,11 @@
             </v-card-title>
             <v-card-text>
               <v-divider class="mb-4"></v-divider>
+              <div v-if="!isAdminMode" class="d-flex flex-column ga-3 mb-4">
+                <v-btn class="pf-btn-secondary" :to="followupRoute('/progreso')">Objetivos de esta terapia</v-btn>
+                <v-btn class="pf-btn-secondary" :to="followupRoute('/herramientas')">Ejercicios de esta terapia</v-btn>
+                <v-btn class="pf-btn-secondary" :to="followupRoute('/historial')">Historial terapéutico</v-btn>
+              </div>
               <v-btn
                 v-if="canCreateAppointment"
                 block
@@ -121,7 +131,7 @@
         </v-col>
       </v-row>
 
-      <v-card v-else class="pa-4 card-backgoundcustom" elevation="2" variant="text">
+      <v-card v-else-if="!loading && !loadError" class="pa-4 card-backgoundcustom" elevation="2" variant="text">
         <v-card-text>
           No se encontró la terapia seleccionada.
         </v-card-text>
@@ -162,10 +172,13 @@
 </template>
 
 <script setup>
-import { computed, ref, watch } from "vue";
+import { computed, onBeforeUnmount, ref, watch } from "vue";
 import { storeToRefs } from "pinia";
 import { useRoute, useRouter } from "vue-router";
 import LayoutDefault from "@/components/Layout/Layoutmain.vue";
+import SharedInitialSummary from "@/components/Terapias/SharedInitialSummary.vue";
+import { createRequestGate, formatTherapyDate, therapyLabel } from "@/utils/therapyContext";
+import TherapySelect from "@/components/Terapias/TherapySelect.vue";
 import CitaDialog from "@/components/Terapias/CitaDialog.vue";
 import TherapyAppointmentsTable from "@/components/Terapias/TherapyAppointmentsTable.vue";
 import { useAuthStore } from "@/store/auth";
@@ -173,6 +186,7 @@ import { useAppContextStore } from "@/store/appContext";
 import { getTherapistByUserUid } from "@/services/psicologoService";
 import {
   getActiveTherapyByPatient,
+  getTherapiesByTherapist,
   getTherapyById,
   getTherapyByIdForPatient,
   updateTherapyStatus,
@@ -186,13 +200,20 @@ const { currentUser } = storeToRefs(authStore);
 const therapy = ref(null);
 const dialog = ref(false);
 const changingStatus = ref("");
+const loading = ref(false);
+const loadError = ref("");
+const siblingTherapies = ref([]);
+const therapyOptions = computed(() => siblingTherapies.value.map((t) => ({ title: therapyLabel(t), value: t.id })));
+const gate = createRequestGate();
+onBeforeUnmount(() => gate.next());
+function selectTherapy(id) {
+  if (id) router.replace({ path: "/terapiadetail", query: { id, contextMode: appContext.activeMode } });
+}
+function followupRoute(path) {
+  return { path, query: { contextMode: appContext.activeMode, patientUid: therapy.value.pacienteUid, therapyId: therapy.value.id } };
+}
 
-const formattedCreationDate = computed(() => {
-  if (!therapy.value?.fechaCreacion) return "No definida";
-  const parsed = new Date(therapy.value.fechaCreacion);
-  if (Number.isNaN(parsed.getTime())) return "No definida";
-  return parsed.toLocaleDateString("es-PE");
-});
+const formattedCreationDate = computed(() => formatTherapyDate(therapy.value?.fechaCreacion, { dateOnly: true }));
 
 const normalizedTherapyStatus = computed(() =>
   (therapy.value?.estado || "").toString().trim().toLowerCase()
@@ -224,6 +245,17 @@ function statusColor(status) {
 }
 
 async function loadTherapy() {
+  if (route.path !== "/terapiadetail") {
+    gate.next();
+    return;
+  }
+  const ticket = gate.next();
+  const selectedMode = appContext.activeMode;
+  therapy.value = null;
+  siblingTherapies.value = [];
+  dialog.value = false;
+  loadError.value = "";
+  loading.value = true;
   const uid = currentUser.value?.uid;
   let therapyId = route.query.id?.toString() || "";
 
@@ -250,19 +282,28 @@ async function loadTherapy() {
       await router.replace({ path: "/terapiadetail", query: { id: therapyId } });
     }
 
-    therapy.value = await loadTherapyForActiveMode(therapyId, uid);
-
-    if (!therapy.value) {
-      router.replace(defaultRouteForMode(appContext.activeMode));
+    const loaded = await loadTherapyForActiveMode(therapyId, uid, selectedMode);
+    if (!gate.isCurrent(ticket)) return;
+    if (!loaded) throw new Error("Acceso restringido o terapia no disponible.");
+    let siblings = [];
+    if (selectedMode === "psychologist") {
+      siblings = (await getTherapiesByTherapist(loaded.terapeutaId)).filter((t) => t.pacienteUid === loaded.pacienteUid);
     }
+    if (!gate.isCurrent(ticket)) return;
+    therapy.value = loaded;
+    siblingTherapies.value = siblings;
   } catch (error) {
-    console.error("Error loading therapy detail:", error);
-    therapy.value = null;
+    if (gate.isCurrent(ticket)) {
+      therapy.value = null;
+      loadError.value = error.code?.includes("permission-denied") ? "Acceso restringido a esta terapia." : error.message || "Error al cargar la terapia.";
+    }
+  } finally {
+    if (gate.isCurrent(ticket)) loading.value = false;
   }
 }
 
-async function loadTherapyForActiveMode(therapyId, uid) {
-  if (isPatientMode.value) {
+async function loadTherapyForActiveMode(therapyId, uid, selectedMode) {
+  if (selectedMode === "patient") {
     return getTherapyByIdForPatient(therapyId, uid);
   }
 
@@ -272,11 +313,11 @@ async function loadTherapyForActiveMode(therapyId, uid) {
     return null;
   }
 
-  if (isAdminMode.value) {
+  if (selectedMode === "admin") {
     return selectedTherapy;
   }
 
-  if (isPsychologistMode.value) {
+  if (selectedMode === "psychologist") {
     const therapist = await getTherapistByUserUid(uid);
     return therapist?.id && selectedTherapy.terapeutaId === therapist.id
       ? selectedTherapy
@@ -286,16 +327,8 @@ async function loadTherapyForActiveMode(therapyId, uid) {
   return null;
 }
 
-function defaultRouteForMode(mode) {
-  if (mode === "psychologist" || mode === "admin") {
-    return "/pacientes";
-  }
-
-  return "/dashboard";
-}
-
 async function changeTherapyStatus(estado) {
-  if (!therapy.value?.id || changingStatus.value) {
+  if (!canChangeTherapyStatus.value || !therapy.value?.id || changingStatus.value) {
     return;
   }
 
@@ -333,7 +366,7 @@ watch(
   () => {
     loadTherapy();
   },
-  { immediate: true }
+  { immediate: true, flush: "sync" }
 );
 </script>
 

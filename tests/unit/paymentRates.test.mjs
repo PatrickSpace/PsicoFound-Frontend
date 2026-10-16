@@ -14,7 +14,7 @@ test("parses decimal soles without losing cents", () => {
 test("preview distributes the whole amount, including odd cents", () => {
   for (const amount of [1, 2, 110, 11000, 12000, 10000000]) {
     const split = previewPaymentSplit(amount);
-    assert.equal(split.psychologistAmountMinor, Math.round(amount * .7));
+    assert.equal(split.psychologistAmountMinor, Math.floor(amount * 70 / 100));
     assert.equal(split.platformAmountMinor + split.psychologistAmountMinor, amount);
   }
   assert.equal(previewPaymentSplit(null), null);

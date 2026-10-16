@@ -16,7 +16,7 @@ export function formatPaymentAmount(amountMinor) {
 
 export function previewPaymentSplit(amountMinor) {
   if (!Number.isSafeInteger(amountMinor)) return null;
-  const psychologistAmountMinor = Math.round(amountMinor * 70 / 100);
+  const psychologistAmountMinor = Math.floor(amountMinor * 70 / 100);
   return {
     psychologistAmountMinor,
     platformAmountMinor: amountMinor - psychologistAmountMinor,

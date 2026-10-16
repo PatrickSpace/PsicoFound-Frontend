@@ -193,3 +193,22 @@ function createSilentLogger() {
     warn: () => {},
   };
 }
+
+test("single-attempt mode never calls fallback", async () => {
+  let attempts = 0;
+  const service = new AIService({
+    providerFactory: {
+      createPrimaryProvider: () => createProvider("primary", async () => {
+        attempts++;
+        throw new AIProviderUnavailableError("uncertain");
+      }),
+      createFallbackProvider: () => {
+        throw new Error("Must not construct fallback");
+      },
+    },
+    logger: {info() {}, warn() {}},
+  });
+  await assert.rejects(
+      service.generateText({allowFallback: false}), /uncertain/);
+  assert.equal(attempts, 1);
+});

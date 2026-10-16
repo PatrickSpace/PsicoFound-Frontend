@@ -29,6 +29,18 @@
               Notificaciones
             </v-card-title>
             <v-divider />
+            <v-alert
+              v-if="notificationError"
+              color="error"
+              variant="tonal"
+              class="ma-3"
+              density="compact"
+            >
+              No pudimos actualizar los avisos.
+              <v-btn size="x-small" variant="text" @click="loadNotifications">
+                Reintentar
+              </v-btn>
+            </v-alert>
             <v-list v-if="notifications.length" class="bg-transparent" density="comfortable">
               <v-list-item
                 v-for="notification in notifications"
@@ -115,8 +127,10 @@ const { currentUser } = storeToRefs(authStore);
 const isFeedbackDialogOpen = ref(false);
 const showFeedbackSaved = ref(false);
 const notifications = ref([]);
+const notificationError = ref("");
 const openingNotificationId = ref("");
 let unsubscribeNotifications = null;
+let notificationGeneration = 0;
 
 const isSettingsRoute = computed(() => route.name === "configuracion");
 
@@ -126,48 +140,71 @@ const unreadNotificationsCount = computed(
 
 watch(
   () => currentUser.value?.uid,
-  (uid) => {
-    unsubscribeNotifications?.();
-    notifications.value = [];
+  () => {
+    loadNotifications();
+  },
+  { immediate: true }
+);
 
-    if (!uid) {
-      unsubscribeNotifications = null;
-      return;
-    }
-
-    unsubscribeNotifications = watchNotifications(
-      uid,
-      (items) => {
-        notifications.value = items;
-      },
-      (error) => {
-        console.error("Error loading notifications:", error);
-        notifications.value = [];
-      }
-    );
+watch(
+  () => route.query.support,
+  (value) => {
+    if (value === "1") isFeedbackDialogOpen.value = true;
   },
   { immediate: true }
 );
 
 onBeforeUnmount(() => {
+  notificationGeneration++;
   unsubscribeNotifications?.();
 });
+
+function loadNotifications() {
+  const generation = ++notificationGeneration;
+  notifications.value = [];
+  openingNotificationId.value = "";
+  const uid = currentUser.value?.uid;
+  unsubscribeNotifications?.();
+  notificationError.value = "";
+  if (!uid) {
+    notifications.value = [];
+    unsubscribeNotifications = null;
+    return;
+  }
+  unsubscribeNotifications = watchNotifications(
+    uid,
+    (items) => {
+      if (generation !== notificationGeneration) return;
+      notifications.value = items;
+      notificationError.value = "";
+    },
+    (error) => {
+      if (generation !== notificationGeneration) return;
+      console.error("Error loading notifications:", error);
+      notificationError.value = error?.message || "notification-load-failed";
+    }
+  );
+}
 
 async function openNotification(notification) {
   if (!notification?.id || openingNotificationId.value) {
     return;
   }
 
+  const generation = notificationGeneration;
   openingNotificationId.value = notification.id;
 
   try {
     if (!notification.readAt) {
       await markNotificationAsRead(notification.id);
     }
+    if (generation !== notificationGeneration) return;
     if (notification.route) {
-      await router.push(notification.route);
+      const target = router.resolve(notification.route);
+      await router.push({ path: target.path, query: {...target.query, notification: notification.id, openedAt: String(Date.now())} });
     }
   } catch (error) {
+    if (generation !== notificationGeneration) return;
     console.error("Error marking notification as read:", error);
     window.dispatchEvent(
       new CustomEvent("api-error", {
@@ -177,11 +214,13 @@ async function openNotification(notification) {
       })
     );
   } finally {
+    if (generation !== notificationGeneration) return;
     openingNotificationId.value = "";
   }
 }
 
 function notificationIcon(type = "") {
+  if (type.includes("support")) return "mdi-message-check-outline";
   if (type.includes("meeting_link")) return "mdi-video-outline";
   if (type.includes("confirmed")) return "mdi-calendar-check-outline";
   if (type.includes("completed")) return "mdi-check-circle-outline";

@@ -111,6 +111,17 @@
                       {{ enfoque }}
                     </v-chip>
                   </div>
+                  <div
+                    v-if="therapist.matchDetails?.matches?.length"
+                    class="text-caption text-medium-emphasis mt-3"
+                  >
+                    <strong>Coincide con:</strong>
+                    {{ matchLabels(therapist.matchDetails.matches) }}.
+                    <template v-if="therapist.matchDetails?.differs?.length">
+                      <strong>No coincide en:</strong>
+                      {{ matchLabels(therapist.matchDetails.differs) }}.
+                    </template>
+                  </div>
                 </v-col>
 
                 <v-col cols="12" md="3" xl="4" class="pa-4">
@@ -130,18 +141,16 @@
 
 
                     <div class="d-flex flex-column ga-2">
-                      <!--
-                        <v-btn
+                      <v-btn
                         block
                         variant="text"
                         color="secondary"
                         prepend-icon="mdi-account-search"
-                        to="/psicologos"
-
-        class="pf-btn-ghost">
+                        class="pf-btn-ghost"
+                        @click="openProfileDialog(therapist)"
+                      >
                         Ver perfil
                       </v-btn>
-                      -->
                       <v-btn
                         block
                         color="secondary"
@@ -190,6 +199,82 @@
     :terapeuta-id="selectedTherapist?.id"
     :terapeuta-nombre="selectedTherapist?.nombre"
   />
+
+  <v-dialog v-model="profileDialog" max-width="680">
+    <v-card class="pa-4 card-backgoundcustom" elevation="2" variant="text">
+      <v-card-title class="d-flex align-center ga-3 px-0 pt-0">
+        <v-avatar size="52" rounded="lg">
+          <v-img
+            v-if="profileTherapist?.avatar"
+            :src="profileTherapist.avatar"
+            :alt="profileTherapist.nombre"
+          />
+          <v-icon v-else>{{ avatarFallbackIcon(profileTherapist?.genero) }}</v-icon>
+        </v-avatar>
+        <div>
+          <div class="text-h6 font-weight-bold">{{ profileTherapist?.nombre }}</div>
+          <div class="text-caption text-medium-emphasis">
+            Perfil profesional público
+          </div>
+        </div>
+      </v-card-title>
+      <v-card-text>
+        <v-divider class="mb-4" />
+        <p class="text-body-2 mb-4">
+          {{ profileTherapist?.description || "Sin presentación disponible." }}
+        </p>
+        <div class="mb-4">
+          <div class="text-subtitle-2 mb-2">Áreas de acompañamiento</div>
+          <div class="d-flex flex-wrap ga-2">
+            <v-chip
+              v-for="item in profileTherapist?.especialidades || []"
+              :key="`profile-specialty-${item}`"
+              size="small"
+              color="secondary"
+              variant="tonal"
+            >
+              {{ item }}
+            </v-chip>
+          </div>
+        </div>
+        <div class="mb-4">
+          <div class="text-subtitle-2 mb-2">Enfoques</div>
+          <div class="d-flex flex-wrap ga-2">
+            <v-chip
+              v-for="item in profileTherapist?.enfoques || []"
+              :key="`profile-approach-${item}`"
+              size="small"
+              color="secondary"
+              variant="outlined"
+            >
+              {{ item }}
+            </v-chip>
+          </div>
+        </div>
+        <v-list class="bg-transparent" density="compact">
+          <v-list-item
+            title="Modalidades"
+            :subtitle="modalidadesTexto(profileTherapist || {})"
+          />
+          <v-list-item
+            title="Horarios futuros disponibles"
+            :subtitle="`${profileTherapist?.availableSlots || 0} bloque(s)`"
+          />
+        </v-list>
+      </v-card-text>
+      <v-card-actions>
+        <v-spacer />
+        <v-btn variant="text" @click="profileDialog = false">Cerrar</v-btn>
+        <v-btn
+          color="secondary"
+          variant="tonal"
+          @click="openAppointmentFromProfile"
+        >
+          Agendar cita
+        </v-btn>
+      </v-card-actions>
+    </v-card>
+  </v-dialog>
 </template>
 
 <script setup>
@@ -214,6 +299,15 @@ const topTherapists = computed(() =>
 );
 const dialog = ref(false);
 const selectedTherapist = ref(null);
+const profileDialog = ref(false);
+const profileTherapist = ref(null);
+const matchLabelMap = {
+  especialidades: "temas",
+  enfoque: "tipo de ayuda",
+  genero: "género",
+  modalidad: "modalidad",
+  edad: "edad",
+};
 
 function modalidadesTexto(therapist) {
   if (
@@ -247,6 +341,20 @@ function avatarFallbackIcon(genero) {
 function openAppointmentDialog(therapist) {
   selectedTherapist.value = therapist;
   dialog.value = true;
+}
+
+function openProfileDialog(therapist) {
+  profileTherapist.value = therapist;
+  profileDialog.value = true;
+}
+
+function openAppointmentFromProfile() {
+  profileDialog.value = false;
+  openAppointmentDialog(profileTherapist.value);
+}
+
+function matchLabels(keys = []) {
+  return keys.map((key) => matchLabelMap[key] || key).join(", ");
 }
 </script>
 

@@ -100,7 +100,8 @@ const navigationByMode = {
     adminRequestsItem,
     adminUsersItem,
     { name: "Cobros", icon: "mdi-cash-multiple", link: "/admin/cobros" },
-    { name: "Pacientes", icon: "mdi-account-group", link: "/pacientes" },
+    { name: "Conciliación", icon: "mdi-receipt-text-check", link: "/admin/conciliacion" },
+    { name: "Soporte", icon: "mdi-message-alert-outline", link: "/admin/soporte" },
     { name: "Psicólogos", icon: "mdi-account-heart", link: "/psicologos" },
   ],
 };

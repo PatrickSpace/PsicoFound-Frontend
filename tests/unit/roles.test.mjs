@@ -10,6 +10,8 @@ test("roles normalize legacy aliases and remove duplicates/unknowns", () => {
 
 test("empty roles do not silently grant access unless caller opts in", () => {
   assert.deepEqual(getUserRoles({}), []);
+  assert.deepEqual(getUserRoles(null), []);
+  assert.deepEqual(getUserRoles(null, { defaultPatient: true }), []);
   assert.deepEqual(getUserRoles({}, { defaultPatient: true }), ["patient"]);
   assert.equal(getLegacyRoleFromRoles(["patient", "psychologist"]), "psicologo");
   assert.equal(getLegacyRoleFromRoles(["patient", "admin"]), "admin");

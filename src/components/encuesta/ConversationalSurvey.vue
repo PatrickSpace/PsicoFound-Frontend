@@ -1,5 +1,7 @@
 <template>
   <section class="survey-shell">
+    <AccountAccessCard @access="accountAllowed = $event" />
+    <v-btn class="pf-btn-ghost mb-2" to="/elegirterapeuta?crisis=1">Consultar recursos de ayuda</v-btn>
     <div class="chat-layout">
       <div class="chat-header">
         <div class="assistant-mark" aria-hidden="true">
@@ -66,6 +68,18 @@
               <p v-else class="profile-popover-empty">
                 Aún no hay datos registrados.
               </p>
+              <v-btn
+                v-if="activeSessionId"
+                class="mt-3 pf-btn-secondary"
+                block
+                color="secondary"
+                variant="tonal"
+                size="small"
+                prepend-icon="mdi-pencil-outline"
+                @click="openProfileEditor"
+              >
+                Corregir perfil
+              </v-btn>
             </div>
           </v-menu>
         </div>
@@ -73,19 +87,21 @@
         <div class="chat-header-actions">
           <v-btn
             class="reset-button pf-btn-ghost"
+            aria-label="Reiniciar"
             variant="text"
             color="secondary"
             size="small"
             prepend-icon="mdi-refresh"
             :loading="resetting"
             :disabled="loading || resetting"
-            @click="handleResetConversation"
+            @click="resetDialog = true"
           >
             Reiniciar
           </v-btn>
           <v-btn
             v-if="canViewRecommendations"
             class="recommendations-button pf-btn-primary"
+            aria-label="Ver psicólogos"
             variant="flat"
             color="primary"
             size="small"
@@ -99,6 +115,9 @@
 
       <div ref="messagesContainer" class="messages-panel">
         <div class="conversation-stream">
+          <v-btn v-if="historyHasMore" variant="text" :loading="loadingHistory" @click="loadEarlierMessages">
+            Cargar mensajes anteriores
+          </v-btn>
           <div
             v-for="message in visibleMessages"
             :key="message.id"
@@ -131,6 +150,18 @@
                   {{ message.error ? "No enviado" : "Enviando..." }}
                 </div>
               </div>
+              <v-btn
+                v-if="message.role === 'user' && message.error"
+                class="retry-message-button pf-btn-ghost"
+                size="x-small"
+                color="secondary"
+                variant="text"
+                prepend-icon="mdi-refresh"
+                :disabled="loading"
+                @click="retryMessage(message)"
+              >
+                Reintentar sin duplicar
+              </v-btn>
               <div
                 v-if="
                   message.role !== 'user' && getMessageOptions(message).length
@@ -202,18 +233,143 @@
         </div>
       </div>
     </div>
+
+    <v-dialog v-model="resetDialog" max-width="560">
+      <v-card class="pa-4 card-backgoundcustom" elevation="2" variant="text">
+        <v-card-title class="text-h6 font-weight-bold px-0 pt-0">
+          Reiniciar encuesta
+        </v-card-title>
+        <v-card-text>
+          <v-divider class="mb-4" />
+          <p class="text-body-2 mb-3">
+            Iniciarás una encuesta nueva y se reiniciarán el resumen y las recomendaciones.
+            Los mensajes anteriores se conservan; reiniciar no es una solicitud de eliminación.
+          </p>
+          <p class="text-body-2 text-medium-emphasis mb-0">
+            Se conservarán tu cuenta, terapias, citas, objetivos, ejercicios y
+            registros emocionales.
+          </p>
+        </v-card-text>
+        <v-card-actions>
+          <v-spacer />
+          <v-btn variant="text" @click="resetDialog = false">Volver</v-btn>
+          <v-btn
+            color="secondary"
+            variant="tonal"
+            :loading="resetting"
+            @click="handleResetConversation"
+          >
+            Reiniciar encuesta
+          </v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+
+    <v-dialog v-model="profileDialog" max-width="680">
+      <v-card class="pa-4 card-backgoundcustom" elevation="2" variant="text">
+        <v-card-title class="text-h6 font-weight-bold px-0 pt-0">
+          Corregir perfil de búsqueda
+        </v-card-title>
+        <v-card-text>
+          <v-divider class="mb-4" />
+          <v-alert
+            v-if="profileEditError"
+            class="mb-4"
+            color="error"
+            variant="tonal"
+          >
+            {{ profileEditError }}
+          </v-alert>
+          <v-switch
+            v-model="profileForm.soloConversar"
+            color="secondary"
+            label="Solo quiero conversar, sin un tema específico"
+          />
+          <v-textarea
+            v-model="profileForm.motivoConsulta"
+            label="Resumen o motivo principal"
+            variant="outlined"
+            rows="2"
+          />
+          <v-combobox
+            v-model="profileForm.temas"
+            label="Temas"
+            :items="topicOptions"
+            multiple
+            chips
+            clearable
+            variant="outlined"
+          />
+          <v-row>
+            <v-col cols="12" sm="6">
+              <v-select
+                v-model="profileForm.modalidad"
+                label="Modalidad"
+                :items="modalityOptions"
+                variant="outlined"
+              />
+            </v-col>
+            <v-col cols="12" sm="6">
+              <v-select
+                v-model="profileForm.preferenciaGenero"
+                label="Género del profesional"
+                :items="genderOptions"
+                variant="outlined"
+              />
+            </v-col>
+            <v-col cols="12" sm="6">
+              <v-select
+                v-model="profileForm.enfoque"
+                label="Tipo de acompañamiento"
+                :items="approachOptions"
+                variant="outlined"
+              />
+            </v-col>
+            <v-col cols="12" sm="6">
+              <v-select
+                v-model="profileForm.preferenciaEdad"
+                label="Rango de edad"
+                :items="ageOptions"
+                variant="outlined"
+              />
+            </v-col>
+          </v-row>
+          <v-textarea
+            v-model="profileForm.observaciones"
+            label="Observaciones"
+            variant="outlined"
+            rows="2"
+          />
+        </v-card-text>
+        <v-card-actions>
+          <v-spacer />
+          <v-btn variant="text" @click="profileDialog = false">Cancelar</v-btn>
+          <v-btn
+            color="secondary"
+            variant="tonal"
+            :loading="savingProfile"
+            @click="saveProfileCorrections"
+          >
+            Guardar correcciones
+          </v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
   </section>
 </template>
 
 <script setup>
-import { computed, nextTick, onBeforeUnmount, ref, watch } from "vue";
+import { computed, nextTick, onBeforeUnmount, reactive, ref, watch } from "vue";
 import { useRouter } from "vue-router";
 import { useAuthStore } from "@/store/auth";
+import AccountAccessCard from "@/components/auth/AccountAccessCard.vue";
 import {
   resetProfileChatConversation,
   sendProfileChatMessage,
+  updateProfilePreferences,
   watchConversation,
   watchConversationMessages,
+  loadEarlierConversationMessages,
   watchProfile,
 } from "@/services/conversationService";
 import {
@@ -224,6 +380,7 @@ const router = useRouter();
 const authStore = useAuthStore();
 
 const draft = ref("");
+const accountAllowed = ref(false);
 const loading = ref(false);
 const resetting = ref(false);
 const messages = ref([]);
@@ -231,7 +388,47 @@ const optimisticMessages = ref([]);
 const profile = ref(null);
 const messagesContainer = ref(null);
 const activeSessionId = ref("");
+const activeTurn = ref(null);
+let contextGeneration = 0;
+let sendGeneration = 0;
+const earlierMessages = ref([]);
+const historyHasMore = ref(false);
+const loadingHistory = ref(false);
+let historyCursor = null;
+let resetRequestId = null;
 const crisisRouteTriggered = ref(false);
+const resetDialog = ref(false);
+const profileDialog = ref(false);
+const savingProfile = ref(false);
+const profileEditError = ref("");
+const profileForm = reactive({
+  motivoConsulta: "",
+  soloConversar: false,
+  temas: [],
+  modalidad: "",
+  preferenciaGenero: "",
+  enfoque: "",
+  preferenciaEdad: "",
+  observaciones: "",
+});
+const topicOptions = [
+  "Ansiedad",
+  "Depresión",
+  "Problemas de autoestima",
+  "Problemas de pareja",
+  "Problemas familiares",
+  "Problemas laborales",
+];
+const modalityOptions = ["Online", "Presencial", "Híbrido", "indiferente"];
+const genderOptions = ["Femenino", "Masculino", "indiferente"];
+const approachOptions = [
+  "Algo práctico con herramientas",
+  "Un espacio de escucha profunda",
+  "Trabajar vínculos o familia",
+  "Una mezcla flexible",
+  "indiferente",
+];
+const ageOptions = ["25-35", "35-45", "+45", "indiferente"];
 
 let unsubscribeConversation = null;
 let unsubscribeMessages = null;
@@ -252,16 +449,18 @@ const welcomeMessage = {
 
 const visibleMessages = computed(() => {
   const mergedMessages = [
+    ...earlierMessages.value,
     ...messages.value,
     ...optimisticMessages.value.filter(
       (optimisticMessage) => !hasConfirmedMessage(optimisticMessage)
     ),
-  ].sort(compareMessagesByCreatedAt);
+  ];
+  const uniqueMessages = [...new Map(mergedMessages.map(item => [item.id, item])).values()].sort(compareMessagesByCreatedAt);
 
-  return mergedMessages.length > 0 ? mergedMessages : [welcomeMessage];
+  return uniqueMessages.length > 0 ? uniqueMessages : [welcomeMessage];
 });
 
-const canSend = computed(() => draft.value.trim().length > 0 && !loading.value);
+const canSend = computed(() => accountAllowed.value && draft.value.trim().length > 0 && !loading.value);
 const canViewRecommendations = computed(() => {
   if (
     !activeSessionId.value ||
@@ -312,6 +511,14 @@ const profileSummaryItems = computed(() => {
 watch(
   () => authStore.currentUser,
   (user) => {
+    contextGeneration++; sendGeneration++;
+    const generation = contextGeneration;
+    activeSessionId.value = ""; profile.value = null; crisisRouteTriggered.value = false;
+    resetting.value = false; savingProfile.value = false; resetRequestId = null;
+    profileDialog.value = false; resetDialog.value = false;
+    activeTurn.value = null;
+    earlierMessages.value = []; historyCursor = null; historyHasMore.value = false; loadingHistory.value = false;
+    messages.value = []; optimisticMessages.value = []; draft.value = ""; loading.value = false;
     unsubscribeConversation?.();
     unsubscribeMessages?.();
     unsubscribeProfile?.();
@@ -328,31 +535,40 @@ watch(
     unsubscribeConversation = watchConversation(
       user.uid,
       (conversation) => {
+        if (generation !== contextGeneration) return;
         const sessionId = conversation?.activeSessionId || "";
+        activeTurn.value = conversation?.activeTurn || null;
 
         if (sessionId === activeSessionId.value) {
           return;
         }
 
         activeSessionId.value = sessionId;
+        earlierMessages.value = []; historyCursor = null; historyHasMore.value = false;
         messages.value = [];
         unsubscribeMessages?.();
         unsubscribeMessages = sessionId
           ? watchConversationMessages(
               user.uid,
               sessionId,
-              (items) => {
+              (items, pagination) => {
+                if (generation !== contextGeneration || activeSessionId.value !== sessionId) return;
+                const ids = new Set(items.map(item => item.id));
+                earlierMessages.value.push(...messages.value.filter(item => !ids.has(item.id)));
                 messages.value = items;
+                if (!historyCursor) { historyCursor = pagination.cursor; historyHasMore.value = pagination.hasMore; }
                 reconcileOptimisticMessages();
                 scrollToBottom();
               },
               () => {
+                if (generation !== contextGeneration || activeSessionId.value !== sessionId) return;
                 notifyError("No pudimos cargar el historial de conversación.");
               }
             )
           : null;
       },
       () => {
+        if (generation !== contextGeneration) return;
         notifyError("No pudimos cargar la conversación actual.");
       }
     );
@@ -360,6 +576,7 @@ watch(
     unsubscribeProfile = watchProfile(
       user.uid,
       (item) => {
+        if (generation !== contextGeneration) return;
         profile.value = item;
 
         if (item?.riesgoSuicida && !crisisRouteTriggered.value) {
@@ -371,6 +588,7 @@ watch(
         }
       },
       () => {
+        if (generation !== contextGeneration) return;
         notifyError("No pudimos cargar tu perfil de búsqueda.");
       }
     );
@@ -379,10 +597,28 @@ watch(
 );
 
 onBeforeUnmount(() => {
+  contextGeneration++;
   unsubscribeConversation?.();
   unsubscribeMessages?.();
   unsubscribeProfile?.();
 });
+
+async function loadEarlierMessages() {
+  if (loadingHistory.value || !historyHasMore.value) return;
+  const generation = contextGeneration, sessionId = activeSessionId.value;
+  const uid = authStore.currentUser?.uid;
+  loadingHistory.value = true;
+  try {
+    const page = await loadEarlierConversationMessages(uid, sessionId, historyCursor);
+    if (generation !== contextGeneration || sessionId !== activeSessionId.value) return;
+    earlierMessages.value.push(...page.items);
+    historyCursor = page.cursor; historyHasMore.value = page.hasMore;
+  } catch {
+    if (generation === contextGeneration) notifyError("No pudimos cargar los mensajes anteriores. Puedes reintentar.");
+  } finally {
+    if (generation === contextGeneration) loadingHistory.value = false;
+  }
+}
 
 async function handleSubmit() {
   const message = draft.value.trim();
@@ -404,27 +640,50 @@ async function handleOptionClick(option) {
   }
 
   draft.value = "";
-  await sendChatMessage(message);
+  await sendChatMessage(message, null, option);
 }
 
-async function sendChatMessage(message) {
+async function sendChatMessage(message, retryingMessage = null, option = null) {
+  const generation = contextGeneration;
+  const sending = sendGeneration;
+  if (!accountAllowed.value) return;
   loading.value = true;
-  const optimisticMessage = addOptimisticMessage(message);
+  const optimisticMessage = retryingMessage || addOptimisticMessage(message);
+  if (!retryingMessage) optimisticMessage.context = {sessionId: activeSessionId.value, turnId: activeTurn.value?.id || "", ...(option ? {option} : {})};
+  if (retryingMessage) {
+    optimisticMessages.value = optimisticMessages.value.map((item) =>
+      item.id === retryingMessage.id
+        ? { ...item, error: false, pending: true }
+        : item
+    );
+  }
   scrollToBottom();
 
   try {
-    const result = await sendProfileChatMessage(message);
+    const result = await sendProfileChatMessage(
+      message,
+      optimisticMessage.requestId, optimisticMessage.context
+    );
+    if ((generation !== contextGeneration || sending !== sendGeneration) || (activeSessionId.value && result.sessionId !== activeSessionId.value)) return;
+    activeTurn.value = result.activeTurn;
     syncProfileFromChatResult(result);
   } catch (err) {
+    if ((generation !== contextGeneration || sending !== sendGeneration)) return;
     markOptimisticMessageAsFailed(optimisticMessage.id);
     notifyError(
       getReadableErrorMessage(err) ||
         "No pudimos enviar el mensaje. Inténtalo nuevamente en unos segundos."
     );
   } finally {
+    if ((generation !== contextGeneration || sending !== sendGeneration)) return;
     loading.value = false;
     scrollToBottom();
   }
+}
+
+function retryMessage(message) {
+  if (!message?.error || loading.value) return;
+  sendChatMessage(message.text, message);
 }
 
 async function handleResetConversation() {
@@ -435,17 +694,25 @@ async function handleResetConversation() {
   resetting.value = true;
   draft.value = "";
 
+  const generation = contextGeneration;
   try {
-    await resetProfileChatConversation();
+    resetRequestId ||= globalThis.crypto.randomUUID();
+    await resetProfileChatConversation(resetRequestId);
+    if (generation !== contextGeneration) return;
+    sendGeneration++;
+    resetRequestId = null;
     messages.value = [];
     optimisticMessages.value = [];
     profile.value = null;
+    resetDialog.value = false;
   } catch (err) {
+    if (generation !== contextGeneration) return;
     notifyError(
       getReadableErrorMessage(err) ||
         "No pudimos reiniciar la conversación. Inténtalo nuevamente."
     );
   } finally {
+    if (generation !== contextGeneration) return;
     resetting.value = false;
     scrollToBottom();
   }
@@ -465,8 +732,14 @@ function syncProfileFromChatResult(result) {
 }
 
 function addOptimisticMessage(text) {
+  const requestId = `chat_${globalThis.crypto?.randomUUID?.() ||
+    `${Date.now()}_${Math.random().toString(36).slice(2)}`}`.replace(
+    /[^A-Za-z0-9_-]/g,
+    "_"
+  );
   const optimisticMessage = {
-    id: `optimistic-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+    id: `optimistic-${requestId}`,
+    requestId,
     role: "user",
     text,
     pending: true,
@@ -476,6 +749,46 @@ function addOptimisticMessage(text) {
 
   optimisticMessages.value = [...optimisticMessages.value, optimisticMessage];
   return optimisticMessage;
+}
+
+function openProfileEditor() {
+  const current = profile.value || {};
+  Object.assign(profileForm, {
+    motivoConsulta: current.motivoConsulta || "",
+    soloConversar: Boolean(current.soloConversar),
+    temas: Array.isArray(current.temas) ? [...current.temas] : [],
+    modalidad: current.modalidad || "",
+    preferenciaGenero: current.preferenciaGenero || "",
+    enfoque: current.enfoque || "",
+    preferenciaEdad: current.preferenciaEdad || "",
+    observaciones: current.observaciones || "",
+  });
+  profileEditError.value = "";
+  profileDialog.value = true;
+}
+
+async function saveProfileCorrections() {
+  if (savingProfile.value) return;
+  savingProfile.value = true;
+  profileEditError.value = "";
+  const generation = contextGeneration;
+  try {
+    const result = await updateProfilePreferences({
+      ...profileForm,
+      temas: profileForm.soloConversar ? [] : profileForm.temas,
+    }, { sessionId: activeSessionId.value, turnId: activeTurn.value?.id || "" });
+    if (generation !== contextGeneration) return;
+    profile.value = result.profile;
+    activeTurn.value = result.activeTurn;
+    profileDialog.value = false;
+  } catch (error) {
+    if (generation !== contextGeneration) return;
+    profileEditError.value =
+      getReadableErrorMessage(error) || "No pudimos guardar las correcciones.";
+  } finally {
+    if (generation !== contextGeneration) return;
+    savingProfile.value = false;
+  }
 }
 
 function reconcileOptimisticMessages() {
@@ -526,7 +839,8 @@ function normalizeMessageText(text) {
 }
 
 function compareMessagesByCreatedAt(a, b) {
-  return getMessageCreatedAt(a) - getMessageCreatedAt(b);
+  return getMessageCreatedAt(a) - getMessageCreatedAt(b) ||
+    (a.role === "user" ? 0 : 1) - (b.role === "user" ? 0 : 1);
 }
 
 function getMessageCreatedAt(message) {
@@ -556,6 +870,7 @@ function goToRecommendations() {
 }
 
 function getMessageOptions(message) {
+  if (!activeTurn.value || message?.turnId !== activeTurn.value.id) return [];
   return Array.isArray(message?.suggestedOptions)
     ? message.suggestedOptions.filter(
         (option) => option?.label && option?.value

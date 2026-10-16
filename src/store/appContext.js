@@ -1,3 +1,5 @@
+import { doc, collection, query, where, onSnapshot } from "firebase/firestore";
+import { db } from "@/plugins/Firebase/firestore";
 import { computed, ref } from "vue";
 import { defineStore } from "pinia";
 import { getUserById } from "@/services/userService";
@@ -12,6 +14,25 @@ export const useAppContextStore = defineStore("appContext", () => {
   const loading = ref(false);
   const loadedForUid = ref("");
   const activeMode = ref(readStoredMode());
+  let loadVersion = 0;
+  let stopIdentity;
+  let stopProfessional;
+  let watchingUid = "";
+  function watchIdentity(uid) {
+    if (watchingUid === uid) return;
+    stopIdentity?.(); stopProfessional?.(); watchingUid = uid;
+    stopIdentity = onSnapshot(doc(db, "users", uid), snapshot => {
+      if (watchingUid !== uid || loadedForUid.value !== uid) return;
+      userProfile.value = snapshot.exists() ? { ...snapshot.data(), id: uid } : null;
+      ensureValidMode();
+    }, () => { if (watchingUid === uid) { userProfile.value = null; ensureValidMode(); } });
+    stopProfessional = onSnapshot(query(collection(db, "therapists"), where("uid", "==", uid)), snapshot => {
+      if (watchingUid !== uid || loadedForUid.value !== uid) return;
+      const item = snapshot.docs[0];
+      therapistProfile.value = item ? { ...item.data(), id: item.id } : null;
+      ensureValidMode();
+    }, () => { if (watchingUid === uid) { therapistProfile.value = null; ensureValidMode(); } });
+  }
 
   const userRoles = computed(() =>
     getUserRoles(userProfile.value, { defaultPatient: Boolean(userProfile.value) })
@@ -27,7 +48,7 @@ export const useAppContextStore = defineStore("appContext", () => {
   const hasPsychologistAccess = computed(
     () =>
       userRoles.value.includes(APP_ROLES.PSYCHOLOGIST) &&
-      Boolean(therapistProfile.value?.id)
+      Boolean(therapistProfile.value?.id) && therapistProfile.value.activo !== false
   );
 
   const availableModes = computed(() => {
@@ -73,6 +94,12 @@ export const useAppContextStore = defineStore("appContext", () => {
       return;
     }
 
+    const version = ++loadVersion;
+    if (loadedForUid.value !== uid) {
+      userProfile.value = null;
+      therapistProfile.value = null;
+      loadedForUid.value = "";
+    }
     loading.value = true;
 
     try {
@@ -80,6 +107,7 @@ export const useAppContextStore = defineStore("appContext", () => {
         getUserById(uid),
         getTherapistByUserUid(uid),
       ]);
+      if (version !== loadVersion) return;
 
       userProfile.value = user || {
         id: uid,
@@ -88,8 +116,10 @@ export const useAppContextStore = defineStore("appContext", () => {
       };
       therapistProfile.value = therapist;
       loadedForUid.value = uid;
+      watchIdentity(uid);
       ensureValidMode();
     } catch (error) {
+      if (version !== loadVersion) return;
       console.error("Error loading app context:", error);
       userProfile.value = {
         id: uid,
@@ -98,9 +128,10 @@ export const useAppContextStore = defineStore("appContext", () => {
       };
       therapistProfile.value = null;
       loadedForUid.value = uid;
+      watchIdentity(uid);
       ensureValidMode();
     } finally {
-      loading.value = false;
+      if (version === loadVersion) loading.value = false;
     }
   }
 
@@ -128,6 +159,9 @@ export const useAppContextStore = defineStore("appContext", () => {
   }
 
   function reset() {
+    loadVersion += 1;
+    watchingUid = ""; stopIdentity?.(); stopProfessional?.();
+    loading.value = false;
     userProfile.value = null;
     therapistProfile.value = null;
     loadedForUid.value = "";

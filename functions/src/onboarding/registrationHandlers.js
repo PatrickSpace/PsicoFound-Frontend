@@ -1,6 +1,10 @@
-const admin = require("firebase-admin");
+/* eslint-disable max-len */
+const firestoreAdmin = require("firebase-admin/firestore");
+const {FieldValue} = require("firebase-admin/firestore");
+const {requireAdmin: requireAdminTransaction, audit} = require("../accounts/adminHandlers");
 const logger = require("firebase-functions/logger");
 const {HttpsError} = require("firebase-functions/v2/https");
+const {assertEligible, hasCurrentConsent, legalPolicy} = require("../accounts/accessPolicy");
 
 const PATIENT_ROLE = "patient";
 const PSYCHOLOGIST_ROLE = "psychologist";
@@ -14,77 +18,121 @@ async function finalizeRegistration(request) {
   const data = request.data || {};
   const token = auth.token || {};
   const intent = normalizeRegistrationIntent(data.intent);
-  const db = admin.firestore();
+  const db = firestoreAdmin.getFirestore();
   const userRef = db.collection("users").doc(auth.uid);
-  const snapshot = await userRef.get();
-  const existing = snapshot.data() || {};
-  const roles = normalizeRoles(existing.roles, existing.rol);
-  const now = admin.firestore.FieldValue.serverTimestamp();
-  const displayName = cleanText(
-      data.displayName || token.name,
-      120,
-  );
-  const professionalStatus =
+  return db.runTransaction(async (transaction) => {
+    const snapshot = await transaction.get(userRef);
+    const existing = snapshot.data() || {};
+    const roles = normalizeRoles(existing.roles, existing.rol);
+    const now = FieldValue.serverTimestamp();
+    const displayName = cleanText(
+        data.displayName || token.name,
+        120,
+    );
+    const professionalStatus =
     intent === "psychologist" ?
       normalizeProfessionalStatus(existing.professionalAccessStatus) :
       existing.professionalAccessStatus || "not_requested";
-  const payload = {
-    id: auth.uid,
-    email: token.email || existing.email || "",
-    nombre: displayName || existing.nombre || emailPrefix(token.email),
-    roles: roles.length ? roles : [PATIENT_ROLE],
-    rol: getLegacyRole(roles.length ? roles : [PATIENT_ROLE]),
-    registrationIntent: intent,
-    onboardingStatus: getInitialOnboardingStatus(existing, intent),
-    patientOnboardingStatus:
+    const payload = {
+      id: auth.uid,
+      email: token.email || existing.email || "",
+      nombre: displayName || existing.nombre || emailPrefix(token.email),
+      roles: roles.length ? roles : [PATIENT_ROLE],
+      rol: getLegacyRole(roles.length ? roles : [PATIENT_ROLE]),
+      registrationIntent: intent,
+      onboardingStatus: getInitialOnboardingStatus(existing, intent),
+      patientOnboardingStatus:
       existing.patientOnboardingStatus || "pending",
-    professionalAccessStatus: professionalStatus,
-    updatedAt: now,
-  };
+      professionalAccessStatus: professionalStatus,
+      updatedAt: now,
+    };
 
-  if (!snapshot.exists) {
-    payload.createdAt = now;
+    if (!hasCurrentConsent(existing, legalPolicy())) {
+      payload.legalAcceptance = sanitizeLegalAcceptance(data, now);
+    }
+
+    if (!snapshot.exists) {
+      payload.createdAt = now;
+    }
+
+    let consentRef; let priorConsent;
+    if (payload.legalAcceptance) {
+      consentRef = userRef.collection("consents").doc(payload.legalAcceptance.version);
+      priorConsent = (await transaction.get(consentRef)).data();
+      if (priorConsent && (priorConsent.termsUrl !== payload.legalAcceptance.termsUrl || priorConsent.privacyUrl !== payload.legalAcceptance.privacyUrl)) {
+        throw new HttpsError("failed-precondition", "Los documentos cambiaron sin nueva versión legal.");
+      }
+      if (priorConsent) payload.legalAcceptance = priorConsent;
+    }
+    transaction.set(userRef, payload, {merge: true});
+    if (consentRef && !priorConsent) transaction.create(consentRef, payload.legalAcceptance);
+    logger.info("Registration initialized", {intent});
+
+    return {
+      profile: serializeUserProfile(auth.uid, existing, payload),
+      nextRoute: getNextRegistrationRoute(intent, payload),
+    };
+  });
+}
+
+function sanitizeLegalAcceptance(data = {}, acceptedAt) {
+  const policy = legalPolicy();
+  if (!policy) {
+    throw new HttpsError(
+        "failed-precondition",
+        "Los documentos legales aprobados aún no están configurados.",
+    );
   }
-
-  await userRef.set(payload, {merge: true});
-  logger.info("Registration initialized", {intent});
-
-  return {
-    profile: serializeUserProfile(auth.uid, existing, payload),
-    nextRoute: getNextRegistrationRoute(intent, payload),
-  };
+  const {version, termsUrl, privacyUrl} = policy;
+  if (data.legalAccepted !== true || data.legalVersion !== version ||
+      data.termsUrl !== termsUrl || data.privacyUrl !== privacyUrl) {
+    throw new HttpsError(
+        "failed-precondition",
+        "Revisa y acepta la versión vigente de los documentos legales.",
+    );
+  }
+  return {version, termsUrl, privacyUrl, acceptedAt};
 }
 
 async function completePatientOnboarding(request) {
   const auth = requireAuth(request);
   const profile = sanitizePatientProfile(request.data);
+  assertEligible(profile.fechaNacimiento);
+  if (auth.token?.email_verified !== true) {
+    throw new HttpsError("failed-precondition", "Verifica tu correo antes de continuar.");
+  }
   const token = auth.token || {};
-  const db = admin.firestore();
+  const db = firestoreAdmin.getFirestore();
   const userRef = db.collection("users").doc(auth.uid);
-  const snapshot = await userRef.get();
-  const existing = snapshot.data() || {};
-  const roles = normalizeRoles(existing.roles, existing.rol);
-  const now = admin.firestore.FieldValue.serverTimestamp();
+  await db.runTransaction(async (transaction) => {
+    const snapshot = await transaction.get(userRef);
+    const existing = snapshot.data() || {};
+    if (!hasCurrentConsent(existing, legalPolicy())) {
+      throw new HttpsError("failed-precondition", "Acepta los documentos legales vigentes antes de continuar.");
+    }
+    const roles = normalizeRoles(existing.roles, existing.rol);
+    const now = FieldValue.serverTimestamp();
 
-  await userRef.set(
-      {
-        id: auth.uid,
-        email: token.email || existing.email || "",
-        nombre: profile.nombre,
-        fechaNacimiento: profile.fechaNacimiento,
-        telefono: profile.telefono,
-        pais: profile.pais,
-        zonaHoraria: profile.zonaHoraria,
-        roles: roles.length ? roles : [PATIENT_ROLE],
-        rol: getLegacyRole(roles.length ? roles : [PATIENT_ROLE]),
-        registrationIntent: existing.registrationIntent || PATIENT_ROLE,
-        onboardingStatus: "complete",
-        patientOnboardingStatus: "complete",
-        updatedAt: now,
-        ...(!snapshot.exists ? {createdAt: now} : {}),
-      },
-      {merge: true},
-  );
+    transaction.set(userRef,
+        {
+          id: auth.uid,
+          email: token.email || existing.email || "",
+          nombre: profile.nombre,
+          fechaNacimiento: profile.fechaNacimiento,
+          telefono: profile.telefono,
+          pais: profile.pais,
+          zonaHoraria: profile.zonaHoraria,
+          roles: roles.length ? roles : [PATIENT_ROLE],
+          rol: getLegacyRole(roles.length ? roles : [PATIENT_ROLE]),
+          registrationIntent: existing.registrationIntent || PATIENT_ROLE,
+          onboardingStatus: "complete",
+          patientOnboardingStatus: "complete",
+          updatedAt: now,
+          ...(!snapshot.exists ? {createdAt: now} : {}),
+        },
+        {merge: true},
+    );
+  });
 
   logger.info("Patient onboarding completed");
   return {nextRoute: "/encuesta"};
@@ -94,59 +142,33 @@ async function submitPsychologistApplication(request) {
   const auth = requireAuth(request);
   const application = sanitizeProfessionalApplication(request.data);
   const token = auth.token || {};
-  const db = admin.firestore();
+  const db = firestoreAdmin.getFirestore();
   const userRef = db.collection("users").doc(auth.uid);
-  const existingRequest = await getLatestProfessionalRequest(db, auth.uid);
-  const existingStatus = normalizeProfessionalStatus(
-      existingRequest && existingRequest.status,
-  );
-
-  if (["pending", "approved"].includes(existingStatus)) {
-    throw new HttpsError(
-        "failed-precondition",
-        existingStatus === "approved" ?
-          "Tu perfil profesional ya fue aprobado." :
-          "Ya tienes una solicitud pendiente de revision.",
-    );
-  }
-
-  const userSnapshot = await userRef.get();
-  const existingUser = userSnapshot.data() || {};
-  const roles = normalizeRoles(existingUser.roles, existingUser.rol);
-  const now = admin.firestore.FieldValue.serverTimestamp();
   const requestRef = db.collection("psychologist_requests").doc();
-  const batch = db.batch();
-
-  batch.set(requestRef, {
-    userUid: auth.uid,
-    userEmail: token.email || existingUser.email || "",
-    userName: application.professionalName,
-    ...application,
-    status: "pending",
-    createdAt: now,
-    updatedAt: now,
+  await db.runTransaction(async (transaction) => {
+    const userSnapshot = await transaction.get(userRef);
+    const existingUser = userSnapshot.data() || {};
+    const requests = await transaction.get(db.collection("psychologist_requests").where("userUid", "==", auth.uid));
+    if (["pending", "approved"].includes(existingUser.professionalAccessStatus) || requests.docs.some((item) => ["pending", "approved"].includes(item.data().status))) {
+      throw new HttpsError("failed-precondition", "Ya existe una solicitud pendiente o un perfil aprobado.");
+    }
+    const roles = normalizeRoles(existingUser.roles, existingUser.rol);
+    const now = FieldValue.serverTimestamp();
+    transaction.create(requestRef, {
+      userUid: auth.uid, userEmail: token.email || existingUser.email || "",
+      userName: application.professionalName, ...application,
+      status: "pending", createdAt: now, updatedAt: now,
+    });
+    transaction.set(userRef, {
+      id: auth.uid, email: token.email || existingUser.email || "",
+      nombre: application.professionalName, telefono: application.phone, pais: application.country,
+      roles: roles.length ? roles : [PATIENT_ROLE], rol: getLegacyRole(roles.length ? roles : [PATIENT_ROLE]),
+      registrationIntent: PSYCHOLOGIST_ROLE, onboardingStatus: "complete",
+      professionalOnboardingStatus: "complete", professionalAccessStatus: "pending",
+      latestPsychologistRequestId: requestRef.id, updatedAt: now,
+      ...(!userSnapshot.exists ? {createdAt: now} : {}),
+    }, {merge: true});
   });
-  batch.set(
-      userRef,
-      {
-        id: auth.uid,
-        email: token.email || existingUser.email || "",
-        nombre: application.professionalName,
-        telefono: application.phone,
-        pais: application.country,
-        roles: roles.length ? roles : [PATIENT_ROLE],
-        rol: getLegacyRole(roles.length ? roles : [PATIENT_ROLE]),
-        registrationIntent: PSYCHOLOGIST_ROLE,
-        onboardingStatus: "complete",
-        professionalOnboardingStatus: "complete",
-        professionalAccessStatus: "pending",
-        latestPsychologistRequestId: requestRef.id,
-        updatedAt: now,
-        ...(!userSnapshot.exists ? {createdAt: now} : {}),
-      },
-      {merge: true},
-  );
-  await batch.commit();
 
   logger.info("Psychologist application submitted");
   return {
@@ -166,20 +188,20 @@ async function reviewPsychologistApplication(request) {
   const action = cleanText(data.action, 20).toLowerCase();
   const rejectionReason = cleanText(data.rejectionReason, 800);
 
-  if (!requestId || !["approve", "reject"].includes(action)) {
+  if (!requestId || requestId.includes("/") || !["approve", "reject"].includes(action) || action === "reject" && !rejectionReason) {
     throw new HttpsError(
         "invalid-argument",
         "La solicitud o la accion no son validas.",
     );
   }
 
-  const db = admin.firestore();
-  await requireAdmin(db, auth.uid);
+  const db = firestoreAdmin.getFirestore();
   const applicationRef = db.collection("psychologist_requests").doc(requestId);
   const therapistRef = db.collection("therapists").doc();
   let result = null;
 
   await db.runTransaction(async (transaction) => {
+    await requireAdminTransaction(transaction, db, auth);
     const applicationSnapshot = await transaction.get(applicationRef);
 
     if (!applicationSnapshot.exists) {
@@ -199,8 +221,23 @@ async function reviewPsychologistApplication(request) {
     const userRef = db.collection("users").doc(application.userUid);
     const userSnapshot = await transaction.get(userRef);
     const user = userSnapshot.data() || {};
-    const now = admin.firestore.FieldValue.serverTimestamp();
+    const now = FieldValue.serverTimestamp();
 
+    if (!userSnapshot.exists || user.latestPsychologistRequestId && user.latestPsychologistRequestId !== requestId) {
+      throw new HttpsError("failed-precondition", "La solicitud no corresponde al proceso vigente del usuario.");
+    }
+    const desired = action === "approve" ? "approved" : "rejected";
+    if (status !== "pending") {
+      if (status === desired && (desired === "approved" || application.rejectionReason === rejectionReason)) {
+        return result = {status, ...(application.therapistId ? {therapistId: application.therapistId} : {})};
+      }
+      throw new HttpsError("failed-precondition", "La solicitud ya fue decidida. Actualiza la lista.");
+    }
+    const profiles = await transaction.get(db.collection("therapists").where("uid", "==", application.userUid));
+    if (action === "approve" && (!profiles.empty || user.professionalProfileId)) {
+      throw new HttpsError("failed-precondition", "Ya existe un perfil profesional; revisa su consistencia sin duplicarlo.");
+    }
+    audit(transaction, db, auth.uid, application.userUid, "professional_application_reviewed", {requestId, status: desired});
     if (action === "approve") {
       if (status === "approved" && application.therapistId) {
         result = {
@@ -294,19 +331,6 @@ function requireAuth(request) {
   return request.auth;
 }
 
-async function requireAdmin(db, uid) {
-  const snapshot = await db.collection("users").doc(uid).get();
-  const user = snapshot.data() || {};
-  const roles = normalizeRoles(user.roles, user.rol);
-
-  if (!roles.includes("admin") && !ADMIN_ROLES.includes(user.rol)) {
-    throw new HttpsError(
-        "permission-denied",
-        "Necesitas permisos de administrador.",
-    );
-  }
-}
-
 function normalizeRegistrationIntent(value) {
   const intent = cleanText(value, 30).toLowerCase();
 
@@ -371,19 +395,6 @@ function sanitizeProfessionalApplication(data = {}) {
   }
 
   return application;
-}
-
-async function getLatestProfessionalRequest(db, uid) {
-  const snapshot = await db
-      .collection("psychologist_requests")
-      .where("userUid", "==", uid)
-      .get();
-  const requests = snapshot.docs.map((document) => ({
-    id: document.id,
-    ...document.data(),
-  }));
-
-  return requests.sort((a, b) => getTimestamp(b) - getTimestamp(a))[0] || null;
 }
 
 function normalizeRoles(roles, legacyRole) {
@@ -501,15 +512,8 @@ function emailPrefix(email) {
   return cleanText((email || "").split("@")[0], 120) || "Usuario";
 }
 
-function getTimestamp(item) {
-  const value = item && item.createdAt;
-  if (!value) return 0;
-  if (typeof value.toMillis === "function") return value.toMillis();
-  return new Date(value).getTime() || 0;
-}
-
 function safeCallable(handler, publicMessage) {
-  return async (request) => {
+  const wrapped = async (request) => {
     try {
       return await handler(request);
     } catch (error) {
@@ -519,13 +523,12 @@ function safeCallable(handler, publicMessage) {
 
       logger.error("Unhandled onboarding error", {
         errorType: error && error.name ? error.name : "UnknownError",
-        errorMessage: error && error.message ?
-          error.message.slice(0, 240) :
-          "Unknown error",
       });
       throw new HttpsError("internal", publicMessage);
     }
   };
+  Object.defineProperty(wrapped, "name", {value: handler.name});
+  return wrapped;
 }
 
 module.exports = {
@@ -545,6 +548,7 @@ module.exports = {
   ),
   sanitizePatientProfile,
   sanitizeProfessionalApplication,
+  sanitizeLegalAcceptance,
   submitPsychologistApplication: safeCallable(
       submitPsychologistApplication,
       "No pudimos enviar tu solicitud profesional. Intenta nuevamente.",

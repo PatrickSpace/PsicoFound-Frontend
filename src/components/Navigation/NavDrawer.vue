@@ -140,7 +140,7 @@ const navigationByMode = {
       link: "/herramientas",
     },
     {
-      name: "Historial de terapias",
+      name: "Historial terapéutico",
       icon: "mdi-book-open-page-variant",
       link: "/historial",
     },
@@ -155,7 +155,7 @@ const navigationByMode = {
       link: "/registro-emocional",
     },
     {
-      name: "Historial clínico",
+      name: "Historial terapéutico",
       icon: "mdi-book-open-page-variant",
       link: "/historial",
     },
@@ -169,7 +169,8 @@ const navigationByMode = {
     adminRequestsItem,
     adminUsersItem,
     { name: "Cobros y tarifas", icon: "mdi-cash-multiple", link: "/admin/cobros" },
-    { name: "Pacientes", icon: "mdi-account-group", link: "/pacientes" },
+    { name: "Conciliación", icon: "mdi-receipt-text-check", link: "/admin/conciliacion" },
+    { name: "Soporte", icon: "mdi-message-alert-outline", link: "/admin/soporte" },
     { name: "Psicólogos", icon: "mdi-account-heart", link: "/psicologos" },
   ],
 };

@@ -6,9 +6,10 @@
   >
     <v-card-title class="text-h6 font-weight-bold d-flex align-center ga-2">
       <v-icon color="secondary">mdi-calendar-clock</v-icon>
-      Próxima sesión
+      {{ title }}
     </v-card-title>
     <v-card-text class="pt-2">
+      <p class="text-caption mb-3">{{ AGENDA_NOTICE }}</p>
       <v-row align="stretch">
         <v-col
           cols="12"
@@ -30,9 +31,12 @@
             <v-list-item-title class="font-weight-bold text-capitalize">
               {{ appointmentMonth }}
             </v-list-item-title>
-            <v-list-item-subtitle>
-              {{ appointmentYear }}
-              {{ appointment?.hora ? `• ${appointment.hora}` : "" }}
+            <v-list-item-subtitle class="text-wrap">
+              {{ appointmentYear }} ·
+              {{ resolveSchedule(appointment).time || "Horario por revisar" }}
+              <span>
+                · hora de Lima
+              </span>
             </v-list-item-subtitle>
           </v-list-item>
         </v-col>
@@ -97,6 +101,7 @@
         </p>
       </div>
       <v-btn
+        v-if="reschedulable"
         class="pf-btn-secondary"
         color="secondary"
         variant="tonal"
@@ -106,14 +111,26 @@
       >
         Reprogramar
       </v-btn>
+      <v-btn
+        v-if="cancellable"
+        class="pf-btn-destructive"
+        color="error"
+        variant="tonal"
+        prepend-icon="mdi-calendar-remove-outline"
+        @click="emit('cancel')"
+      >
+        Cancelar cita
+      </v-btn>
     </v-card-actions>
   </v-card>
 </template>
 
 <script setup>
 import { computed } from "vue";
+import { appointmentStart, DEFAULT_TIME_ZONE, resolveSchedule, AGENDA_NOTICE } from "@/utils/dateTime";
 
 const props = defineProps({
+  title: { type: String, default: "Próxima sesión" },
   appointment: {
     type: Object,
     required: true,
@@ -122,35 +139,41 @@ const props = defineProps({
     type: Boolean,
     default: true,
   },
+  cancellable: {
+    type: Boolean,
+    default: false,
+  },
 });
 
-const emit = defineEmits(["reschedule"]);
+const emit = defineEmits(["reschedule", "cancel"]);
 
 const appointmentDate = computed(() => {
-  if (!props.appointment?.fecha) return null;
-
-  const parsed = new Date(
-    props.appointment.hora
-      ? `${props.appointment.fecha}T${props.appointment.hora}`
-      : `${props.appointment.fecha}T00:00`
-  );
-  return Number.isNaN(parsed.getTime()) ? null : parsed;
+  return appointmentStart(props.appointment);
 });
 
 const appointmentDay = computed(() =>
   appointmentDate.value
-    ? String(appointmentDate.value.getDate()).padStart(2, "0")
+    ? appointmentDate.value.toLocaleDateString("es-PE", {
+        day: "2-digit",
+        timeZone: DEFAULT_TIME_ZONE,
+      })
     : "--"
 );
 
 const appointmentMonth = computed(() =>
   appointmentDate.value
-    ? appointmentDate.value.toLocaleDateString("es-PE", { month: "long" })
+    ? appointmentDate.value.toLocaleDateString("es-PE", {
+        month: "long",
+        timeZone: DEFAULT_TIME_ZONE,
+      })
     : "Sin fecha"
 );
 
-const appointmentYear = computed(
-  () => appointmentDate.value?.getFullYear() || ""
+const appointmentYear = computed(() =>
+  appointmentDate.value?.toLocaleDateString("es-PE", {
+    year: "numeric",
+    timeZone: DEFAULT_TIME_ZONE,
+  }) || ""
 );
 
 const normalizedStatus = computed(() =>

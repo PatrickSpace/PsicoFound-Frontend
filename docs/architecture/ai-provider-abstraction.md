@@ -34,6 +34,15 @@ La implementacion vive en `functions/src/ai`:
 
 Los servicios de negocio no deben importar SDKs ni proveedores concretos.
 
+## Habilitación del proveedor
+
+Disponer de un adaptador o una API key no habilita el uso real. Las políticas de
+`functions/src/ai/providerPolicy.js` requieren revisiones/configuración explícitas;
+los emuladores bloquean llamadas reales. Consultar [revisión del proveedor](../operations/pilot-provider-review.md),
+[encuesta/matching](../functional/encuesta-matching.md) y [matriz de aceptación](../functional/matriz-cierre-piloto.md).
+Los modelos siguientes describen la configuración del repositorio, no una
+recomendación ni verificación de disponibilidad del servicio externo.
+
 ## Proveedores Soportados
 
 Proveedor principal actual:

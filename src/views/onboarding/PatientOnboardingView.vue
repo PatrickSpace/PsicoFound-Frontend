@@ -16,7 +16,8 @@
       {{ errorMessage }}
     </v-alert>
 
-    <v-form v-model="valid" @submit.prevent="submit">
+    <v-form :disabled="initializing" v-model="valid" @submit.prevent="submit">
+      <p class="text-body-2 mb-4">{{ eligibility ? `La política vigente requiere ${eligibility.minimumAge} años o más. Declara tu fecha de nacimiento correctamente.` : "La política de elegibilidad está pendiente; no se puede completar el acceso a la encuesta." }}</p>
       <v-row>
         <v-col cols="12">
           <v-text-field
@@ -32,7 +33,7 @@
             label="Fecha de nacimiento"
             type="date"
             :max="today"
-            :rules="[rules.required]"
+            :rules="[rules.required, rules.adult]"
           />
         </v-col>
         <v-col cols="12" md="6">
@@ -52,13 +53,7 @@
           />
         </v-col>
         <v-col cols="12" md="6">
-          <v-text-field
-            v-model="form.zonaHoraria"
-            label="Zona horaria"
-            readonly
-            hint="La detectamos desde este dispositivo."
-            persistent-hint
-          />
+          <p class="text-body-2">Todos los horarios se muestran en hora de Lima, Perú (UTC−5). El país de residencia no modifica la agenda.</p>
         </v-col>
       </v-row>
       <div class="d-flex justify-end mt-5">
@@ -67,7 +62,7 @@
           size="large"
           type="submit"
           append-icon="mdi-arrow-right"
-          :disabled="!valid || saving"
+          :disabled="!valid || saving || !eligibility"
           :loading="saving"
         >
           Continuar
@@ -78,7 +73,8 @@
 </template>
 
 <script setup>
-import { onMounted, reactive, ref } from "vue";
+import { onBeforeUnmount, reactive, ref } from "vue";
+import { onAuthStateChanged } from "firebase/auth";
 import { useRouter } from "vue-router";
 import OnboardingShell from "@/components/onboarding/OnboardingShell.vue";
 import { auth } from "@/plugins/Firebase/firebase";
@@ -88,10 +84,15 @@ import {
   getCallableErrorMessage,
 } from "@/services/onboardingService";
 import { getUserById } from "@/services/userService";
+import { getAccountAccessStatus } from "@/services/accountService";
+import { ageOnDate } from "@/utils/accountPolicy";
 
 const router = useRouter();
 const appContext = useAppContextStore();
 const valid = ref(false);
+const initializing = ref(true);
+let generation = 0;
+const eligibility = ref(null);
 const saving = ref(false);
 const errorMessage = ref("");
 const today = new Date().toISOString().slice(0, 10);
@@ -106,38 +107,56 @@ const form = reactive({
 
 const rules = {
   required: (value) => Boolean(value?.toString().trim()) || "Requerido",
+  adult: (value) => (eligibility.value && ageOnDate(value) !== null && ageOnDate(value) >= eligibility.value.minimumAge) || "Revisa los requisitos de elegibilidad vigentes.",
 };
 
-onMounted(async () => {
-  const profile = await getUserById(auth.currentUser?.uid);
-  form.nombre =
-    profile?.nombre ||
-    auth.currentUser?.displayName ||
-    auth.currentUser?.email?.split("@")[0] ||
-    "";
-  form.fechaNacimiento = profile?.fechaNacimiento || "";
-  form.telefono = profile?.telefono || "";
-  form.pais = profile?.pais || form.pais;
-  form.zonaHoraria = profile?.zonaHoraria || form.zonaHoraria;
+const stopAuth = onAuthStateChanged(auth, async (user) => {
+  const current = ++generation;
+  initializing.value = true;
+  saving.value = false;
+  eligibility.value = null;
+  Object.assign(form, {nombre: "", fechaNacimiento: "", telefono: "", pais: "Perú"});
+  if (!user) return;
+  try {
+    const [access, profile] = await Promise.all([getAccountAccessStatus(), getUserById(user.uid)]);
+    if (current !== generation || auth.currentUser?.uid !== user.uid) return;
+    eligibility.value = access.eligibility;
+    form.nombre = profile?.nombre || user.displayName || user.email?.split("@")[0] || "";
+    form.fechaNacimiento = profile?.fechaNacimiento || "";
+    form.telefono = profile?.telefono || "";
+    form.pais = profile?.pais || "Perú";
+    form.zonaHoraria = profile?.zonaHoraria || form.zonaHoraria;
+  } catch {
+    if (current === generation) errorMessage.value = "No pudimos cargar tu cuenta. Recarga para intentar nuevamente.";
+  } finally {
+    if (current === generation) initializing.value = false;
+  }
 });
+onBeforeUnmount(() => { generation++; stopAuth(); });
 
 async function submit() {
-  if (!valid.value || saving.value) return;
+  if (initializing.value || !valid.value || saving.value) return;
+  const uid = auth.currentUser?.uid;
+  const current = generation;
 
   saving.value = true;
   errorMessage.value = "";
 
   try {
     const result = await completePatientOnboarding({ ...form });
-    await appContext.loadForUser(auth.currentUser.uid, { force: true });
+    if (current !== generation || auth.currentUser?.uid !== uid) return;
+    await appContext.loadForUser(uid, { force: true });
+    if (current !== generation || auth.currentUser?.uid !== uid) return;
     await router.replace(result.nextRoute || "/encuesta");
   } catch (error) {
+    if (current !== generation) return;
     console.error("Patient onboarding error:", error);
     errorMessage.value = getCallableErrorMessage(
       error,
       "No pudimos guardar tus datos. Intenta nuevamente."
     );
   } finally {
+    if (current !== generation) return;
     saving.value = false;
   }
 }

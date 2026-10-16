@@ -8,6 +8,7 @@
               Gestión de sesiones
             </p>
             <h1 class="text-h4 font-weight-bold">Agenda del psicólogo</h1>
+            <p class="text-caption mt-2">{{ AGENDA_NOTICE }}</p>
             <p class="text-body-1 text-medium-emphasis mt-2 mb-0">
               Gestiona tus citas, confirma sesiones y agrega el enlace externo de videollamada.
             </p>
@@ -215,7 +216,7 @@
                     :color="item.meetingUrl ? 'secondary' : 'warning'"
                     variant="text"
                     :prepend-icon="item.meetingUrl ? 'mdi-link-edit' : 'mdi-link-plus'"
-                    :disabled="item.estado === 'realizada'"
+                    :disabled="isAppointmentBusy(item) || !['pendiente', 'confirmada'].includes(item.estado)"
                     @click="openMeetingLinkDialog(item)"
 
         class="pf-btn-ghost">
@@ -234,7 +235,7 @@
                         variant="text"
                         color="secondary"
                         aria-label="Editar cita"
-                        :disabled="item.estado === 'realizada'"
+                        :disabled="isAppointmentBusy(item) || !['pendiente', 'confirmada'].includes(item.estado)"
                         @click="openEditDialog(item)"
 
         class="pf-btn-icon">
@@ -251,7 +252,7 @@
                         color="success"
                         aria-label="Confirmar cita"
                         :loading="isAppointmentActionLoading(item, 'confirm')"
-                        :disabled="isAppointmentBusy(item) || item.estado === 'confirmada' || item.estado === 'realizada'"
+                        :disabled="isAppointmentBusy(item) || item.estado !== 'pendiente'"
                         @click="handleConfirmAppointment(item)"
 
         class="pf-btn-patient">
@@ -268,7 +269,7 @@
                         color="primary"
                         aria-label="Marcar como realizada"
                         :loading="isAppointmentActionLoading(item, 'complete')"
-                        :disabled="isAppointmentBusy(item) || item.estado === 'realizada'"
+                        :disabled="isAppointmentBusy(item) || item.estado !== 'confirmada' || !canRecordAttendance(item)"
                         @click="handleCompleteAppointment(item)"
 
         class="pf-btn-icon">
@@ -276,20 +277,28 @@
                       </v-btn>
                     </template>
                   </v-tooltip>
-                  <v-tooltip text="Regresar cita a pendiente">
+                  <v-btn v-if="item.estado === 'realizada'" icon variant="text" class="pf-btn-icon"
+                    aria-label="Corregir atención" :disabled="isAppointmentBusy(item)" @click="openAttendanceDialog(item, 'correct')">
+                    <v-icon>mdi-file-document-edit-outline</v-icon>
+                  </v-btn>
+                  <v-btn v-if="item.estado === 'realizada'" icon variant="text" class="pf-btn-icon"
+                    aria-label="Deshacer realización" :disabled="isAppointmentBusy(item)" @click="openAttendanceDialog(item, 'undo')">
+                    <v-icon>mdi-undo</v-icon>
+                  </v-btn>
+                  <v-tooltip text="Rechazar cita y solicitar otro horario">
                     <template #activator="{ props: tooltipProps }">
                       <v-btn
                         v-bind="tooltipProps"
                         icon
                         variant="text"
                         color="warning"
-                        aria-label="Regresar a pendiente"
-                        :loading="isAppointmentActionLoading(item, 'reset')"
-                        :disabled="isAppointmentBusy(item) || item.estado === 'pendiente'"
-                        @click="handleResetAppointment(item)"
+                        aria-label="Rechazar cita"
+                        :loading="isAppointmentActionLoading(item, 'reject')"
+                        :disabled="isAppointmentBusy(item) || !['pendiente', 'confirmada'].includes(item.estado)"
+                        @click="openRejectionDialog(item)"
 
         class="pf-btn-hope">
-                        <v-icon>mdi-refresh</v-icon>
+                        <v-icon>mdi-calendar-remove</v-icon>
                       </v-btn>
                     </template>
                   </v-tooltip>
@@ -321,7 +330,7 @@
               <v-col cols="12" md="6">
                 <v-text-field
                   v-model="availabilityForm.date"
-                  label="Fecha"
+                  label="Fecha (hora de Lima)"
                   type="date"
                   variant="outlined"
                   density="comfortable"
@@ -330,7 +339,7 @@
               <v-col cols="12" md="6">
                 <v-text-field
                   v-model="availabilityForm.startTime"
-                  label="Hora de inicio"
+                  label="Hora de inicio (Lima)"
                   type="time"
                   variant="outlined"
                   density="comfortable"
@@ -385,28 +394,70 @@
         </v-card>
       </v-dialog>
 
-      <v-dialog v-model="completeDialog" class="bg-transparent" max-width="640">
+      <v-dialog v-model="rejectionDialog" :persistent="rejectingAppointment" max-width="640">
+        <v-card class="pa-4 card-backgoundcustom">
+          <v-card-title class="text-h6 text-wrap">Solicitar un nuevo horario</v-card-title>
+          <v-card-text>
+            <p class="mb-4">{{ rejectingSelection?.pacienteNombre }} · {{ rejectingSelection?.fecha }} {{ rejectingSelection?.hora }} · hora de Lima</p>
+            <v-alert type="warning" variant="tonal" class="mb-4">
+              Se cancelará esta cita y se cerrará su bloque. El paciente recibirá tu motivo
+              y una solicitud para elegir otro horario. Un pago confirmado quedará en revisión
+              de devolución; no se transfiere a la nueva reserva automáticamente.
+            </v-alert>
+            <v-textarea v-model="rejectionReason" label="Motivo para el paciente" maxlength="500" counter
+              rows="3" :disabled="rejectingAppointment" hint="Explica el percance sin incluir información sensible." persistent-hint />
+            <v-alert v-if="rejectionError" type="error" class="mt-4">{{ rejectionError }}</v-alert>
+          </v-card-text>
+          <v-card-actions class="flex-wrap">
+            <v-spacer />
+            <v-btn class="pf-btn-ghost" :disabled="rejectingAppointment" @click="rejectionDialog = false">Volver</v-btn>
+            <v-btn class="pf-btn-destructive" color="error" :loading="rejectingAppointment"
+              :disabled="!rejectionReason.trim() || rejectingAppointment" @click="saveRejection">Rechazar y avisar</v-btn>
+          </v-card-actions>
+        </v-card>
+      </v-dialog>
+
+      <v-dialog v-model="completeDialog" :persistent="savingCompletion" class="bg-transparent" max-width="640">
         <v-card class="pa-4 card-backgoundcustom" elevation="2" variant="text">
-          <v-card-title class="text-h6 font-weight-bold px-0 pt-0">Cerrar sesión</v-card-title>
+          <v-card-title class="text-h6 font-weight-bold px-0 pt-0">{{ attendanceTitle }}</v-card-title>
           <v-card-text>
             <p class="text-body-2 text-medium-emphasis mb-4">
               {{ completingAppointment?.pacienteNombre || "Paciente" }} ·
               {{ completingAppointment?.fecha || "sin fecha" }}
               {{ completingAppointment?.hora || "" }}
             </p>
+            <v-alert v-if="attendanceAction === 'undo'" type="warning" variant="tonal" class="mb-4">
+              Usa esta acción solo si la sesión no ocurrió y se registró por error.
+              Volverá a confirmada. El registro anterior quedará en el historial y se avisará al paciente.
+              No se modificarán pagos ni transferencias.
+            </v-alert>
+            <template v-else>
+              <p v-if="completingAppointment?.completedAt" class="mb-3">Registro original: {{ formatAgendaInstant(completingAppointment.completedAt) }}</p>
+              <v-row>
+                <v-col cols="12" sm="6"><v-text-field v-model="attendanceDate" type="date" label="Fecha de atención (Lima)" :max="agendaDate(agendaNow)" :disabled="savingCompletion" /></v-col>
+                <v-col cols="12" sm="6"><v-text-field v-model="attendanceTime" type="time" label="Hora de atención (Lima)" :disabled="savingCompletion" /></v-col>
+              </v-row>
             <v-textarea
               v-model="sessionSummary"
               label="Resumen compartido de la sesión"
               rows="5"
+              maxlength="2000"
+              :disabled="savingCompletion"
               variant="outlined"
               hint="Este resumen queda asociado al proceso y puede enriquecer el historial longitudinal."
               persistent-hint
               density="comfortable"
             />
+            </template>
+            <v-textarea v-model="attendanceReason" :label="attendanceAction === 'complete' ? 'Motivo si la atención fue en otro horario' : 'Motivo de la corrección'"
+              maxlength="500" counter rows="2" :disabled="savingCompletion" />
+            <v-checkbox v-if="attendanceAction === 'undo'" v-model="confirmNotAttended" :disabled="savingCompletion"
+              label="Confirmo que la sesión no ocurrió y se marcó realizada por error" />
+            <v-alert v-if="attendanceError" type="error" class="mt-3">{{ attendanceError }}</v-alert>
           </v-card-text>
-          <v-card-actions>
+          <v-card-actions class="flex-wrap">
             <v-spacer />
-            <v-btn variant="text" @click="completeDialog = false"
+            <v-btn variant="text" :disabled="savingCompletion" @click="completeDialog = false"
         class="pf-btn-ghost">
               Cancelar
             </v-btn>
@@ -414,11 +465,12 @@
               color="secondary"
               variant="tonal"
               :loading="savingCompletion"
+              :disabled="!canSaveAttendance || savingCompletion"
               prepend-icon="mdi-calendar-check"
               @click="saveAppointmentCompletion"
 
         class="pf-btn-secondary">
-              Marcar realizada
+              {{ attendanceAction === 'complete' ? 'Marcar realizada' : attendanceAction === 'correct' ? 'Guardar corrección' : 'Deshacer realización' }}
             </v-btn>
           </v-card-actions>
         </v-card>
@@ -428,17 +480,26 @@
 </template>
 
 <script setup>
-import { computed, ref, watch } from "vue";
+import { useRoute as useNotificationRoute } from "vue-router";
+const notificationRoute = useNotificationRoute();
+import { useAgendaClock } from "@/composables/useAgendaClock";
+const agendaNow = useAgendaClock();
+import { AGENDA_NOTICE, agendaDate, isFutureAppointment, resolveSchedule, wallParts, zonedDateTimeToDate, formatAgendaInstant } from "@/utils/dateTime";
+import { computed, onBeforeUnmount, ref, watch } from "vue";
 import { storeToRefs } from "pinia";
 import LayoutDefault from "@/components/Layout/Layoutmain.vue";
 import CitaDialog from "@/components/Terapias/CitaDialog.vue";
+import { useAppContextStore } from "@/store/appContext";
 import { useAuthStore } from "@/store/auth";
 import { getTherapistByUserUid } from "@/services/psicologoService";
 import { getTherapiesByTherapist } from "@/services/terapiaService";
 import {
   confirmAppointment,
   markAppointmentAsCompleted,
-  resetAppointmentToPending,
+  correctAppointmentAttendance,
+  undoAppointmentCompletion,
+  rejectAppointment,
+  createOperationId,
 } from "@/services/citaService";
 import {
   closeAvailabilitySlot,
@@ -447,6 +508,7 @@ import {
 } from "@/services/availabilityService";
 
 const authStore = useAuthStore();
+const appContext = useAppContextStore();
 const { currentUser } = storeToRefs(authStore);
 const therapist = ref(null);
 const therapies = ref([]);
@@ -471,6 +533,45 @@ const completeDialog = ref(false);
 const completingAppointment = ref(null);
 const sessionSummary = ref("");
 const savingCompletion = ref(false);
+const attendanceAction = ref("complete");
+const attendanceDate = ref("");
+const attendanceTime = ref("");
+const attendanceReason = ref("");
+const attendanceError = ref("");
+const confirmNotAttended = ref(false);
+let attendanceRequest = null;
+const attendanceTitle = computed(() => ({complete: "Registrar atención", correct: "Corregir datos de atención", undo: "Deshacer realización"})[attendanceAction.value]);
+const actualAttendance = computed(() => zonedDateTimeToDate(attendanceDate.value, attendanceTime.value, "America/Lima"));
+const canSaveAttendance = computed(() => attendanceAction.value === "undo"
+  ? Boolean(attendanceReason.value.trim() && confirmNotAttended.value)
+  : Boolean(actualAttendance.value && actualAttendance.value <= agendaNow.value &&
+    (attendanceAction.value === "complete" || attendanceReason.value.trim())));
+const rejectionDialog = ref(false);
+const rejectingSelection = ref(null);
+const rejectionReason = ref("");
+const rejectionError = ref("");
+const rejectingAppointment = ref(false);
+let rejectionRequest = null;
+let contextGeneration = 0;
+let scheduleLoad = 0;
+onBeforeUnmount(() => { contextGeneration++; scheduleLoad++; });
+watch(() => [currentUser.value?.uid, appContext.activeMode], () => {
+  contextGeneration++;
+  rejectionDialog.value = false;
+  rejectingSelection.value = null;
+  rejectionReason.value = "";
+  rejectionError.value = "";
+  rejectingAppointment.value = false;
+  rejectionRequest = null;
+  completeDialog.value = false;
+  completingAppointment.value = null;
+  savingCompletion.value = false;
+  attendanceError.value = "";
+  attendanceRequest = null;
+  dialog.value = false;
+  editingAppointment.value = null;
+  clearAppointmentAction();
+}, { flush: "sync" });
 
 const headers = [
   { title: "Fecha", value: "fechaOrden" },
@@ -493,16 +594,22 @@ const appointments = computed(() =>
       pacienteNombre: therapy.pacienteNombre || "Paciente",
       terapeutaId: therapy.terapeutaId || therapist.value?.id || "",
       terapeutaNombre: therapy.terapeutaNombre || therapist.value?.nombre || "",
+      timeZone: appointment.timeZone,
+      startAtIso: appointment.startAtIso,
       fecha: appointment.fecha || "",
       fechaOrden: buildSortableDate(appointment.fecha, appointment.hora),
       hora: appointment.hora || "Sin hora",
       estado: appointment.estado || "pendiente",
+      version: Number(appointment.version || 1),
       notas: appointment.notas || "",
       modalidad: appointment.modalidad || therapy.modalidad || "",
       ubicacion: appointment.ubicacion || "",
       meetingProvider: appointment.meetingProvider || "",
       meetingUrl: appointment.meetingUrl || "",
       sessionSummary: appointment.sessionSummary || "",
+      attendedAt: appointment.attendedAt || null,
+      completedAt: appointment.completedAt || null,
+      completedBy: appointment.completedBy || "",
     }))
   )
 );
@@ -531,7 +638,7 @@ const filteredAppointments = computed(() => {
 
 const upcomingAppointments = computed(() =>
   appointments.value.filter((appointment) =>
-    ["pendiente", "confirmada"].includes(normalizeStatus(appointment.estado))
+    ["pendiente", "confirmada"].includes(normalizeStatus(appointment.estado)) && isFutureAppointment(appointment, agendaNow.value)
   )
 );
 
@@ -546,23 +653,23 @@ const missingMeetingLinksCount = computed(() =>
 );
 const isAvailabilityRemote = computed(() => isRemote(availabilityForm.value.modality));
 const upcomingAvailabilitySlots = computed(() => {
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
+  const today = agendaDate(agendaNow.value);
 
   return availabilitySlots.value
     .filter((slot) => {
-      const parsed = parseDateOnly(slot.date);
-      return parsed && parsed >= today && slot.status !== "closed";
+      return slot.status !== "closed" && (slot.scheduleStatus === "unresolved" || (slot.date >= today && isFutureAppointment(slot, agendaNow.value)));
     })
     .slice(0, 18);
 });
 
+watch(() => notificationRoute.query.openedAt, () => loadTherapistSchedule());
+
 watch(
-  () => currentUser.value?.uid,
+  () => [currentUser.value?.uid, appContext.activeMode],
   () => {
     loadTherapistSchedule();
   },
-  { immediate: true }
+  { immediate: true, flush: "sync" }
 );
 
 function buildSortableDate(fecha, hora) {
@@ -590,11 +697,15 @@ function statusColor(status) {
 }
 
 async function loadTherapistSchedule() {
+  const ticket = ++scheduleLoad;
   const uid = currentUser.value?.uid;
 
-  if (!uid) {
+  if (!uid || appContext.activeMode !== "psychologist") {
     therapist.value = null;
     therapies.value = [];
+    availabilitySlots.value = [];
+    loading.value = false;
+    loadingAvailability.value = false;
     return;
   }
 
@@ -602,13 +713,16 @@ async function loadTherapistSchedule() {
   errorMessage.value = "";
 
   try {
-    therapist.value = await getTherapistByUserUid(uid);
+    const loadedTherapist = await getTherapistByUserUid(uid);
+    if (ticket !== scheduleLoad) return;
+    therapist.value = loadedTherapist;
     if (therapist.value?.id) {
       loadingAvailability.value = true;
       const [therapistTherapies, therapistAvailability] = await Promise.all([
         getTherapiesByTherapist(therapist.value.id),
         getAvailabilityByTherapist(therapist.value.id),
       ]);
+      if (ticket !== scheduleLoad) return;
       therapies.value = therapistTherapies;
       availabilitySlots.value = therapistAvailability;
     } else {
@@ -616,6 +730,7 @@ async function loadTherapistSchedule() {
       availabilitySlots.value = [];
     }
   } catch (error) {
+    if (ticket !== scheduleLoad) return;
     console.error("Error loading therapist schedule:", error);
     errorMessage.value =
       error?.message || "No pudimos cargar la agenda del psicólogo.";
@@ -623,8 +738,10 @@ async function loadTherapistSchedule() {
     therapies.value = [];
     availabilitySlots.value = [];
   } finally {
-    loading.value = false;
-    loadingAvailability.value = false;
+    if (ticket === scheduleLoad) {
+      loading.value = false;
+      loadingAvailability.value = false;
+    }
   }
 }
 
@@ -677,7 +794,7 @@ async function handleCloseAvailabilitySlot(slot) {
   availabilityActionId.value = slot.id;
 
   try {
-    await closeAvailabilitySlot(slot.id);
+    await closeAvailabilitySlot(slot.id, slot.therapistId);
     await loadTherapistSchedule();
   } catch (error) {
     console.error("Error closing availability slot:", error);
@@ -699,6 +816,8 @@ function openEditDialog(item) {
     terapiaId: item.terapiaId,
     terapeutaId: item.terapeutaId,
     terapeutaNombre: item.terapeutaNombre,
+    timeZone: item.timeZone,
+    startAtIso: item.startAtIso,
     fecha: item.fecha,
     hora: item.hora,
     notas: item.notas,
@@ -716,7 +835,7 @@ function openMeetingLinkDialog(item) {
 }
 
 async function handleConfirmAppointment(item) {
-  if (isAppointmentBusy(item)) return;
+  if (isAppointmentBusy(item) || item.estado !== "pendiente") return;
   setAppointmentAction(item, "confirm");
 
   await runAppointmentAction(
@@ -726,54 +845,99 @@ async function handleConfirmAppointment(item) {
   );
 }
 
+function canRecordAttendance(item) {
+  const start = resolveSchedule(item).start;
+  return Boolean(start && start <= agendaNow.value);
+}
 function handleCompleteAppointment(item) {
+  if (isAppointmentBusy(item) || item.estado !== "confirmada" || !canRecordAttendance(item)) return;
+  openAttendanceDialog(item, "complete");
+}
+function openAttendanceDialog(item, action) {
   if (isAppointmentBusy(item)) return;
-
-  completingAppointment.value = item;
+  if (action !== "complete" && item.estado !== "realizada") return;
+  completingAppointment.value = { ...item };
+  attendanceAction.value = action;
+  const actual = item.attendedAt ? new Date(item.attendedAt) : resolveSchedule(item).start;
+  const parts = actual && Number.isFinite(actual.getTime()) ? wallParts(actual) : {date: "", time: ""};
+  attendanceDate.value = parts.date;
+  attendanceTime.value = parts.time;
+  attendanceReason.value = "";
+  attendanceError.value = "";
+  confirmNotAttended.value = false;
+  attendanceRequest = null;
   sessionSummary.value = item.sessionSummary || "";
   completeDialog.value = true;
 }
-
 async function saveAppointmentCompletion() {
-  if (!completingAppointment.value || savingCompletion.value) {
-    return;
-  }
-
+  const selection = completingAppointment.value;
+  if (!selection?.citaId || savingCompletion.value || !canSaveAttendance.value) return;
+  const generation = contextGeneration;
+  const data = {citaId: selection.citaId, expectedVersion: selection.version,
+    sessionSummary: sessionSummary.value.trim(), attendedAt: actualAttendance.value?.toISOString(),
+    reason: attendanceReason.value.trim(), confirmNotAttended: confirmNotAttended.value};
+  const signature = JSON.stringify({action: attendanceAction.value, ...data});
+  if (!attendanceRequest || attendanceRequest.signature !== signature) attendanceRequest = {signature, id: createOperationId("attendance")};
+  data.requestId = attendanceRequest.id;
+  const action = attendanceAction.value;
   savingCompletion.value = true;
-  setAppointmentAction(completingAppointment.value, "complete");
-
+  setAppointmentAction(selection, "complete");
+  attendanceError.value = "";
   try {
-    const completed = await runAppointmentAction(
-      () =>
-        markAppointmentAsCompleted({
-          citaId: completingAppointment.value.citaId,
-          terapiaId: completingAppointment.value.terapiaId,
-          sessionSummary: sessionSummary.value.trim(),
-        }),
-      "Sesión realizada",
-      "La sesión fue marcada como realizada."
-    );
-
-    if (completed) {
-      completeDialog.value = false;
-      completingAppointment.value = null;
-      sessionSummary.value = "";
-    }
+    const save = {complete: markAppointmentAsCompleted, correct: correctAppointmentAttendance, undo: undoAppointmentCompletion}[action];
+    await save(data);
+    if (generation !== contextGeneration) return;
+    completeDialog.value = false;
+    completingAppointment.value = null;
+    window.dispatchEvent(new CustomEvent("ui-success", {detail: {
+      title: action === "complete" ? "Sesión realizada" : "Registro de atención actualizado",
+      message: "Se guardó el registro y se avisó al paciente.",
+    }}));
+    await loadTherapistSchedule();
+  } catch (error) {
+    if (generation === contextGeneration) attendanceError.value = error?.message || "No se pudo guardar la atención. Reintenta.";
   } finally {
-    savingCompletion.value = false;
-    clearAppointmentAction();
+    if (generation === contextGeneration) {savingCompletion.value = false; clearAppointmentAction();}
   }
 }
 
-async function handleResetAppointment(item) {
-  if (isAppointmentBusy(item)) return;
-  setAppointmentAction(item, "reset");
+function openRejectionDialog(item) {
+  if (isAppointmentBusy(item) || !["pendiente", "confirmada"].includes(item.estado)) return;
+  rejectingSelection.value = { ...item };
+  rejectionReason.value = "";
+  rejectionError.value = "";
+  rejectionRequest = null;
+  rejectionDialog.value = true;
+}
 
-  await runAppointmentAction(
-    () => resetAppointmentToPending({ citaId: item.citaId, terapiaId: item.terapiaId }),
-    "Cita actualizada",
-    "La cita volvió al estado pendiente."
-  );
+async function saveRejection() {
+  const selection = rejectingSelection.value;
+  const reason = rejectionReason.value.trim();
+  if (!selection?.citaId || !reason || rejectingAppointment.value) return;
+  const generation = contextGeneration;
+  if (!rejectionRequest || rejectionRequest.reason !== reason) {
+    rejectionRequest = { reason, id: createOperationId("professional_rejection") };
+  }
+  rejectingAppointment.value = true;
+  rejectionError.value = "";
+  setAppointmentAction(selection, "reject");
+  try {
+    await rejectAppointment({ citaId: selection.citaId, reason, expectedVersion: selection.version, requestId: rejectionRequest.id });
+    if (generation !== contextGeneration) return;
+    rejectionDialog.value = false;
+    rejectingSelection.value = null;
+    window.dispatchEvent(new CustomEvent("ui-success", { detail: {
+      title: "Solicitud enviada", message: "La cita se canceló y el paciente recibió la solicitud de elegir otro horario.",
+    } }));
+    await loadTherapistSchedule();
+  } catch (error) {
+    if (generation === contextGeneration) rejectionError.value = error?.message || "No se pudo rechazar la cita. Reintenta.";
+  } finally {
+    if (generation === contextGeneration) {
+      rejectingAppointment.value = false;
+      clearAppointmentAction();
+    }
+  }
 }
 
 async function runAppointmentAction(action, title, message) {
@@ -813,7 +977,7 @@ function parseDateOnly(value) {
     return null;
   }
 
-  const parsed = new Date(`${value}T00:00`);
+  const parsed = new Date(`${value}T00:00:00Z`);
   return Number.isNaN(parsed.getTime()) ? null : parsed;
 }
 
@@ -821,13 +985,14 @@ function formatAvailabilitySlot(slot) {
   const parsed = parseDateOnly(slot.date);
   const date = parsed
     ? new Intl.DateTimeFormat("es-PE", {
+        timeZone: "UTC",
         weekday: "short",
         day: "2-digit",
         month: "2-digit",
       }).format(parsed)
     : slot.date;
 
-  return `${date} · ${slot.startTime}-${slot.endTime} · ${slot.modality}`;
+  return slot.scheduleStatus === "unresolved" ? slot.scheduleLabel : `${date} · ${slot.startTime}-${slot.endTime} · hora de Lima · ${slot.modality}`;
 }
 
 function appointmentRowId(item) {

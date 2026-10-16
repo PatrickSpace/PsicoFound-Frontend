@@ -1,0 +1,23 @@
+{
+  "projectId": null,
+  "environment": {
+    "APP_ENV": "staging",
+    "APP_CHECK_MODE": "enforce",
+    "GCLOUD_PROJECT": "",
+    "ELIGIBILITY_POLICY_JSON": "",
+    "LEGAL_DOCUMENT_VERSION": "",
+    "LEGAL_TERMS_URL": "",
+    "LEGAL_PRIVACY_URL": "",
+    "PRIVACY_POLICY_JSON": "",
+    "COMMERCIAL_POLICY_JSON": "",
+    "AI_USE_APPROVAL_JSON": "",
+    "CHAT_LIMITS_JSON": "",
+    "VITE_FIREBASE_PROJECT_ID": "",
+    "VITE_LEGAL_DOCUMENT_VERSION": "",
+    "VITE_TERMS_URL": "",
+    "VITE_PRIVACY_URL": "",
+    "VITE_APP_CHECK_SITE_KEY": "",
+    "VITE_USE_FIREBASE_EMULATORS": "false"
+  },
+  "consoleEvidence": {}
+}

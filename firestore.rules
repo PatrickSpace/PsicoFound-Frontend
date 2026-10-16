@@ -3,7 +3,11 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     function signedIn() {
-      return request.auth != null;
+      return request.auth != null &&
+        (!exists(/databases/$(database)/documents/account_requests/$(request.auth.uid + '_deletion')) ||
+          get(/databases/$(database)/documents/account_requests/$(request.auth.uid + '_deletion')).data.get('accessBlocked', false) != true) &&
+        (!exists(/databases/$(database)/documents/runtime_controls/maintenance) ||
+          get(/databases/$(database)/documents/runtime_controls/maintenance).data.enabled != true);
     }
 
     function isOwner(uid) {
@@ -23,8 +27,9 @@ service cloud.firestore {
     function isAdmin() {
       return signedIn() &&
         (
-          userHasRole("admin") ||
-          currentUserDoc().data.rol in ["admin", "psicofound-admin"]
+          currentUserDoc().data.get('roles', []).hasAny(["admin", "psicofound-admin"]) ||
+          currentUserDoc().data.get('rol', '') in ["admin", "psicofound-admin"] ||
+          currentUserDoc().data.get('role', '') in ["admin", "psicofound-admin"]
         );
     }
 
@@ -54,15 +59,6 @@ service cloud.firestore {
         ]);
     }
 
-    function validSelfUserUpdate() {
-      return request.resource.data.diff(resource.data).affectedKeys().hasOnly([
-          "nombre",
-          "fechaNacimiento",
-          "telefono",
-          "updatedAt"
-        ]);
-    }
-
     function ownsExistingPatientDoc() {
       return signedIn() && resource.data.pacienteUid == request.auth.uid;
     }
@@ -73,7 +69,9 @@ service cloud.firestore {
 
     function assignedTherapist(therapistId) {
       return signedIn() &&
+        (userHasRole("psychologist") || currentUserDoc().data.rol == "psicologo") &&
         exists(/databases/$(database)/documents/therapists/$(therapistId)) &&
+        get(/databases/$(database)/documents/therapists/$(therapistId)).data.get("activo", true) == true &&
         get(/databases/$(database)/documents/therapists/$(therapistId)).data.uid ==
           request.auth.uid;
     }
@@ -95,6 +93,13 @@ service cloud.firestore {
           get(/databases/$(database)/documents/terapias/$(therapyId))
             .data.terapeutaId
         );
+    }
+
+    function canReadTherapy(therapyId) {
+      return signedIn() && therapyId is string && therapyId != "" &&
+        exists(/databases/$(database)/documents/terapias/$(therapyId)) &&
+        (get(/databases/$(database)/documents/terapias/$(therapyId)).data.pacienteUid == request.auth.uid ||
+          assignedTherapistForTherapy(therapyId));
     }
 
     function incomingNotificationHasTherapy() {
@@ -134,40 +139,66 @@ service cloud.firestore {
 
     match /users/{uid} {
       allow read: if isOwner(uid) || isAdmin();
-      allow create: if validSelfUserCreate(uid) || isAdmin();
-      allow update: if isAdmin() || (
-        isOwner(uid) &&
-        validSelfUserUpdate()
+      allow create: if validSelfUserCreate(uid);
+      // Self-service profile changes are validated by a callable function.
+      allow update: if false;
+      allow delete: if false;
+    }
+
+    match /account_requests/{requestId} {
+      allow read: if isAdmin() || (signedIn() &&
+        resource.data.requesterUid == request.auth.uid);
+      allow create, update, delete: if false;
+    }
+
+    match /payment_audit/{id} {
+      allow read: if isAdmin();
+      allow write: if false;
+    }
+    match /admin_audit/{id} {
+      allow read: if isAdmin();
+      allow write: if false;
+    }
+    match /professional_obligations/{id} {
+      allow read: if isAdmin();
+      allow write: if false;
+    }
+    match /professional_transfers/{id} {
+      allow read: if isAdmin();
+      allow write: if false;
+    }
+
+    match /support_requests/{requestId} {
+      allow read: if isAdmin() || (
+        signedIn() && resource.data.requesterUid == request.auth.uid
       );
-      allow delete: if isAdmin();
+      allow write: if false;
     }
 
     match /profiles/{uid} {
-      allow read: if isOwner(uid) || isAdmin();
+      allow read: if isOwner(uid);
       allow write: if false;
     }
 
     match /conversations/{uid} {
-      allow read: if isOwner(uid) || isAdmin();
+      allow read: if isOwner(uid);
       allow write: if false;
 
       match /messages/{messageId} {
-        allow read: if isOwner(uid) || isAdmin();
+        allow read: if isOwner(uid);
         allow write: if false;
       }
     }
 
+    match /profile_chat_operations/{operationId} {
+      allow read: if signedIn() &&
+        resource.data.uid == request.auth.uid;
+      allow write: if false;
+    }
+
     match /therapists/{therapistId} {
       allow read: if signedIn();
-      allow create: if isAdmin() &&
-        !request.resource.data.keys().hasAny([
-          "paymentRateId", "paymentRateSelectionVersion", "paymentRateUpdatedAt"
-        ]);
-      allow update: if isAdmin() &&
-        !request.resource.data.diff(resource.data).affectedKeys().hasAny([
-          "paymentRateId", "paymentRateSelectionVersion", "paymentRateUpdatedAt"
-        ]);
-      allow delete: if isAdmin();
+      allow write: if false;
 
       match /rate_history/{versionId} {
         allow read: if isAdmin() || assignedTherapist(therapistId);
@@ -188,73 +219,33 @@ service cloud.firestore {
       }
     }
 
+    match /payment_operations/{operationId} {
+      allow read: if isAdmin() || (
+        signedIn() && resource.data.patientUid == request.auth.uid
+      );
+      allow write: if false;
+    }
+
     match /psychologist_requests/{requestId} {
       allow read: if isAdmin() || (
         signedIn() &&
         resource.data.userUid == request.auth.uid
       );
-      allow create, update: if isAdmin();
+      allow create, update: if false;
       allow delete: if false;
     }
 
     match /therapist_availability/{slotId} {
       allow read: if signedIn();
-      allow create: if signedIn() &&
-        request.resource.data.therapistId is string &&
-        assignedTherapist(request.resource.data.therapistId) &&
-        request.resource.data.status == "available";
-      allow update: if (
-        assignedTherapist(resource.data.therapistId) &&
-        request.resource.data.therapistId == resource.data.therapistId &&
-        request.resource.data.diff(resource.data).affectedKeys().hasOnly([
-          "status",
-          "updatedAt"
-        ]) &&
-        request.resource.data.status in ["available", "closed"]
-      ) || (
-        signedIn() &&
-        resource.data.status == "available" &&
-        request.resource.data.status == "booked" &&
-        request.resource.data.therapistId == resource.data.therapistId &&
-        request.resource.data.bookedBy == request.auth.uid &&
-        request.resource.data.appointmentId is string &&
-        request.resource.data.appointmentId != "" &&
-        request.resource.data.diff(resource.data).affectedKeys().hasOnly([
-          "status",
-          "bookedBy",
-          "appointmentId",
-          "updatedAt"
-        ])
-      ) || (
-        signedIn() &&
-        resource.data.status == "booked" &&
-        resource.data.bookedBy == request.auth.uid &&
-        request.resource.data.status == "available" &&
-        request.resource.data.therapistId == resource.data.therapistId &&
-        request.resource.data.bookedBy == "" &&
-        request.resource.data.appointmentId == "" &&
-        request.resource.data.diff(resource.data).affectedKeys().hasOnly([
-          "status",
-          "bookedBy",
-          "appointmentId",
-          "updatedAt"
-        ])
-      );
-      allow delete: if false;
+      // Agenda policy, ownership and slot concurrency are enforced by Functions.
+      allow create, update, delete: if false;
     }
 
     match /notifications/{notificationId} {
       allow read: if signedIn() &&
         resource.data.recipientUid == request.auth.uid;
-      allow create: if signedIn() &&
-        request.resource.data.actorUid == request.auth.uid &&
-        request.resource.data.recipientUid is string &&
-        request.resource.data.recipientUid != "" &&
-        (
-          incomingNotificationFromPatientToTherapist() ||
-          incomingNotificationFromTherapistToPatient() ||
-          isAdmin()
-        );
+      // Domain notifications are emitted idempotently by server operations.
+      allow create: if false;
       allow update: if signedIn() &&
         resource.data.recipientUid == request.auth.uid &&
         request.resource.data.recipientUid == resource.data.recipientUid &&
@@ -265,111 +256,48 @@ service cloud.firestore {
 
     match /citas/{citaId} {
       allow read: if ownsExistingPatientDoc() ||
-        ownsExistingTherapistDoc() ||
-        isAdmin();
-      allow create: if ownsIncomingPatientDoc();
-      allow update: if (
-        ownsExistingPatientDoc() &&
-        ownsIncomingPatientDoc() &&
-        request.resource.data.pacienteUid == resource.data.pacienteUid
-      ) || (
-        ownsExistingTherapistDoc() &&
-        ownsIncomingTherapistDoc() &&
-        request.resource.data.pacienteUid == resource.data.pacienteUid
-      );
-      allow delete: if false;
+        ownsExistingTherapistDoc();
+      // State transitions and schedule changes are server transactions.
+      allow write: if false;
     }
 
     match /terapias/{terapiaId} {
       allow read: if ownsExistingPatientDoc() ||
-        ownsExistingTherapistDoc() ||
-        isAdmin();
-      allow create: if ownsIncomingPatientDoc();
-      allow update: if (
-        ownsExistingPatientDoc() &&
-        ownsIncomingPatientDoc() &&
-        request.resource.data.pacienteUid == resource.data.pacienteUid
-      ) || (
-        ownsExistingTherapistDoc() &&
-        ownsIncomingTherapistDoc() &&
-        request.resource.data.pacienteUid == resource.data.pacienteUid
-      );
-      allow delete: if false;
+        ownsExistingTherapistDoc();
+      // Creation and status changes are coordinated with appointments on server.
+      allow write: if false;
     }
 
     match /longitudinal_history/{eventId} {
-      allow read: if ownsExistingPatientDoc() ||
-        (
-          resource.data.terapiaId is string &&
-          resource.data.terapiaId != "" &&
-          assignedTherapistForTherapy(resource.data.terapiaId)
-        ) ||
-        isAdmin();
-      allow create: if ownsIncomingPatientDoc() ||
-        (
-          request.resource.data.terapiaId is string &&
-          request.resource.data.terapiaId != "" &&
-          assignedTherapistForTherapy(request.resource.data.terapiaId)
-        );
-      allow update, delete: if false;
+      allow read: if canReadTherapy(resource.data.terapiaId) ||
+        ownsExistingPatientDoc();
+      // All domain events, including emotions, are emitted atomically on server.
+      // There are no client-authored event types.
+      allow write: if false;
     }
 
     match /exercises/{exerciseId} {
-      allow read: if ownsExistingPatientDoc() ||
-        ownsExistingTherapistDoc() ||
-        isAdmin();
-      allow create: if (
-        ownsIncomingPatientDoc()
-      ) || (
-        request.resource.data.terapiaId is string &&
-        request.resource.data.terapiaId != "" &&
-        request.resource.data.terapeutaId is string &&
-        assignedTherapist(request.resource.data.terapeutaId) &&
-        assignedTherapistForTherapy(request.resource.data.terapiaId)
-      );
-      allow update: if (
-        ownsExistingPatientDoc() &&
-        ownsIncomingPatientDoc() &&
-        request.resource.data.pacienteUid == resource.data.pacienteUid
-      ) || (
-        ownsExistingTherapistDoc() &&
-        ownsIncomingTherapistDoc() &&
-        request.resource.data.pacienteUid == resource.data.pacienteUid
-      );
-      allow delete: if false;
+      allow read: if canReadTherapy(resource.data.terapiaId);
+      // Assignment, completion and the audit event are one server transaction.
+      allow write: if false;
     }
 
     match /therapy_goals/{goalId} {
-      allow read: if ownsExistingPatientDoc() ||
-        ownsExistingTherapistDoc() ||
-        isAdmin();
-      allow create: if (
-        ownsIncomingPatientDoc()
-      ) || (
-        request.resource.data.terapiaId is string &&
-        request.resource.data.terapiaId != "" &&
-        request.resource.data.terapeutaId is string &&
-        assignedTherapist(request.resource.data.terapeutaId) &&
-        assignedTherapistForTherapy(request.resource.data.terapiaId)
-      );
-      allow update: if (
-        ownsExistingPatientDoc() &&
-        ownsIncomingPatientDoc() &&
-        request.resource.data.pacienteUid == resource.data.pacienteUid
-      ) || (
-        ownsExistingTherapistDoc() &&
-        ownsIncomingTherapistDoc() &&
-        request.resource.data.pacienteUid == resource.data.pacienteUid
-      );
-      allow delete: if false;
+      allow read: if canReadTherapy(resource.data.terapiaId);
+      allow write: if false;
+      match /progress/{entryId} {
+        allow read: if canReadTherapy(
+          get(/databases/$(database)/documents/therapy_goals/$(goalId)).data.terapiaId
+        );
+        allow write: if false;
+      }
     }
 
     match /emotional_checkins/{checkinId} {
       allow read: if ownsExistingPatientDoc() ||
-        ownsExistingTherapistDoc() ||
-        isAdmin();
-      allow create: if ownsIncomingPatientDoc();
-      allow update, delete: if false;
+        ownsExistingTherapistDoc();
+      // Identity, active therapy and its audit event are validated on server.
+      allow write: if false;
     }
 
     match /feddback/{feedbackId} {

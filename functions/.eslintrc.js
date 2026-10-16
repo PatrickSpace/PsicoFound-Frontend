@@ -4,7 +4,7 @@ module.exports = {
     node: true,
   },
   parserOptions: {
-    "ecmaVersion": 2018,
+    "ecmaVersion": 2022,
   },
   extends: [
     "eslint:recommended",
@@ -17,6 +17,11 @@ module.exports = {
     "require-jsdoc": "off",
   },
   overrides: [
+    {
+      files: ["**/*.mjs"],
+      parserOptions: {ecmaVersion: 2022, sourceType: "module"},
+      rules: {"max-len": "off"},
+    },
     {
       files: ["**/*.spec.*"],
       env: {

@@ -1,6 +1,6 @@
 <template>
   <LayoutDefault layout>
-    <v-container class="payment-rates-view pa-0">
+    <v-container v-if="workspace.active.value" class="payment-rates-view pa-0">
       <div class="page-header">
         <div class="page-header__row">
           <div class="page-header__copy">
@@ -16,6 +16,7 @@
       </div>
 
       <v-alert v-if="errorMessage" color="error" variant="tonal" class="mb-4" role="alert">{{ errorMessage }}</v-alert>
+      <v-btn class="mb-4" @click="workspace.reload" :loading="loading">Actualizar</v-btn>
       <div class="rates-toolbar">
         <span class="text-body-2 text-medium-emphasis">{{ rates.length }} tarifas · Lurems 30% · Profesional 70%</span>
         <v-select v-model="filter" :items="filterOptions" label="Estado" variant="outlined" density="comfortable" hide-details />
@@ -45,7 +46,7 @@
             <div class="rate-card__actions">
               <v-switch :model-value="rate.active" :label="rate.active ? 'Activa' : 'Inactiva'" color="secondary"
                 density="compact" hide-details inset :loading="busyId === rate.id" :disabled="Boolean(busyId)"
-                :aria-label="`Activar tarifa ${rate.name}`" @update:model-value="setActive(rate, $event)" />
+                :aria-label="`Activar tarifa ${rate.name}`" @update:model-value="requestActivation(rate, $event)" />
               <div class="d-flex ga-1">
                 <v-btn icon="mdi-history" variant="text" class="pf-btn-icon" aria-label="Ver historial de tarifa"
                   v-tooltip="'Ver historial'" @click="openHistory(rate)" />
@@ -91,6 +92,15 @@
         </v-card>
       </v-dialog>
 
+      <v-dialog v-model="activationDialog" max-width="520" :persistent="Boolean(busyId)">
+        <v-card title="Confirmar estado de tarifa">
+          <v-card-text>
+            <v-alert v-if="errorMessage" type="error">{{ errorMessage }}</v-alert>
+            <p>{{ activationValue ? 'Activar' : 'Desactivar' }} «{{ activationRate?.name }}» para nuevas reservas. Las reservas anteriores conservarán sus condiciones.</p>
+          </v-card-text>
+          <v-card-actions><v-btn :disabled="Boolean(busyId)" @click="activationDialog=false">Cancelar</v-btn><v-btn :loading="Boolean(busyId)" @click="setActive(activationRate, activationValue)">Confirmar estado</v-btn></v-card-actions>
+        </v-card>
+      </v-dialog>
       <v-dialog v-model="historyDialog" max-width="620" scrollable>
         <v-card class="card-backgoundcustom pa-4">
           <v-card-title class="text-h6 font-weight-bold rate-dialog-title">Historial de {{ historyName }}</v-card-title>
@@ -116,16 +126,21 @@
 </template>
 
 <script setup>
-import { computed, onBeforeUnmount, onMounted, reactive, ref } from "vue";
+import { computed, reactive, ref } from "vue";
 import LayoutDefault from "@/components/Layout/Layoutmain.vue";
-import { getPaymentRateHistory, newPaymentRateId, savePaymentRate, watchPaymentRates } from "@/services/paymentService";
+import { getPaymentRateHistory, newPaymentRateId, savePaymentRate } from "@/services/paymentService";
 import { getCallableErrorMessage } from "@/services/onboardingService";
 import { formatPaymentAmount, isMercadoPagoLink, parseAmountMinor, previewPaymentSplit } from "@/utils/paymentRates";
+
+import { useAdminWorkspace } from "@/composables/useAdminWorkspace";
+import { adminDate, watchAdminCollection } from "@/services/adminService";
+import { withTableLoadingTimeout } from "@/utils/tableLoadingTimeout";
 
 const rates = ref([]);
 const loading = ref(true);
 const errorMessage = ref("");
 const busyId = ref("");
+const activationDialog = ref(false), activationRate = ref(null), activationValue = ref(false);
 const filter = ref("all");
 const filterOptions = [{ title: "Todas", value: "all" }, { title: "Activas", value: "active" }, { title: "Inactivas", value: "inactive" }];
 const filteredRates = computed(() => rates.value.filter((rate) => filter.value === "all" || rate.active === (filter.value === "active")));
@@ -145,20 +160,21 @@ const historyName = ref("");
 const history = ref([]);
 const historyLoading = ref(false);
 const historyError = ref("");
-let unsubscribe;
 let historyRequest = 0;
-
-onMounted(() => {
-  unsubscribe = watchPaymentRates((value) => {
-    rates.value = value;
-    loading.value = false;
-    errorMessage.value = "";
-  }, () => {
-    loading.value = false;
-    errorMessage.value = "No pudimos cargar las tarifas. Comprueba tu acceso de administrador y vuelve a entrar.";
+const workspace = useAdminWorkspace(() => {
+  historyRequest++; rates.value = []; history.value = []; editDialog.value = false;
+  historyDialog.value = false; activationDialog.value = false; activationRate.value = null; saving.value = false; busyId.value = ""; errorMessage.value = "";
+  Object.assign(form, { rateId: "", expectedVersion: 0, name: "", amount: "", paymentUrl: "", active: true, isTest: false });
+}, current => {
+  loading.value = true;
+  return watchAdminCollection("payment_rates", value => {
+    if (!current()) return;
+    rates.value = value.sort((a,b) => a.amountMinor - b.amountMinor || a.name.localeCompare(b.name)); loading.value = false; errorMessage.value = "";
+  }, error => {
+    if (!current()) return;
+    rates.value = []; loading.value = false; errorMessage.value = error.message || "No pudimos cargar las tarifas.";
   });
 });
-onBeforeUnmount(() => { unsubscribe?.(); historyRequest++; });
 
 function openCreate() {
   editing.value = false;
@@ -178,30 +194,39 @@ function openEdit(rate) {
 
 async function save() {
   if (saving.value || !canSave.value) return;
-  if (!(await formRef.value.validate()).valid) return;
+  const current = workspace.capture();
   saving.value = true;
   formError.value = "";
   try {
+    if (!(await formRef.value.validate()).valid || !current()) return;
     await savePaymentRate({ ...form, amountMinor: parseAmountMinor(form.amount) });
+    if (!current()) return;
     editDialog.value = false;
     window.dispatchEvent(new CustomEvent("ui-success", { detail: { title: "Tarifa guardada", message: "El catálogo de cobros fue actualizado." } }));
   } catch (error) {
+    if (!current()) return;
     formError.value = getCallableErrorMessage(error, "No pudimos guardar la tarifa.");
   } finally {
-    saving.value = false;
+    if (current()) saving.value = false;
   }
 }
 
+function requestActivation(rate, active) {
+  activationRate.value = rate; activationValue.value = Boolean(active); errorMessage.value = ""; activationDialog.value = true;
+}
 async function setActive(rate, active) {
   if (busyId.value) return;
+  const current = workspace.capture();
   busyId.value = rate.id;
   errorMessage.value = "";
   try {
     await savePaymentRate({ rateId: rate.id, expectedVersion: rate.version, name: rate.name, amountMinor: rate.amountMinor, paymentUrl: rate.paymentUrl, isTest: rate.isTest, active: Boolean(active) });
+    if (current()) activationDialog.value = false;
   } catch (error) {
+    if (!current()) return;
     errorMessage.value = getCallableErrorMessage(error, "No pudimos cambiar el estado de la tarifa.");
   } finally {
-    busyId.value = "";
+    if (current()) busyId.value = "";
   }
 }
 
@@ -213,7 +238,7 @@ async function openHistory(rate) {
   historyLoading.value = true;
   historyDialog.value = true;
   try {
-    const versions = await getPaymentRateHistory(rate.id);
+    const versions = await withTableLoadingTimeout(getPaymentRateHistory(rate.id));
     if (request === historyRequest) history.value = versions;
   } catch {
     if (request === historyRequest) historyError.value = "No pudimos cargar el historial.";
@@ -223,7 +248,7 @@ async function openHistory(rate) {
 }
 
 function formatDate(timestamp) {
-  return timestamp?.toDate ? new Intl.DateTimeFormat("es-PE", { dateStyle: "short", timeStyle: "short" }).format(timestamp.toDate()) : "Guardando…";
+  return adminDate(timestamp);
 }
 </script>
 

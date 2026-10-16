@@ -32,7 +32,7 @@ function splitPaymentAmount(amountMinor) {
     );
   }
   const psychologistAmountMinor =
-    Math.round(amountMinor * PSYCHOLOGIST_PERCENT / 100);
+    Math.floor(amountMinor * PSYCHOLOGIST_PERCENT / 100);
   return {
     platformPercent: PLATFORM_PERCENT,
     psychologistPercent: PSYCHOLOGIST_PERCENT,

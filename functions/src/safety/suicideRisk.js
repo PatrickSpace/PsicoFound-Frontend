@@ -1,3 +1,4 @@
+/* eslint-disable max-len */
 const {normalizeForMatching} = require("../utils/text");
 
 const CRISIS_REPLY =
@@ -31,7 +32,7 @@ const SUICIDE_RISK_PATTERNS = [
       "\\b(suicidarme|matarme|quitarme la vida)\\b.*\\b" +
       "(tengo|ya tengo)\\s+un plan\\b",
   ),
-  /\b(voy a|quiero|planeo)\s+(cortarme las venas|tomar pastillas)\b/,
+  /\b(voy a|quiero|planeo)\s+cortarme las venas\b/,
 ];
 
 function getCrisisResult(message) {
@@ -42,21 +43,28 @@ function getCrisisResult(message) {
   return {
     reply: CRISIS_REPLY,
     data: {
-      motivoConsulta: "Riesgo suicida expresado por el usuario.",
+      motivoConsulta: "Se mostraron recursos de ayuda por una expresión del mensaje.",
       soloConversar: false,
       riesgoSuicida: true,
       temas: [],
       enfoque: "indiferente",
       urgencia: "alta",
-      observaciones: "Se detecto intencion clara de atentar contra su vida.",
+      observaciones: "Activación automática de recursos; no constituye evaluación clínica.",
       completado: true,
     },
   };
 }
 
 function hasClearSuicideRisk(message) {
-  const normalized = normalizeForMatching(message);
-  return SUICIDE_RISK_PATTERNS.some((pattern) => pattern.test(normalized));
+  // Limited phrase routing, not a clinical classifier. Quoted/reported/historical
+  // language does not establish current first-person intent. Help stays visible.
+  const normalized = normalizeForMatching(message)
+      .replace(/"[^"]*"|“[^”]*”|«[^»]*»/g, " ");
+  return normalized.split(/[.!?;\n]+|\bpero ahora\b|\bpero yo\b/).some((clause) => {
+    if (/\b(no|nunca|jamas|antes|ayer|pasado|recuerdo|decia|dije|pensaba|hipoteticamente|quizas|tal vez|si algun dia)\b/.test(clause)) return false;
+    if (/\b(mi amigo|mi amiga|mi hermano|mi hermana|mi paciente|el dice|ella dice|alguien|la pelicula|la cancion)\b/.test(clause)) return false;
+    return SUICIDE_RISK_PATTERNS.some((pattern) => pattern.test(clause));
+  });
 }
 
 module.exports = {

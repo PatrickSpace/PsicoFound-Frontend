@@ -31,6 +31,8 @@ entorno aislado automaticamente. Las pruebas unitarias no acceden a produccion.
 
 ## Validacion
 
+Comprobaciones habituales:
+
 ```sh
 npm test
 npm run test:backend
@@ -38,70 +40,56 @@ npm run lint:backend
 npm run audit:unused
 npm run audit:unused -- --production --include files,dependencies,unlisted,unresolved,binaries
 npm run build
-npm run test:payment-rules
 ```
 
-`npm test` cubre dominio frontend: perfiles, roles, importes y temporizadores.
-Backend cubre perfiles, matching, proveedores, reinicio, onboarding y tarifas.
-`test:payment-rules` usa exclusivamente `demo-lurems-rates` y un emulador local;
-comprueba permisos, concurrencia, historial y reinicio persistente de encuesta.
-No utiliza credenciales reales ni llama a proveedores de IA/pagos.
-
-Knip revisa archivos, exports y dependencias de los dos proyectos. Las Functions
-exportadas desde `functions/index.js` son entradas publicas, no codigo muerto.
-El test de emulador usa el SDK Admin de `functions/node_modules`; la excepcion
-puntual esta explicada en `knip.jsonc`. No ignorar carpetas completas para hacer
-pasar el analizador. CI ejecuta estas mismas comprobaciones sin despliegue.
-El segundo analisis comprueba archivos/imports/dependencias de runtime; el
-primero tambien comprueba exports y tests. No eliminar los exports usados por
-tests solo porque no aparecen al excluirlos con `--production`. Las entradas
-con `!` son deliberadas para ese modo, aunque Knip avise de redundancia con
-las entradas que descubre automaticamente en el analisis completo.
-
-Si Firebase CLI informa `Timed out` despues de `Script exited successfully`,
-revisar `firebase-debug.log`. En esta auditoria fue el envio de telemetria del
-CLI, no las pruebas. Se verifico tambien con configuracion temporal aislada:
-
-```sh
-XDG_CONFIG_HOME="$(mktemp -d)" npm run test:payment-rules
-```
-
-Este comando no cambia la configuracion ni la sesion Firebase habitual.
-
-Auditoria de paquetes (no confundir avisos de dependencias con explotabilidad):
-
-```sh
-npm audit
-npm --prefix functions audit
-```
-
-No usar `npm audit fix --force`: puede degradar Firebase o migrar el bundler.
-Las excepciones y migraciones pendientes estan en el informe de auditoria.
+`npm run test:pilot` ejecuta integración y navegador del piloto, incluidos
+administrador y regresión Lima, con emuladores propios y red externa bloqueada.
+Todos los runners actuales de integración usan `demo-lurems-followup`, incluido
+`test:payment-rules`. Descargar dependencias, emuladores y Chromium antes de aislar.
+Requisitos, comandos dirigidos, escenarios y artefactos: [guía de validación](docs/operations/validation.md).
+No hay una ejecución nueva de pruebas de aplicación asociada a esta consolidación documental.
 
 ## Publicacion
 
-```sh
-npm run build
-firebase deploy --only hosting --project psicosaas-3c819
-```
+Sitio principal Firebase: [app.lurems.lat](https://app.lurems.lat).
+Vercel: [psico-found-frontend.vercel.app](https://psico-found-frontend.vercel.app),
+con despliegue automático al hacer push a `main`. Coordinar primero el backend
+compatible para que el frontend de Vercel encuentre las APIs nuevas.
 
-Desplegar solo las Functions modificadas y, si corresponde, las reglas:
-
-```sh
-firebase deploy --only functions:savePaymentRate,functions:setPsychologistPaymentRate,firestore:rules --project psicosaas-3c819
-```
-
-No ejecutar `firebase deploy` sin `--only` por rutina. No borrar Functions,
-colecciones ni historiales basandose unicamente en el analisis estatico.
+Seguir el [procedimiento coordinado de release](docs/operations/pilot-release.md).
+Frontend, reglas, índices y Functions deben corresponder al mismo artefacto validado;
+el sitio de Hosting y proyecto de staging deben seleccionarse explícitamente.
+La preparación local y el validador offline no autorizan despliegue ni lanzamiento.
 
 ## Documentacion
 
-- [Publicacion y pendientes para lanzamiento](docs/audits/2026-10-03-launch-readiness.md)
-- [Auditoria y plan ejecutado](docs/audits/2026-09-30-technical-debt.md)
-- [Tarifas y reparto 70/30, fase 1](docs/payments/rate-catalog.md)
-- [Registro y onboarding](docs/architecture/registration-onboarding.md)
-- [Contrato de proveedores IA](docs/architecture/ai-provider-abstraction.md)
+La documentación activa describe contratos y procedimientos. La matriz concentra
+el estado de aceptación y pendientes; los informes fechados permanecen como antecedentes.
+Consolidación documental: 2026-10-15, America/Lima.
 
-Pagos fase 1 configura links y tarifa profesional; no confirma pagos ni integra
-todavia el cobro en reservas. No existe implementacion Culqi, OAuth o webhook de
-pagos en esta version.
+| Área | Referencia |
+| --- | --- |
+| Funcionalidad | [Funcionamiento por rol](docs/functional/revision-funcional-por-rol.md) |
+| Aceptación y pendientes | [Matriz del piloto](docs/functional/matriz-cierre-piloto.md) |
+| Encuesta y recomendaciones | [Contrato de encuesta y matching](docs/functional/encuesta-matching.md) |
+| Agenda | [Política horaria de Lima](docs/functional/politica-horaria-mvp.md) |
+| Arquitectura | [Proveedores IA](docs/architecture/ai-provider-abstraction.md) · [Registro y onboarding](docs/architecture/registration-onboarding.md) |
+| Pagos | [Catálogo, reservas y conciliación manual](docs/operations/pilot-payments.md) |
+| Cuenta y privacidad | [Políticas, exportación y eliminación](docs/operations/pilot-privacy.md) |
+| Revisión de IA y ayuda | [Proveedor](docs/operations/pilot-provider-review.md) · [Ayuda](docs/operations/pilot-help-review.md) |
+| Operación | [Release, staging e incidentes](docs/operations/pilot-release.md) |
+| Pruebas | [Guía de validación](docs/operations/validation.md) |
+
+Hay 13 documentos activos contando este README. Los 18 documentos retirados de
+sus ubicaciones originales y una copia del inventario funcional anterior están en
+`docs/archive/`, organizados por su área original. Conservan contenido y resultados
+fechados, con enlaces ajustados; no deben usarse como referencia vigente ni como
+resultado de pruebas sobre cambios posteriores. Los artefactos de `test-results/`
+son locales e ignorados por Git y pueden no existir en otro clon.
+
+El piloto incorpora reservas y conciliación manual mediante políticas versionadas;
+requiere configuración comercial aprobada. Registrar pagos, devoluciones o
+transferencias no mueve dinero. No existe pasarela automática ni scheduler de vencimiento.
+La aceptación local del administrador y de las fechas/correcciones de atención está
+verificada en la entrega del 15 de octubre. Linux, staging y las
+aprobaciones externas siguen abiertos según la matriz.

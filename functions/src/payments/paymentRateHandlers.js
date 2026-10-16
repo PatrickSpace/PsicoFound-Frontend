@@ -1,4 +1,5 @@
-const admin = require("firebase-admin");
+const firestoreAdmin = require("firebase-admin/firestore");
+const {FieldValue} = require("firebase-admin/firestore");
 const {HttpsError} = require("firebase-functions/v2/https");
 const {
   assertSameAmount,
@@ -30,7 +31,7 @@ async function savePaymentRate(request) {
   const rateId = requireDocumentId(data.rateId);
   const expectedVersion = requireVersion(data.expectedVersion);
   const rate = normalizePaymentRate(data);
-  const db = admin.firestore();
+  const db = firestoreAdmin.getFirestore();
   const rateRef = db.collection("payment_rates").doc(rateId);
 
   return db.runTransaction(async (transaction) => {
@@ -58,7 +59,7 @@ async function savePaymentRate(request) {
     }
     if (existing) assertSameAmount(existing, rate);
     const version = currentVersion + 1;
-    const now = admin.firestore.FieldValue.serverTimestamp();
+    const now = FieldValue.serverTimestamp();
     const payload = {
       ...rate,
       version,
@@ -86,7 +87,7 @@ async function setPsychologistPaymentRate(request) {
   const expectedRateVersion = requireVersion(data.expectedRateVersion);
   const expectedSelectionVersion =
     requireVersion(data.expectedSelectionVersion);
-  const db = admin.firestore();
+  const db = firestoreAdmin.getFirestore();
   const therapistRef = db.collection("therapists").doc(therapistId);
   const rateRef = db.collection("payment_rates").doc(rateId);
 
@@ -128,7 +129,7 @@ async function setPsychologistPaymentRate(request) {
       );
     }
     const selectionVersion = currentVersion + 1;
-    const now = admin.firestore.FieldValue.serverTimestamp();
+    const now = FieldValue.serverTimestamp();
     // Changing the booking configuration never writes existing appointments.
     transaction.update(therapistRef, {
       paymentRateId: rateId,

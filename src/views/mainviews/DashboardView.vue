@@ -187,6 +187,8 @@
 </template>
 
 <script setup>
+import { useAgendaClock } from "@/composables/useAgendaClock";
+const agendaNow = useAgendaClock();
 import { computed, onBeforeUnmount, ref, watch } from "vue";
 import { storeToRefs } from "pinia";
 import LayoutDefault from "@/components/Layout/Layoutmain.vue";
@@ -201,6 +203,7 @@ import {
   getActiveTherapyByPatient,
   getTherapiesByPatient,
 } from "@/services/terapiaService";
+import { appointmentStart, isFutureAppointment, DEFAULT_TIME_ZONE } from "@/utils/dateTime";
 
 const authStore = useAuthStore();
 const { currentUser, userName: username } = storeToRefs(authStore);
@@ -252,20 +255,8 @@ const mainReason = computed(() => {
   return reason || "En exploración";
 });
 
-function parseAppointmentDate(appointment) {
-  if (!appointment?.fecha) return null;
-
-  const rawDate = appointment.hora
-    ? `${appointment.fecha}T${appointment.hora}`
-    : `${appointment.fecha}T00:00`;
-
-  const parsed = new Date(rawDate);
-  return Number.isNaN(parsed.getTime()) ? null : parsed;
-}
-
 const nextAppointment = computed(() => {
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
+  const now = agendaNow.value;
 
   const appointments = therapies.value
     .flatMap((therapy) =>
@@ -283,11 +274,11 @@ const nextAppointment = computed(() => {
         .toLowerCase();
       return (
         (status === "pendiente" || status === "confirmada") &&
-        parseAppointmentDate(appointment) &&
-        parseAppointmentDate(appointment) >= today
+        appointmentStart(appointment) &&
+        appointmentStart(appointment) > now
       );
     })
-    .sort((a, b) => parseAppointmentDate(a) - parseAppointmentDate(b));
+    .sort((a, b) => appointmentStart(a) - appointmentStart(b));
 
   return appointments[0] || null;
 });
@@ -307,6 +298,9 @@ const editableAppointment = computed(() => {
     ubicacion: nextAppointment.value.ubicacion || "",
     meetingProvider: nextAppointment.value.meetingProvider || "",
     meetingUrl: nextAppointment.value.meetingUrl || "",
+    availabilitySlotId: nextAppointment.value.availabilitySlotId || "",
+    timeZone: nextAppointment.value.timeZone || DEFAULT_TIME_ZONE,
+    startAtIso: nextAppointment.value.startAtIso || "",
   };
 });
 
@@ -317,7 +311,8 @@ const upcomingSessionsCount = computed(
         .toString()
         .trim()
         .toLowerCase();
-      return status === "pendiente" || status === "confirmada";
+      return (status === "pendiente" || status === "confirmada") &&
+        isFutureAppointment(appointment, agendaNow.value);
     }).length
 );
 

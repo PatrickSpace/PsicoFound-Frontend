@@ -34,10 +34,37 @@
     >
       <template #label>
         <span class="text-caption">
-          Acepto los términos de uso y la política de privacidad.
+          Acepto los
+          <a
+            v-if="hasPublishedLegalDocuments"
+            :href="legalConfig.termsUrl"
+            target="_blank"
+            rel="noopener noreferrer"
+            @click.stop
+          >términos de uso</a>
+          <span v-else>términos de uso</span>
+          y la
+          <a
+            v-if="hasPublishedLegalDocuments"
+            :href="legalConfig.privacyUrl"
+            target="_blank"
+            rel="noopener noreferrer"
+            @click.stop
+          >política de privacidad</a><span v-else>política de privacidad</span>.
         </span>
       </template>
     </v-checkbox>
+
+    <v-alert
+      v-if="!hasPublishedLegalDocuments"
+      class="mt-3"
+      color="warning"
+      variant="tonal"
+      icon="mdi-file-alert-outline"
+    >
+      El registro está temporalmente deshabilitado hasta publicar los enlaces
+      y la versión aprobada de los documentos legales.
+    </v-alert>
 
     <v-btn
       block
@@ -103,6 +130,7 @@ import { computed, reactive, ref } from "vue";
 import {
   createUserWithEmailAndPassword,
   GoogleAuthProvider,
+  sendEmailVerification,
   signInWithPopup,
 } from "firebase/auth";
 import { useRouter } from "vue-router";
@@ -114,6 +142,10 @@ import {
   REGISTRATION_INTENT_STORAGE_KEY,
   REGISTRATION_INTENTS,
 } from "@/services/onboardingService";
+import {
+  hasPublishedLegalDocuments,
+  legalConfig,
+} from "@/config/legal";
 
 const router = useRouter();
 const appContext = useAppContextStore();
@@ -135,6 +167,7 @@ const canSubmitEmail = computed(
   () =>
     valid.value &&
     termsAccepted.value &&
+    hasPublishedLegalDocuments &&
     !loadingEmail.value &&
     !loadingGoogle.value
 );
@@ -173,6 +206,11 @@ async function registerWithGoogle() {
       "Acepta los términos de uso y la política de privacidad para continuar.";
     return;
   }
+  if (!hasPublishedLegalDocuments) {
+    errorMessage.value =
+      "El registro no está disponible hasta publicar los documentos legales.";
+    return;
+  }
 
   rememberRegistrationIntent();
   loadingGoogle.value = true;
@@ -193,8 +231,23 @@ async function finishRegistration(user) {
   const result = await finalizeRegistration({
     intent: registrationIntent.value,
     displayName: user.displayName || "",
+    legalAccepted: true,
+    legalVersion: legalConfig.version,
+    termsUrl: legalConfig.termsUrl,
+    privacyUrl: legalConfig.privacyUrl,
   });
   sessionStorage.removeItem(REGISTRATION_INTENT_STORAGE_KEY);
+  const usesPassword = user.providerData.some(
+    (provider) => provider.providerId === "password"
+  );
+  if (usesPassword && !user.emailVerified) {
+    await sendEmailVerification(user);
+    await router.replace({
+      path: "/verificar-correo",
+      query: { redirect: result.nextRoute },
+    });
+    return;
+  }
   await appContext.loadForUser(user.uid, { force: true });
   await router.replace(result.nextRoute);
 }

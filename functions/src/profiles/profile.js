@@ -128,7 +128,7 @@ function sanitizeModelProfileData(data = {}) {
     }
 
     if (typeof PROFILE_DEFAULTS[key] === "boolean") {
-      profile[key] = Boolean(value);
+      if (typeof value === "boolean") profile[key] = value;
       return profile;
     }
 

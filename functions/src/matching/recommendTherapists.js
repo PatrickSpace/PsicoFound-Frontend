@@ -1,35 +1,76 @@
-const admin = require("firebase-admin");
+const firestoreAdmin = require("firebase-admin/firestore");
 const {HttpsError} = require("firebase-functions/v2/https");
+const {requirePatientAccess} = require("../accounts/accessPolicy");
 const {buildSearchCriteriaFromProfile} = require("./criteria");
-const {findMatchingTherapists} = require("./therapistMatching");
+const {
+  findMatchingTherapists,
+  getMatchDetails,
+} = require("./therapistMatching");
 const {getCurrentProfile} = require("../profiles/profile");
+const {assertFutureSlot} = require("../appointments/appointmentDomain");
+
+const CRITERIA_KEYS = new Set([
+  "especialidades",
+  "enfoque",
+  "genero",
+  "modalidad",
+  "edad",
+]);
 
 async function getRecommendedTherapists(request) {
+  await requirePatientAccess(request);
   if (!request.auth) {
     throw new HttpsError("unauthenticated", "Debes iniciar sesion.");
   }
 
   const uid = request.auth.uid;
-  const db = admin.firestore();
+  const db = firestoreAdmin.getFirestore();
   const profileRef = db.collection("profiles").doc(uid);
   const profile = await getCurrentProfile(profileRef);
+  if (!profile.completado) {
+    throw new HttpsError(
+        "failed-precondition",
+        "Completa tu perfil antes de solicitar recomendaciones.",
+    );
+  }
   const criteria = buildSearchCriteriaFromProfile(profile);
-  const availableTherapistIds = await getTherapistIdsWithAvailableSlots(db);
-  const therapists = await getActiveTherapists(db, availableTherapistIds);
-  const recommendations = findMatchingTherapists(therapists, criteria);
+  const requiredCriteria = normalizeRequiredCriteria(
+      request.data && request.data.requiredCriteria,
+      criteria,
+  );
+  const therapists = await getActiveTherapists(db);
+  const matches = findMatchingTherapists(
+      therapists,
+      criteria,
+      requiredCriteria,
+  );
+  const availability = await getFutureAvailabilityByTherapist(
+      db,
+      requiredCriteria.includes("modalidad") ? criteria.modalidad : "",
+  );
+  const recommendations = matches.filter((therapist) =>
+    availability.has(therapist.id),
+  );
+  const outcome = recommendations.length ? "ok" :
+    matches.length ? "no_availability" : "no_matches";
 
   return {
     profile,
     criteria,
-    therapists: recommendations.map(sanitizeTherapistForClient),
+    requiredCriteria,
+    outcome,
+    therapists: recommendations.map((therapist) => {
+      const slots = availability.get(therapist.id) || [];
+      return {
+        ...sanitizeTherapistForClient(therapist),
+        matchDetails: getMatchDetails(therapist, criteria),
+        availableSlots: slots.length,
+      };
+    }),
   };
 }
 
-async function getActiveTherapists(db, availableTherapistIds = new Set()) {
-  if (!availableTherapistIds.size) {
-    return [];
-  }
-
+async function getActiveTherapists(db) {
   const snapshot = await db.collection("therapists").orderBy("nombre").get();
 
   return snapshot.docs
@@ -37,36 +78,58 @@ async function getActiveTherapists(db, availableTherapistIds = new Set()) {
         id: doc.id,
         ...doc.data(),
       }))
-      .filter((therapist) =>
-        therapist.activo !== false && availableTherapistIds.has(therapist.id),
-      );
+      .filter((therapist) => therapist.activo !== false);
 }
 
-async function getTherapistIdsWithAvailableSlots(db) {
+async function getFutureAvailabilityByTherapist(db, requiredModality = "") {
   const snapshot = await db
       .collection("therapist_availability")
       .where("status", "==", "available")
       .get();
-  const today = getTodayISOForLima();
-  const therapistIds = new Set();
+  const slotsByTherapist = new Map();
 
   snapshot.docs.forEach((doc) => {
     const slot = doc.data();
     const therapistId = (slot.therapistId || "").toString().trim();
-    const date = (slot.date || "").toString().trim();
-
-    if (therapistId && date && date >= today) {
-      therapistIds.add(therapistId);
+    const modality = normalizeModality(slot.modality);
+    const required = normalizeModality(requiredModality);
+    if (!therapistId || (required && modality !== required)) {
+      return;
+    }
+    try {
+      assertFutureSlot(slot);
+      const slots = slotsByTherapist.get(therapistId) || [];
+      slots.push(doc.id);
+      slotsByTherapist.set(therapistId, slots);
+    } catch (error) {
+      // Past or malformed availability is not offered to patients.
     }
   });
 
-  return therapistIds;
+  return slotsByTherapist;
+}
+
+function normalizeRequiredCriteria(value, criteria) {
+  const requested = Array.isArray(value) ? value : [];
+  return [...new Set(requested)]
+      .filter((key) => CRITERIA_KEYS.has(key))
+      .filter((key) => {
+        const criterion = criteria[key];
+        return Array.isArray(criterion) ?
+          criterion.length > 0 : Boolean(criterion);
+      });
+}
+
+function normalizeModality(value) {
+  const normalized = (value || "").toString().trim().toLowerCase();
+  if (["online", "remota", "virtual"].includes(normalized)) return "remoto";
+  if (["hibrida", "híbrida", "híbrido"].includes(normalized)) return "hibrido";
+  return normalized;
 }
 
 function sanitizeTherapistForClient(therapist = {}) {
   return {
     id: therapist.id || "",
-    uid: therapist.uid || "",
     nombre: therapist.nombre || "",
     avatar: therapist.avatar || "",
     description: therapist.description || "",
@@ -87,15 +150,7 @@ function sanitizeTherapistForClient(therapist = {}) {
   };
 }
 
-function getTodayISOForLima() {
-  return new Intl.DateTimeFormat("en-CA", {
-    timeZone: "America/Lima",
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-  }).format(new Date());
-}
-
 module.exports = {
   getRecommendedTherapists,
+  normalizeRequiredCriteria,
 };

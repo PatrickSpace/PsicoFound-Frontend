@@ -14,13 +14,11 @@
         class="restart-survey-button pf-btn-secondary"
         color="secondary"
         variant="tonal"
-        prepend-icon="mdi-refresh"
-        :loading="resetting"
-        :disabled="resetting"
-        @click="handleRestartSurvey"
+        prepend-icon="mdi-tune-variant"
+        @click="router.push('/encuesta')"
       >
-        <span class="restart-survey-button__desktop">Reiniciar encuesta</span>
-        <span class="restart-survey-button__mobile">Reiniciar</span>
+        <span class="restart-survey-button__desktop">Ajustar preferencias</span>
+        <span class="restart-survey-button__mobile">Ajustar</span>
       </v-btn>
       <!--
       <v-btn append-icon="mdi-refresh" class="theme-contrast-text text-body-1 my-5 pf-btn-ghost" variant="text" size="large">
@@ -111,7 +109,12 @@
         icon="mdi-alert-outline"
         title="No pudimos cargar las recomendaciones"
       >
-        {{ errorMessage }}
+        <div class="d-flex flex-wrap align-center ga-3">
+          <span>{{ errorMessage }}</span>
+          <v-btn class="pf-btn-ghost" variant="text" color="error" @click="buscarTerapeutas">
+            Reintentar
+          </v-btn>
+        </div>
       </v-alert>
       <v-container
         v-if="!isCrisisMode || therapists.length > 0"
@@ -134,6 +137,50 @@
           </p>
         </div>
       </v-container>
+      <v-container
+        v-if="!isCrisisMode && criteriaChoices.length"
+        class="therapist-match-header pt-0"
+      >
+        <v-card class="pa-4 card-backgoundcustom" elevation="1" variant="text">
+          <div class="d-flex flex-wrap align-center justify-space-between ga-3 mb-3">
+            <div>
+              <h2 class="text-subtitle-1 font-weight-bold">
+                Cómo aplicaremos tus preferencias
+              </h2>
+              <p class="text-body-2 text-medium-emphasis mb-0">
+                Son flexibles por defecto. Marca como obligatorio lo que no
+                deseas flexibilizar; nunca cambiaremos esos requisitos en silencio.
+              </p>
+            </div>
+            <v-btn
+              color="secondary"
+              variant="tonal"
+              size="small"
+              :loading="loading"
+              @click="buscarTerapeutas"
+            >
+              Aplicar
+            </v-btn>
+          </div>
+          <div class="d-flex flex-wrap ga-2">
+            <v-chip
+              v-for="criterion in criteriaChoices"
+              :key="criterion.key"
+              :color="isRequired(criterion.key) ? 'primary' : 'secondary'"
+              :variant="isRequired(criterion.key) ? 'flat' : 'tonal'"
+              :prepend-icon="
+                isRequired(criterion.key)
+                  ? 'mdi-lock-outline'
+                  : 'mdi-swap-horizontal'
+              "
+              @click="toggleRequired(criterion.key)"
+            >
+              {{ criterion.label }}: {{ criterion.value }} ·
+              {{ isRequired(criterion.key) ? "Obligatorio" : "Flexible" }}
+            </v-chip>
+          </div>
+        </v-card>
+      </v-container>
       <div v-if="loading" class="pa-6 d-flex justify-center">
         <v-card
           class="pa-6 card-backgoundcustom therapist-loading-card"
@@ -147,11 +194,46 @@
         </v-card>
       </div>
       <TerapeutaLista
-        v-else-if="!isCrisisMode || therapists.length > 0"
+        v-else-if="therapists.length > 0"
         :terapeutas="therapists"
         :resetting="resetting"
         @restart-survey="handleRestartSurvey"
       />
+      <v-container
+        v-else-if="!isCrisisMode && !errorMessage"
+        class="therapist-match-header"
+      >
+        <v-empty-state
+          :headline="emptyStateTitle"
+          :text="emptyStateText"
+          :icon="
+            outcome === 'no_availability'
+              ? 'mdi-calendar-clock-outline'
+              : 'mdi-account-search-outline'
+          "
+        >
+          <template #actions>
+            <div class="d-flex flex-wrap justify-center ga-2">
+              <v-btn
+                color="secondary"
+                variant="tonal"
+                prepend-icon="mdi-refresh"
+                @click="buscarTerapeutas"
+              >
+                Reintentar
+              </v-btn>
+              <v-btn
+                color="secondary"
+                variant="text"
+                prepend-icon="mdi-tune-variant"
+                @click="router.push('/encuesta')"
+              >
+                Corregir preferencias
+              </v-btn>
+            </div>
+          </template>
+        </v-empty-state>
+      </v-container>
     </v-main>
   </v-app>
 </template>
@@ -169,24 +251,68 @@ const therapists = ref([]);
 const loading = ref(false);
 const resetting = ref(false);
 const errorMessage = ref("");
+const outcome = ref("");
+const criteria = ref(null);
+const requiredCriteria = ref([]);
 const isCrisisMode = computed(() => route.query.crisis === "1");
+const criteriaChoices = computed(() => {
+  const current = criteria.value || {};
+  return [
+    ["especialidades", "Temas", current.especialidades],
+    ["enfoque", "Tipo de ayuda", current.enfoque],
+    ["genero", "Género", current.genero],
+    ["modalidad", "Modalidad", current.modalidad],
+    ["edad", "Edad", current.edad],
+  ]
+    .map(([key, label, value]) => ({
+      key,
+      label,
+      value: Array.isArray(value) ? value.join(", ") : value,
+    }))
+    .filter((item) => item.value);
+});
+const emptyStateTitle = computed(() =>
+  outcome.value === "no_availability"
+    ? "Sin horarios compatibles"
+    : "Sin coincidencias con estos criterios"
+);
+const emptyStateText = computed(() =>
+  outcome.value === "no_availability"
+    ? "Encontramos profesionales afines, pero ninguno tiene bloques futuros compatibles con tus requisitos obligatorios. Tus respuestas se conservaron."
+    : "No encontramos profesionales que cumplan la combinación actual. Puedes cambiar qué condiciones son obligatorias o corregir tu perfil sin reiniciar la encuesta."
+);
 
 async function buscarTerapeutas() {
   loading.value = true;
   errorMessage.value = "";
 
   try {
-    const { therapists: results } = await getRecommendedTherapists();
+    const result = await getRecommendedTherapists({
+      requiredCriteria: requiredCriteria.value,
+    });
+    const results = result.therapists;
     therapists.value = results;
+    criteria.value = result.criteria;
+    requiredCriteria.value = result.requiredCriteria;
+    outcome.value = result.outcome;
   } catch (error) {
     console.error("Error buscando terapeutas:", error);
     errorMessage.value =
       error?.message ||
       "Ocurrió un error al obtener los psicólogos recomendados.";
-    therapists.value = [];
   } finally {
     loading.value = false;
   }
+}
+
+function isRequired(key) {
+  return requiredCriteria.value.includes(key);
+}
+
+function toggleRequired(key) {
+  requiredCriteria.value = isRequired(key)
+    ? requiredCriteria.value.filter((item) => item !== key)
+    : [...requiredCriteria.value, key];
 }
 
 async function handleRestartSurvey() {
@@ -216,7 +342,7 @@ onMounted(() => {
 
 <style scoped>
 .therapist-match-main {
-  padding-top: 24px;
+  padding-top: calc(var(--v-layout-top, 0px) + 24px);
 }
 
 .therapist-match-alert,
@@ -330,12 +456,12 @@ onMounted(() => {
 
 @media (max-width: 600px) {
   .therapist-match-main {
-    padding-top: 12px;
+    padding-top: calc(var(--v-layout-top, 0px) + 12px);
   }
 
   .therapist-match-header {
     padding-inline: 16px;
-    padding-top: 52px;
+    padding-top: 16px;
   }
 
   .restart-survey-button {

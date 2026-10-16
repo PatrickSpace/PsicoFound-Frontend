@@ -295,8 +295,3 @@ export const designTokenCssVars = {
   "--pf-social-facebook": "0, 50, 199",
   "--pf-social-apple": "0, 0, 1",
 };
-
-export const defaultTherapistGradientStops = {
-  start: palette.teal500,
-  end: palette.teal300,
-};

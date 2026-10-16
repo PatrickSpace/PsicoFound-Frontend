@@ -7,9 +7,9 @@
             <p class="page-header__eyebrow text-overline text-secondary mb-1">
               Recursos entre sesiones
             </p>
-            <h1 class="text-h4 font-weight-bold">Herramientas terapéuticas</h1>
+            <h1 class="text-h4 font-weight-bold">{{ therapist ? "Ejercicios asignados a pacientes" : "Mis herramientas terapéuticas" }}</h1>
             <p class="text-body-1 text-medium-emphasis mt-2 mb-0">
-              Ejercicios y recursos entre sesiones para sostener continuidad terapéutica.
+              {{ therapist ? "Asigna ejercicios y consulta los resultados compartidos por tus pacientes." : "Consulta los ejercicios recibidos y registra tu realización y observaciones." }}
             </p>
           </div>
           <div class="page-header__actions">
@@ -38,6 +38,10 @@
         {{ errorMessage }}
       </v-alert>
 
+      <TherapyContextFilters :therapies="therapies" :professional="therapist"
+        v-model:patient="patientFilter" v-model:therapy="therapyFilter" v-model:status="statusFilter"
+        :statuses="[{ title: 'Pendientes', value: 'assigned' }, { title: 'Completados', value: 'completed' }]" />
+      <v-progress-linear v-if="loading" indeterminate class="mb-4" />
       <v-row class="mb-4" align="stretch">
         <v-col cols="12" md="4" class="d-flex">
           <v-card class="pa-4 card-backgoundcustom flex-grow-1 tool-stat-card" elevation="2" variant="text">
@@ -92,15 +96,15 @@
           <v-divider class="mb-4"></v-divider>
 
           <v-empty-state
-            v-if="!loading && patientExercises.length === 0"
-            headline="Aún no tienes herramientas asignadas"
-            text="Cuando tu psicólogo te asigne ejercicios entre sesiones, aparecerán aquí."
+            v-if="!loading && !errorMessage && patientExercises.length === 0"
+             :headline="therapist ? 'No hay ejercicios asignados en esta selección' : 'Aún no tienes herramientas asignadas'"
+            :text="therapist ? 'Selecciona una terapia activa para asignar un ejercicio.' : 'Cuando tu psicólogo te asigne ejercicios, aparecerán aquí.'"
             icon="mdi-lightbulb-on-outline"
           ></v-empty-state>
 
           <v-row v-else align="stretch">
             <v-col
-              v-for="exercise in patientExercises"
+              v-for="exercise in patientExercises" data-testid="exercise-card"
               :key="exercise.id"
               cols="12"
               md="6"
@@ -113,6 +117,8 @@
               >
                 <div class="d-flex flex-column flex-sm-row justify-space-between ga-3 mb-3">
                   <div>
+                    <p v-if="therapist" class="text-subtitle-2 mb-1">{{ exercise.pacienteNombre || 'Paciente' }}</p>
+                    <p class="text-caption mb-2">Terapia: {{ exercise.terapiaId }}</p>
                     <h2 class="text-subtitle-1 font-weight-bold mb-1">
                       {{ exercise.title }}
                     </h2>
@@ -132,13 +138,16 @@
                 </div>
                 <v-card-text class="pa-0">
                   <p class="mb-3 text-body-2">{{ exercise.instructions }}</p>
+                  <p class="text-body-2">Frecuencia: {{ exercise.frequency || 'No indicada' }}</p>
+                  <p class="text-caption">Asignación: {{ formatTherapyDate(exercise.assignedAt) }} · {{ exercise.authorName || exercise.terapeutaNombre || exercise.createdBy }}</p>
+                  <p v-if="exercise.status === 'completed'" class="text-body-2 mt-2">Realizado: {{ formatTherapyDate(exercise.completedAt) }}</p>
                   <p v-if="exercise.patientNotes" class="text-caption text-medium-emphasis mt-3">
-                    Nota: {{ exercise.patientNotes }}
+                    Observación compartida: {{ exercise.patientNotes }}
                   </p>
                 </v-card-text>
                 <v-card-actions class="px-0 pb-0 pt-4">
                   <v-btn
-                    v-if="exercise.status !== 'completed'"
+                    v-if="!therapist && exercise.status !== 'completed'"
                     color="secondary"
                     variant="tonal"
                     prepend-icon="mdi-check"
@@ -175,7 +184,7 @@
             variant="tonal"
             prepend-icon="mdi-send"
             :disabled="therapistTherapies.length === 0"
-            @click="assignmentDialog = true"
+            @click="openAssignmentDialog"
             class="pf-btn-secondary align-self-start align-self-md-center"
           >
             Asignar ejercicio
@@ -189,9 +198,10 @@
             Asignar ejercicio
           </v-card-title>
           <v-card-text>
+          <v-alert v-if="actionError" type="error" class="mb-3">{{ actionError }}</v-alert>
           <v-row>
             <v-col cols="12" md="6">
-              <v-select
+              <TherapySelect
                 v-model="assignment.therapyId"
                 :items="therapistTherapyOptions"
                 item-title="title"
@@ -276,6 +286,7 @@
         <v-card class="pa-4 card-backgoundcustom" elevation="2" variant="text">
           <v-card-title class="text-h6 font-weight-bold px-0 pt-0">Completar ejercicio</v-card-title>
           <v-card-text>
+            <v-alert v-if="actionError" type="error" class="mb-3">{{ actionError }}</v-alert>
             <p class="mb-4 text-body-2 text-medium-emphasis">
               {{ selectedExercise?.title }}
             </p>
@@ -311,30 +322,23 @@
 
 <script setup>
 import { computed, reactive, ref, watch } from "vue";
-import { storeToRefs } from "pinia";
 import LayoutDefault from "@/components/Layout/Layoutmain.vue";
-import { useAuthStore } from "@/store/auth";
-import { useAppContextStore } from "@/store/appContext";
-import { getTherapistByUserUid } from "@/services/psicologoService";
-import { getActiveTherapyByPatient, getTherapiesByTherapist } from "@/services/terapiaService";
-import {
-  appendExerciseCompletedEvent,
-  completeExercise,
-  createExercise,
-  getExercisesByPatient,
-  getExercisesByTherapist,
-} from "@/services/exerciseService";
+import TherapyContextFilters from "@/components/Terapias/TherapyContextFilters.vue";
+import TherapySelect from "@/components/Terapias/TherapySelect.vue";
+import { useTherapyWorkspace } from "@/composables/useTherapyWorkspace";
+import { completeExercise, createExercise, getExercisesForTherapies } from "@/services/exerciseService";
+import { therapyLabel, formatTherapyDate } from "@/utils/therapyContext";
 
-const authStore = useAuthStore();
-const appContext = useAppContextStore();
-const { currentUser } = storeToRefs(authStore);
-const loading = ref(false);
-const errorMessage = ref("");
-const therapist = ref(null);
-const activeTherapy = ref(null);
-const therapistTherapies = ref([]);
-const patientExercises = ref([]);
-const therapistExercises = ref([]);
+const workspace = useTherapyWorkspace((therapies, ctx) => getExercisesForTherapies(therapies).then((items) =>
+  ctx.mode === "psychologist" ? items.filter((e) => e.createdBy === ctx.uid) : items));
+const { therapies, professional: therapist, visibleItems: patientExercises, loading, mode,
+  patientFilter, therapyFilter, statusFilter, activeTherapies, selectionKey } = workspace;
+const actionError = ref("");
+const errorMessage = computed(() => workspace.error.value || actionError.value);
+const therapistTherapies = activeTherapies;
+const pendingPatientExercises = computed(() => patientExercises.value.filter((e) => e.status !== "completed"));
+const completedPatientExercises = computed(() => patientExercises.value.filter((e) => e.status === "completed"));
+const therapistTherapyOptions = computed(() => activeTherapies.value.map((t) => ({ title: therapyLabel(t), value: t.id })));
 const savingAssignment = ref(false);
 const savingCompletion = ref(false);
 const assignmentDialog = ref(false);
@@ -342,208 +346,59 @@ const completeDialog = ref(false);
 const selectedExercise = ref(null);
 const completionNotes = ref("");
 const categoryOptions = ["Reflexión", "Respiración", "Registro emocional", "Hábitos", "Seguimiento"];
-
-const assignment = reactive({
-  therapyId: null,
-  title: "",
-  category: "Seguimiento",
-  frequency: "",
-  dueDate: "",
-  instructions: "",
-});
-
-const pendingPatientExercises = computed(() =>
-  patientExercises.value.filter((exercise) => exercise.status !== "completed")
-);
-
-const completedPatientExercises = computed(() =>
-  patientExercises.value.filter((exercise) => exercise.status === "completed")
-);
-
-const therapistTherapyOptions = computed(() =>
-  therapistTherapies.value.map((therapy) => ({
-    title: `${therapy.pacienteNombre || "Paciente"} • ${therapy.estado || "activo"}`,
-    value: therapy.id,
-  }))
-);
-
-const canAssignExercise = computed(
-  () =>
-    assignment.therapyId &&
-    assignment.title.trim() &&
-    assignment.instructions.trim()
-);
-
-const isPsychologistMode = computed(
-  () => appContext.activeMode === "psychologist"
-);
-
-watch(
-  () => currentUser.value?.uid,
-  () => {
-    loadTools();
-  },
-  { immediate: true }
-);
-
-watch(
-  () => appContext.activeMode,
-  () => {
-    loadTools();
-  }
-);
-
-async function loadTools() {
-  const uid = currentUser.value?.uid;
-
-  if (!uid) {
-    resetState();
-    return;
-  }
-
-  loading.value = true;
-  errorMessage.value = "";
-
-  try {
-    const [patientTherapy, patientExerciseItems, therapistProfile] = await Promise.all([
-      getActiveTherapyByPatient(uid),
-      getExercisesByPatient(uid),
-      getTherapistByUserUid(uid),
-    ]);
-
-    activeTherapy.value = patientTherapy;
-    patientExercises.value = patientExerciseItems;
-    therapist.value = isPsychologistMode.value ? therapistProfile : null;
-
-    if (isPsychologistMode.value && therapistProfile?.id) {
-      therapistTherapies.value = await getTherapiesByTherapist(therapistProfile.id);
-      therapistExercises.value = await getExercisesByTherapist(therapistProfile.id);
-    } else {
-      therapistTherapies.value = [];
-      therapistExercises.value = [];
-    }
-  } catch (error) {
-    console.error("Error loading therapeutic tools:", error);
-    errorMessage.value =
-      error?.message || "No pudimos cargar las herramientas terapéuticas.";
-    resetState();
-  } finally {
-    loading.value = false;
-  }
+const assignment = reactive({ therapyId: "", title: "", category: "Seguimiento", frequency: "", dueDate: "", instructions: "" });
+const canAssignExercise = computed(() => therapist.value && !loading.value && assignment.title.trim() &&
+  assignment.instructions.trim() && activeTherapies.value.some((t) => t.id === assignment.therapyId));
+let formTicket = "";
+watch(selectionKey, () => {
+  assignmentDialog.value = false;
+  completeDialog.value = false;
+  selectedExercise.value = null;
+  completionNotes.value = "";
+  Object.assign(assignment, { therapyId: "", title: "", category: "Seguimiento", frequency: "", dueDate: "", instructions: "" });
+  savingAssignment.value = false;
+  savingCompletion.value = false;
+  actionError.value = "";
+}, { flush: "sync" });
+function openAssignmentDialog() {
+  if (!therapist.value) return;
+  formTicket = workspace.capture();
+  assignment.therapyId = activeTherapies.value[0]?.id || "";
+  assignmentDialog.value = true;
 }
-
-function resetState() {
-  therapist.value = null;
-  activeTherapy.value = null;
-  therapistTherapies.value = [];
-  patientExercises.value = [];
-  therapistExercises.value = [];
-}
-
+const loadTools = workspace.refresh;
 async function assignExercise() {
-  const therapy = therapistTherapies.value.find(
-    (item) => item.id === assignment.therapyId
-  );
-
-  if (!therapy || !therapist.value?.id || savingAssignment.value) {
-    return;
-  }
-
+  if (!canAssignExercise.value || savingAssignment.value || !workspace.isCurrent(formTicket)) return;
+  const ticket = formTicket;
   savingAssignment.value = true;
-
   try {
-    await createExercise({
-      terapiaId: therapy.id,
-      pacienteUid: therapy.pacienteUid,
-      pacienteNombre: therapy.pacienteNombre,
-      terapeutaId: therapist.value.id,
-      terapeutaNombre: therapist.value.nombre,
-      title: assignment.title.trim(),
-      instructions: assignment.instructions.trim(),
-      category: assignment.category,
-      frequency: assignment.frequency.trim(),
-      dueDate: assignment.dueDate,
-    });
-
-    window.dispatchEvent(
-      new CustomEvent("ui-success", {
-        detail: {
-          title: "Ejercicio asignado",
-          message: "La herramienta fue enviada al paciente.",
-        },
-      })
-    );
-
-    resetAssignment();
-    assignmentDialog.value = false;
-    await loadTools();
+    await createExercise({ ...assignment, terapiaId: assignment.therapyId, mode: mode.value });
+    if (workspace.isCurrent(ticket)) await workspace.refresh();
   } catch (error) {
-    console.error("Error assigning exercise:", error);
-    notifyError(error?.message || "No se pudo asignar el ejercicio.");
+    if (workspace.isCurrent(ticket)) actionError.value = error.message || "No se pudo asignar el ejercicio.";
   } finally {
-    savingAssignment.value = false;
+    if (workspace.isCurrent(ticket)) savingAssignment.value = false;
   }
 }
-
-function resetAssignment() {
-  assignment.therapyId = null;
-  assignment.title = "";
-  assignment.category = "Seguimiento";
-  assignment.frequency = "";
-  assignment.dueDate = "";
-  assignment.instructions = "";
-}
-
 function openCompleteDialog(exercise) {
+  if (mode.value !== "patient" || exercise.pacienteUid !== workspace.uid.value) return;
+  formTicket = workspace.capture();
   selectedExercise.value = exercise;
-  completionNotes.value = exercise.patientNotes || "";
+  completionNotes.value = "";
   completeDialog.value = true;
 }
-
 async function completeSelectedExercise() {
-  if (!selectedExercise.value?.id || savingCompletion.value) {
-    return;
-  }
-
+  if (mode.value !== "patient" || !selectedExercise.value || savingCompletion.value || !workspace.isCurrent(formTicket)) return;
+  const ticket = formTicket;
   savingCompletion.value = true;
-
   try {
-    const result = await completeExercise({
-      exerciseId: selectedExercise.value.id,
-      patientNotes: completionNotes.value.trim(),
-    });
-    await appendExerciseCompletedEvent({
-      ...selectedExercise.value,
-      ...result,
-      patientNotes: completionNotes.value.trim(),
-    });
-
-    window.dispatchEvent(
-      new CustomEvent("ui-success", {
-        detail: {
-          title: "Ejercicio completado",
-          message: "Tu avance fue registrado en el historial.",
-        },
-      })
-    );
-
-    completeDialog.value = false;
-    selectedExercise.value = null;
-    await loadTools();
+    await completeExercise({ exerciseId: selectedExercise.value.id, patientNotes: completionNotes.value.trim(), mode: mode.value });
+    if (workspace.isCurrent(ticket)) await workspace.refresh();
   } catch (error) {
-    console.error("Error completing exercise:", error);
-    notifyError(error?.message || "No se pudo completar el ejercicio.");
+    if (workspace.isCurrent(ticket)) actionError.value = error.message || "No se pudo completar el ejercicio.";
   } finally {
-    savingCompletion.value = false;
+    if (workspace.isCurrent(ticket)) savingCompletion.value = false;
   }
-}
-
-function notifyError(message) {
-  window.dispatchEvent(
-    new CustomEvent("api-error", {
-      detail: { message },
-    })
-  );
 }
 </script>
 

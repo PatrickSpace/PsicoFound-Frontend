@@ -1,3 +1,4 @@
+const {correlation} = require("../operations/telemetry");
 const logger = require("firebase-functions/logger");
 const {AIProviderFactory} = require("./AIProviderFactory");
 const {
@@ -58,7 +59,8 @@ class AIService {
           error,
         });
 
-        if (fallbackAttempt || !isRetryableAIError(error)) {
+        if (input.allowFallback === false || fallbackAttempt ||
+            !isRetryableAIError(error)) {
           throw error;
         }
 
@@ -85,6 +87,7 @@ class AIService {
 
   logSuccess(entry = {}) {
     this.logger.info("ai provider success", {
+      ...(correlation() ? {correlationId: correlation()} : {}),
       provider: entry.provider,
       model: entry.model,
       elapsedMs: entry.elapsedMs,
@@ -96,6 +99,7 @@ class AIService {
 
   logFailure(entry = {}) {
     this.logger.warn("ai provider failure", {
+      ...(correlation() ? {correlationId: correlation()} : {}),
       provider: entry.provider,
       model: entry.model,
       elapsedMs: entry.elapsedMs,
@@ -112,11 +116,11 @@ function sanitizeUsage(usage = {}) {
     return undefined;
   }
 
-  return {
-    inputTokens: usage.inputTokens,
-    outputTokens: usage.outputTokens,
-    totalTokens: usage.totalTokens,
-  };
+  return Object.fromEntries(
+      ["inputTokens", "outputTokens", "totalTokens"]
+          .filter((key) => Number.isSafeInteger(usage[key]) && usage[key] >= 0)
+          .map((key) => [key, usage[key]]),
+  );
 }
 
 const aiService = new AIService();

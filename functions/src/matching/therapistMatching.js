@@ -1,11 +1,23 @@
 const {normalizeKey} = require("./criteria");
 
-function findMatchingTherapists(allTherapists = [], criteria = {}) {
+function findMatchingTherapists(
+    allTherapists = [],
+    criteria = {},
+    requiredCriteria = [],
+) {
   const reqEspecialidades = normalizeStringArray(criteria.especialidades);
   const reqEnfoque = normalizeKey(criteria.enfoque);
   const reqGenero = normalizeKey(criteria.genero);
   const reqModalidad = normalizeModality(criteria.modalidad);
   const {minEdad, maxEdad} = parseAgeRange(criteria.edad);
+  const request = {
+    reqEspecialidades,
+    reqEnfoque,
+    reqGenero,
+    reqModalidad,
+    minEdad,
+    maxEdad,
+  };
 
   if (!Array.isArray(allTherapists) || allTherapists.length === 0) {
     return [];
@@ -13,18 +25,11 @@ function findMatchingTherapists(allTherapists = [], criteria = {}) {
 
   return allTherapists
       .map((therapist) => {
-        const score = scoreTherapist(therapist, {
-          reqEspecialidades,
-          reqEnfoque,
-          reqGenero,
-          reqModalidad,
-          minEdad,
-          maxEdad,
-        });
+        const score = scoreTherapist(therapist, request);
 
         return {therapist, score};
       })
-      .filter(({score}) => {
+      .filter(({therapist, score}) => {
         const anyCriterion =
           reqEspecialidades.length > 0 ||
           Boolean(reqEnfoque) ||
@@ -33,11 +38,66 @@ function findMatchingTherapists(allTherapists = [], criteria = {}) {
           minEdad > 0 ||
           maxEdad > 0;
 
-        return anyCriterion ? score > 0 : true;
+        return matchesRequiredCriteria(
+            therapist,
+            request,
+            requiredCriteria,
+        ) && (anyCriterion ? score > 0 : true);
       })
       .sort((a, b) => b.score - a.score)
       .slice(0, 5)
       .map((result) => result.therapist);
+}
+
+function matchesRequiredCriteria(therapist, request, requiredCriteria = []) {
+  const required = new Set(requiredCriteria);
+  const matches = getCriterionMatches(therapist, request);
+  return [...required].every((key) => matches[key] !== false);
+}
+
+function getMatchDetails(therapist, criteria = {}) {
+  const {minEdad, maxEdad} = parseAgeRange(criteria.edad);
+  const request = {
+    reqEspecialidades: normalizeStringArray(criteria.especialidades),
+    reqEnfoque: normalizeKey(criteria.enfoque),
+    reqGenero: normalizeKey(criteria.genero),
+    reqModalidad: normalizeModality(criteria.modalidad),
+    minEdad,
+    maxEdad,
+  };
+  const matches = getCriterionMatches(therapist, request);
+  return Object.entries(matches).reduce((details, [key, value]) => {
+    if (value === true) details.matches.push(key);
+    if (value === false) details.differs.push(key);
+    return details;
+  }, {matches: [], differs: []});
+}
+
+function getCriterionMatches(therapist, request) {
+  const specialties = normalizeStringArray(therapist.especialidades);
+  const approaches = normalizeStringArray(
+      therapist.enfoques || therapist.enfoque,
+  );
+  const modalities = normalizeStringArray(
+      therapist.modalidades || therapist.modalidad,
+  ).map(normalizeModality);
+  const therapistAge = Number(therapist.edad) || 0;
+  const ageRequested = request.minEdad > 0 || request.maxEdad > 0;
+  const ageMatches = !ageRequested ? null :
+    (request.minEdad <= 0 || therapistAge >= request.minEdad) &&
+    (request.maxEdad <= 0 || therapistAge <= request.maxEdad);
+  return {
+    especialidades: request.reqEspecialidades.length ?
+      request.reqEspecialidades.some((item) => specialties.includes(item)) :
+      null,
+    enfoque: request.reqEnfoque ?
+      approaches.includes(request.reqEnfoque) : null,
+    genero: request.reqGenero ?
+      normalizeKey(therapist.genero) === request.reqGenero : null,
+    modalidad: request.reqModalidad ?
+      modalities.includes(request.reqModalidad) : null,
+    edad: ageMatches,
+  };
 }
 
 function scoreTherapist(therapist, request) {
@@ -151,4 +211,5 @@ function normalizeStringArray(value) {
 
 module.exports = {
   findMatchingTherapists,
+  getMatchDetails,
 };

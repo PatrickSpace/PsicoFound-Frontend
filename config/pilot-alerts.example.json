@@ -1,0 +1,13 @@
+{
+  "status": "pending_operational_approval",
+  "projectId": null,
+  "owner": null,
+  "notificationChannelIds": [],
+  "metrics": [
+    {"name": "pilot_callable_errors", "filter": "jsonPayload.message=\"callable failed\"", "labels": ["operation", "code"], "thresholdCount": null, "windowSeconds": null},
+    {"name": "pilot_ai_errors", "filter": "jsonPayload.message=\"ai provider failure\"", "labels": ["provider", "operation"], "thresholdCount": null, "windowSeconds": null},
+    {"name": "pilot_quota_rejections", "filter": "jsonPayload.message=\"callable failed\" AND jsonPayload.code=\"resource-exhausted\"", "labels": ["operation"], "thresholdCount": null, "windowSeconds": null}
+  ],
+  "budget": {"billingAccountId": null, "currency": null, "amount": null, "thresholdPercentages": [], "period": null},
+  "verification": {"stagingIncidentReference": null, "receiptConfirmedBy": null, "verifiedAt": null}
+}

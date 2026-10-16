@@ -12,6 +12,7 @@ node_modules
 dist
 dist-ssr
 coverage
+test-results/
 *.local
 
 /cypress/videos/
@@ -37,3 +38,6 @@ skills-lock.json
 *.sw?
 
 *.tsbuildinfo
+
+# Local operational review manifests may contain private approval references.
+*.local.json

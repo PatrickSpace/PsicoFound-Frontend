@@ -1,150 +1,45 @@
-import {
-  addDoc,
-  collection,
-  doc,
-  getDocs,
-  query,
-  serverTimestamp,
-  updateDoc,
-  where,
-} from "firebase/firestore";
-import { auth } from "@/plugins/Firebase/firebase";
+import { collection, getDocs, query, where } from "firebase/firestore";
+import { getFunctions, httpsCallable } from "firebase/functions";
+import { app } from "@/plugins/Firebase/firebase";
 import { db } from "@/plugins/Firebase/firestore";
+import { useAppContextStore } from "@/store/appContext";
+import { createOperationId } from "@/services/citaService";
+import { DEFAULT_TIME_ZONE, resolveSchedule, wallParts } from "@/utils/dateTime";
 
-const AVAILABILITY_COLLECTION = "therapist_availability";
-const SLOT_DURATION_MINUTES = 60;
-
-export async function createAvailabilitySlot({
-  therapistId,
-  date,
-  startTime,
-  modality = "Remoto",
-  location = "",
-}) {
-  if (!therapistId || !date || !startTime) {
-    throw new Error("Falta fecha u hora para abrir disponibilidad.");
+const functions = getFunctions(app, import.meta.env.VITE_FIREBASE_FUNCTIONS_REGION || "southamerica-east1");
+async function manage(data) {
+  if (data.timeZone && data.timeZone !== DEFAULT_TIME_ZONE) {
+    throw new Error("La agenda opera exclusivamente en hora de Lima (America/Lima).");
   }
-
-  const existingSlots = await getAvailabilityByTherapist(therapistId);
-  const duplicatedSlot = existingSlots.some(
-    (slot) =>
-      slot.date === date &&
-      slot.startTime === startTime &&
-      (slot.status || "").toString().trim().toLowerCase() !== "closed"
-  );
-
-  if (duplicatedSlot) {
-    throw new Error("Ya existe un bloque abierto para esa fecha y hora.");
-  }
-
-  const payload = {
-    therapistId,
-    date,
-    startTime,
-    endTime: addMinutesToTime(startTime, SLOT_DURATION_MINUTES),
-    durationMinutes: SLOT_DURATION_MINUTES,
-    modality,
-    location: normalizeLocation(modality, location),
-    status: "available",
-    createdBy: auth.currentUser?.uid || "",
-    createdAt: serverTimestamp(),
-    updatedAt: serverTimestamp(),
-  };
-
-  const docRef = await addDoc(collection(db, AVAILABILITY_COLLECTION), payload);
-
-  return {
-    id: docRef.id,
-    ...payload,
-  };
+  return (await httpsCallable(functions, "manageAvailability")({
+    ...data, mode: useAppContextStore().activeMode,
+    timeZone: DEFAULT_TIME_ZONE,
+    requestId: data.requestId || createOperationId("availability"),
+  })).data;
 }
-
+export async function createAvailabilitySlot(data) {
+  return manage({...data, action: "create"});
+}
+export async function closeAvailabilitySlot(slotId, therapistId) {
+  return manage({action: "close", slotId, therapistId});
+}
 export async function getAvailabilityByTherapist(therapistId) {
-  if (!therapistId) {
-    return [];
-  }
-
-  const availabilityQuery = query(
-    collection(db, AVAILABILITY_COLLECTION),
-    where("therapistId", "==", therapistId)
-  );
-  const snapshot = await getDocs(availabilityQuery);
-
-  return snapshot.docs
-    .map((item) => normalizeSlot(item.id, item.data()))
-    .sort(compareSlots);
+  if (!therapistId) return [];
+  const snapshot = await getDocs(query(collection(db, "therapist_availability"), where("therapistId", "==", therapistId)));
+  return snapshot.docs.map((item) => {
+    const original = item.data();
+    const schedule = resolveSchedule(original);
+    const end = schedule.start ? wallParts(new Date(schedule.start.getTime() + Number(original.durationMinutes || 60) * 60000)) : null;
+    return {...original, id: item.id, originalSchedule: original,
+      ...(original.timezone ? {timezone: DEFAULT_TIME_ZONE} : {}),
+      date: schedule.date || "", startTime: schedule.time || "", endTime: end?.time || "",
+      endDate: end?.date || "", timeZone: DEFAULT_TIME_ZONE,
+      startAtIso: schedule.start?.toISOString() || "", scheduleStatus: schedule.status,
+      scheduleLabel: schedule.label};
+  }).sort((a, b) => a.startAtIso.localeCompare(b.startAtIso));
 }
-
 export async function getAvailableSlotsByTherapist(therapistId) {
-  const slots = await getAvailabilityByTherapist(therapistId);
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-
-  return slots.filter((slot) => {
-    const status = (slot.status || "").toString().trim().toLowerCase();
-    const slotDate = parseDateOnly(slot.date);
-
-    return status === "available" && slotDate && slotDate >= today;
-  });
-}
-
-export async function closeAvailabilitySlot(slotId) {
-  if (!slotId) {
-    throw new Error("Falta el bloque de disponibilidad.");
-  }
-
-  await updateDoc(doc(db, AVAILABILITY_COLLECTION, slotId), {
-    status: "closed",
-    updatedAt: serverTimestamp(),
-  });
-}
-
-function addMinutesToTime(time, minutes) {
-  const [hours = "0", mins = "0"] = (time || "00:00").split(":");
-  const date = new Date(2000, 0, 1, Number(hours), Number(mins));
-  date.setMinutes(date.getMinutes() + minutes);
-
-  return `${date.getHours().toString().padStart(2, "0")}:${date
-    .getMinutes()
-    .toString()
-    .padStart(2, "0")}`;
-}
-
-function normalizeSlot(id, data = {}) {
-  return {
-    id,
-    therapistId: data.therapistId || "",
-    date: data.date || "",
-    startTime: data.startTime || "",
-    endTime: data.endTime || "",
-    durationMinutes: Number(data.durationMinutes || SLOT_DURATION_MINUTES),
-    modality: data.modality || "Remoto",
-    location: data.location || "",
-    status: data.status || "available",
-    bookedBy: data.bookedBy || "",
-    appointmentId: data.appointmentId || "",
-  };
-}
-
-function compareSlots(a, b) {
-  return `${a.date}T${a.startTime}`.localeCompare(`${b.date}T${b.startTime}`);
-}
-
-function normalizeLocation(modality, location) {
-  const normalized = (modality || "").toString().trim().toLowerCase();
-
-  if (["remoto", "online", "remota"].includes(normalized)) {
-    return "Terapia Online";
-  }
-
-  return location || "";
-}
-
-function parseDateOnly(value) {
-  if (!value) {
-    return null;
-  }
-
-  const parsed = new Date(`${value}T00:00`);
-  return Number.isNaN(parsed.getTime()) ? null : parsed;
+  const now = new Date();
+  return (await getAvailabilityByTherapist(therapistId)).filter((slot) =>
+    slot.status === "available" && slot.scheduleStatus === "resolved" && new Date(slot.startAtIso) > now);
 }

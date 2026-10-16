@@ -9,9 +9,17 @@
     "preview": "vite preview",
     "test": "node --test tests/unit/*.test.mjs",
     "test:backend": "npm --prefix functions test",
+    "test:agenda": "AGENDA_VALIDATION=true node tests/run-patient-isolated.mjs",
+    "test:patient": "node tests/run-patient-isolated.mjs",
     "lint:backend": "npm --prefix functions run lint",
     "audit:unused": "knip",
-    "test:payment-rules": "firebase emulators:exec --only firestore --project demo-lurems-rates \"node --test tests/paymentRates.integration.test.mjs\""
+    "test:payment-rules": "PAYMENT_RULES_ONLY=true node tests/run-patient-isolated.mjs",
+    "test:followup": "node tests/run-patient-isolated.mjs",
+    "test:pilot": "PILOT_VALIDATION=true AGENDA_VALIDATION=true node tests/run-patient-isolated.mjs",
+    "verify:pilot-config": "node scripts/verify-pilot-config.mjs",
+    "test:payment-deadline": "PAYMENT_DEADLINE_ONLY=true node tests/run-patient-isolated.mjs",
+    "test:admin": "ADMIN_ONLY=true node tests/run-patient-isolated.mjs",
+    "test:admin-browser": "ADMIN_BROWSER_ONLY=true node tests/run-patient-isolated.mjs"
   },
   "dependencies": {
     "@vercel/analytics": "^2.0.1",
@@ -23,8 +31,13 @@
   },
   "devDependencies": {
     "@mdi/font": "^7.4.47",
-    "@vitejs/plugin-vue": "^5.0.4",
+    "@playwright/test": "^1.56.1",
+    "@vitejs/plugin-vue": "^6.0.9",
     "knip": "6.39.0",
-    "vite": "^5.1.5"
+    "vite": "^7.3.7"
+  },
+  "overrides": {
+    "@grpc/grpc-js": "^1.13.6",
+    "source-map-js": "^1.2.2"
   }
 }

@@ -7,13 +7,14 @@
             <p class="page-header__eyebrow text-overline text-secondary mb-1">
               Seguimiento terapéutico
             </p>
-            <h1 class="text-h4 font-weight-bold">Progreso</h1>
+            <h1 class="text-h4 font-weight-bold">{{ isPsychologistMode ? "Seguimiento de pacientes" : "Mis objetivos terapéuticos" }}</h1>
             <p class="text-body-1 text-medium-emphasis mt-2 mb-0">
-              Tu perfil inicial y tus sesiones ayudan a construir continuidad en tu proceso.
+              {{ isPsychologistMode ? "Consulta objetivos por paciente y terapia; registra avances en procesos activos." : "Consulta y actualiza los objetivos de tu propio proceso." }}
             </p>
           </div>
           <div class="page-header__actions">
             <v-chip
+              v-if="isPatientMode"
               :color="isProfileReady ? 'success' : 'warning'"
               variant="tonal"
               :prepend-icon="isProfileReady ? 'mdi-account-check-outline' : 'mdi-clock-outline'"
@@ -62,6 +63,11 @@
             {{ goalsError }}
           </v-alert>
 
+          <TherapyContextFilters :therapies="therapies" :professional="isPsychologistMode"
+            v-model:patient="patientFilter" v-model:therapy="therapyFilter" v-model:status="statusFilter"
+            :statuses="[{ title: 'Activos', value: 'active' }, { title: 'Alcanzados', value: 'achieved' }]" />
+          <v-btn class="pf-btn-secondary mb-4" :loading="loadingGoals" @click="workspace.refresh">Actualizar</v-btn>
+          <v-progress-linear v-if="loadingGoals" indeterminate class="mb-4" />
           <v-row class="mb-4" align="stretch">
             <v-col cols="12" md="4" class="d-flex">
               <v-card class="pa-4 card-backgoundcustom flex-grow-1 progress-stat-card" elevation="2" variant="text">
@@ -108,7 +114,7 @@
           </v-row>
 
           <v-empty-state
-            v-if="!loadingGoals && goals.length === 0"
+            v-if="!loadingGoals && !goalsError && goals.length === 0"
             headline="Aún no hay objetivos terapéuticos"
             text="Registra metas de trabajo para seguir avances entre sesiones."
             icon="mdi-flag-outline"
@@ -116,7 +122,7 @@
 
           <v-row v-else align="stretch" class="mb-4">
             <v-col
-              v-for="goal in goals"
+              v-for="goal in goals" data-testid="goal-card"
               :key="goal.id"
               cols="12"
               md="6"
@@ -125,6 +131,8 @@
               <v-card class="goal-card card-backgoundcustom flex-grow-1 pa-4" elevation="2" variant="text">
                 <div class="d-flex flex-column flex-sm-row justify-space-between ga-3 mb-3">
                   <div>
+                    <p v-if="isPsychologistMode" class="text-subtitle-2 mb-1">{{ goal.pacienteNombre || 'Paciente' }}</p>
+                    <p class="text-caption mb-2">Terapia: {{ goal.terapiaId }}</p>
                     <h2 class="text-subtitle-1 font-weight-bold mb-1">
                       {{ goal.title }}
                     </h2>
@@ -154,16 +162,27 @@
                     <span class="text-caption">{{ Number(goal.progress || 0) }}%</span>
                     <span class="text-caption text-medium-emphasis">avance registrado</span>
                   </div>
-                  <p v-if="goal.lastNote" class="text-caption text-medium-emphasis mt-3">
-                    Última nota: {{ goal.lastNote }}
+                  <p v-if="goal.legacyNote || (goal.lastNote && !goal.progressHistory?.length)" class="text-caption text-medium-emphasis mt-3">
+                    Nota anterior conservada (sin fecha ni autor registrados): {{ goal.legacyNote || goal.lastNote }}
                   </p>
+                <v-expansion-panels v-if="goal.progressHistory?.length" class="mt-4">
+                    <v-expansion-panel title="Historial de avances">
+                      <v-expansion-panel-text>
+                        <div v-for="entry in goal.progressHistory" :key="entry.id" class="mb-3" data-testid="goal-progress-entry">
+                          <strong>{{ entry.progress }}% · {{ entry.kind === 'reopened' ? 'Reapertura' : entry.kind === 'correction' ? 'Corrección' : 'Avance' }}</strong>
+                          <p>{{ entry.note || 'Sin nota' }}</p>
+                          <p class="text-caption">{{ entry.authorName || entry.authorUid }} · {{ formatTherapyDate(entry.createdAt) }}</p>
+                        </div>
+                      </v-expansion-panel-text>
+                    </v-expansion-panel>
+                  </v-expansion-panels>
                 </v-card-text>
                 <v-card-actions class="px-0 pb-0 pt-4">
                   <v-btn
                     color="secondary"
                     variant="tonal"
                     prepend-icon="mdi-chart-line"
-                    @click="openGoalProgressDialog(goal)"
+                    :disabled="!canUpdate(goal)" @click="openGoalProgressDialog(goal)"
 
         class="pf-btn-secondary">
                     Actualizar avance
@@ -186,14 +205,14 @@
                 variant="tonal"
                 prepend-icon="mdi-plus"
                 :disabled="!canOpenGoalDialog"
-                @click="goalDialog = true"
+                @click="openGoalDialog"
                 class="pf-btn-secondary align-self-start align-self-md-center"
               >
                 Crear objetivo
               </v-btn>
             </div>
             <v-alert
-              v-if="!therapist && !activeTherapy"
+              v-if="!activeTherapies.length"
               class="mt-4 mb-0"
               color="warning"
               variant="tonal"
@@ -211,8 +230,9 @@
             Crear objetivo
           </v-card-title>
           <v-card-text>
+              <v-alert v-if="actionError" type="error" class="mb-3">{{ actionError }}</v-alert>
               <v-alert
-                v-if="!therapist && !activeTherapy"
+                v-if="!activeTherapies.length"
                 class="mb-4"
                 color="warning"
                 variant="tonal"
@@ -221,18 +241,18 @@
                 Necesitas una terapia activa para crear objetivos de seguimiento.
               </v-alert>
               <v-row>
-                <v-col v-if="therapist" cols="12" md="6">
-                  <v-select
+                <v-col cols="12" md="6">
+                  <TherapySelect
                     v-model="goalForm.therapyId"
                     :items="therapistTherapyOptions"
                     item-title="title"
                     item-value="value"
-                    label="Paciente / terapia"
+                    :label="isPsychologistMode ? 'Paciente / terapia' : 'Mi terapia'"
                     variant="outlined"
                     density="comfortable"
                   />
                 </v-col>
-                <v-col cols="12" :md="therapist ? 6 : 12">
+                <v-col cols="12" md="6">
                   <v-text-field
                     v-model="goalForm.title"
                     label="Objetivo"
@@ -297,16 +317,9 @@
         <v-card class="pa-4 card-backgoundcustom" elevation="2" variant="text">
           <v-card-title class="text-h6 font-weight-bold px-0 pt-0">Actualizar objetivo</v-card-title>
           <v-card-text>
+            <v-alert v-if="actionError" type="error" class="mb-3">{{ actionError }}</v-alert>
             <p class="mb-4 text-body-2 text-medium-emphasis">{{ selectedGoal?.title }}</p>
-            <v-slider
-              v-model="goalProgressForm.progress"
-              label="Avance"
-              color="secondary"
-              min="0"
-              max="100"
-              step="5"
-              thumb-label
-            />
+            <v-text-field v-model.number="goalProgressForm.progress" label="Avance (%)" type="number" min="0" max="100" variant="outlined" />
             <v-textarea
               v-model="goalProgressForm.note"
               label="Nota de avance"
@@ -314,11 +327,7 @@
               variant="outlined"
               density="comfortable"
             />
-            <v-checkbox
-              v-model="goalProgressForm.achieved"
-              label="Marcar como objetivo alcanzado"
-              color="secondary"
-            />
+            <p class="text-body-2">{{ Number(goalProgressForm.progress) === 100 ? 'Alcanzado (100%)' : 'Activo' }}. Al reducir el avance o reabrir, explica el motivo en la nota.</p>
           </v-card-text>
           <v-card-actions>
             <v-spacer />
@@ -343,405 +352,136 @@
 </template>
 <script setup>
 import { computed, onBeforeUnmount, reactive, ref, watch } from "vue";
-import { storeToRefs } from "pinia";
 import LayoutDefault from "@/components/Layout/Layoutmain.vue";
 import ActiveTherapySummaryCard from "@/components/Terapias/ActiveTherapySummaryCard.vue";
-import { useAuthStore } from "@/store/auth";
-import { useAppContextStore } from "@/store/appContext";
+import TherapyContextFilters from "@/components/Terapias/TherapyContextFilters.vue";
+import TherapySelect from "@/components/Terapias/TherapySelect.vue";
+import { useTherapyWorkspace } from "@/composables/useTherapyWorkspace";
 import { watchProfile } from "@/services/conversationService";
-import {
-  getTherapistById,
-  getTherapistByUserUid,
-} from "@/services/psicologoService";
-import {
-  getActiveTherapyByPatient,
-  getTherapiesByTherapist,
-} from "@/services/terapiaService";
+import { getTherapistById } from "@/services/psicologoService";
 import { getExercisesByPatient } from "@/services/exerciseService";
-import {
-  createTherapyGoal,
-  getGoalsByPatient,
-  getGoalsByTherapist,
-  updateTherapyGoalProgress,
-} from "@/services/therapyGoalService";
-import {
-  getPermissionAwareMessage,
-  isPermissionDeniedError,
-} from "@/utils/firebaseErrors";
+import { createTherapyGoal, getGoalsForTherapies, updateTherapyGoalProgress } from "@/services/therapyGoalService";
 import { isProfileReadyForRecommendations } from "@/services/matchingService";
+import { formatTherapyDate, isActiveTherapy, therapyLabel } from "@/utils/therapyContext";
 
-const authStore = useAuthStore();
-const appContext = useAppContextStore();
-const { currentUser } = storeToRefs(authStore);
+const workspace = useTherapyWorkspace(getGoalsForTherapies);
+const { therapies, professional: isPsychologistMode, visibleItems: goals, loading: loadingGoals,
+  patientFilter, therapyFilter, statusFilter, activeTherapies, selectionKey, mode, uid } = workspace;
+const isPatientMode = computed(() => mode.value === "patient");
 const profile = ref(null);
 const profileError = ref("");
-const loadingGoals = ref(false);
-const goalsError = ref("");
-const goals = ref([]);
-const activeTherapy = ref(null);
+const actionError = ref("");
+const goalsError = computed(() => workspace.error.value || actionError.value);
+const activeTherapy = computed(() => isPatientMode.value ? therapies.value.find(isActiveTherapy) : null);
 const activeTherapyTherapist = ref(null);
 const loadingActiveTherapist = ref(false);
 const learnedTools = ref([]);
-const therapist = ref(null);
-const therapistTherapies = ref([]);
-const savingGoal = ref(false);
-const savingGoalProgress = ref(false);
+let unsubscribeProfile;
+let personalGeneration = 0;
+const mainReason = computed(() => profile.value?.motivoConsulta || "En exploración");
+const isProfileReady = computed(() => isProfileReadyForRecommendations(profile.value));
+const learnedToolsCount = computed(() => learnedTools.value.filter((e) =>
+  e.terapiaId === activeTherapy.value?.id && e.status === "completed").length);
+const activeGoalsCount = computed(() => goals.value.filter((g) => g.status !== "achieved").length);
+const achievedGoalsCount = computed(() => goals.value.filter((g) => g.status === "achieved").length);
+const therapistTherapyOptions = computed(() => activeTherapies.value.map((t) => ({ title: therapyLabel(t), value: t.id })));
 const goalDialog = ref(false);
 const goalProgressDialog = ref(false);
 const selectedGoal = ref(null);
-let unsubscribeProfile = null;
-let activeTherapistRequestId = 0;
-let learnedToolsRequestId = 0;
-
-const goalForm = reactive({
-  therapyId: null,
-  title: "",
-  description: "",
-  category: "Proceso terapéutico",
-  targetDate: "",
-});
-
-const goalProgressForm = reactive({
-  progress: 0,
-  note: "",
-  achieved: false,
-});
-
-const mainReason = computed(() => {
-  const reason = profile.value?.motivoConsulta?.toString().trim();
-  return reason || "En exploración";
-});
-
-const learnedToolsCount = computed(() => {
-  const therapyId = activeTherapy.value?.id;
-
-  if (!therapyId) return 0;
-
-  return learnedTools.value.filter((exercise) => {
-    const status = (exercise?.status || "").toString().trim().toLowerCase();
-    return exercise?.terapiaId === therapyId && status === "completed";
-  }).length;
-});
-
-const isProfileReady = computed(() =>
-  isProfileReadyForRecommendations(profile.value)
-);
-
-const activeGoalsCount = computed(
-  () => goals.value.filter((goal) => goal.status !== "achieved").length
-);
-
-const achievedGoalsCount = computed(
-  () => goals.value.filter((goal) => goal.status === "achieved").length
-);
-
-const therapistTherapyOptions = computed(() =>
-  therapistTherapies.value.map((therapy) => ({
-    title: `${therapy.pacienteNombre || "Paciente"} • ${therapy.estado || "activo"}`,
-    value: therapy.id,
-  }))
-);
-
-const canCreateGoal = computed(() => {
-  const hasTherapy = therapist.value
-    ? Boolean(goalForm.therapyId)
-    : Boolean(activeTherapy.value?.id);
-
-  return hasTherapy && goalForm.title.trim().length > 0;
-});
-
-const canOpenGoalDialog = computed(() =>
-  therapist.value ? therapistTherapies.value.length > 0 : Boolean(activeTherapy.value?.id)
-);
-
-const isPsychologistMode = computed(
-  () => appContext.activeMode === "psychologist"
-);
-
-const isPatientMode = computed(() => appContext.activeMode === "patient");
-
-watch(
-  () => currentUser.value?.uid,
-  (uid) => {
-    unsubscribeProfile?.();
-    profile.value = null;
-    profileError.value = "";
-    loadLearnedTools();
-
-    if (!uid) {
-      resetGoalState();
-      return;
-    }
-
-    unsubscribeProfile = watchProfile(
-      uid,
-      (item) => {
-        profile.value = item;
-      },
-      (error) => {
-        console.error("Error loading profile progress:", error);
-        profileError.value =
-          "No pudimos cargar tu perfil inicial. Intenta nuevamente.";
-      }
-    );
-    loadGoals();
-  },
-  { immediate: true }
-);
-
-watch(
-  () => appContext.activeMode,
-  () => {
-    loadGoals();
-    loadLearnedTools();
-  }
-);
-
-watch(
-  [
-    () => activeTherapy.value?.terapeutaId,
-    () => isPatientMode.value,
-  ],
-  async ([therapistId, patientMode]) => {
-    const requestId = ++activeTherapistRequestId;
-    activeTherapyTherapist.value = null;
-
-    if (!therapistId || !patientMode) {
-      loadingActiveTherapist.value = false;
-      return;
-    }
-
-    loadingActiveTherapist.value = true;
-
-    try {
-      const publicTherapist = await getTherapistById(therapistId);
-
-      if (requestId === activeTherapistRequestId) {
-        activeTherapyTherapist.value = publicTherapist;
-      }
-    } catch (error) {
-      console.error("Error loading therapist public profile:", error);
-
-      if (requestId === activeTherapistRequestId) {
-        activeTherapyTherapist.value = null;
-      }
-    } finally {
-      if (requestId === activeTherapistRequestId) {
-        loadingActiveTherapist.value = false;
-      }
-    }
-  },
-  { immediate: true }
-);
-
-onBeforeUnmount(() => {
+const savingGoal = ref(false);
+const savingGoalProgress = ref(false);
+const goalForm = reactive({ therapyId: "", title: "", description: "", category: "Proceso terapéutico", targetDate: "" });
+const goalProgressForm = reactive({ progress: 0, note: "", achieved: false });
+const selectedTherapy = computed(() => activeTherapies.value.find((t) => t.id === goalForm.therapyId));
+const canCreateGoal = computed(() => Boolean(selectedTherapy.value && goalForm.title.trim() && !loadingGoals.value));
+const canOpenGoalDialog = computed(() => activeTherapies.value.length > 0 && !loadingGoals.value);
+let formTicket = "";
+function canUpdate(goal) {
+  return !loadingGoals.value && (!isPsychologistMode.value ||
+    therapies.value.some((t) => t.id === goal.terapiaId && isActiveTherapy(t)));
+}
+function openGoalDialog() {
+  formTicket = workspace.capture();
+  goalForm.therapyId = activeTherapies.value[0]?.id || "";
+  goalDialog.value = true;
+}
+function resetForms() {
+  goalDialog.value = false;
+  goalProgressDialog.value = false;
+  selectedGoal.value = null;
+  Object.assign(goalForm, { therapyId: "", title: "", description: "", category: "Proceso terapéutico", targetDate: "" });
+  Object.assign(goalProgressForm, { progress: 0, note: "", achieved: false });
+  actionError.value = "";
+  savingGoal.value = false;
+  savingGoalProgress.value = false;
+}
+watch(selectionKey, resetForms, { flush: "sync" });
+watch([uid, isPatientMode], ([userId, patientMode]) => {
+  const generation = ++personalGeneration;
   unsubscribeProfile?.();
-  activeTherapistRequestId += 1;
-  learnedToolsRequestId += 1;
-});
-
-async function loadLearnedTools() {
-  const requestId = ++learnedToolsRequestId;
-  const uid = currentUser.value?.uid;
-
-  if (!uid || !isPatientMode.value) {
-    learnedTools.value = [];
-    return;
-  }
-
-  try {
-    const exercises = await getExercisesByPatient(uid);
-
-    if (requestId === learnedToolsRequestId) {
-      learnedTools.value = exercises;
-    }
-  } catch (error) {
-    console.error("Error loading learned tools for therapy summary:", error);
-
-    if (requestId === learnedToolsRequestId) {
-      learnedTools.value = [];
-    }
-  }
-}
-
-async function loadGoals() {
-  const uid = currentUser.value?.uid;
-
-  if (!uid) {
-    resetGoalState();
-    return;
-  }
-
-  loadingGoals.value = true;
-  goalsError.value = "";
-
-  try {
-    const [patientTherapy, therapistProfile] = await Promise.all([
-      getActiveTherapyByPatient(uid),
-      getTherapistByUserUid(uid),
-    ]);
-
-    activeTherapy.value = patientTherapy;
-    therapist.value = isPsychologistMode.value ? therapistProfile : null;
-
-    const patientGoals = await getGoalsByPatient(uid);
-    let therapistGoals = [];
-
-    if (isPsychologistMode.value && therapistProfile?.id) {
-      therapistTherapies.value = await getTherapiesByTherapist(
-        therapistProfile.id
-      );
-      therapistGoals = await getGoalsByTherapist(therapistProfile.id);
-    } else {
-      therapistTherapies.value = [];
-    }
-
-    goals.value = mergeGoals(patientGoals, therapistGoals);
-  } catch (error) {
-    console.error("Error loading therapy goals:", error);
-    goalsError.value = getPermissionAwareMessage(
-      error,
-      "No pudimos cargar los objetivos."
-    );
-
-    if (isPermissionDeniedError(error)) {
-      goals.value = [];
-    } else {
-      resetGoalState();
-    }
-  } finally {
-    loadingGoals.value = false;
-  }
-}
-
-function mergeGoals(patientGoals, therapistGoals) {
-  const byId = new Map();
-  [...patientGoals, ...therapistGoals].forEach((goal) => {
-    byId.set(goal.id, goal);
+  profile.value = null;
+  learnedTools.value = [];
+  profileError.value = "";
+  if (!userId || !patientMode) return;
+  unsubscribeProfile = watchProfile(userId, (value) => {
+    if (generation === personalGeneration) profile.value = value;
+  }, () => {
+    if (generation === personalGeneration) profileError.value = "No pudimos cargar tu perfil inicial.";
   });
-  return Array.from(byId.values());
-}
-
-function resetGoalState() {
-  activeTherapy.value = null;
-  therapist.value = null;
-  therapistTherapies.value = [];
-  goals.value = [];
-}
-
-async function saveGoal() {
-  if (!canCreateGoal.value || savingGoal.value) {
-    return;
-  }
-
-  const therapy = resolveSelectedTherapy();
-
-  if (!therapy) {
-    goalsError.value = "Necesitas una terapia activa para crear objetivos.";
-    return;
-  }
-
-  savingGoal.value = true;
-
+  getExercisesByPatient(userId).then((items) => {
+    if (generation === personalGeneration) learnedTools.value = items;
+  }).catch(() => {
+    if (generation === personalGeneration) profileError.value = "No pudimos cargar el resumen de herramientas.";
+  });
+}, { immediate: true, flush: "sync" });
+watch(() => activeTherapy.value?.terapeutaId, async (id, _, onCleanup) => {
+  let current = true;
+  onCleanup(() => { current = false; });
+  activeTherapyTherapist.value = null;
+  loadingActiveTherapist.value = Boolean(id);
+  if (!id) return;
   try {
-    await createTherapyGoal({
-      pacienteUid: therapy.pacienteUid,
-      pacienteNombre: therapy.pacienteNombre,
-      terapeutaId: therapy.terapeutaId,
-      terapeutaNombre: therapy.terapeutaNombre,
-      terapiaId: therapy.id,
-      title: goalForm.title.trim(),
-      description: goalForm.description.trim(),
-      category: goalForm.category.trim() || "Proceso terapéutico",
-      targetDate: goalForm.targetDate,
-    });
-
-    window.dispatchEvent(
-      new CustomEvent("ui-success", {
-        detail: {
-          title: "Objetivo creado",
-          message: "El objetivo terapéutico fue registrado.",
-        },
-      })
-    );
-
-    resetGoalForm();
-    goalDialog.value = false;
-    await loadGoals();
-  } catch (error) {
-    console.error("Error creating therapy goal:", error);
-    goalsError.value = getPermissionAwareMessage(
-      error,
-      "No se pudo crear el objetivo."
-    );
+    const value = await getTherapistById(id);
+    if (current) activeTherapyTherapist.value = value;
+  } catch {
+    if (current) profileError.value = "No pudimos cargar los datos de tu profesional.";
   } finally {
-    savingGoal.value = false;
+    if (current) loadingActiveTherapist.value = false;
+  }
+});
+onBeforeUnmount(() => { personalGeneration++; unsubscribeProfile?.(); });
+async function saveGoal() {
+  if (!canCreateGoal.value || savingGoal.value || !workspace.isCurrent(formTicket)) return;
+  const ticket = formTicket;
+  savingGoal.value = true;
+  try {
+    await createTherapyGoal({ ...goalForm, terapiaId: selectedTherapy.value.id, mode: mode.value });
+    if (workspace.isCurrent(ticket)) await workspace.refresh();
+  } catch (error) {
+    if (workspace.isCurrent(ticket)) actionError.value = error.message || "No se pudo crear el objetivo.";
+  } finally {
+    if (workspace.isCurrent(ticket)) savingGoal.value = false;
   }
 }
-
-function resolveSelectedTherapy() {
-  if (therapist.value) {
-    return (
-      therapistTherapies.value.find(
-        (therapy) => therapy.id === goalForm.therapyId
-      ) || null
-    );
-  }
-
-  return activeTherapy.value;
-}
-
-function resetGoalForm() {
-  goalForm.therapyId = null;
-  goalForm.title = "";
-  goalForm.description = "";
-  goalForm.category = "Proceso terapéutico";
-  goalForm.targetDate = "";
-}
-
 function openGoalProgressDialog(goal) {
+  if (!canUpdate(goal)) return;
+  formTicket = workspace.capture();
   selectedGoal.value = goal;
-  goalProgressForm.progress = Number(goal.progress || 0);
-  goalProgressForm.note = goal.lastNote || "";
-  goalProgressForm.achieved = goal.status === "achieved";
+  Object.assign(goalProgressForm, { progress: Number(goal.progress || 0), note: "", achieved: goal.status === "achieved" });
   goalProgressDialog.value = true;
 }
-
 async function saveGoalProgress() {
-  if (!selectedGoal.value?.id || savingGoalProgress.value) {
-    return;
-  }
-
+  if (!selectedGoal.value || !canUpdate(selectedGoal.value) || savingGoalProgress.value || !workspace.isCurrent(formTicket)) return;
+  const ticket = formTicket;
   savingGoalProgress.value = true;
-
   try {
-    await updateTherapyGoalProgress({
-      goal: selectedGoal.value,
-      progress: goalProgressForm.achieved ? 100 : goalProgressForm.progress,
-      status: goalProgressForm.achieved ? "achieved" : "active",
-      note: goalProgressForm.note.trim(),
-    });
-
-    window.dispatchEvent(
-      new CustomEvent("ui-success", {
-        detail: {
-          title: "Objetivo actualizado",
-          message: "El avance fue registrado en el historial.",
-        },
-      })
-    );
-
-    goalProgressDialog.value = false;
-    selectedGoal.value = null;
-    await loadGoals();
+    await updateTherapyGoalProgress({ goal: selectedGoal.value, progress: Number(goalProgressForm.progress),
+      note: goalProgressForm.note.trim(), mode: mode.value });
+    if (workspace.isCurrent(ticket)) await workspace.refresh();
   } catch (error) {
-    console.error("Error updating therapy goal:", error);
-    goalsError.value = getPermissionAwareMessage(
-      error,
-      "No se pudo actualizar el objetivo."
-    );
+    if (workspace.isCurrent(ticket)) actionError.value = error.message || "No se pudo guardar el avance.";
   } finally {
-    savingGoalProgress.value = false;
+    if (workspace.isCurrent(ticket)) savingGoalProgress.value = false;
   }
 }
 </script>

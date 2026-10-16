@@ -1,5 +1,5 @@
-const admin = require("firebase-admin");
-const {CHAT_SESSION_DURATION_MS} = require("../config");
+const {Timestamp} = require("firebase-admin/firestore");
+const {randomUUID} = require("node:crypto");
 const {normalizeMessage} = require("../utils/text");
 
 function getActiveChatSession(conversation = {}) {
@@ -7,27 +7,24 @@ function getActiveChatSession(conversation = {}) {
   const savedStartedAt = timestampToMillis(conversation.sessionStartedAt);
   const savedSessionId = normalizeMessage(conversation.activeSessionId);
   const hasActiveSession =
-    savedSessionId && savedStartedAt &&
-    now - savedStartedAt < CHAT_SESSION_DURATION_MS;
+    savedSessionId && savedStartedAt;
 
   const sessionStartedAt = hasActiveSession ? savedStartedAt : now;
-  const sessionId = hasActiveSession ? savedSessionId : `profile-chat-${now}`;
+  const sessionId = hasActiveSession ? savedSessionId : randomUUID();
 
   return buildChatSession(sessionId, sessionStartedAt);
 }
 
 function createChatSession() {
   const now = Date.now();
-  return buildChatSession(`profile-chat-${now}`, now);
+  return buildChatSession(randomUUID(), now);
 }
 
 function buildChatSession(sessionId, sessionStartedAt) {
   return {
     id: sessionId,
-    startedAt: admin.firestore.Timestamp.fromMillis(sessionStartedAt),
-    expiresAt: admin.firestore.Timestamp.fromMillis(
-        sessionStartedAt + CHAT_SESSION_DURATION_MS,
-    ),
+    startedAt: Timestamp.fromMillis(sessionStartedAt),
+    expiresAt: null,
   };
 }
 

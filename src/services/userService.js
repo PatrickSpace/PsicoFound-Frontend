@@ -1,19 +1,13 @@
 import {
   collection,
-  deleteDoc,
   doc,
   getDoc,
   getDocs,
-  serverTimestamp,
-  setDoc,
-  updateDoc,
 } from "firebase/firestore";
 import { db } from "@/plugins/Firebase/firestore";
 import {
   APP_ROLES,
-  getLegacyRoleFromRoles,
   getUserRoles,
-  normalizeRoles,
 } from "@/utils/roles";
 
 const USERS_COLLECTION = "users";
@@ -33,65 +27,6 @@ export async function getUserById(uid) {
         ...snapshot.data(),
       }
     : null;
-}
-
-export async function updateUserProfile(uid, data = {}) {
-  if (!uid) {
-    throw new Error("No se encontró el usuario a actualizar.");
-  }
-
-  const userRef = doc(db, USERS_COLLECTION, uid);
-  const payload = {
-    nombre: data.nombre || "",
-    fechaNacimiento: data.fechaNacimiento || "",
-    telefono: data.telefono || "",
-    updatedAt: serverTimestamp(),
-  };
-
-  await updateDoc(userRef, payload);
-
-  return {
-    id: uid,
-    ...payload,
-  };
-}
-
-export async function upsertUserByAdmin(uid, data = {}) {
-  if (!uid) {
-    throw new Error("El UID del usuario es obligatorio.");
-  }
-
-  const roles = normalizeRoles(data.roles?.length ? data.roles : [APP_ROLES.PATIENT]);
-  const userRef = doc(db, USERS_COLLECTION, uid);
-  const payload = {
-    id: uid,
-    email: data.email || "",
-    nombre: data.nombre || "",
-    fechaNacimiento: data.fechaNacimiento || "",
-    telefono: data.telefono || "",
-    roles,
-    rol: getLegacyRoleFromRoles(roles),
-    updatedAt: serverTimestamp(),
-  };
-
-  if (data.includeCreatedAt) {
-    payload.createdAt = serverTimestamp();
-  }
-
-  await setDoc(userRef, payload, { merge: true });
-
-  return {
-    id: uid,
-    ...payload,
-  };
-}
-
-export async function deleteUserProfileByAdmin(uid) {
-  if (!uid) {
-    throw new Error("No se encontró el usuario a eliminar.");
-  }
-
-  await deleteDoc(doc(db, USERS_COLLECTION, uid));
 }
 
 export async function getUsers() {

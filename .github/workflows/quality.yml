@@ -10,8 +10,8 @@ permissions:
 
 jobs:
   verify:
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
+    runs-on: ubuntu-22.04
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -34,4 +34,20 @@ jobs:
       - run: npm run lint:backend
       - run: npm run build
       - run: npm install --global firebase-tools@15.15.0
-      - run: npm run test:payment-rules
+      # Downloads precede isolation; the suite itself cannot reach these services.
+      - run: firebase setup:emulators:firestore
+      - run: npx playwright install --with-deps chromium
+      - run: npm audit --audit-level=moderate
+      - run: npm --prefix functions audit --audit-level=moderate
+      - name: Patient, professional, accounts, survey, payments and Lima (loopback only)
+        run: npm run test:agenda
+        env:
+          PILOT_VALIDATION: "true"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: isolated-validation
+          path: |
+            test-results/
+            playwright-report/
+          retention-days: 7

@@ -5,23 +5,22 @@
         <div class="page-header__row">
           <div class="page-header__copy">
             <p class="page-header__eyebrow text-overline text-secondary mb-1">
-              Seguimiento personal
+              {{ isPsychologistMode ? 'Seguimiento de pacientes' : 'Seguimiento personal' }}
             </p>
             <h1 class="text-h4 font-weight-bold">Registro emocional</h1>
             <p class="text-body-1 text-medium-emphasis mt-2 mb-0">
-              Observa cómo cambia tu estado emocional entre sesiones y registra lo
-              que estás viviendo.
+              {{ isPsychologistMode ? 'Consulta los registros compartidos por tus pacientes.' : 'Observa cómo cambia tu estado emocional entre sesiones y registra lo que estás viviendo.' }}
             </p>
           </div>
           <div class="page-header__actions">
             <v-btn
-              v-if="!isPsychologistMode"
+              v-if="isPatientMode"
               color="secondary"
               variant="tonal"
               prepend-icon="mdi-plus"
               class="pf-btn-secondary"
-              :disabled="!activeTherapy"
-              @click="checkinDialog = true"
+              :disabled="loading || !activeTherapy"
+              @click="openCheckin"
             >
               Agregar registro
             </v-btn>
@@ -41,7 +40,7 @@
       </v-alert>
 
       <v-alert
-        v-if="!isPsychologistMode && !activeTherapy && !loading"
+        v-if="isPatientMode && !activeTherapy && !loading"
         class="mb-5"
         color="warning"
         variant="tonal"
@@ -179,12 +178,17 @@
         </v-card-text>
       </v-card>
 
-      <v-dialog v-model="checkinDialog" class="bg-transparent" max-width="760">
+      <v-dialog v-if="isPatientMode" v-model="checkinDialog" class="bg-transparent" max-width="760">
         <v-card class="pa-4 card-backgoundcustom" elevation="2" variant="text">
           <v-card-title class="text-h6 font-weight-bold px-0 pt-0">
             Agregar registro emocional
           </v-card-title>
           <v-card-text>
+            <v-alert v-if="activeTherapy" class="mb-4" type="info" variant="tonal">
+              Este registro y su nota serán visibles para el profesional vinculado
+              a tu proceso: {{ activeTherapy.terapeutaNombre || 'tu profesional' }}.
+              Terapia: {{ activeTherapy.id }}. El personal administrador autorizado también puede acceder.
+            </v-alert>
             <v-alert
               v-if="!activeTherapy"
               class="mb-4"
@@ -253,7 +257,7 @@
               <v-col cols="12">
                 <v-textarea
                   v-model="form.note"
-                  label="Nota personal"
+                  label="Nota compartida con tu profesional"
                   rows="3"
                   variant="outlined"
                   density="comfortable"
@@ -290,7 +294,7 @@
 </template>
 
 <script setup>
-import { computed, reactive, ref, watch } from "vue";
+import { computed, onBeforeUnmount, reactive, ref, watch } from "vue";
 import { storeToRefs } from "pinia";
 import LayoutDefault from "@/components/Layout/Layoutmain.vue";
 import { useAuthStore } from "@/store/auth";
@@ -303,6 +307,7 @@ import {
   getCheckinsByTherapist,
 } from "@/services/emotionalCheckinService";
 import { getPermissionAwareMessage } from "@/utils/firebaseErrors";
+import { createOperationId } from "@/services/citaService";
 
 const authStore = useAuthStore();
 const appContext = useAppContextStore();
@@ -315,6 +320,8 @@ const saving = ref(false);
 const errorMessage = ref("");
 const checkinDialog = ref(false);
 let loadRequestId = 0;
+let contextVersion = 0;
+let operationId = "";
 
 const moodOptions = [
   "Tranquilo/a",
@@ -350,6 +357,7 @@ const form = reactive({
 const isPsychologistMode = computed(
   () => appContext.activeMode === "psychologist"
 );
+const isPatientMode = computed(() => appContext.activeMode === "patient");
 
 const averageIntensity = computed(() => {
   if (!checkins.value.length) return "-";
@@ -365,6 +373,8 @@ const latestMood = computed(() => checkins.value[0]?.mood || "-");
 
 const canSave = computed(
   () =>
+    isPatientMode.value && !loading.value &&
+    activeTherapy.value?.pacienteUid === currentUser.value?.uid &&
     Boolean(activeTherapy.value?.id) &&
     typeof form.mood === "string" &&
     form.mood.trim().length > 0
@@ -372,13 +382,31 @@ const canSave = computed(
 
 watch(
   [() => currentUser.value?.uid, () => appContext.activeMode],
-  loadCheckins,
-  { immediate: true }
+  () => {
+    contextVersion += 1;
+    checkinDialog.value = false;
+    saving.value = false;
+    resetForm();
+    loadCheckins();
+  },
+  { immediate: true, flush: "sync" }
 );
+onBeforeUnmount(() => { contextVersion += 1; loadRequestId += 1; });
+
+function openCheckin() {
+  resetForm();
+  operationId = createOperationId("emotion");
+  checkinDialog.value = true;
+}
 
 async function loadCheckins() {
   const requestId = ++loadRequestId;
   const uid = currentUser.value?.uid;
+  const mode = appContext.activeMode;
+  activeTherapy.value = null;
+  checkins.value = [];
+  errorMessage.value = "";
+  loading.value = false;
 
   if (!uid) {
     activeTherapy.value = null;
@@ -391,23 +419,22 @@ async function loadCheckins() {
 
   try {
     let items = [];
+    let therapy = null;
 
-    if (isPsychologistMode.value) {
+    if (mode === "psychologist") {
       const therapist = await getTherapistByUserUid(uid);
-      activeTherapy.value = null;
       items = therapist?.id
         ? await getCheckinsByTherapist(therapist.id)
         : [];
-    } else {
-      const [therapy, patientCheckins] = await Promise.all([
+    } else if (mode === "patient") {
+      [therapy, items] = await Promise.all([
         getActiveTherapyByPatient(uid),
         getCheckinsByPatient(uid),
       ]);
-      activeTherapy.value = therapy;
-      items = patientCheckins;
     }
 
     if (requestId === loadRequestId) {
+      activeTherapy.value = therapy;
       checkins.value = items;
     }
   } catch (error) {
@@ -431,13 +458,11 @@ async function saveCheckin() {
   if (!canSave.value || saving.value) return;
 
   saving.value = true;
+  const version = contextVersion;
 
   try {
     await createEmotionalCheckin({
-      pacienteUid: activeTherapy.value.pacienteUid,
-      pacienteNombre: activeTherapy.value.pacienteNombre,
-      terapeutaId: activeTherapy.value.terapeutaId,
-      terapeutaNombre: activeTherapy.value.terapeutaNombre,
+      requestId: operationId,
       terapiaId: activeTherapy.value.id,
       mood: form.mood.trim(),
       intensity: form.intensity,
@@ -447,6 +472,7 @@ async function saveCheckin() {
       tags: form.tags,
     });
 
+    if (version !== contextVersion) return;
     window.dispatchEvent(
       new CustomEvent("ui-success", {
         detail: {
@@ -460,17 +486,19 @@ async function saveCheckin() {
     checkinDialog.value = false;
     await loadCheckins();
   } catch (error) {
+    if (version !== contextVersion) return;
     console.error("Error creating emotional checkin:", error);
     errorMessage.value = getPermissionAwareMessage(
       error,
       "No se pudo guardar el registro emocional."
     );
   } finally {
-    saving.value = false;
+    if (version === contextVersion) saving.value = false;
   }
 }
 
 function resetForm() {
+  operationId = "";
   form.mood = null;
   form.intensity = 5;
   form.energy = 5;

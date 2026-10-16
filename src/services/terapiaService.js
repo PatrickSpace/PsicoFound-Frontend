@@ -1,72 +1,30 @@
 import {
-  addDoc,
-  arrayUnion,
   collection,
   doc,
-  serverTimestamp,
-  updateDoc,
   getDocs,
   query,
   where,
   getDoc,
+  onSnapshot,
 } from "firebase/firestore";
+import { getFunctions, httpsCallable } from "firebase/functions";
+import { app } from "@/plugins/Firebase/firebase";
 import { db } from "@/plugins/Firebase/firestore";
+import { createOperationId } from "@/services/citaService";
+import { useAppContextStore } from "@/store/appContext";
+
+import { agendaPresentation } from "@/utils/dateTime";
+
+function presentTherapy(data) {
+  return {...data, citas: (data.citas || []).map(agendaPresentation)};
+}
 
 const THERAPIES_COLLECTION = "terapias";
 const ACTIVE_THERAPY_STATUS = "activo";
-
-export async function createTherapy(data = {}) {
-  if (data.pacienteUid) {
-    const activeTherapy = await getActiveTherapyByPatient(data.pacienteUid);
-
-    if (activeTherapy) {
-      throw new Error(
-        "Ya tienes una terapia activa. Debes pausarla o cancelarla antes de crear una nueva."
-      );
-    }
-  }
-
-  const therapiesRef = collection(db, THERAPIES_COLLECTION);
-  const payload = {
-    usuarioId: data.usuarioId || data.pacienteUid || "demo-user",
-    pacienteUid: data.pacienteUid || "demo-user",
-    pacienteNombre: data.pacienteNombre || "Usuario demo",
-    pacienteEmail: data.pacienteEmail || "",
-    terapeutaId: data.terapeutaId || "",
-    terapeutaNombre: data.terapeutaNombre || "",
-    modalidad: data.modalidad || "",
-    estado: data.estado || "activo",
-    fechaCreacion: data.fechaCreacion || new Date().toISOString(),
-    citas: [],
-    createdAt: serverTimestamp(),
-    updatedAt: serverTimestamp(),
-  };
-
-  const docRef = await addDoc(therapiesRef, payload);
-
-  return {
-    id: docRef.id,
-    ...payload,
-  };
-}
-
-export async function appendAppointmentToTherapy(terapiaId, appointmentSummary) {
-  const therapyRef = doc(db, THERAPIES_COLLECTION, terapiaId);
-
-  await updateDoc(therapyRef, {
-    citas: arrayUnion(appointmentSummary),
-    updatedAt: serverTimestamp(),
-  });
-}
-
-export async function replaceTherapyAppointments(terapiaId, citas = []) {
-  const therapyRef = doc(db, THERAPIES_COLLECTION, terapiaId);
-
-  await updateDoc(therapyRef, {
-    citas,
-    updatedAt: serverTimestamp(),
-  });
-}
+const functions = getFunctions(
+  app,
+  import.meta.env.VITE_FIREBASE_FUNCTIONS_REGION || "southamerica-east1"
+);
 
 export async function getTherapyById(terapiaId) {
   const therapyRef = doc(db, THERAPIES_COLLECTION, terapiaId);
@@ -78,7 +36,7 @@ export async function getTherapyById(terapiaId) {
 
   return {
     id: snapshot.id,
-    ...snapshot.data(),
+    ...presentTherapy(snapshot.data()),
   };
 }
 
@@ -97,8 +55,28 @@ export async function getTherapiesByPatient(pacienteUid) {
 
   return snapshot.docs.map((item) => ({
     id: item.id,
-    ...item.data(),
+    ...presentTherapy(item.data()),
   }));
+}
+
+export function watchTherapiesByPatient(pacienteUid, onData, onError) {
+  if (!pacienteUid) {
+    onData([]);
+    return () => {};
+  }
+
+  const therapiesQuery = query(
+    collection(db, THERAPIES_COLLECTION),
+    where("pacienteUid", "==", pacienteUid)
+  );
+  return onSnapshot(
+    therapiesQuery,
+    (snapshot) => onData(snapshot.docs.map((item) => ({
+      id: item.id,
+      ...presentTherapy(item.data()),
+    }))),
+    onError
+  );
 }
 
 export async function getTherapiesByTherapist(terapeutaId) {
@@ -116,7 +94,7 @@ export async function getTherapiesByTherapist(terapeutaId) {
 
   return snapshot.docs.map((item) => ({
     id: item.id,
-    ...item.data(),
+    ...presentTherapy(item.data()),
   }));
 }
 
@@ -146,33 +124,21 @@ export async function getTherapyByIdForPatient(terapiaId, pacienteUid) {
   return therapy;
 }
 
-export async function updateTherapyStatus(terapiaId, estado) {
+export async function updateTherapyStatus(
+  terapiaId,
+  estado,
+  { reason = "", requestId = "" } = {}
+) {
   if (!terapiaId || !estado) {
     throw new Error("Missing terapiaId or estado");
   }
 
-  const currentTherapy = await getTherapyById(terapiaId);
-
-  if (!currentTherapy) {
-    throw new Error("No se encontro la terapia a actualizar.");
-  }
-
-  const normalizedStatus = estado.toString().trim().toLowerCase();
-
-  if (normalizedStatus === ACTIVE_THERAPY_STATUS) {
-    const activeTherapy = await getActiveTherapyByPatient(currentTherapy.pacienteUid);
-
-    if (activeTherapy && activeTherapy.id !== terapiaId) {
-      throw new Error(
-        "Ya tienes otra terapia activa. Debes pausarla o cancelarla antes de reactivar esta."
-      );
-    }
-  }
-
-  const therapyRef = doc(db, THERAPIES_COLLECTION, terapiaId);
-
-  await updateDoc(therapyRef, {
-    estado,
-    updatedAt: serverTimestamp(),
+  const response = await httpsCallable(functions, "changeTherapyStatus")({
+    therapyId: terapiaId,
+    status: estado,
+    reason,
+    requestId: requestId || createOperationId("therapy_status"),
+    mode: useAppContextStore().activeMode || "patient",
   });
+  return response.data;
 }

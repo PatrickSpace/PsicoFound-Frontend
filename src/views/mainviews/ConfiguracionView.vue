@@ -210,9 +210,49 @@
             <v-card-text>
               <v-divider class="mb-4"></v-divider>
               <p class="text-body-2 text-medium-emphasis mb-4">
-                Mantén el control de tu sesión y privacidad. La edición avanzada
-                de datos estará disponible en una siguiente iteración.
+                Mantén actualizado el acceso a tu cuenta y revisa el estado de
+                verificación de tu correo.
               </p>
+              <div class="d-flex flex-wrap align-center ga-2 mb-4">
+                <v-chip
+                  :color="currentUser?.emailVerified ? 'success' : 'warning'"
+                  variant="tonal"
+                  size="small"
+                  :prepend-icon="
+                    currentUser?.emailVerified
+                      ? 'mdi-email-check-outline'
+                      : 'mdi-email-alert-outline'
+                  "
+                >
+                  {{
+                    currentUser?.emailVerified
+                      ? "Correo verificado"
+                      : "Correo por verificar"
+                  }}
+                </v-chip>
+                <v-btn
+                  v-if="!currentUser?.emailVerified"
+                  size="small"
+                  variant="text"
+                  color="secondary"
+                  :loading="sendingVerification"
+                  @click="resendVerification"
+                  class="pf-btn-ghost"
+                >
+                  Reenviar verificación
+                </v-btn>
+              </div>
+              <div class="d-flex flex-wrap ga-2">
+                <v-btn
+                  color="secondary"
+                  variant="tonal"
+                  prepend-icon="mdi-email-edit-outline"
+                  @click="openEmailChange"
+                  class="pf-btn-secondary"
+                >
+                  Cambiar correo
+                </v-btn>
+                <v-btn class="pf-btn-secondary" :loading="changingEmail" @click="refreshConfirmedEmail">Ya confirmé mi nuevo correo</v-btn>
               <v-btn
                 color="error"
                 variant="tonal"
@@ -224,6 +264,118 @@
               >
                 Cerrar sesión
               </v-btn>
+              </div>
+            </v-card-text>
+          </v-card>
+        </v-col>
+
+        <v-col cols="12" md="6" class="d-flex">
+          <v-card
+            class="pa-4 card-backgoundcustom flex-grow-1"
+            elevation="2"
+            variant="text"
+          >
+            <v-card-title
+              class="text-h6 font-weight-bold d-flex align-center ga-2 px-0 pt-0"
+            >
+              <v-icon color="secondary" size="small"
+                >mdi-database-lock-outline</v-icon
+              >
+              Mis datos y cuenta
+            </v-card-title>
+            <v-card-text>
+              <v-divider class="mb-4"></v-divider>
+              <p class="text-body-2 text-medium-emphasis mb-4">
+                Descarga una copia de tus datos o registra una solicitud para
+                eliminar tu cuenta.
+              </p>
+              <v-alert
+                v-if="accountMessage"
+                class="mb-4"
+                :color="accountMessageColor"
+                variant="tonal"
+                icon="mdi-information-outline"
+              >
+                {{ accountMessage }}
+              </v-alert>
+              <div class="d-flex flex-wrap ga-2">
+                <v-btn
+                  color="secondary"
+                  variant="tonal"
+                  prepend-icon="mdi-download-outline"
+                  :loading="exportingData"
+                  @click="downloadAccountData"
+                  class="pf-btn-secondary"
+                >
+                  Descargar mis datos
+                </v-btn>
+                <v-btn
+                  color="error"
+                  variant="text"
+                  prepend-icon="mdi-account-remove-outline"
+                  @click="openDeletionRequest"
+                  class="pf-btn-destructive"
+                >
+                  Solicitar eliminación
+                </v-btn>
+              </div>
+            </v-card-text>
+          </v-card>
+        </v-col>
+
+        <v-col cols="12" md="6" class="d-flex">
+          <v-card
+            class="pa-4 card-backgoundcustom flex-grow-1"
+            elevation="2"
+            variant="text"
+          >
+            <v-card-title
+              class="text-h6 font-weight-bold d-flex align-center ga-2 px-0 pt-0"
+            >
+              <v-icon color="secondary" size="small"
+                >mdi-file-document-check-outline</v-icon
+              >
+              Documentos legales
+            </v-card-title>
+            <v-card-text>
+              <v-divider class="mb-4"></v-divider>
+              <template v-if="hasPublishedLegalDocuments">
+                <p class="text-body-2 text-medium-emphasis mb-3">
+                  Versión vigente: {{ legalConfig.version }}
+                </p>
+                <div class="d-flex flex-wrap ga-2">
+                  <v-btn
+                    :href="legalConfig.termsUrl"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    color="secondary"
+                    variant="text"
+                    append-icon="mdi-open-in-new"
+                    class="pf-btn-ghost"
+                  >
+                    Términos de uso
+                  </v-btn>
+                  <v-btn
+                    :href="legalConfig.privacyUrl"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    color="secondary"
+                    variant="text"
+                    append-icon="mdi-open-in-new"
+                    class="pf-btn-ghost"
+                  >
+                    Política de privacidad
+                  </v-btn>
+                </div>
+              </template>
+              <v-alert
+                v-else
+                color="warning"
+                variant="tonal"
+                icon="mdi-file-alert-outline"
+              >
+                Los enlaces y la versión legal todavía no están configurados.
+              </v-alert>
             </v-card-text>
           </v-card>
         </v-col>
@@ -290,6 +442,17 @@
                   density="comfortable"
                 />
               </v-col>
+              <v-col cols="12" md="6">
+                <v-text-field
+                  v-model="profileForm.pais"
+                  label="País de residencia"
+                  variant="outlined"
+                  density="comfortable"
+                />
+              </v-col>
+              <v-col cols="12" md="6">
+                <p class="text-body-2">Todos los horarios se muestran en hora de Lima, Perú (UTC−5). Tu país de residencia no modifica la agenda.</p>
+              </v-col>
             </v-row>
           </v-card-text>
           <v-card-actions>
@@ -313,6 +476,99 @@
               class="pf-btn-secondary"
             >
               Guardar cambios
+            </v-btn>
+          </v-card-actions>
+        </v-card>
+      </v-dialog>
+
+      <v-dialog v-model="emailDialog" max-width="560">
+        <v-card class="pa-4 card-backgoundcustom" elevation="2" variant="text">
+          <v-card-title class="text-h6 font-weight-bold px-0 pt-0">
+            Cambiar correo
+          </v-card-title>
+          <v-card-text>
+            <v-divider class="mb-4" />
+            <v-alert
+              v-if="emailError"
+              class="mb-4"
+              color="error"
+              variant="tonal"
+            >
+              {{ emailError }}
+            </v-alert>
+            <p class="text-body-2 text-medium-emphasis mb-4">
+              Por seguridad debes volver a autenticarte. El cambio se aplicará
+              después de verificar el nuevo correo.
+            </p>
+            <v-text-field
+              v-model="emailForm.email"
+              label="Nuevo correo"
+              type="email"
+              variant="outlined"
+              density="comfortable"
+            />
+            <v-text-field
+              v-if="usesPasswordProvider"
+              v-model="emailForm.password"
+              label="Contraseña actual"
+              type="password"
+              variant="outlined"
+              density="comfortable"
+            />
+          </v-card-text>
+          <v-card-actions>
+            <v-spacer />
+            <v-btn variant="text" @click="emailDialog = false">Cancelar</v-btn>
+            <v-btn
+              color="secondary"
+              variant="tonal"
+              :loading="changingEmail"
+              :disabled="!canChangeEmail"
+              @click="requestEmailChange"
+            >
+              Verificar y cambiar
+            </v-btn>
+          </v-card-actions>
+        </v-card>
+      </v-dialog>
+
+      <v-dialog v-model="deletionDialog" max-width="680">
+        <v-card class="pa-4 card-backgoundcustom" elevation="2" variant="text">
+          <v-card-title class="text-h6 font-weight-bold px-0 pt-0">
+            Solicitar eliminación de cuenta
+          </v-card-title>
+          <v-card-text>
+            <v-divider class="mb-4" />
+            <v-alert color="warning" variant="tonal" class="mb-4">
+              Esta acción registra una solicitud; no elimina la cuenta de forma
+              inmediata. Los registros compartidos de terapias, citas y pagos
+              requieren una política de retención y anonimización aprobada.
+            </v-alert>
+            <p class="text-body-2 mb-4">
+              La solicitud contempla acceso de autenticación, perfil, encuesta,
+              conversación y seguimiento personal. Escribe
+              <strong>ELIMINAR MI CUENTA</strong> para continuar.
+            </p>
+            <v-text-field
+              v-model="deletionConfirmation"
+              label="Confirmación"
+              variant="outlined"
+              density="comfortable"
+            />
+          </v-card-text>
+          <v-card-actions>
+            <v-spacer />
+            <v-btn variant="text" @click="deletionDialog = false">
+              Cancelar
+            </v-btn>
+            <v-btn
+              color="error"
+              variant="tonal"
+              :loading="requestingDeletion"
+              :disabled="deletionConfirmation !== 'ELIMINAR MI CUENTA'"
+              @click="submitDeletionRequest"
+            >
+              Registrar solicitud
             </v-btn>
           </v-card-actions>
         </v-card>
@@ -474,14 +730,31 @@
 <script setup>
 import { computed, reactive, ref, watch } from "vue";
 import { storeToRefs } from "pinia";
-import { signOut } from "firebase/auth";
+import {
+  EmailAuthProvider,
+  GoogleAuthProvider,
+  reauthenticateWithCredential,
+  reauthenticateWithPopup,
+  sendEmailVerification,
+  signOut,
+  verifyBeforeUpdateEmail,
+} from "firebase/auth";
 import { useRouter } from "vue-router";
 import LayoutDefault from "@/components/Layout/Layoutmain.vue";
 import PsychologistRateCard from "@/components/Payments/PsychologistRateCard.vue";
 import { auth } from "@/plugins/Firebase/firebase";
 import { useAppContextStore } from "@/store/appContext";
 import { useAuthStore } from "@/store/auth";
-import { updateUserProfile } from "@/services/userService";
+import {
+  syncOwnAuthEmail,
+  exportOwnData,
+  requestAccountDeletion,
+  updateOwnProfile,
+} from "@/services/accountService";
+import {
+  hasPublishedLegalDocuments,
+  legalConfig,
+} from "@/config/legal";
 import {
   createPsychologistRequest,
   getLatestPsychologistRequestByUser,
@@ -506,11 +779,28 @@ const loadingPsychologistRequest = ref(false);
 const loggingOut = ref(false);
 const psychologistRequestError = ref("");
 const psychologistRequest = ref(null);
+const sendingVerification = ref(false);
+const emailDialog = ref(false);
+const changingEmail = ref(false);
+const emailError = ref("");
+const exportingData = ref(false);
+const deletionDialog = ref(false);
+const requestingDeletion = ref(false);
+const deletionConfirmation = ref("");
+const accountMessage = ref("");
+const accountMessageColor = ref("info");
 
 const profileForm = reactive({
   nombre: "",
   fechaNacimiento: "",
   telefono: "",
+  pais: "",
+  zonaHoraria: Intl.DateTimeFormat().resolvedOptions().timeZone || "America/Lima",
+});
+
+const emailForm = reactive({
+  email: "",
+  password: "",
 });
 
 const psychologistRequestForm = reactive({
@@ -539,8 +829,29 @@ const activeMode = computed(
 );
 
 const canSaveProfile = computed(
-  () => Boolean(currentUser.value?.uid) && profileForm.nombre.trim().length > 0
+  () =>
+    Boolean(currentUser.value?.uid) &&
+    profileForm.nombre.trim().length > 0 &&
+    profileForm.fechaNacimiento.length > 0 &&
+    profileForm.pais.trim().length > 0 &&
+    profileForm.zonaHoraria.trim().length > 0
 );
+
+const usesPasswordProvider = computed(() =>
+  currentUser.value?.providerData?.some(
+    (provider) => provider.providerId === "password"
+  )
+);
+
+const canChangeEmail = computed(() => {
+  const validEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailForm.email.trim());
+  return (
+    validEmail &&
+    emailForm.email.trim() !== currentUser.value?.email &&
+    (!usesPasswordProvider.value || emailForm.password.length > 0)
+  );
+});
+
 
 const canSubmitPsychologistRequest = computed(
   () =>
@@ -605,6 +916,14 @@ const patientProfileDetails = computed(() => [
     title: "Teléfono",
     subtitle: readableProfileValue(profileForm.telefono),
   },
+  {
+    title: "País",
+    subtitle: readableProfileValue(profileForm.pais),
+  },
+  {
+    title: "Horario de la agenda",
+    subtitle: "Hora de Lima, Perú (UTC−5)",
+  },
 ]);
 
 watch(
@@ -642,6 +961,11 @@ function resetProfileForm(profile = appContext.userProfile) {
     profile?.nombre || currentUser.value?.displayName || userName.value || "";
   profileForm.fechaNacimiento = profile?.fechaNacimiento || "";
   profileForm.telefono = profile?.telefono || "";
+  profileForm.pais = profile?.pais || "";
+  profileForm.zonaHoraria =
+    profile?.zonaHoraria ||
+    Intl.DateTimeFormat().resolvedOptions().timeZone ||
+    "America/Lima";
 }
 
 function resetPsychologistRequestForm() {
@@ -753,10 +1077,11 @@ async function saveProfile() {
   profileError.value = "";
 
   try {
-    await updateUserProfile(currentUser.value.uid, {
+    await updateOwnProfile({
       nombre: profileForm.nombre.trim(),
       fechaNacimiento: profileForm.fechaNacimiento,
       telefono: profileForm.telefono.trim(),
+      pais: profileForm.pais.trim(),
     });
     await appContext.loadForUser(currentUser.value.uid, { force: true });
     isEditingProfile.value = false;
@@ -776,6 +1101,149 @@ async function saveProfile() {
   } finally {
     savingProfile.value = false;
   }
+}
+
+async function resendVerification() {
+  if (!currentUser.value || sendingVerification.value) return;
+  sendingVerification.value = true;
+  try {
+    await sendEmailVerification(currentUser.value);
+    showSuccess(
+      "Verificación enviada",
+      "Revisa tu bandeja de entrada y la carpeta de correo no deseado."
+    );
+  } catch (error) {
+    showAccountError(error, "No pudimos enviar la verificación.");
+  } finally {
+    sendingVerification.value = false;
+  }
+}
+
+function openEmailChange() {
+  emailForm.email = "";
+  emailForm.password = "";
+  emailError.value = "";
+  emailDialog.value = true;
+}
+
+async function requestEmailChange() {
+  if (!canChangeEmail.value || changingEmail.value || !currentUser.value) return;
+  changingEmail.value = true;
+  emailError.value = "";
+  try {
+    if (usesPasswordProvider.value) {
+      const credential = EmailAuthProvider.credential(
+        currentUser.value.email,
+        emailForm.password
+      );
+      await reauthenticateWithCredential(currentUser.value, credential);
+    } else {
+      await reauthenticateWithPopup(currentUser.value, new GoogleAuthProvider());
+    }
+    await verifyBeforeUpdateEmail(currentUser.value, emailForm.email.trim());
+    emailDialog.value = false;
+    showSuccess(
+      "Verifica tu nuevo correo",
+      "El cambio se aplicará cuando abras el enlace de verificación enviado."
+    );
+  } catch (error) {
+    emailError.value = authErrorMessage(error);
+  } finally {
+    changingEmail.value = false;
+  }
+}
+
+async function refreshConfirmedEmail() {
+  const user = currentUser.value;
+  if (!user || changingEmail.value) return;
+  changingEmail.value = true;
+  try {
+    await user.reload();
+    await user.getIdToken(true);
+    if (auth.currentUser?.uid !== user.uid) return;
+    const result = await syncOwnAuthEmail();
+    if (auth.currentUser?.uid !== user.uid) return;
+    await appContext.loadForUser(user.uid, { force: true });
+    accountMessageColor.value = "success";
+    accountMessage.value = `Correo verificado y actualizado: ${result.email}`;
+  } catch (error) {
+    if (auth.currentUser?.uid === user.uid) showAccountError(error, "Vuelve a iniciar sesión con tu nuevo correo para actualizar la cuenta.");
+  } finally { changingEmail.value = false; }
+}
+
+async function downloadAccountData() {
+  if (exportingData.value) return;
+  exportingData.value = true;
+  accountMessage.value = "";
+  try {
+    const payload = await exportOwnData();
+    const blob = new Blob([JSON.stringify(payload, null, 2)], {
+      type: "application/json;charset=utf-8",
+    });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `lurems-mis-datos-${new Date().toISOString().slice(0, 10)}.json`;
+    link.click();
+    URL.revokeObjectURL(url);
+    accountMessageColor.value = "success";
+    accountMessage.value =
+      "La copia se descargó. El archivo indica claramente qué datos incluye y excluye.";
+  } catch (error) {
+    showAccountError(error, "No pudimos preparar la copia de tus datos.");
+  } finally {
+    exportingData.value = false;
+  }
+}
+
+function openDeletionRequest() {
+  deletionConfirmation.value = "";
+  accountMessage.value = "";
+  deletionDialog.value = true;
+}
+
+async function submitDeletionRequest() {
+  if (
+    deletionConfirmation.value !== "ELIMINAR MI CUENTA" ||
+    requestingDeletion.value
+  ) {
+    return;
+  }
+  requestingDeletion.value = true;
+  try {
+    const result = await requestAccountDeletion(deletionConfirmation.value);
+    deletionDialog.value = false;
+    accountMessageColor.value = "warning";
+    accountMessage.value =
+      result.status === "pending_policy"
+        ? "Solicitud registrada. Está pendiente de definir la política de retención y anonimización."
+        : "Tu solicitud ya se encuentra en revisión.";
+  } catch (error) {
+    showAccountError(error, "No pudimos registrar la solicitud.");
+  } finally {
+    requestingDeletion.value = false;
+  }
+}
+
+function showSuccess(title, message) {
+  window.dispatchEvent(new CustomEvent("ui-success", { detail: { title, message } }));
+}
+
+function showAccountError(error, fallback) {
+  accountMessageColor.value = "error";
+  accountMessage.value = error?.message || fallback;
+}
+
+function authErrorMessage(error) {
+  const messages = {
+    "auth/wrong-password": "La contraseña actual no es correcta.",
+    "auth/invalid-credential": "No pudimos validar tus credenciales.",
+    "auth/email-already-in-use": "Ese correo ya pertenece a otra cuenta.",
+    "auth/invalid-email": "Ingresa un correo válido.",
+    "auth/requires-recent-login": "Vuelve a iniciar sesión e inténtalo nuevamente.",
+    "auth/popup-closed-by-user": "La autenticación se cerró antes de terminar.",
+  };
+  return messages[error?.code] || error?.message || "No pudimos cambiar el correo.";
 }
 
 async function logout() {

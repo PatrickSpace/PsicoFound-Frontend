@@ -6,6 +6,7 @@ const {
 async function getRecentHistory(messagesRef, sessionId) {
   const snapshot = await messagesRef
       .orderBy("createdAt", "desc")
+      .where("sessionId", "==", sessionId)
       .limit(CHAT_HISTORY_FETCH_LIMIT)
       .get();
 

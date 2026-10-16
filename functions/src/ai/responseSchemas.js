@@ -2,6 +2,7 @@ function buildProfileChatResponseSchema() {
   return {
     type: "OBJECT",
     properties: {
+      confirmSoloConversar: {type: "BOOLEAN"},
       reply: {type: "STRING"},
       suggestedOptions: {
         type: "ARRAY",

@@ -12,15 +12,17 @@ const getRecommendedTherapistsCallable = httpsCallable(
   "getRecommendedTherapists"
 );
 
-export async function getRecommendedTherapists() {
+export async function getRecommendedTherapists({ requiredCriteria = [] } = {}) {
   try {
-    const result = await getRecommendedTherapistsCallable();
+    const result = await getRecommendedTherapistsCallable({ requiredCriteria });
     return {
       therapists: Array.isArray(result.data?.therapists)
         ? result.data.therapists
         : [],
       profile: result.data?.profile || null,
       criteria: result.data?.criteria || null,
+      requiredCriteria: result.data?.requiredCriteria || [],
+      outcome: result.data?.outcome || "no_matches",
     };
   } catch (error) {
     const readableError = new Error(

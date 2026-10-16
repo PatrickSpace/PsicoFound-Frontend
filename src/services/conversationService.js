@@ -5,6 +5,10 @@ import {
   onSnapshot,
   orderBy,
   query,
+  where,
+  limit,
+  getDocs,
+  startAfter,
 } from "firebase/firestore";
 import { app } from "@/plugins/Firebase/firebase";
 import { db } from "@/plugins/Firebase/firestore";
@@ -20,19 +24,32 @@ const resetProfileChatConversationCallable = httpsCallable(
   functions,
   "resetProfileChatConversation"
 );
+const updateProfilePreferencesCallable = httpsCallable(
+  functions,
+  "updateProfilePreferences"
+);
 
-export async function sendProfileChatMessage(message) {
+export async function sendProfileChatMessage(message, requestId, context = {}) {
   try {
-    const result = await sendProfileChatMessageCallable({ message });
+    const result = await sendProfileChatMessageCallable({ message, requestId, ...context });
     return result.data;
   } catch (error) {
     throw createProfileChatError(error);
   }
 }
 
-export async function resetProfileChatConversation() {
+export async function updateProfilePreferences(profile, context = {}) {
   try {
-    const result = await resetProfileChatConversationCallable();
+    const result = await updateProfilePreferencesCallable({ profile, ...context });
+    return result.data;
+  } catch (error) {
+    throw createProfileChatError(error);
+  }
+}
+
+export async function resetProfileChatConversation(requestId) {
+  try {
+    const result = await resetProfileChatConversationCallable({ requestId });
     return result.data;
   } catch (error) {
     throw createProfileChatError(error);
@@ -77,7 +94,7 @@ export function watchConversationMessages(uid, activeSessionId, onData, onError)
   }
 
   const messagesRef = collection(db, "conversations", uid, "messages");
-  const messagesQuery = query(messagesRef, orderBy("createdAt", "asc"));
+  const messagesQuery = query(messagesRef, where("sessionId", "==", activeSessionId), orderBy("createdAt", "desc"), limit(100));
 
   return onSnapshot(
     messagesQuery,
@@ -88,11 +105,20 @@ export function watchConversationMessages(uid, activeSessionId, onData, onError)
             id: item.id,
             ...item.data(),
           }))
-          .filter((item) => item.sessionId === activeSessionId)
+          .filter((item) => item.sessionId === activeSessionId).reverse(),
+        {cursor: snapshot.docs.at(-1) || null, hasMore: snapshot.size === 100}
       );
     },
     onError
   );
+}
+
+export async function loadEarlierConversationMessages(uid, sessionId, cursor) {
+  if (!uid || !sessionId || !cursor) return {items: [], cursor: null, hasMore: false};
+  const snapshot = await getDocs(query(collection(db, "conversations", uid, "messages"),
+    where("sessionId", "==", sessionId), orderBy("createdAt", "desc"), startAfter(cursor), limit(100)));
+  return {items: snapshot.docs.map(item => ({id: item.id, ...item.data()})).reverse(),
+    cursor: snapshot.docs.at(-1) || null, hasMore: snapshot.size === 100};
 }
 
 function createProfileChatError(error) {
@@ -121,7 +147,7 @@ function getProfileChatErrorMessage(error, normalizedCode) {
     "functions/internal":
       serverMessage && !serverMessage.includes("internal")
         ? `La IA no pudo procesar el mensaje: ${serverMessage}`
-        : "La IA respondió con un error interno. Revisa los logs de Firebase Functions para ver el detalle técnico.",
+        : "No pudimos procesar el mensaje en este momento. Inténtalo nuevamente.",
   };
 
   return (
