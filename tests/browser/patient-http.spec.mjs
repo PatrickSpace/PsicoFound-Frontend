@@ -468,3 +468,19 @@ test('email verification: failed delivery keeps the account recoverable and does
  await expect(page.getByRole('button',{name:'Reenviar enlace',exact:true})).toBeDisabled();
  const user=await adminAuth.getAuth(app).getUserByEmail(email);expect(user.emailVerified).toBe(false);expect((await db.doc(`users/${user.uid}`).get()).exists).toBe(true);
 });
+
+test('email verification: interrupted screen download recovers without repeating registration', async({page},info)=>{
+ const email=`chunk-recovery-${info.project.name}-${Date.now()}@example.test`;
+ let interrupted=false;
+ await page.route('**/src/views/Auth/VerifyEmailView.vue',async route=>{
+  if(!interrupted){interrupted=true;return route.abort('failed');}
+  return route.continue();
+ });
+ await signup(page,email);
+ await expect(page.getByRole('heading',{name:'Verifica tu correo'})).toBeVisible();
+ expect(interrupted).toBe(true);
+ await expect(page).toHaveURL(/\/verificar-correo/);
+ const user=await adminAuth.getAuth(app).getUserByEmail(email);
+ expect((await db.doc(`users/${user.uid}`).get()).exists).toBe(true);
+ expect((await db.collection(`users/${user.uid}/consents`).get()).size).toBe(1);
+});

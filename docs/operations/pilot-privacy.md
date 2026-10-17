@@ -236,3 +236,14 @@ Validación: 38 pruebas unitarias totales y 14 pruebas de registro/verificación
 navegador (escritorio y móvil) con emuladores demo y sin salida de red externa.
 La recepción efectiva en un buzón real debe comprobarse en el registro del usuario;
 los emuladores no envían correo real.
+
+### Recuperación de pantallas después de un despliegue
+
+Hosting de Firebase y Vercel exigen revalidar las respuestas (`Cache-Control:
+no-cache, max-age=0, must-revalidate`) para evitar HTML con referencias a módulos
+retirados. Si una pestaña abierta intenta importar una pantalla de la versión
+anterior, el router recarga el destino con una URL que evita la caché anterior.
+El intento queda limitado a uno por minuto en la sesión; si el almacenamiento
+está bloqueado no se recarga automáticamente. Los errores de autenticación o
+permisos no provocan esta recuperación. La sesión de Firebase y el perfil creado
+se conservan: no se repite el alta ni la aceptación legal.

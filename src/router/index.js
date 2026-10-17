@@ -1,5 +1,6 @@
 import { createRouter, createWebHistory } from "vue-router";
 import { onAuthStateChanged } from "firebase/auth";
+import { installChunkRecovery } from "@/utils/chunkRecovery";
 const InicioencuestaView = () => import("@/views/encuesta/InicioEncuestaView.vue");
 const EncuestaView = () => import("@/views/encuesta/EncuestaView.vue");
 const PsicologosView = () => import("@/views/PsicologosView.vue");
@@ -305,6 +306,8 @@ router.beforeEach(async (to) => {
     }
   }
 });
+
+installChunkRecovery(router, window);
 
 export default router;
 
