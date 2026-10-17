@@ -2,6 +2,7 @@
 import { connectAuthEmulator, getAuth } from "firebase/auth";
 import { initializeAppCheck, ReCaptchaEnterpriseProvider } from "firebase/app-check";
 import { initializeApp } from "firebase/app";
+import { appCheckSiteKey } from "@/config/appCheck";
 import { connectFunctionsEmulator, getFunctions } from "firebase/functions";
 
 // Carga desde .env (Vite requiere prefijo VITE_)
@@ -33,9 +34,9 @@ if (useEmulators) {
 
 // Missing site keys leave help/navigation available; protected calls fail closed.
 // Debug tokens are intentionally not supported in production bundles.
-if (!useEmulators && import.meta.env.VITE_APP_CHECK_SITE_KEY) {
+if (!useEmulators && appCheckSiteKey) {
   initializeAppCheck(app, {
-    provider: new ReCaptchaEnterpriseProvider(import.meta.env.VITE_APP_CHECK_SITE_KEY),
+    provider: new ReCaptchaEnterpriseProvider(appCheckSiteKey),
     isTokenAutoRefreshEnabled: true,
   });
 }

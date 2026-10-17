@@ -31,6 +31,43 @@ lockfiles, reglas e índices que acompaña el informe para evitar validar otro a
 | Alertas/guardia | Staging, Monitoring/Billing | Activar notificaciones y probar incidente sintético autorizado, registrar recepción y acuse | Por asignar |
 | Backup/restore | Proyecto aislado de restauración | Política aprobada, permisos y cifrado; restaurar copia autorizada, comparar conteos/referencias, probar acceso sin exponer datos | Por asignar |
 
+## App Check web y control de consumo
+
+Configuración de producción 2026-10-17, proyecto `psicosaas-3c819`:
+
+- Aplicación web PsicoSaaS registrada con reCAPTCHA Enterprise, tipo `SCORE`.
+- Dominios permitidos: `app.lurems.lat`, `psico-found-frontend.vercel.app` y
+  `luremsapp.web.app`. No se autoriza `localhost` ni todos los dominios.
+- TTL `3600s` (una hora); renovación automática del SDK, sin refresco forzado por
+  cada operación. La renovación puede ocurrir antes del vencimiento del token.
+- Cuota `recaptchaenterprise.googleapis.com/CreateAssessmentRequests`, unidad
+  `1/d/{project}`, reducida desde ilimitada a **250 evaluaciones al día**.
+  Máximo teórico de este proyecto en un mes de 31 días: 7.750 evaluaciones. Al agotar
+  la cuota, las nuevas evaluaciones se rechazan; no se desactiva App Check para
+  permitirlas. Tokens todavía válidos pueden seguir utilizándose.
+- La clave de sitio es pública y está incluida en `src/config/appCheck.js`, con
+  fallback exclusivo para este proyecto. `VITE_APP_CHECK_SITE_KEY` permite una
+  configuración explícita distinta. Esto permite que Firebase Hosting y Vercel
+  reciban la misma configuración por Git sin copiar credenciales secretas.
+- Las callables mantienen la exigencia de App Check en producción. No se cambia
+  aquí enforcement de Firestore, Authentication u otros servicios.
+
+El proyecto ya tenía facturación habilitada antes de esta configuración. El nivel
+Premium de reCAPTCHA se aplica a proyectos con facturación; no es posible afirmar
+que el cupo gratuito sea un tope de gasto. Las primeras 10.000 evaluaciones gratuitas
+se comparten entre proyectos y sitios de la organización: el límite de este proyecto
+reduce su consumo, pero no garantiza coste cero si hay consumo en otros proyectos.
+No desactivar la facturación general: afectaría a los servicios desplegados.
+
+Una alerta de presupuesto no detiene cobros. No se han creado destinatarios ni
+alertas nuevas en esta tarea. Revisar consumo y facturación en Google Cloud y
+probar una sesión real antes de ampliar las cuotas. Los emuladores siguen usando
+exclusivamente los proyectos demo y no consumen reCAPTCHA.
+
+Referencias: [App Check web](https://firebase.google.com/docs/app-check/web/recaptcha-enterprise-provider),
+[facturación](https://docs.cloud.google.com/recaptcha/docs/billing-information),
+[cuotas](https://docs.cloud.google.com/recaptcha/quotas).
+
 ## Despliegue coordinado (solo después de autorización)
 
 Comprobación local 2026-10-11: `firebase.json` fija `hosting.site: luremsapp`.
