@@ -21,6 +21,7 @@ test-results/
 .env
 .env.*
 !.env.example
+!functions/.env.psicosaas-3c819
 .vercel
 .firebase/
 .agents/

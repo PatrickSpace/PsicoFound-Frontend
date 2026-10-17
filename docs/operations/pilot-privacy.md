@@ -53,7 +53,11 @@ en emuladores demo con datos sintéticos y sin salida de red externa.
 `ELIGIBILITY_POLICY_JSON` no tiene valor por defecto. Requiere versión, edad mínima,
 base `declared_birth_date`, zona `America/Lima`, estado `approved` y referencia de la
 aprobación. El soporte de Gemini impide configurar menores de 18; eso no aprueba
-el piloto 18+. Estado `synthetic` solo es válido en Functions Emulator con proyecto
+el piloto 18+. El 2026-10-17 el responsable del proyecto aprobó explícitamente
+el acceso a partir de 18 años en esta conversación. La configuración pública
+versionada `functions/.env.psicosaas-3c819` establece la política `2026-10-v1`
+para el proyecto de producción; no contiene secretos. No constituye una
+verificación documental de identidad. Estado `synthetic` solo es válido en Functions Emulator con proyecto
 `demo-*`. La fecha declarada no constituye verificación documental.
 
 `LEGAL_DOCUMENT_VERSION`, `LEGAL_TERMS_URL`, `LEGAL_PRIVACY_URL`, si se utiliza

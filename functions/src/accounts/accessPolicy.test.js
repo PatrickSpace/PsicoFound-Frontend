@@ -48,3 +48,17 @@ test("legal configuration rejects missing and placeholder production URLs", () =
   assert.equal(legalPolicy({}), null);
   assert.equal(legalPolicy({LEGAL_DOCUMENT_VERSION: "v1", LEGAL_TERMS_URL: legal.termsUrl, LEGAL_PRIVACY_URL: legal.privacyUrl}), null);
 });
+
+test("approved production deployment policy accepts adults and rejects under-eighteens", () => {
+  const fs = require("node:fs");
+  const path = require("node:path");
+  const dotenv = fs.readFileSync(path.join(__dirname, "../../.env.psicosaas-3c819"), "utf8");
+  const raw = dotenv.match(/^ELIGIBILITY_POLICY_JSON='(.+)'$/m)[1];
+  const policy = eligibilityPolicy({ELIGIBILITY_POLICY_JSON: raw, GCLOUD_PROJECT: "psicosaas-3c819"});
+  assert.equal(policy.minimumAge, 18);
+  assert.equal(policy.version, "2026-10-v1");
+  assertEligible("2000-04-30", "2026-10-17", policy);
+  assertEligible("2008-10-17", "2026-10-17", policy);
+  assert.throws(() => assertEligible("2008-10-18", "2026-10-17", policy),
+      (error) => error.details.reason === "eligibility_required");
+});

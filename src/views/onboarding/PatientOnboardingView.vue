@@ -86,6 +86,7 @@ import {
 import { getUserById } from "@/services/userService";
 import { getAccountAccessStatus } from "@/services/accountService";
 import { ageOnDate } from "@/utils/accountPolicy";
+import { agendaDate } from "@/utils/dateTime";
 
 const router = useRouter();
 const appContext = useAppContextStore();
@@ -95,7 +96,7 @@ let generation = 0;
 const eligibility = ref(null);
 const saving = ref(false);
 const errorMessage = ref("");
-const today = new Date().toISOString().slice(0, 10);
+const today = agendaDate(new Date());
 const form = reactive({
   nombre: "",
   fechaNacimiento: "",
@@ -107,7 +108,13 @@ const form = reactive({
 
 const rules = {
   required: (value) => Boolean(value?.toString().trim()) || "Requerido",
-  adult: (value) => (eligibility.value && ageOnDate(value) !== null && ageOnDate(value) >= eligibility.value.minimumAge) || "Revisa los requisitos de elegibilidad vigentes.",
+  adult: (value) => {
+    const age = ageOnDate(value);
+    if (age === null) return "Ingresa una fecha de nacimiento válida.";
+    if (!eligibility.value) return true;
+    return age >= eligibility.value.minimumAge ||
+      `Debes tener ${eligibility.value.minimumAge} años o más para continuar.`;
+  },
 };
 
 const stopAuth = onAuthStateChanged(auth, async (user) => {

@@ -89,8 +89,9 @@ como incidencias abiertas sin verificarlos.
 
 ## Decisiones externas (no aprobadas)
 
-- Elegibilidad: propuesta de piloto 18+ pendiente. Con política ausente, los recorridos
-  afectados quedan cerrados; no habilitar menores por omisión.
+- Elegibilidad: acceso 18+ aprobado por el responsable el 2026-10-17; política
+  `2026-10-v1` en `functions/.env.psicosaas-3c819`. Se calcula la edad declarada
+  en hora de Lima y se rechaza a menores en el servidor.
 - Legal: URLs/documentos/versiones y regla de reaceptación. La configuración sintética no es publicable.
 - Privacidad: acción y retención por categoría, expedientes compartidos, obligaciones y autoridad ejecutora.
 - IA: proveedor/plan/retención/uso permitido, revisión clínica del protocolo y fuentes de ayuda.

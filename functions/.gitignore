@@ -3,5 +3,6 @@ node_modules/
 .env
 .env.*
 !.env.example
+!.env.psicosaas-3c819
 firebase-debug.log
 firebase-debug.*.log

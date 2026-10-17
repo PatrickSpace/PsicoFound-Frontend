@@ -212,7 +212,11 @@ test("patient: registration, verified email, onboarding and password recovery", 
   await page.getByRole("button", { name:"Ya verifiqué mi correo" }).click();
   await expect(page.getByRole("textbox", { name:"Nombre completo" })).toBeVisible();
   await page.getByRole("textbox", { name:"Nombre completo" }).fill("Paciente registrado en revisión");
-  await page.getByRole("textbox", { name:"Fecha de nacimiento" }).fill("1990-05-10");
+  await page.getByRole("textbox", { name:"Fecha de nacimiento" }).fill("2015-04-30");
+  await page.getByRole("textbox", { name:"Nombre completo" }).click();
+  await expect(page.getByText("Debes tener 18 años o más para continuar.", {exact:true})).toBeVisible();
+  await expect(page.getByRole("button", { name:"Continuar", exact:true })).toBeDisabled();
+  await page.getByRole("textbox", { name:"Fecha de nacimiento" }).fill("2000-04-30");
   await page.getByRole("button", { name:"Continuar", exact:true }).click();
   await expect(page).toHaveURL(/\/encuesta/);
   expect((await db.doc(`users/${user.uid}`).get()).data().onboardingStatus).toBe("complete");
