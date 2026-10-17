@@ -8,13 +8,7 @@
       <v-alert v-else-if="error" type="error" variant="tonal">{{ error }}</v-alert>
       <template v-else>
         <p class="legal-meta">Versión {{ version }} <span v-if="publishedAt">· Publicada el {{ publishedAt }}</span></p>
-        <aside v-if="isDraft" class="legal-notice">
-          <strong>Primera versión para revisión. Aún no vigente.</strong>
-          <p>Falta completar la identidad y contacto del titular, el canal de reclamaciones,
-            las condiciones comerciales y la política de privacidad. Consultar este
-            borrador no equivale a aceptar un contrato.</p>
-        </aside>
-        <aside v-else-if="version !== legalConfig.version" class="legal-notice">
+        <aside v-if="version !== legalConfig.version" class="legal-notice">
           Versión histórica. <router-link :to="route.path">Consultar versión vigente</router-link>.
         </aside>
         <div class="legal-text">{{ text }}</div>
@@ -32,25 +26,22 @@ import { useRoute } from "vue-router";
 import { doc, getDoc } from "firebase/firestore";
 import { db } from "@/plugins/Firebase/firestore";
 import MainLogo from "@/components/Common/MainLogo.vue";
-import { initialTermsText } from "@/config/legalDraft";
 import { legalConfig } from "@/config/legal";
 const route = useRoute();
 const kind = computed(() => route.meta.legalKind);
 const title = computed(() => kind.value === "terms" ? "Términos de uso" : "Política de privacidad");
-const loading = ref(true), error = ref(""), text = ref(""), version = ref(""), publishedAt = ref(""), isDraft = ref(false);
+const loading = ref(true), error = ref(""), text = ref(""), version = ref(""), publishedAt = ref("");
 let generation = 0;
 watch(() => [kind.value, route.query.version, legalConfig.version, legalConfig.managed, legalConfig.loading, legalConfig.error], async () => {
   const token = ++generation;
-  loading.value = true; error.value = ""; text.value = ""; isDraft.value = false; publishedAt.value = "";
+  loading.value = true; error.value = ""; text.value = ""; publishedAt.value = "";
   const explicitVersion = route.query.version;
   if (!explicitVersion && legalConfig.loading) return;
   const selected = explicitVersion || (legalConfig.managed ? legalConfig.version : "");
   if (!selected) {
     loading.value = false;
     if (legalConfig.error) { error.value = legalConfig.error; return; }
-    if (kind.value === "terms") {
-      text.value = initialTermsText; version.value = "2026-10-17-borrador-1"; isDraft.value = true;
-    } else error.value = "La política de privacidad aún no ha sido publicada.";
+    error.value = "Los documentos legales todavía no están disponibles. Intenta nuevamente más tarde.";
     return;
   }
   if (typeof selected !== "string" || !/^[A-Za-z0-9_.-]{1,80}$/.test(selected)) {

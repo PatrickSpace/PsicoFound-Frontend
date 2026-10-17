@@ -105,7 +105,7 @@ import LayoutDefault from "@/components/Layout/Layoutmain.vue";
 import { useAdminWorkspace } from "@/composables/useAdminWorkspace";
 import { adminCall, adminDate, watchAdminCollection } from "@/services/adminService";
 import { legalConfig } from "@/config/legal";
-import { initialTermsText } from "@/config/legalDraft";
+import { initialLegalVersion } from "@/config/legalInitialVersion";
 const drafts = ref([]), releases = ref([]), loading = ref(true), error = ref(""), success = ref("");
 const saving = ref(false), publishing = ref(false), publishDialog = ref(false), discardDialog = ref(false);
 const approvalReference = ref(""), confirmReviewed = ref(false), publishError = ref(""), editorTab = ref("terms");
@@ -139,7 +139,7 @@ function changeSelection(value) {
 function applySelection(value) { Object.assign(form, value); original.value = value.revision ? serialize() : ""; editorTab.value = "terms"; error.value = ""; success.value = ""; }
 function discard() { discardDialog.value = false; if(pendingSelection) applySelection(pendingSelection); pendingSelection = null; }
 function newDraft(source) {
-  changeSelection({id:crypto.randomUUID(), version:"", termsText:source?.termsText || initialTermsText, privacyText:source?.privacyText || "", revision:0,publishedVersion:""});
+  changeSelection({id:crypto.randomUUID(), version:"", termsText:source?.termsText || initialLegalVersion.termsText, privacyText:source?.privacyText || initialLegalVersion.privacyText, revision:0,publishedVersion:""});
 }
 function selectDraft(draft) { changeSelection({...draft, publishedVersion:draft.publishedVersion || ""}); }
 async function save() {

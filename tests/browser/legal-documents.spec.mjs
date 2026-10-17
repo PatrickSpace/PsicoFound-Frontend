@@ -40,7 +40,7 @@ test('legal admin publishes both documents, creates a new version, and public hi
 });
 test('legal admin draft is private, recoverable after reload, and unavailable to patients',async({page})=>{
  await login(page);await page.getByRole('button',{name:'Nuevo borrador',exact:true}).click();
- await page.getByRole('textbox',{name:'Identificador de versión'}).fill('incomplete');await page.getByRole('button',{name:'Guardar borrador',exact:true}).click();await expect(page.getByText('Borrador guardado. Todavía no es público.')).toBeVisible();await expect(page.getByRole('button',{name:'Publicar versión',exact:true})).toBeDisabled();
+ await page.getByRole('textbox',{name:'Identificador de versión'}).fill('incomplete');await page.getByRole('tab',{name:'Privacidad',exact:true}).click();await page.getByRole('textbox',{name:'Contenido de política de privacidad'}).fill('');await page.getByRole('button',{name:'Guardar borrador',exact:true}).click();await expect(page.getByText('Borrador guardado. Todavía no es público.')).toBeVisible();await expect(page.getByRole('button',{name:'Publicar versión',exact:true})).toBeDisabled();
  await page.reload();await page.getByRole('button',{name:'Editar borrador'}).click();await expect(page.getByRole('textbox',{name:'Identificador de versión'})).toHaveValue('incomplete');
  await page.goto('/terminos?version=incomplete');await expect(page.getByRole('alert')).toContainText('No pudimos cargar esta versión');
  await page.goto('/');await page.evaluate(async()=>{const {auth}=await import(['/src/plugins/Firebase/firebase.js'][0]);const {signOut}=await import(['/node_modules/.vite/deps/firebase_auth.js'][0]);await signOut(auth);});

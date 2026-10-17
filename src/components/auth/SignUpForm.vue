@@ -43,7 +43,7 @@
             @click.stop
           >términos de uso</a>
           <router-link v-else to="/terminos" target="_blank" @click.stop>
-            términos de uso (borrador)
+            términos de uso
           </router-link>
           y la
           <a

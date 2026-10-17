@@ -7,8 +7,8 @@ Trabajo local 2026-10-09, America/Lima. Configuración real no aprobada ni despl
 Actualización 2026-10-17: Administración → Documentos legales
 (`/admin/documentos-legales`) permite crear/editar borradores de términos y
 privacidad, previsualizarlos y publicar ambos bajo una versión única con vigencia
-inmediata. El borrador inicial de términos está disponible como base; la política
-de privacidad no se rellena ni publica automáticamente. La publicación requiere
+inmediata. Los textos iniciales de términos y privacidad de la versión `2026-10-v1` están
+disponibles como base para crear nuevas versiones. La publicación requiere
 contenido en ambos documentos, confirmación de revisión y referencia de aprobación.
 No constituye una comprobación jurídica automática.
 
@@ -33,10 +33,10 @@ sin necesidad de reconstruir el sitio por cada actualización de texto. El verif
 estático `verify:pilot-config` sigue comprobando el modo de variables de entorno;
 no acredita por sí mismo una publicación administrada en Firestore.
 
-El contenido inicial `2026-10-17-borrador-1` no tiene vigencia ni habilita el
-registro. Faltan identidad/contacto del titular, canal público de atención y
-reclamaciones, definición de responsabilidades, condiciones comerciales y política
-de privacidad. Completar y revisar antes de publicarlo. Guardar un borrador puede
+La versión inicial `2026-10-v1` incorpora los datos indicados por el responsable:
+Lurems, Av. Javier Prado Este 1095 y jplosta01@gmail.com. Su publicación inicial
+está autorizada por la solicitud del usuario del 2026-10-17. No habilita por sí
+misma App Check, elegibilidad, IA, pagos ni ejecución de eliminación. Guardar un borrador puede
 hacerse por partes; publicar exige ambos textos completos. Los cambios de texto
 usan otra versión: no hay borrado ni edición de versiones publicadas.
 
