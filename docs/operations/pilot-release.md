@@ -35,6 +35,11 @@ lockfiles, reglas e índices que acompaña el informe para evitar validar otro a
 
 Configuración de producción 2026-10-17, proyecto `psicosaas-3c819`:
 
+- APIs `firebaseappcheck.googleapis.com` y `recaptchaenterprise.googleapis.com`
+  habilitadas explícitamente. Consultar la configuración administrativa no prueba
+  que la API de intercambio de tokens esté habilitada para el navegador.
+- Cuenta de servicio de App Check con el rol específico
+  `roles/firebaseappcheck.serviceAgent`; no se conceden privilegios generales.
 - Aplicación web PsicoSaaS registrada con reCAPTCHA Enterprise, tipo `SCORE`.
 - Dominios permitidos: `app.lurems.lat`, `psico-found-frontend.vercel.app` y
   `luremsapp.web.app`. No se autoriza `localhost` ni todos los dominios.
@@ -176,3 +181,13 @@ con el mismo artefacto; verificar ambos dominios y restaurar mantenimiento.
 Se incorporaron al archivo de índices los índices remotos anteriores que no estaban
 en el árbol local, para preservarlos durante el despliegue sin usar `--force` ni
 autorizar borrados de índices ajenos a esta entrega.
+
+### Recuperación tras un registro interrumpido
+
+Un rechazo de App Check puede ocurrir después de crear la identidad de Auth y antes
+ de finalizar el perfil. La entrada de onboarding detecta ese caso, muestra los
+ documentos vigentes y requiere aceptación explícita antes de reintentar
+ `finalizeRegistration`. El login mantiene la identidad existente y conduce a esa
+ recuperación; no exige crear otra cuenta ni acepta documentos por omisión.
+ Prueba: `incomplete account resumes registration` en
+ `tests/browser/patient-http.spec.mjs`, escritorio y móvil con datos demo.

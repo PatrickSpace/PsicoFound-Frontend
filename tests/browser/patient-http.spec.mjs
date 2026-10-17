@@ -393,3 +393,40 @@ test("professional rejects a confirmed appointment and patient sees the reason a
   await expect(page.getByRole("dialog").getByRole("button", {name: "10:00 · hora de Lima", exact: true})).toHaveCount(0);
   await expect(page.getByRole("dialog").getByRole("button", {name: "14:00 · hora de Lima", exact: true})).toBeVisible();
 });
+
+test("requirement: incomplete account resumes registration after login and reload with explicit consent", async({page},info)=>{
+  const uid=`recover-${info.project.name}-${Date.now()}`;
+  const email=`${uid}@example.test`;
+  await adminAuth.getAuth(app).createUser({uid,email,password,emailVerified:true});
+  await page.goto('/login');
+  await page.getByRole('textbox',{name:'Correo',exact:true}).fill(email);
+  await page.getByRole('textbox',{name:'Contraseña',exact:true}).fill(password);
+  await page.getByRole('button',{name:'Iniciar Sesión',exact:true}).click();
+  await expect(page.getByRole('heading',{name:'Completa tu registro'})).toBeVisible();
+  await expect(page.getByRole('button',{name:'Completar registro',exact:true})).toBeDisabled();
+  expect((await db.doc(`users/${uid}`).get()).exists).toBe(false);
+  await page.reload();
+  await expect(page.getByRole('heading',{name:'Completa tu registro'})).toBeVisible();
+  await page.getByRole('checkbox',{name:'He leído y acepto los términos de uso y la política de privacidad vigentes.'}).check();
+  await page.getByRole('button',{name:'Completar registro',exact:true}).click();
+  await expect(page).toHaveURL(/\/onboarding\/paciente/);
+  const profile=(await db.doc(`users/${uid}`).get()).data();
+  expect(profile.legalAcceptance.version).toBe('review-2026-10-06');
+  expect((await db.collection(`users/${uid}/consents`).get()).size).toBe(1);
+});
+
+test("requirement: incomplete account returns to registration recovery after email verification", async({page},info)=>{
+  const uid=`recover-unverified-${info.project.name}-${Date.now()}`;
+  const email=`${uid}@example.test`;
+  await adminAuth.getAuth(app).createUser({uid,email,password,emailVerified:false});
+  await page.goto('/login?redirect=/iniciarencuesta');
+  await page.getByRole('textbox',{name:'Correo',exact:true}).fill(email);
+  await page.getByRole('textbox',{name:'Contraseña',exact:true}).fill(password);
+  await page.getByRole('button',{name:'Iniciar Sesión',exact:true}).click();
+  await expect(page.getByRole('heading',{name:'Verifica tu correo'})).toBeVisible();
+  await adminAuth.getAuth(app).updateUser(uid,{emailVerified:true});
+  await page.getByRole('button',{name:'Ya verifiqué mi correo'}).click();
+  await expect(page.getByRole('heading',{name:'Completa tu registro'})).toBeVisible();
+  await expect(page.getByRole('button',{name:'Completar registro',exact:true})).toBeDisabled();
+  expect((await db.doc(`users/${uid}`).get()).exists).toBe(false);
+});

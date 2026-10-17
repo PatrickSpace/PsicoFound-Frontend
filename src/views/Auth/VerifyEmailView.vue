@@ -43,6 +43,7 @@ import { sendEmailVerification, signOut } from "firebase/auth";
 import { useRoute, useRouter } from "vue-router";
 import MainLogo from "@/components/Common/MainLogo.vue";
 import { auth } from "@/plugins/Firebase/firebase";
+import { getUserById } from "@/services/userService";
 
 const route = useRoute();
 const router = useRouter();
@@ -58,9 +59,12 @@ async function checkVerification() {
   try {
     await auth.currentUser.reload();
     if (auth.currentUser.emailVerified) {
+      const uid = auth.currentUser.uid;
       await auth.currentUser.getIdToken(true);
+      const profile = await getUserById(uid);
+      if (auth.currentUser?.uid !== uid) return;
       await router.replace(
-        typeof route.query.redirect === "string"
+        profile && typeof route.query.redirect === "string"
           ? route.query.redirect
           : "/onboarding"
       );

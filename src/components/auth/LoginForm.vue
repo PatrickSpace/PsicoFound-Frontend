@@ -111,7 +111,6 @@ import {
   signInWithEmailAndPassword,
   GoogleAuthProvider,
   sendPasswordResetEmail,
-  signOut,
   signInWithPopup,
 } from "firebase/auth";
 import { useRouter } from "vue-router";
@@ -196,11 +195,7 @@ async function routeAfterLogin(user) {
   let profile = await getUserById(user.uid);
 
   if (!profile) {
-    await signOut(auth);
-    messageColor.value = "warning";
-    message.value =
-      "Esta cuenta aún no completó el registro. Revisa los documentos y continúa desde Registrarse.";
-    await router.replace("/registro");
+    await router.replace("/onboarding");
     return;
   }
 
