@@ -4,15 +4,61 @@ Trabajo local 2026-10-09, America/Lima. Configuración real no aprobada ni despl
 
 ## Políticas
 
+Actualización 2026-10-17: Administración → Documentos legales
+(`/admin/documentos-legales`) permite crear/editar borradores de términos y
+privacidad, previsualizarlos y publicar ambos bajo una versión única con vigencia
+inmediata. El borrador inicial de términos está disponible como base; la política
+de privacidad no se rellena ni publica automáticamente. La publicación requiere
+contenido en ambos documentos, confirmación de revisión y referencia de aprobación.
+No constituye una comprobación jurídica automática.
+
+- `legal_drafts/{id}`: lectura solo de administradores; edición mediante
+  `saveLegalDraft`, con revisión esperada para rechazar cambios concurrentes.
+- `legal_releases/{version}`: texto público e inmutable; no incluye UID del
+  administrador ni la referencia privada de aprobación.
+- `legal_settings/current`: versión y enlaces vigentes públicos. La publicación
+  mediante `publishLegalDraft` actualiza versión, archivo histórico, borrador sellado
+  y auditoría en una transacción; exige que la versión vigente no haya cambiado.
+- `/terminos` y `/privacidad`: muestran la versión vigente sin exigir sesión ni
+  correo verificado. `?version=...` conserva el contenido histórico exacto; una
+  versión inexistente no se sustituye silenciosamente por la actual.
+- Registro, aceptación y requisitos de cuenta consultan la publicación vigente.
+  Los enlaces de aceptación incluyen la versión. Publicar otra versión requiere
+  nueva aceptación sin modificar los consentimientos anteriores.
+
+Sin publicación administrada, se conserva la configuración `LEGAL_*`/`VITE_*`
+previa como compatibilidad; deben seguir coincidiendo si se utiliza ese modo.
+Tras la primera publicación, Firestore es la fuente vigente para frontend y backend,
+sin necesidad de reconstruir el sitio por cada actualización de texto. El verificador
+estático `verify:pilot-config` sigue comprobando el modo de variables de entorno;
+no acredita por sí mismo una publicación administrada en Firestore.
+
+El contenido inicial `2026-10-17-borrador-1` no tiene vigencia ni habilita el
+registro. Faltan identidad/contacto del titular, canal público de atención y
+reclamaciones, definición de responsabilidades, condiciones comerciales y política
+de privacidad. Completar y revisar antes de publicarlo. Guardar un borrador puede
+hacerse por partes; publicar exige ambos textos completos. Los cambios de texto
+usan otra versión: no hay borrado ni edición de versiones publicadas.
+
+La atribución privada de los borradores (`updatedBy`/`publishedBy`) se incorpora
+al inventario de eliminación como `administrative_shared/legal_drafts`; requiere
+una decisión explícita de retención en la política real. La auditoría existente
+conserva autor, versión, fecha y referencia de publicación.
+
+Validación reproducible local: `npm run test:legal`
+(con Java 21 disponible). Ejecuta permisos/reglas, concurrencia, idempotencia,
+registro/consentimiento y pruebas de navegador en escritorio y móvil, exclusivamente
+en emuladores demo con datos sintéticos y sin salida de red externa.
+
 `ELIGIBILITY_POLICY_JSON` no tiene valor por defecto. Requiere versión, edad mínima,
 base `declared_birth_date`, zona `America/Lima`, estado `approved` y referencia de la
 aprobación. El soporte de Gemini impide configurar menores de 18; eso no aprueba
 el piloto 18+. Estado `synthetic` solo es válido en Functions Emulator con proyecto
 `demo-*`. La fecha declarada no constituye verificación documental.
 
-`LEGAL_DOCUMENT_VERSION`, `LEGAL_TERMS_URL`, `LEGAL_PRIVACY_URL` deben corresponder
-a documentos aprobados. No se incluyen textos legales ni URLs de producción de
-muestra. El consentimiento se conserva en el perfil y en `users/{uid}/consents`;
+`LEGAL_DOCUMENT_VERSION`, `LEGAL_TERMS_URL`, `LEGAL_PRIVACY_URL`, si se utiliza
+el modo anterior de variables, deben corresponder a documentos aprobados.
+La versión administrada se publica desde la nueva pantalla. El consentimiento se conserva en el perfil y en `users/{uid}/consents`;
 una cuenta antigua necesita aceptar la versión vigente antes de usar encuesta y
 recomendaciones. Cada cambio de documento requiere otra versión.
 

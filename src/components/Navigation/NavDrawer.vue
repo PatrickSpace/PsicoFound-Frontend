@@ -168,6 +168,7 @@ const navigationByMode = {
   admin: [
     adminRequestsItem,
     adminUsersItem,
+    { name: "Documentos legales", icon: "mdi-file-document-edit-outline", link: "/admin/documentos-legales" },
     { name: "Cobros y tarifas", icon: "mdi-cash-multiple", link: "/admin/cobros" },
     { name: "Conciliación", icon: "mdi-receipt-text-check", link: "/admin/conciliacion" },
     { name: "Soporte", icon: "mdi-message-alert-outline", link: "/admin/soporte" },

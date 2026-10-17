@@ -220,3 +220,13 @@ exports.updateProfessionalByAdmin = onCall(updateProfessionalByAdmin);
 exports.getAdministrativeAccountRequests =
   onCall(getAdministrativeAccountRequests);
 exports.getPaymentOperationContext = onCall(getPaymentOperationContext);
+
+const {
+  saveLegalDraft, publishLegalDraft,
+} = require("./src/accounts/legalHandlers");
+exports.saveLegalDraft = onCall(
+    {minInstances: 0, timeoutSeconds: 30}, saveLegalDraft,
+);
+exports.publishLegalDraft = onCall(
+    {minInstances: 0, timeoutSeconds: 30}, publishLegalDraft,
+);

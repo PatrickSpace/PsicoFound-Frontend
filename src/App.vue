@@ -46,6 +46,9 @@ import { Analytics } from "@vercel/analytics/vue";
 import { useAppTheme } from "@/composables/useAppTheme";
 import { useAppContextStore } from "@/store/appContext";
 
+import { watchPublishedLegalDocuments } from "@/config/legal";
+let stopLegalDocuments;
+
 const { initializeAppTheme } = useAppTheme();
 const appContext = useAppContextStore();
 const analyticsEnabled = import.meta.env.VITE_VERCEL_ANALYTICS_ENABLED === "true";
@@ -84,10 +87,12 @@ const onUiSuccess = (e) => {
 };
 
 onMounted(() => {
+  stopLegalDocuments = watchPublishedLegalDocuments();
   window.addEventListener("api-error", onApiError);
   window.addEventListener("ui-success", onUiSuccess);
 });
 onBeforeUnmount(() => {
+  stopLegalDocuments?.();
   window.removeEventListener("api-error", onApiError);
   window.removeEventListener("ui-success", onUiSuccess);
 });

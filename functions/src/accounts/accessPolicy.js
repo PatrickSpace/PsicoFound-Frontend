@@ -44,6 +44,15 @@ function legalPolicy(env = process.env) {
   return policy;
 }
 
+async function readLegalPolicy(transaction, db = firestoreAdmin.getFirestore()) {
+  const ref = db.doc("legal_settings/current");
+  const snapshot = await (transaction ? transaction.get(ref) : ref.get());
+  if (!snapshot.exists) return legalPolicy();
+  const value = snapshot.data();
+  return legalPolicy({LEGAL_DOCUMENT_VERSION: value.version,
+    LEGAL_TERMS_URL: value.termsUrl, LEGAL_PRIVACY_URL: value.privacyUrl});
+}
+
 function ageOnDate(birthDate, today = agendaDate(new Date())) {
   if (typeof birthDate !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(birthDate)) return null;
   const parsed = new Date(`${birthDate}T00:00:00Z`);
@@ -93,7 +102,7 @@ async function requirePatientAccess(request) {
   if (!request.auth) throw new HttpsError("unauthenticated", "Debes iniciar sesión.");
   const snapshot = await firestoreAdmin.getFirestore().doc(`users/${request.auth.uid}`).get();
   requirePatientRole(snapshot.data());
-  const access = evaluateAccess(snapshot.data(), request.auth);
+  const access = evaluateAccess(snapshot.data(), request.auth, await readLegalPolicy());
   if (!access.allowed) {
     throw new HttpsError("failed-precondition",
         "Revisa los requisitos de tu cuenta antes de continuar. La ayuda sigue disponible.",
@@ -102,5 +111,5 @@ async function requirePatientAccess(request) {
   return snapshot.data();
 }
 
-module.exports = {eligibilityPolicy, legalPolicy, ageOnDate, assertEligible,
+module.exports = {eligibilityPolicy, legalPolicy, readLegalPolicy, ageOnDate, assertEligible,
   hasCurrentConsent, evaluateAccess, requirePatientAccess, requirePatientRole};

@@ -19,6 +19,7 @@
     "verify:pilot-config": "node scripts/verify-pilot-config.mjs",
     "test:payment-deadline": "PAYMENT_DEADLINE_ONLY=true node tests/run-patient-isolated.mjs",
     "test:admin": "ADMIN_ONLY=true node tests/run-patient-isolated.mjs",
+    "test:legal": "LEGAL_VALIDATION=true node tests/run-patient-isolated.mjs",
     "test:admin-browser": "ADMIN_BROWSER_ONLY=true node tests/run-patient-isolated.mjs"
   },
   "dependencies": {

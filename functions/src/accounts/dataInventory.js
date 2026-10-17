@@ -58,7 +58,7 @@ async function inventoryAccount(db, uid) {
   // Operator attribution also belongs in the inventory. These shared records
   // require their own policy; deleting an operator must not erase another
   // person's financial or administrative evidence by implicit ownership.
-  for (const [category, field] of [["admin_audit", "actorUid"], ["payment_audit", "actorUid"], ["professional_transfers", "recordedBy"]]) {
+  for (const [category, field] of [["admin_audit", "actorUid"], ["payment_audit", "actorUid"], ["professional_transfers", "recordedBy"], ["legal_drafts", "updatedBy"], ["legal_drafts", "publishedBy"]]) {
     const docs = await db.collection(category).where(field, "==", uid).get();
     for (const doc of docs.docs) {
       if (!records.has(doc.ref.path)) await include(doc, `administrative_shared/${category}`);

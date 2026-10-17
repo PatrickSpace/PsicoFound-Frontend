@@ -24,6 +24,7 @@
 import { computed, onBeforeUnmount, ref, watch } from "vue";
 import { useAuthStore } from "@/store/auth";
 import { acceptCurrentConsent, getAccountAccessStatus } from "@/services/accountService";
+import { legalConfig } from "@/config/legal";
 const emit = defineEmits(["access"]);
 const authStore = useAuthStore();
 const status = ref(null), error = ref(""), loading = ref(false), accepted = ref(false);
@@ -60,7 +61,7 @@ async function accept() {
     if (current === generation) error.value = "No pudimos registrar tu aceptación. Revisa los requisitos e intenta nuevamente.";
   } finally { if (current === generation) loading.value = false; }
 }
-watch(() => authStore.currentUser?.uid, (uid) => {
+watch(() => [authStore.currentUser?.uid, legalConfig.version], ([uid]) => {
   if (uid) refresh();
   else { generation++; status.value = null; emit("access", false); }
 }, { immediate: true });

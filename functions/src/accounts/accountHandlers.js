@@ -3,7 +3,7 @@ const firestoreAdmin = require("firebase-admin/firestore");
 const authAdmin = require("firebase-admin/auth");
 const {FieldValue} = require("firebase-admin/firestore");
 const {HttpsError} = require("firebase-functions/v2/https");
-const {assertEligible, evaluateAccess, legalPolicy} = require("./accessPolicy");
+const {assertEligible, evaluateAccess, readLegalPolicy} = require("./accessPolicy");
 const {sanitizeLegalAcceptance} = require("../onboarding/registrationHandlers");
 
 function requireAuth(request) {
@@ -166,15 +166,16 @@ async function exportOwnData(request) {
 async function getAccountAccessStatus(request) {
   const auth = requireAuth(request);
   const user = (await firestoreAdmin.getFirestore().doc(`users/${auth.uid}`).get()).data();
-  return evaluateAccess(user, auth);
+  return evaluateAccess(user, auth, await readLegalPolicy());
 }
 
 async function acceptCurrentConsent(request) {
   const auth = requireAuth(request);
-  const acceptance = sanitizeLegalAcceptance(request.data, FieldValue.serverTimestamp());
   const db = firestoreAdmin.getFirestore();
   const userRef = db.doc(`users/${auth.uid}`);
-  await db.runTransaction(async (transaction) => {
+  const result = await db.runTransaction(async (transaction) => {
+    const policy = await readLegalPolicy(transaction, db);
+    const acceptance = sanitizeLegalAcceptance(request.data, FieldValue.serverTimestamp(), policy);
     const user = await transaction.get(userRef);
     if (!user.exists) throw new HttpsError("failed-precondition", "Completa primero el registro.");
     const ref = userRef.collection("consents").doc(acceptance.version);
@@ -185,8 +186,9 @@ async function acceptCurrentConsent(request) {
     const value = prior.exists ? prior.data() : acceptance;
     transaction.update(userRef, {legalAcceptance: value, updatedAt: FieldValue.serverTimestamp()});
     if (!prior.exists) transaction.create(ref, value);
+    return {status: "accepted", version: policy.version};
   });
-  return {status: "accepted", version: legalPolicy().version};
+  return result;
 }
 
 async function syncOwnAuthEmail(request) {

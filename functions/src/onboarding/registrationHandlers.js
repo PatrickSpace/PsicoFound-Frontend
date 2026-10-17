@@ -4,7 +4,7 @@ const {FieldValue} = require("firebase-admin/firestore");
 const {requireAdmin: requireAdminTransaction, audit} = require("../accounts/adminHandlers");
 const logger = require("firebase-functions/logger");
 const {HttpsError} = require("firebase-functions/v2/https");
-const {assertEligible, hasCurrentConsent, legalPolicy} = require("../accounts/accessPolicy");
+const {assertEligible, hasCurrentConsent, legalPolicy, readLegalPolicy} = require("../accounts/accessPolicy");
 
 const PATIENT_ROLE = "patient";
 const PSYCHOLOGIST_ROLE = "psychologist";
@@ -23,6 +23,7 @@ async function finalizeRegistration(request) {
   return db.runTransaction(async (transaction) => {
     const snapshot = await transaction.get(userRef);
     const existing = snapshot.data() || {};
+    const currentLegalPolicy = await readLegalPolicy(transaction, db);
     const roles = normalizeRoles(existing.roles, existing.rol);
     const now = FieldValue.serverTimestamp();
     const displayName = cleanText(
@@ -47,8 +48,8 @@ async function finalizeRegistration(request) {
       updatedAt: now,
     };
 
-    if (!hasCurrentConsent(existing, legalPolicy())) {
-      payload.legalAcceptance = sanitizeLegalAcceptance(data, now);
+    if (!hasCurrentConsent(existing, currentLegalPolicy)) {
+      payload.legalAcceptance = sanitizeLegalAcceptance(data, now, currentLegalPolicy);
     }
 
     if (!snapshot.exists) {
@@ -75,8 +76,7 @@ async function finalizeRegistration(request) {
   });
 }
 
-function sanitizeLegalAcceptance(data = {}, acceptedAt) {
-  const policy = legalPolicy();
+function sanitizeLegalAcceptance(data = {}, acceptedAt, policy = legalPolicy()) {
   if (!policy) {
     throw new HttpsError(
         "failed-precondition",
@@ -107,7 +107,8 @@ async function completePatientOnboarding(request) {
   await db.runTransaction(async (transaction) => {
     const snapshot = await transaction.get(userRef);
     const existing = snapshot.data() || {};
-    if (!hasCurrentConsent(existing, legalPolicy())) {
+    const currentLegalPolicy = await readLegalPolicy(transaction, db);
+    if (!hasCurrentConsent(existing, currentLegalPolicy)) {
       throw new HttpsError("failed-precondition", "Acepta los documentos legales vigentes antes de continuar.");
     }
     const roles = normalizeRoles(existing.roles, existing.rol);

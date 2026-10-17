@@ -48,6 +48,25 @@ const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
     {
+      path: "/privacidad",
+      name: "privacy",
+      component: () => import("@/views/legal/PublicLegalView.vue"),
+      meta: { public: true, legalDocument: true, legalKind: "privacy" },
+    },
+    {
+      path: "/admin/documentos-legales",
+      name: "admin-legal-documents",
+      component: () => import("@/views/admin/LegalDocumentsView.vue"),
+      meta: { modes: ["admin"] },
+    },
+
+    {
+      path: "/terminos",
+      name: "terms",
+      component: () => import("@/views/legal/PublicLegalView.vue"),
+      meta: { public: true, legalDocument: true, legalKind: "terms" },
+    },
+    {
       path: "/",
       name: "home",
       component: HomeView,
@@ -211,6 +230,8 @@ const router = createRouter({
 ]});
 
 router.beforeEach(async (to) => {
+  // Legal documents must remain readable before login or email verification.
+  if (to.meta.legalDocument) return;
   const user = await getCurrentAuthUser();
   const isPublicRoute = Boolean(to.meta.public);
   const isGuestOnlyRoute = Boolean(to.meta.guestOnly);

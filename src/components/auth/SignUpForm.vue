@@ -42,7 +42,9 @@
             rel="noopener noreferrer"
             @click.stop
           >términos de uso</a>
-          <span v-else>términos de uso</span>
+          <router-link v-else to="/terminos" target="_blank" @click.stop>
+            términos de uso (borrador)
+          </router-link>
           y la
           <a
             v-if="hasPublishedLegalDocuments"
@@ -62,8 +64,7 @@
       variant="tonal"
       icon="mdi-file-alert-outline"
     >
-      El registro está temporalmente deshabilitado hasta publicar los enlaces
-      y la versión aprobada de los documentos legales.
+      {{ legalConfig.loading ? "Consultando documentos legales…" : legalConfig.error || "El registro está temporalmente deshabilitado hasta publicar los términos de uso y la política de privacidad." }}
     </v-alert>
 
     <v-btn
@@ -126,7 +127,7 @@
 </template>
 
 <script setup>
-import { computed, reactive, ref } from "vue";
+import { computed, reactive, ref, watch } from "vue";
 import {
   createUserWithEmailAndPassword,
   GoogleAuthProvider,
@@ -153,6 +154,7 @@ const registrationIntent = ref(REGISTRATION_INTENTS.PATIENT);
 const form = reactive({ email: "", password: "" });
 const valid = ref(false);
 const termsAccepted = ref(false);
+watch(() => legalConfig.version, () => { termsAccepted.value = false; });
 const loadingEmail = ref(false);
 const loadingGoogle = ref(false);
 const errorMessage = ref("");
@@ -167,7 +169,7 @@ const canSubmitEmail = computed(
   () =>
     valid.value &&
     termsAccepted.value &&
-    hasPublishedLegalDocuments &&
+    hasPublishedLegalDocuments.value &&
     !loadingEmail.value &&
     !loadingGoogle.value
 );
@@ -206,7 +208,7 @@ async function registerWithGoogle() {
       "Acepta los términos de uso y la política de privacidad para continuar.";
     return;
   }
-  if (!hasPublishedLegalDocuments) {
+  if (!hasPublishedLegalDocuments.value) {
     errorMessage.value =
       "El registro no está disponible hasta publicar los documentos legales.";
     return;

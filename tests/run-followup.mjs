@@ -50,11 +50,13 @@ try {
     await run(["--test", "tests/pilot-accounts.integration.test.mjs"]);
     process.exit(0);
   }
-  if (!process.env.PILOT_BROWSER_ONLY && !process.env.PAYMENT_DEADLINE_ONLY && !process.env.ADMIN_BROWSER_ONLY) {
+  if (process.env.LEGAL_VALIDATION) await run(["--test", "tests/legal-documents.integration.test.mjs"]);
+  if (!process.env.LEGAL_VALIDATION && !process.env.PILOT_BROWSER_ONLY && !process.env.PAYMENT_DEADLINE_ONLY && !process.env.ADMIN_BROWSER_ONLY) {
   await run(["--test", "tests/followup.integration.test.mjs"]);
   await run(["--test", "tests/appointments.integration.test.mjs"]);
   if (process.env.PILOT_VALIDATION) {
     await run(["--test", "tests/admin-pilot.integration.test.mjs"]);
+    await run(["--test", "tests/legal-documents.integration.test.mjs"]);
     await run(["--test", "tests/pilot-operations.integration.test.mjs"]);
     await run(["--test", "tests/paymentRates.integration.test.mjs"]);
     await run(["--test", "tests/pilot-payments.integration.test.mjs"]);
@@ -74,7 +76,7 @@ try {
   }
   if (!ready) throw new Error("The isolated frontend did not become ready");
   if (process.env.AGENDA_VALIDATION && !process.env.PAYMENT_DEADLINE_ONLY && !process.env.ADMIN_BROWSER_ONLY) await run(["node_modules/@playwright/test/cli.js", "test", "--config", "playwright.lima.config.js"]);
-  await run(["node_modules/@playwright/test/cli.js", "test", ...(process.env.VALIDATION_GREP ? ["--grep", process.env.VALIDATION_GREP] : []), ...(process.env.ADMIN_BROWSER_ONLY ? ["tests/browser/admin-pilot.spec.mjs"] : process.env.PAYMENT_DEADLINE_ONLY ? ["tests/browser/payment-deadline.spec.mjs"] : [])]);
+  await run(["node_modules/@playwright/test/cli.js", "test", ...(process.env.VALIDATION_GREP ? ["--grep", process.env.VALIDATION_GREP] : []), ...(process.env.LEGAL_VALIDATION ? ["tests/browser/legal-documents.spec.mjs"] : process.env.ADMIN_BROWSER_ONLY ? ["tests/browser/admin-pilot.spec.mjs"] : process.env.PAYMENT_DEADLINE_ONLY ? ["tests/browser/payment-deadline.spec.mjs"] : [])]);
 } finally {
   server?.kill("SIGTERM");
 }

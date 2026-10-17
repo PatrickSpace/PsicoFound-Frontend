@@ -61,6 +61,10 @@
                   Ya cuento con un terapeuta
                 </v-btn>
               </v-col>
+              <v-col cols="12" class="pb-6">
+                <router-link to="/terminos">Términos de uso</router-link>
+                <router-link to="/privacidad" class="ml-4">Privacidad</router-link>
+              </v-col>
             </v-row>
           </v-col>
         </v-row>
