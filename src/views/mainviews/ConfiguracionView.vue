@@ -728,6 +728,7 @@
 </template>
 
 <script setup>
+import { sendVerificationEmail } from "@/services/emailVerificationService";
 import { computed, reactive, ref, watch } from "vue";
 import { storeToRefs } from "pinia";
 import {
@@ -735,7 +736,6 @@ import {
   GoogleAuthProvider,
   reauthenticateWithCredential,
   reauthenticateWithPopup,
-  sendEmailVerification,
   signOut,
   verifyBeforeUpdateEmail,
 } from "firebase/auth";
@@ -1107,7 +1107,7 @@ async function resendVerification() {
   if (!currentUser.value || sendingVerification.value) return;
   sendingVerification.value = true;
   try {
-    await sendEmailVerification(currentUser.value);
+    await sendVerificationEmail(currentUser.value);
     showSuccess(
       "Verificación enviada",
       "Revisa tu bandeja de entrada y la carpeta de correo no deseado."

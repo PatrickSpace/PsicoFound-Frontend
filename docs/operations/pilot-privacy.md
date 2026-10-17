@@ -202,3 +202,37 @@ No concede claims, no renueva privilegios ni desactiva App Check.
 
 Prueba local del comando y de sus límites: `tests/admin-pilot.integration.test.mjs`
 y `tests/unit/privacyOperator.test.mjs`. La ejecución real sigue pendiente externa.
+
+## Confirmación de correo con Firebase Authentication
+
+Actualización 2026-10-17. Se utiliza `sendEmailVerification` y el handler nativo de
+Firebase (`https://psicosaas-3c819.firebaseapp.com/__/auth/action`), sin SMTP externo
+ni una Function nueva. Solo Firebase consume el código del enlace y determina
+`emailVerified`; el cliente no escribe una marca de verificación en Firestore.
+El backend sigue comprobando `email_verified` en el token de Authentication.
+
+El envío se solicita en español (`auth.languageCode = es`), con nombre de remitente
+**Lurems** y dirección de respuesta `jplosta01@gmail.com`. Se conserva la plantilla
+nativa de verificación; la API rechazó personalizar su asunto y no se activó otro
+producto ni proveedor para hacerlo. El idioma del envío usa la localización de
+Firebase. El dominio remitente sigue siendo el de Firebase, no un remitente DNS
+propio inventado. Los dominios de retorno de producción son Lurems, Vercel y el
+sitio `luremsapp.web.app`; los emuladores demo admiten retorno local.
+
+El enlace incorpora un retorno a `/verificar-correo?redirect=/onboarding`. No se
+aceptan orígenes externos, credenciales embebidas o puertos alternativos para el
+retorno de producción. Tras confirmar el correo en Firebase, volver a la ventana
+comprueba el estado sin sondeo periódico; también existe el botón de comprobación.
+Cuando está confirmado se renueva el ID token antes de continuar.
+
+El envío inicial y los reenvíos comparten servicio. La interfaz aplica una espera
+local de 60 segundos entre intentos por cuenta y evita solicitudes simultáneas;
+Firebase mantiene sus propios límites autoritativos. El temporizador solo actualiza
+la interfaz, no consulta al servidor cada segundo. Si el envío falla después de
+crear la cuenta y el perfil, el usuario llega igualmente a la pantalla de
+verificación y recibe una explicación, sin afirmar que se entregó un correo.
+
+Validación: 38 pruebas unitarias totales y 14 pruebas de registro/verificación en
+navegador (escritorio y móvil) con emuladores demo y sin salida de red externa.
+La recepción efectiva en un buzón real debe comprobarse en el registro del usuario;
+los emuladores no envían correo real.

@@ -131,10 +131,10 @@ import { computed, reactive, ref, watch } from "vue";
 import {
   createUserWithEmailAndPassword,
   GoogleAuthProvider,
-  sendEmailVerification,
   signInWithPopup,
 } from "firebase/auth";
 import { useRouter } from "vue-router";
+import { sendVerificationEmail } from "@/services/emailVerificationService";
 import { auth } from "@/plugins/Firebase/firebase";
 import { useAppContextStore } from "@/store/appContext";
 import {
@@ -243,10 +243,12 @@ async function finishRegistration(user) {
     (provider) => provider.providerId === "password"
   );
   if (usesPassword && !user.emailVerified) {
-    await sendEmailVerification(user);
+    let delivery = "sent";
+    try { await sendVerificationEmail(user); }
+    catch { delivery = "failed"; }
     await router.replace({
       path: "/verificar-correo",
-      query: { redirect: result.nextRoute },
+      query: { redirect: result.nextRoute, delivery },
     });
     return;
   }

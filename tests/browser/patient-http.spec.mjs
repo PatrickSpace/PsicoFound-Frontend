@@ -424,9 +424,47 @@ test("requirement: incomplete account returns to registration recovery after ema
   await page.getByRole('textbox',{name:'Contraseña',exact:true}).fill(password);
   await page.getByRole('button',{name:'Iniciar Sesión',exact:true}).click();
   await expect(page.getByRole('heading',{name:'Verifica tu correo'})).toBeVisible();
+  await expect(page.getByRole('button',{name:'Ya verifiqué mi correo'})).not.toHaveClass(/v-btn--loading/);
   await adminAuth.getAuth(app).updateUser(uid,{emailVerified:true});
   await page.getByRole('button',{name:'Ya verifiqué mi correo'}).click();
   await expect(page.getByRole('heading',{name:'Completa tu registro'})).toBeVisible();
   await expect(page.getByRole('button',{name:'Completar registro',exact:true})).toBeDisabled();
   expect((await db.doc(`users/${uid}`).get()).exists).toBe(false);
+});
+
+test('email verification: Spanish email returns to Lurems, limits resends and detects confirmation on focus',async({page},info)=>{
+ await page.clock.install();
+ const email=`confirm-${info.project.name}-${Date.now()}@example.test`;
+ const requests=[];
+ await page.route('**/accounts:sendOobCode**',async route=>{
+  const data=route.request().postDataJSON();
+  if(data.requestType==='VERIFY_EMAIL')requests.push({data,locale:route.request().headers()['x-firebase-locale']});
+  await route.continue();
+ });
+ await signup(page,email);
+ await expect(page.getByRole('heading',{name:'Verifica tu correo'})).toBeVisible();
+ await expect(page.getByRole('button',{name:'Ya verifiqué mi correo'})).not.toHaveClass(/v-btn--loading/);
+ expect(requests.length).toBe(1);expect(requests[0].locale).toBe('es');
+ const target=new URL(requests[0].data.continueUrl);expect(target.origin).toBe('http://127.0.0.1:5178');expect(target.pathname).toBe('/verificar-correo');
+ expect(target.searchParams.get('redirect')).toBe('/onboarding');
+ const resend=page.getByRole('button',{name:'Reenviar enlace',exact:true});await expect(resend).toBeDisabled();
+ await page.clock.fastForward(61000);await expect(resend).toBeEnabled();await resend.click();
+ await expect(page.getByText('Enviamos un nuevo enlace de verificación.')).toBeVisible();expect(requests.length).toBe(2);await expect(resend).toBeDisabled();
+ await expect.poll(async()=>Boolean(await oob(email,'VERIFY_EMAIL'))).toBe(true);
+ await applyOob((await oob(email,'VERIFY_EMAIL')).oobCode);
+ await page.evaluate(()=>window.dispatchEvent(new Event('focus')));
+ await expect(page).toHaveURL(/\/onboarding\/paciente/);
+});
+
+test('email verification: failed delivery keeps the account recoverable and does not claim the email was sent',async({page},info)=>{
+ const email=`delivery-failed-${info.project.name}-${Date.now()}@example.test`;
+ await page.route('**/accounts:sendOobCode**',route=>{
+  if(route.request().postDataJSON().requestType==='VERIFY_EMAIL')return route.fulfill({status:400,contentType:'application/json',body:JSON.stringify({error:{message:'TOO_MANY_ATTEMPTS_TRY_LATER'}})});
+  return route.continue();
+ });
+ await signup(page,email);
+ await expect(page.getByRole('heading',{name:'Verifica tu correo'})).toBeVisible();
+ await expect(page.getByText('Tu cuenta está creada, pero no pudimos enviar el enlace.',{exact:false})).toBeVisible();
+ await expect(page.getByRole('button',{name:'Reenviar enlace',exact:true})).toBeDisabled();
+ const user=await adminAuth.getAuth(app).getUserByEmail(email);expect(user.emailVerified).toBe(false);expect((await db.doc(`users/${user.uid}`).get()).exists).toBe(true);
 });

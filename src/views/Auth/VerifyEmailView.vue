@@ -6,8 +6,9 @@
         <MainLogo class="auth-logo" compact />
         <h1 class="text-h5 font-weight-bold">Verifica tu correo</h1>
         <p class="text-body-1 mt-3">
-          Enviamos un enlace a <strong>{{ currentUser?.email }}</strong>.
-          Ábrelo y vuelve aquí para continuar.
+          Confirma la dirección <strong>{{ currentUser?.email }}</strong> para continuar.
+          Revisa tu bandeja de entrada y la carpeta de correo no deseado.
+          Abre el enlace de Firebase y vuelve a Lurems.
         </p>
         <v-alert v-if="message" class="my-4" :color="messageColor" variant="tonal">
           {{ message }}
@@ -16,7 +17,8 @@
           <v-btn
             class="pf-btn-primary"
             :loading="checking"
-            @click="checkVerification"
+            :disabled="sending"
+            @click="checkVerification()"
           >
             Ya verifiqué mi correo
           </v-btn>
@@ -24,10 +26,13 @@
             class="pf-btn-secondary"
             variant="tonal"
             :loading="sending"
+            :disabled="cooldownSeconds > 0 || checking"
             @click="resend"
           >
             Reenviar enlace
           </v-btn>
+          <p v-if="cooldownSeconds > 0" class="text-caption" role="status">Podrás solicitar otro enlace en {{ cooldownSeconds }} s.</p>
+          <p class="text-caption">Al volver a esta ventana comprobaremos la confirmación automáticamente.</p>
           <v-btn class="pf-btn-ghost" variant="text" @click="logout">
             Usar otra cuenta
           </v-btn>
@@ -38,8 +43,11 @@
 </template>
 
 <script setup>
-import { computed, ref } from "vue";
-import { sendEmailVerification, signOut } from "firebase/auth";
+import { computed, onBeforeUnmount, onMounted, ref } from "vue";
+import { signOut } from "firebase/auth";
+import { useAuthStore } from "@/store/auth";
+import { sendVerificationEmail, verificationDelivery, verificationLastAttempt, verificationSendError } from "@/services/emailVerificationService";
+import { verificationResendSeconds } from "@/utils/emailVerification";
 import { useRoute, useRouter } from "vue-router";
 import MainLogo from "@/components/Common/MainLogo.vue";
 import { auth } from "@/plugins/Firebase/firebase";
@@ -47,22 +55,37 @@ import { getUserById } from "@/services/userService";
 
 const route = useRoute();
 const router = useRouter();
-const currentUser = computed(() => auth.currentUser);
+const authStore = useAuthStore();
+const currentUser = computed(() => authStore.currentUser);
 const checking = ref(false);
 const sending = ref(false);
-const message = ref("");
-const messageColor = ref("info");
+const message = ref(route.query.delivery === "failed" ? "Tu cuenta está creada, pero no pudimos enviar el enlace. Puedes solicitarlo nuevamente cuando termine la espera." : verificationDelivery.uid === auth.currentUser?.uid && verificationDelivery.sentAt ? "Enviamos el enlace de confirmación a tu correo." : "");
+const messageColor = ref(route.query.delivery === "failed" ? "warning" : "info");
+const now = ref(Date.now());
+const cooldownSeconds = computed(() => verificationResendSeconds(verificationLastAttempt(currentUser.value?.uid), now.value));
+let timer;
+let alive = true;
+const onFocus = () => checkVerification(true);
+onMounted(() => {
+  timer = setInterval(() => { now.value = Date.now(); }, 1000);
+  window.addEventListener("focus", onFocus);
+  checkVerification(true);
+});
+onBeforeUnmount(() => { alive = false; clearInterval(timer); window.removeEventListener("focus", onFocus); });
 
-async function checkVerification() {
-  if (!auth.currentUser || checking.value) return;
+async function checkVerification(silent = false) {
+  if (!auth.currentUser || checking.value || sending.value) return;
+  const user = auth.currentUser;
+  const active = () => alive && auth.currentUser?.uid === user.uid;
   checking.value = true;
   try {
-    await auth.currentUser.reload();
-    if (auth.currentUser.emailVerified) {
-      const uid = auth.currentUser.uid;
-      await auth.currentUser.getIdToken(true);
+    await user.reload();
+    if (!active()) return;
+    if (user.emailVerified) {
+      const uid = user.uid;
+      await user.getIdToken(true);
       const profile = await getUserById(uid);
-      if (auth.currentUser?.uid !== uid) return;
+      if (!active()) return;
       await router.replace(
         profile && typeof route.query.redirect === "string"
           ? route.query.redirect
@@ -70,28 +93,35 @@ async function checkVerification() {
       );
       return;
     }
-    messageColor.value = "warning";
-    message.value = "El correo aún no figura como verificado.";
+    if (!silent) {
+      messageColor.value = "warning";
+      message.value = "El correo aún no figura como verificado.";
+    }
   } catch {
+    if (!active() || silent) return;
     messageColor.value = "error";
     message.value = "No pudimos comprobarlo. Revisa tu conexión e intenta nuevamente.";
   } finally {
-    checking.value = false;
+    if (active()) checking.value = false;
   }
 }
 
 async function resend() {
-  if (!auth.currentUser || sending.value) return;
+  if (!auth.currentUser || sending.value || checking.value || cooldownSeconds.value > 0) return;
+  const uid = auth.currentUser.uid;
+  const active = () => alive && auth.currentUser?.uid === uid;
   sending.value = true;
   try {
-    await sendEmailVerification(auth.currentUser);
+    await sendVerificationEmail(auth.currentUser);
+    if (!active()) return;
     messageColor.value = "success";
     message.value = "Enviamos un nuevo enlace de verificación.";
-  } catch {
+  } catch (error) {
+    if (!active()) return;
     messageColor.value = "error";
-    message.value = "No pudimos reenviar el enlace. Espera un momento e intenta nuevamente.";
+    message.value = verificationSendError(error);
   } finally {
-    sending.value = false;
+    if (active()) { sending.value = false; now.value = Date.now(); }
   }
 }
 
