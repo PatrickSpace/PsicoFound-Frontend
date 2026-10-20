@@ -1,6 +1,6 @@
 # Encuesta conversacional y matching
 
-Referencia consolidada: 2026-10-15. Basada en `functions/src/chat/`,
+Referencia actualizada: 2026-10-20. Basada en `functions/src/chat/`,
 `functions/src/profiles/profile.js`, `functions/src/matching/` y las vistas de encuesta.
 El [plan original](../archive/functional/survey-implementation-plan.md) conserva
 las decisiones propuestas; sus casillas no representan el estado vigente.
@@ -32,45 +32,57 @@ llamada al proveedor y sin consumir cuota; ver [revisión de ayuda](../operation
 
 ## Perfil completo: contrato implementado
 
-`isProfileComplete` considera completo un perfil con señal de ayuda; eso no significa
-idoneidad clínica. En el recorrido ordinario exige temas, modalidad, preferencia de
-género, enfoque y preferencia de edad. En «solo conversar» exige modalidad, género y
-edad. Una respuesta explícita de indiferencia satisface los campos de preferencia;
-no equivale a un campo vacío. El servidor calcula `completado`, no el modelo.
+`isProfileComplete` requiere un tema (o elegir «solo conversar») y una modalidad
+válida elegida explícitamente: online, presencial, híbrido o indiferente. Género,
+rango de edad y enfoque son opcionales y se pueden añadir o borrar en «Ajustar
+preferencias (opcional)». El servidor recalcula la completitud; no confía en una
+marca `completado` antigua ni en la respuesta del modelo. La señal heredada de
+ayuda mantiene su acceso independiente, sin constituir evaluación clínica.
 
-Presupuesto, ciudad, disponibilidad y otros campos existentes en el esquema no son
-requisitos de completitud ni todos se usan para ordenar recomendaciones. No debe
-presentarse el ranking como evaluación clínica.
+Presupuesto, ciudad y disponibilidad no son requisitos de completitud. No debe
+presentarse el ranking como evaluación clínica ni prometer compatibilidad clínica.
+
+## Recorrido guiado y costos
+
+Producción configura `SURVEY_INPUT_MODE=guided`: inicio idempotente, pregunta de
+tema/solo conversar, elección de modalidad y acceso a recomendaciones. No se exige
+un saludo inicial. La sesión, las respuestas y los mensajes se conservan al
+recargar. El modo guiado oculta el compositor de texto libre; el servidor también
+rechaza entradas desconocidas antes de tomar cuota o llamar a un proveedor.
+Los campos del editor se guardan directamente, sin extracción por IA.
+
+`CHAT_LIMITS_JSON` limita a 30 envíos diarios por cuenta y 2 operaciones simultáneas
+globales, versión `2026-10-guided-v1`. Estos límites cubren también respuestas locales.
+No se habilita Gemini ni se acredita su revisión clínica/privacidad/facturación.
+El soporte futuro de texto libre conserva los controles existentes del proveedor.
+La interfaz guiada evita llamadas a IA, pero utiliza Authentication, Functions y
+Firestore; no se afirma costo total cero.
 
 ## Recomendaciones y criterios indispensables
 
-`getRecommendedTherapists` obtiene el perfil propio completado. Normaliza temas,
-enfoque, género, modalidad y rango de edad; indiferencia elimina el criterio. El
-paciente puede marcar `requiredCriteria` entre `especialidades`, `enfoque`, `genero`,
-`modalidad` y `edad`; el servidor ignora claves desconocidas y criterios vacíos.
-La vista inicia con la lista de indispensables vacía: modalidad no se impone globalmente.
+`getRecommendedTherapists` obtiene el perfil propio y calcula criterios. La
+modalidad concreta siempre es indispensable en el servidor aunque el cliente
+omita `requiredCriteria`; no puede flexibilizarse desde el chip. Híbrido admite
+online o presencial y un profesional híbrido es compatible con cualquiera de
+ambas. La indiferencia explícita no exige una modalidad particular.
 
-El ranking suma un punto por especialidad coincidente, dos por enfoque y uno por
-género, modalidad y edad. Si hay criterios, requiere puntuación positiva; los
-indispensables descartan coincidencias incompatibles. Ordena y toma hasta cinco
-profesionales, y después filtra los que tienen disponibilidad futura válida.
-Ese orden puede reducir el resultado aunque existan otros profesionales fuera de
-los primeros cinco; no se documenta como búsqueda exhaustiva de toda la disponibilidad.
+Temas, enfoque, género y edad se usan como preferencias flexibles salvo que el
+paciente los marque como indispensables. No se usan claves desconocidas ni
+criterios vacíos. Se muestran coincidencias y diferencias; la selección no llama
+al modelo. El ranking conserva sus pesos: especialidad 1 por coincidencia,
+enfoque 2, género/modalidad/edad 1 cada uno.
 
-Solo se ofrecen profesionales activos. Cuando modalidad es indispensable también
-filtra los bloques por esa modalidad. Se devuelven coincidencias/diferencias,
-cantidad de bloques y `outcome`: `ok`, `no_matches` o `no_availability`.
-En el código actual híbrido se normaliza como valor propio; no existe aquí una
-expansión automática a remoto/presencial.
+Solo se ofrecen profesionales activos con bloques futuros válidos y compatibles
+con la modalidad. Se revisa la disponibilidad antes de limitar el resultado a
+cinco para no perder profesionales disponibles fuera de los primeros puestos.
+Los estados siguen siendo `ok`, `no_matches` y `no_availability`.
 
-## Pendiente de producto: fase 6 del plan anterior
+## Estado de la fase 6
 
-El plan propuso modalidad obligatoria, restantes preferencias opcionales e híbrido
-como online/presencial. El código actual descrito arriba conserva otro contrato.
-No se marca esa fase como terminada al consolidar documentación. Antes de cambiarla,
-definir campos mínimos, indiferencia, indispensables, equivalencia híbrida y
-compatibilidad con perfiles anteriores; implementar y cubrir los escenarios de
-aceptación. Seguimiento: B-04 en la [matriz](matriz-cierre-piloto.md).
+Implementados el mínimo obligatorio, las preferencias opcionales, la compatibilidad
+híbrida, el requisito de modalidad en servidor y la lectura de perfiles anteriores.
+La publicación y su evidencia se registran en B-04 de la [matriz](matriz-cierre-piloto.md).
+La activación de texto libre mediante Gemini es un pendiente separado.
 
 ## Verificación
 

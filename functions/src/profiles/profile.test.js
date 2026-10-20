@@ -20,40 +20,24 @@ test("saludo o perfil vacio no queda listo para recomendaciones", () => {
   assert.equal(getMissingProfileField(profile), "temas");
 });
 
-test(
-    "perfil regular solo queda listo con tema y preferencias requeridas",
-    () => {
-      const incompleteProfile = finalizeProfileForMatching({
-        ...PROFILE_DEFAULTS,
-        temas: ["Ansiedad"],
-        modalidad: "Online",
-        preferenciaGenero: "indiferente",
-        enfoque: "Cognitivo-Conductual",
-      });
-
-      assert.equal(incompleteProfile.completado, false);
-      assert.equal(
-          getMissingProfileField(incompleteProfile),
-          "preferenciaEdad",
-      );
-
-      const completeProfile = finalizeProfileForMatching({
-        ...incompleteProfile,
-        preferenciaEdad: "indiferente",
-      });
-
-      assert.equal(completeProfile.completado, true);
-      assert.equal(getMissingProfileField(completeProfile), "");
-    },
-);
+test("tema y modalidad bastan; las demás preferencias son opcionales", () => {
+  const profile = finalizeProfileForMatching({...PROFILE_DEFAULTS,
+    temas: ["Ansiedad"], modalidad: "Online"});
+  assert.equal(profile.completado, true);
+  assert.equal(getMissingProfileField(profile), "");
+  for (const modalidad of ["", "inventada"]) {
+    assert.equal(isProfileComplete({...profile, modalidad}), false);
+    assert.equal(getMissingProfileField({...profile, modalidad}), "modalidad");
+  }
+});
 
 test("solo conversar no exige tema ni enfoque", () => {
   const profile = finalizeProfileForMatching({
     ...PROFILE_DEFAULTS,
     soloConversar: true,
     modalidad: "indiferente",
-    preferenciaGenero: "indiferente",
-    preferenciaEdad: "indiferente",
+    preferenciaGenero: "",
+    preferenciaEdad: "",
   });
 
   assert.equal(profile.completado, true);
@@ -83,12 +67,12 @@ test("opciones sugeridas siguen el primer campo faltante", () => {
   const profile = {
     ...PROFILE_DEFAULTS,
     temas: ["Ansiedad"],
-    modalidad: "Online",
+    modalidad: "",
   };
 
   const options = getSuggestedOptionsForProfile(profile);
 
-  assert.equal(getMissingProfileField(profile), "preferenciaGenero");
+  assert.equal(getMissingProfileField(profile), "modalidad");
   assert.ok(options.length > 0);
-  assert.ok(options.every((option) => option.field === "preferenciaGenero"));
+  assert.ok(options.every((option) => option.field === "modalidad"));
 });

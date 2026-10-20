@@ -1,6 +1,6 @@
 <template>
   <section class="survey-shell">
-    <AccountAccessCard @access="accountAllowed = $event" />
+    <AccountAccessCard @access="accountAllowed = $event" @status="applySurveyStatus" />
     <v-btn class="pf-btn-ghost mb-2" to="/elegirterapeuta?crisis=1">Consultar recursos de ayuda</v-btn>
     <div class="chat-layout">
       <div class="chat-header">
@@ -9,7 +9,7 @@
         </div>
         <div class="chat-heading">
           <p class="text-caption text-medium-emphasis mb-1">
-            Encuesta conversacional
+            {{ surveyInputMode === "guided" ? "Encuesta guiada" : "Encuesta conversacional" }}
           </p>
           <h1 class="survey-title font-weight-bold">
             <span class="desktop-copy">Cuéntame cómo te sientes</span>
@@ -173,7 +173,7 @@
                   :key="`${message.id}-${option.label}-${option.value}`"
                   type="button"
                   class="message-option"
-                  :disabled="loading"
+                  :disabled="loading || startingSurvey || !accountAllowed"
                   @click="handleOptionClick(option)"
                 >
                   {{ option.label }}
@@ -201,7 +201,17 @@
       </div>
 
       <div class="composer-shell">
-        <form class="composer" @submit.prevent="handleSubmit">
+        <p v-if="surveyInputMode === 'guided'" class="text-body-2 mb-3" role="status">
+          {{ canViewRecommendations ? "Tus preferencias están listas. Puedes ver psicólogos o ajustar tus respuestas." : "Elige una respuesta para continuar. Las demás preferencias son opcionales." }}
+        </p>
+        <v-alert v-if="startError" color="error" variant="tonal" class="mb-3">
+          {{ startError }}
+          <v-btn variant="text" :loading="startingSurvey" @click="ensureSurveyStarted">Reintentar inicio</v-btn>
+        </v-alert>
+        <v-btn v-if="activeSessionId" variant="tonal" class="mb-3 pf-btn-secondary" :disabled="loading || savingProfile" @click="openProfileEditor">
+          Ajustar preferencias (opcional)
+        </v-btn>
+        <form v-if="surveyInputMode === 'conversational'" class="composer" @submit.prevent="handleSubmit">
           <v-textarea
             v-model="draft"
             auto-grow
@@ -241,6 +251,7 @@
         </v-card-title>
         <v-card-text>
           <v-divider class="mb-4" />
+          <p class="text-body-2 mb-4">Para continuar solo necesitas un tema o elegir «solo conversar» y una modalidad. Las demás preferencias son opcionales.</p>
           <p class="text-body-2 mb-3">
             Iniciarás una encuesta nueva y se reiniciarán el resumen y las recomendaciones.
             Los mensajes anteriores se conservan; reiniciar no es una solicitud de eliminación.
@@ -312,7 +323,8 @@
             <v-col cols="12" sm="6">
               <v-select
                 v-model="profileForm.preferenciaGenero"
-                label="Género del profesional"
+                label="Género del profesional (opcional)"
+                clearable
                 :items="genderOptions"
                 variant="outlined"
               />
@@ -320,7 +332,8 @@
             <v-col cols="12" sm="6">
               <v-select
                 v-model="profileForm.enfoque"
-                label="Tipo de acompañamiento"
+                label="Tipo de acompañamiento (opcional)"
+                clearable
                 :items="approachOptions"
                 variant="outlined"
               />
@@ -328,7 +341,8 @@
             <v-col cols="12" sm="6">
               <v-select
                 v-model="profileForm.preferenciaEdad"
-                label="Rango de edad"
+                label="Rango de edad (opcional)"
+                clearable
                 :items="ageOptions"
                 variant="outlined"
               />
@@ -365,6 +379,7 @@ import { useAuthStore } from "@/store/auth";
 import AccountAccessCard from "@/components/auth/AccountAccessCard.vue";
 import {
   resetProfileChatConversation,
+  startProfileChatConversation,
   sendProfileChatMessage,
   updateProfilePreferences,
   watchConversation,
@@ -381,6 +396,9 @@ const authStore = useAuthStore();
 
 const draft = ref("");
 const accountAllowed = ref(false);
+const surveyInputMode = ref("guided");
+const startingSurvey = ref(false);
+const startError = ref("");
 const loading = ref(false);
 const resetting = ref(false);
 const messages = ref([]);
@@ -457,7 +475,14 @@ const visibleMessages = computed(() => {
   ];
   const uniqueMessages = [...new Map(mergedMessages.map(item => [item.id, item])).values()].sort(compareMessagesByCreatedAt);
 
-  return uniqueMessages.length > 0 ? uniqueMessages : [welcomeMessage];
+  const turn = activeTurn.value;
+  if (turn?.status === "active" && !uniqueMessages.some(item => item.turnId === turn.id)) {
+    return [...uniqueMessages, {id: `turn-${turn.id}`, role: "assistant", text: turn.question,
+      turnId: turn.id, suggestedOptions: turn.options}];
+  }
+  return uniqueMessages.length > 0 ? uniqueMessages : [{...welcomeMessage,
+    ...(turn ? {text: turn.question || "Tus preferencias están listas. Puedes ajustarlas o ver psicólogos.",
+      turnId: turn.id, suggestedOptions: turn.options} : {})}];
 });
 
 const canSend = computed(() => accountAllowed.value && draft.value.trim().length > 0 && !loading.value);
@@ -516,7 +541,7 @@ watch(
     activeSessionId.value = ""; profile.value = null; crisisRouteTriggered.value = false;
     resetting.value = false; savingProfile.value = false; resetRequestId = null;
     profileDialog.value = false; resetDialog.value = false;
-    activeTurn.value = null;
+    activeTurn.value = null; startingSurvey.value = false; startError.value = "";
     earlierMessages.value = []; historyCursor = null; historyHasMore.value = false; loadingHistory.value = false;
     messages.value = []; optimisticMessages.value = []; draft.value = ""; loading.value = false;
     unsubscribeConversation?.();
@@ -630,6 +655,28 @@ async function handleSubmit() {
   draft.value = "";
 
   await sendChatMessage(message);
+}
+
+function applySurveyStatus(status) {
+  surveyInputMode.value = status?.survey?.inputMode || "conversational";
+  if (status?.allowed) ensureSurveyStarted();
+}
+
+async function ensureSurveyStarted() {
+  if (!accountAllowed.value || startingSurvey.value) return;
+  const generation = contextGeneration;
+  startingSurvey.value = true;
+  startError.value = "";
+  try {
+    const result = await startProfileChatConversation();
+    if (generation !== contextGeneration) return;
+    activeTurn.value = result.activeTurn;
+    syncProfileFromChatResult(result);
+  } catch {
+    if (generation === contextGeneration) startError.value = "No pudimos iniciar la encuesta. Intenta nuevamente.";
+  } finally {
+    if (generation === contextGeneration) startingSurvey.value = false;
+  }
 }
 
 async function handleOptionClick(option) {

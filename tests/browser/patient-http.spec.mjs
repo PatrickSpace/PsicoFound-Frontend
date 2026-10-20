@@ -187,6 +187,7 @@ async function shot(page, info, name) {
 }
 async function signup(page, email) {
   await page.goto("/registro");
+  await expect(page.getByRole("link", {name:"términos de uso", exact:true})).toHaveAttribute("href", "https://example.test/terms");
   await page.getByRole("checkbox", { name:/Acepto/ }).check();
   await page.getByRole("textbox", { name:"Correo", exact:true }).fill(email);
   await page.getByRole("textbox", { name:"Contraseña", exact:true }).fill(password);

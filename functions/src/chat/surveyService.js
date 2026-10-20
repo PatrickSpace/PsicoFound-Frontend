@@ -4,6 +4,7 @@ const {FieldValue} = require("firebase-admin/firestore");
 const {HttpsError} = require("firebase-functions/v2/https");
 const {PROFILE_DEFAULTS, finalizeProfileForMatching, sanitizeModelProfileData} = require("../profiles/profile");
 const {makeTurn, validateTurn, localAnswer} = require("./surveyTurn");
+const {surveyInputMode} = require("./surveyPolicy");
 const {getCrisisResult} = require("../safety/suicideRisk");
 const {getActiveChatSession} = require("./session");
 const {getRecentHistory} = require("./history");
@@ -18,7 +19,7 @@ function chatLimits(env = process.env) {
     return null;
   }
 }
-function createSurveyService({db, generate, now = Date.now, limits = chatLimits}) {
+function createSurveyService({db, generate, now = Date.now, limits = chatLimits, inputMode = surveyInputMode}) {
   async function send(uid, data) {
     const message = typeof data.message === "string" ? data.message.trim() : "";
     if (!message || message.length > 1200 || !/^[A-Za-z0-9_-]{8,100}$/.test(data.requestId || "")) throw new HttpsError("invalid-argument", "Revisa el mensaje y su identificador.");
@@ -52,6 +53,9 @@ function createSurveyService({db, generate, now = Date.now, limits = chatLimits}
       const sessionId = session.id;
       const profile = {...PROFILE_DEFAULTS, ...sanitizeModelProfileData(profileSnap.data() || {}), sessionId};
       const activeTurn = conversation.activeTurn || makeTurn(profile, sessionId);
+      if (inputMode() === "guided" && !getCrisisResult(message) && !localAnswer(message, activeTurn)) {
+        throw new HttpsError("invalid-argument", "Elige una de las opciones de la pregunta actual o ajusta tus preferencias.");
+      }
       const until = now() + 90000;
       tx.set(operationRef, {uid, requestId: data.requestId, fingerprint, sessionId, status: "processing", lease, leaseUntil: until, createdAt: FieldValue.serverTimestamp()});
       tx.set(quotaRef, {day, count: count + 1, lease, leaseUntil: until, policyVersion: config.version});

@@ -148,8 +148,8 @@
                 Cómo aplicaremos tus preferencias
               </h2>
               <p class="text-body-2 text-medium-emphasis mb-0">
-                Son flexibles por defecto. Marca como obligatorio lo que no
-                deseas flexibilizar; nunca cambiaremos esos requisitos en silencio.
+                La modalidad elegida se respeta siempre; híbrido permite online o presencial.
+                Las demás preferencias son flexibles y puedes marcarlas como obligatorias.
               </p>
             </div>
             <v-btn
@@ -310,6 +310,7 @@ function isRequired(key) {
 }
 
 function toggleRequired(key) {
+  if (key === "modalidad") return;
   requiredCriteria.value = isRequired(key)
     ? requiredCriteria.value.filter((item) => item !== key)
     : [...requiredCriteria.value, key];

@@ -80,3 +80,54 @@ test("B-02: HTTP local turns survive reload, reject stale options and keep uncer
   assert.equal(third.activeTurn.field, "modalidad"); assert.equal(third.profile.modalidad, "");
   assert.equal((await db.doc(`conversations/${uid}`).get()).data().activeTurn.id, third.activeTurn.id);
 });
+
+test("B-04: guided minimum completes without any AI invocation; unknown input never consumes quota", async () => {
+  await db.doc(`profiles/${uid}`).delete();
+  await db.doc(`conversations/${uid}`).delete();
+  const first = await httpCall("B", "startProfileChatConversation", {});
+  const again = await httpCall("B", "startProfileChatConversation", {});
+  assert.equal(first.sessionId, again.sessionId);
+  assert.equal(first.activeTurn.id, again.activeTurn.id);
+  let providerCalls = 0;
+  const service = createSurveyService({db, limits, inputMode: () => "guided",
+    generate: async () => { providerCalls++; throw new Error("must not call AI"); }});
+  await assert.rejects(service.send(uid, {message: "Unknown free text", requestId: "guided-unknown"}), {code: "invalid-argument"});
+  assert.equal((await db.doc(`profile_chat_quotas/${uid}`).get()).exists, false);
+  const topic = await service.send(uid, {message: "Ansiedad", requestId: "guided-topic", sessionId: first.sessionId,
+    turnId: first.activeTurn.id, option: first.activeTurn.options.find(o => o.label === "Ansiedad")});
+  const ready = await service.send(uid, {message: "Online", requestId: "guided-modality", sessionId: topic.sessionId,
+    turnId: topic.activeTurn.id, option: topic.activeTurn.options.find(o => o.label === "Online")});
+  assert.equal(ready.readyForRecommendations, true);
+  assert.equal(ready.activeTurn.status, "complete");
+  for (const field of ["preferenciaEdad", "preferenciaGenero", "enfoque"]) assert.equal(ready.profile[field], "");
+  const reopened = await httpCall("B", "startProfileChatConversation", {});
+  assert.equal(reopened.sessionId, first.sessionId);
+  assert.equal(reopened.profile.completado, true);
+  assert.equal((await db.collection(`conversations/${uid}/messages`).get()).size, 4);
+  assert.equal(providerCalls, 0);
+});
+
+test("B-04: mandatory modality, hybrid slots, compatible availability before top five, and legacy completion", async () => {
+  const date = new Date(Date.now() + 86400000).toISOString().slice(0,10);
+  await db.doc(`profiles/${uid}`).set({temas: ["Ansiedad"], modalidad: "Online", completado: false});
+  const therapists = await db.collection("therapists").get();
+  const slots = await db.collection("therapist_availability").get();
+  const batch = db.batch();
+  for(const doc of [...therapists.docs,...slots.docs]) batch.delete(doc.ref);
+  for(let i=0;i<7;i++) {
+    const id=`survey-professional-${i}`;
+    batch.set(db.doc(`therapists/${id}`),{nombre:`Professional ${i}`,activo:true,especialidades:["Ansiedad"],modalidades:[i===6?"Presencial":"Online"]});
+    if(i>=5) batch.set(db.doc(`therapist_availability/survey-slot-${i}`),{therapistId:id,date,startTime:"10:00",endTime:"11:00",durationMinutes:60,timeZone:"America/Lima",status:"available",modality:i===6?"Presencial":"Remoto"});
+  }
+  await batch.commit();
+  const result=await httpCall("B","getRecommendedTherapists",{requiredCriteria:[]});
+  assert.equal(result.outcome,"ok");
+  assert.deepEqual(result.requiredCriteria,["modalidad"]);
+  assert.deepEqual(result.therapists.map(t=>t.id),["survey-professional-5"]);
+  assert.equal(result.profile.completado,true);
+  await db.doc(`profiles/${uid}`).update({modalidad:"Híbrido"});
+  const hybrid=await httpCall("B","getRecommendedTherapists",{requiredCriteria:[]});
+  assert.deepEqual(hybrid.therapists.map(t=>t.id),["survey-professional-5","survey-professional-6"]);
+  await db.doc(`profiles/${uid}`).update({modalidad:""});
+  await assert.rejects(httpCall("B","getRecommendedTherapists",{}),{code:"failed-precondition"});
+});

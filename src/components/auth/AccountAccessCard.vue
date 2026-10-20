@@ -25,7 +25,7 @@ import { computed, onBeforeUnmount, ref, watch } from "vue";
 import { useAuthStore } from "@/store/auth";
 import { acceptCurrentConsent, getAccountAccessStatus } from "@/services/accountService";
 import { legalConfig } from "@/config/legal";
-const emit = defineEmits(["access"]);
+const emit = defineEmits(["access", "status"]);
 const authStore = useAuthStore();
 const status = ref(null), error = ref(""), loading = ref(false), accepted = ref(false);
 let generation = 0;
@@ -41,11 +41,11 @@ const message = computed(() => ({
 async function refresh() {
   const current = ++generation;
   status.value = null; error.value = ""; accepted.value = false;
-  emit("access", false); loading.value = true;
+  emit("access", false); emit("status", null); loading.value = true;
   try {
     const result = await getAccountAccessStatus();
     if (current !== generation) return;
-    status.value = result; emit("access", result.allowed);
+    status.value = result; emit("access", result.allowed); emit("status", result);
   } catch {
     if (current === generation) error.value = "No pudimos comprobar tu cuenta. Intenta nuevamente.";
   } finally { if (current === generation) loading.value = false; }
@@ -63,7 +63,7 @@ async function accept() {
 }
 watch(() => [authStore.currentUser?.uid, legalConfig.version], ([uid]) => {
   if (uid) refresh();
-  else { generation++; status.value = null; emit("access", false); }
+  else { generation++; status.value = null; emit("access", false); emit("status", null); }
 }, { immediate: true });
 onBeforeUnmount(() => { generation++; });
 </script>

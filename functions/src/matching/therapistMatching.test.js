@@ -67,3 +67,18 @@ test("mandatory criteria never get silently relaxed", () => {
       ["remote-woman"],
   );
 });
+
+test("hybrid accepts both; concrete modality stays mandatory", () => {
+  const therapists = [
+    {id: "remote", modalidad: "Online"},
+    {id: "office", modalidad: "Presencial"},
+    {id: "hybrid", modalidades: ["Híbrido"]},
+    {id: "missing"},
+  ];
+  assert.deepEqual(findMatchingTherapists(therapists,
+      {modalidad: "Híbrido"}, ["modalidad"]).map((item) => item.id),
+  ["remote", "office", "hybrid"]);
+  assert.deepEqual(findMatchingTherapists(therapists,
+      {modalidad: "Online"}, ["modalidad"]).map((item) => item.id),
+  ["remote", "hybrid"]);
+});

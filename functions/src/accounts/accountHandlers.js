@@ -1,3 +1,4 @@
+const {surveyInputMode} = require("../chat/surveyPolicy");
 /* eslint-disable max-len */
 const firestoreAdmin = require("firebase-admin/firestore");
 const authAdmin = require("firebase-admin/auth");
@@ -166,7 +167,8 @@ async function exportOwnData(request) {
 async function getAccountAccessStatus(request) {
   const auth = requireAuth(request);
   const user = (await firestoreAdmin.getFirestore().doc(`users/${auth.uid}`).get()).data();
-  return evaluateAccess(user, auth, await readLegalPolicy());
+  return {...evaluateAccess(user, auth, await readLegalPolicy()),
+    survey: {inputMode: surveyInputMode()}};
 }
 
 async function acceptCurrentConsent(request) {

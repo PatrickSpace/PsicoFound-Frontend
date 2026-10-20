@@ -1,9 +1,11 @@
 const {normalizeKey} = require("./criteria");
+const {normalizeModality, modalityMatches} = require("./modality");
 
 function findMatchingTherapists(
     allTherapists = [],
     criteria = {},
     requiredCriteria = [],
+    limit = 5,
 ) {
   const reqEspecialidades = normalizeStringArray(criteria.especialidades);
   const reqEnfoque = normalizeKey(criteria.enfoque);
@@ -45,7 +47,7 @@ function findMatchingTherapists(
         ) && (anyCriterion ? score > 0 : true);
       })
       .sort((a, b) => b.score - a.score)
-      .slice(0, 5)
+      .slice(0, limit)
       .map((result) => result.therapist);
 }
 
@@ -95,7 +97,7 @@ function getCriterionMatches(therapist, request) {
     genero: request.reqGenero ?
       normalizeKey(therapist.genero) === request.reqGenero : null,
     modalidad: request.reqModalidad ?
-      modalities.includes(request.reqModalidad) : null,
+      modalityMatches(modalities, request.reqModalidad) : null,
     edad: ageMatches,
   };
 }
@@ -130,7 +132,7 @@ function scoreTherapist(therapist, request) {
   ).map(normalizeModality);
   if (
     request.reqModalidad &&
-    therapistModalidades.includes(request.reqModalidad)
+    modalityMatches(therapistModalidades, request.reqModalidad)
   ) {
     score += 1;
   }
@@ -168,37 +170,6 @@ function parseAgeRange(value) {
   }
 
   return {minEdad: 0, maxEdad: 0};
-}
-
-function normalizeModality(value) {
-  const normalized = normalizeKey(value);
-
-  if (!normalized || normalized === "me es indiferente") {
-    return "";
-  }
-
-  if (
-    normalized === "online" ||
-    normalized === "remota" ||
-    normalized === "remoto" ||
-    normalized === "virtual"
-  ) {
-    return "remoto";
-  }
-
-  if (normalized === "presencial" || normalized === "precencial") {
-    return "presencial";
-  }
-
-  if (
-    normalized === "hibrida" ||
-    normalized === "hiibrido" ||
-    normalized === "hibrido"
-  ) {
-    return "hibrido";
-  }
-
-  return normalized;
 }
 
 function normalizeStringArray(value) {

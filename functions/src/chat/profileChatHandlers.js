@@ -12,6 +12,33 @@ const {createSurveyService} = require("./surveyService");
 const {makeTurn, validateTurn} = require("./surveyTurn");
 const {assertProviderApproved} = require("../ai/providerPolicy");
 
+async function startProfileChatConversation(request) {
+  await requirePatientAccess(request);
+  const db = firestoreAdmin.getFirestore();
+  const uid = request.auth.uid;
+  return db.runTransaction(async (tx) => {
+    const conversationRef = db.doc(`conversations/${uid}`);
+    const profileRef = db.doc(`profiles/${uid}`);
+    const conversation = (await tx.get(conversationRef)).data() || {};
+    const saved = (await tx.get(profileRef)).data() || {};
+    const sessionId = conversation.activeSessionId || randomUUID();
+    const profile = finalizeProfileForMatching({...PROFILE_DEFAULTS,
+      ...sanitizeModelProfileData(saved), sessionId});
+    const previousTurn = conversation.activeTurn;
+    const nextTurn = makeTurn(profile, sessionId);
+    const activeTurn = previousTurn?.sessionId === sessionId &&
+      (previousTurn.field === nextTurn.field ||
+        (previousTurn.kind === "confirmation" && nextTurn.field === "temas")) &&
+      previousTurn.status === nextTurn.status ?
+      previousTurn : nextTurn;
+    tx.set(profileRef, {...profile, uid, updatedAt: FieldValue.serverTimestamp()}, {merge: true});
+    tx.set(conversationRef, {uid, activeSessionId: sessionId, activeTurn,
+      ...(!conversation.activeSessionId ? {sessionStartedAt: Timestamp.now()} : {}),
+      updatedAt: FieldValue.serverTimestamp()}, {merge: true});
+    return {profile, activeTurn, sessionId};
+  });
+}
+
 async function sendProfileChatMessage(request) {
   await requirePatientAccess(request);
   return createSurveyService({db: firestoreAdmin.getFirestore(), generate: getProfileChatAIResult})
@@ -75,4 +102,4 @@ async function resetProfileChatConversation(request) {
     return result;
   });
 }
-module.exports = {sendProfileChatMessage, updateProfilePreferences, resetProfileChatConversation};
+module.exports = {startProfileChatConversation, sendProfileChatMessage, updateProfilePreferences, resetProfileChatConversation};

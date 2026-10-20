@@ -28,9 +28,9 @@ const {onCall} = require("./src/operations/callable");
 const {
   diagnoseAccountDeletion, authorizeAccountDeletion, executeAccountDeletion,
 } = require("./src/accounts/privacyHandlers");
-const {GEMINI_API_KEY} = require("./src/config");
 const {
   resetProfileChatConversation,
+  startProfileChatConversation,
   sendProfileChatMessage,
   updateProfilePreferences,
 } = require("./src/chat/profileChatHandlers");
@@ -65,11 +65,16 @@ setGlobalOptions({
 exports.sendProfileChatMessage = onCall(
     {
       minInstances: 0,
-      secrets: process.env.FUNCTIONS_EMULATOR === "true" &&
-        /^demo-/.test(process.env.GCLOUD_PROJECT || "") ? [] : [GEMINI_API_KEY],
+      // Restore the provider secret only after its activation review.
+      secrets: [],
       timeoutSeconds: 60,
     },
     sendProfileChatMessage,
+);
+
+exports.startProfileChatConversation = onCall(
+    {minInstances: 0, timeoutSeconds: 20},
+    startProfileChatConversation,
 );
 
 exports.resetProfileChatConversation = onCall(

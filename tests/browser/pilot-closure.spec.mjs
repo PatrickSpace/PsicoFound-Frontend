@@ -1,6 +1,6 @@
 import {test,expect} from '@playwright/test';
 import {adminFirestore} from '../helpers/admin-sdk.mjs';
-import {seedPatient,httpCall} from '../helpers/patient-http.mjs';
+import {seedPatient,httpCall,seedSlots} from '../helpers/patient-http.mjs';
 import {password} from '../helpers/followup-fixtures.mjs';
 let db;
 test.beforeEach(async ({context}) => {
@@ -81,4 +81,38 @@ test('B-02: bounded history pages retrieve previous messages without extending p
   await page.getByRole('button',{name:'Cargar mensajes anteriores',exact:true}).click();
   await expect(page.getByText('Mensaje paginado 0',{exact:true})).toBeVisible();
   await expect(page.getByRole('button',{name:'Cargar mensajes anteriores',exact:true})).toHaveCount(0);
+});
+
+
+test('B-04: guided survey completes with topic and modality, preserves reload and optional preferences',async ({page},info)=>{
+  await db.doc('conversations/patient-b').delete();
+  await db.doc('profiles/patient-b').delete();
+  await seedSlots(db);
+  await page.route('**/getAccountAccessStatus',async route=>{
+    const response=await route.fetch();
+    const payload=await response.json();
+    payload.result.survey={inputMode:'guided'};
+    await route.fulfill({response,json:payload});
+  });
+  await login(page);
+  await expect(page.getByText('Encuesta guiada',{exact:true})).toBeVisible();
+  await expect(page.getByPlaceholder('Escribe cómo te sientes...')).toHaveCount(0);
+  await page.getByRole('button',{name:'Ansiedad',exact:true}).click();
+  await expect(page.getByRole('button',{name:'Online',exact:true})).toBeVisible();
+  const first=(await db.doc('conversations/patient-b').get()).data();
+  await page.reload();
+  await expect(page.getByRole('button',{name:'Online',exact:true})).toBeVisible();
+  expect((await db.doc('conversations/patient-b').get()).data().activeSessionId).toBe(first.activeSessionId);
+  await page.getByRole('button',{name:'Online',exact:true}).click();
+  await expect(page.getByRole('button',{name:'Ver psicólogos',exact:true})).toBeVisible();
+  const profile=(await db.doc('profiles/patient-b').get()).data();
+  expect(profile.completado).toBe(true);
+  for(const field of ['preferenciaGenero','preferenciaEdad','enfoque'])expect(profile[field]).toBe('');
+  await page.getByRole('button',{name:'Ajustar preferencias (opcional)',exact:true}).click();
+  await page.getByRole('button',{name:'Guardar correcciones',exact:true}).click();
+  await expect(page.getByRole('dialog')).toHaveCount(0);
+  await page.screenshot({path:`test-results/survey-guided-${info.project.name}.png`,fullPage:true});
+  await page.getByRole('button',{name:'Ver psicólogos',exact:true}).click();
+  await expect(page.getByText(/Modalidad: remoto · Obligatorio/)).toBeVisible();
+  await expect(page.getByText('Psicólogos afines a tu perfil',{exact:true})).toBeVisible();
 });

@@ -29,6 +29,11 @@ const updateProfilePreferencesCallable = httpsCallable(
   "updateProfilePreferences"
 );
 
+export async function startProfileChatConversation() {
+  const result = await httpsCallable(functions, "startProfileChatConversation")();
+  return result.data;
+}
+
 export async function sendProfileChatMessage(message, requestId, context = {}) {
   try {
     const result = await sendProfileChatMessageCallable({ message, requestId, ...context });

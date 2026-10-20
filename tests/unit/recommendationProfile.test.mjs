@@ -7,11 +7,14 @@ const complete = {
   preferenciaGenero: "indiferente", preferenciaEdad: "18-25",
 };
 
-test("readiness needs every regular criterion, not just completado", () => {
+test("readiness requires topic and explicit valid modality, not optional preferences or stored completion", () => {
   assert.equal(ready(complete), true);
-  for (const field of Object.keys(complete)) {
+  for (const field of ["temas", "modalidad"]) {
     assert.equal(ready({ ...complete, [field]: field === "temas" ? [] : " ", completado: true }), false, field);
   }
+  assert.equal(ready({temas:["Ansiedad"], modalidad:"online"}), true);
+  assert.equal(ready({temas:["Ansiedad"], modalidad:"desconocida"}), false);
+  assert.equal(ready({temas:["Ansiedad"], modalidad:"indiferente"}), true);
 });
 
 test("talk-only omits specialty and approach but keeps preferences", () => {

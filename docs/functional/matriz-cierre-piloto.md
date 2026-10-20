@@ -27,7 +27,7 @@ Antecedentes: [informe del 10 de octubre](../archive/functional/informe-cierre-t
 | A-05 | Retención/eliminación: política, diagnóstico, autorización e idempotencia | Verificado local | `privacyHandlers.test.js`, `pilot-accounts.integration.test.mjs`: política ausente, inventario desconocido, operador, mantenimiento, cursor parcial, cambio de datos, recibos compartidos sin política y tokens antiguos bloqueados | Plazos/acciones sobre registros compartidos aprobados; [procedimiento](../operations/pilot-privacy.md) |
 | B-01 | Proveedor y minimización | Verificado técnicamente; aprobación pendiente | `surveyTurn.test.js`, `AIService.test.js`: payload mínimo, sin contenido en logs y sin proveedor real en emulador; [fuentes oficiales y fecha](../operations/pilot-provider-review.md) | Contrato, facturación, privacidad y alcance aprobados |
 | B-02 | Turnos, corrección, recarga, fallo/reintento/reset | Verificado local | `pilot-survey.integration.test.mjs`: 5 casos de concurrencia, corrección, reset tardío, reintento y continuidad; `pilot-closure.spec.mjs`: recarga/reset/paginación | No se llamó a IA real; contrato actual conservado |
-| B-04 | Fase 6 de encuesta: modalidad requerida y demás preferencias opcionales | Parcial: preferencias flexibles e indispensables implementados; completitud aún exige preferencias y modalidad no es obligatoria en matching | `profiles/profile.js`, `matching/recommendTherapists.js`; [contrato vigente](encuesta-matching.md) | Definir campos mínimos, indiferencia, híbrido, indispensables y compatibilidad; implementar y validar antes de marcar cerrado |
+| B-04 | Fase 6 de encuesta: modalidad requerida y demás preferencias opcionales | Implementado 2026-10-20; validación y publicación al final del documento | Mínimo tema/solo conversar + modalidad; preferencias opcionales, híbrido compatible, servidor impone modalidad, disponibilidad antes del límite de cinco; [contrato vigente](encuesta-matching.md) | Activación de Gemini y revisión del proveedor siguen separadas |
 | B-03 | Ayuda independiente y casos de riesgo | Verificado técnicamente | `suicideRisk.test.js`, `pilot-closure.spec.mjs`: negación/terceros/pasado/ambigüedad y ayuda con cuota agotada | [Revisión clínica pendiente](../operations/pilot-help-review.md); tests no validan un detector clínico |
 | C-01 | Cuotas distribuidas y concurrencia | Verificado local | `pilot-survey.integration.test.mjs`: contadores/leases transaccionales por usuario y globales, fallo cerrado sin configuración | Límites reales aprobados |
 | C-02 | Idempotencia, leases y respuestas obsoletas | Verificado local | Mismo ID/payload no repite proveedor; resultado incierto no se reintenta, lease abandonado libera concurrencia; reset/corrección descartan resultado tardío | Proveedor sin garantía exactly-once |
@@ -87,12 +87,14 @@ revisión del 14 de octubre reporta auditorías sin vulnerabilidades y Knip apro
 para conocer un árbol posterior repetir comprobaciones. No se arrastran avisos antiguos
 como incidencias abiertas sin verificarlos.
 
-## Decisiones externas (no aprobadas)
+## Decisiones externas y estado de aprobación
 
 - Elegibilidad: acceso 18+ aprobado por el responsable el 2026-10-17; política
   `2026-10-v1` en `functions/.env.psicosaas-3c819`. Se calcula la edad declarada
   en hora de Lima y se rechaza a menores en el servidor.
-- Legal: URLs/documentos/versiones y regla de reaceptación. La configuración sintética no es publicable.
+- Legal: primera versión `2026-10-v1` publicada el 2026-10-17, con administración
+  de borradores/publicaciones e historial de consentimiento. La revisión de
+  retención y obligaciones de privacidad sigue siendo un pendiente separado.
 - Privacidad: acción y retención por categoría, expedientes compartidos, obligaciones y autoridad ejecutora.
 - IA: proveedor/plan/retención/uso permitido, revisión clínica del protocolo y fuentes de ayuda.
 - Comercial: vencimiento, cancelación/reprogramación, devolución, ausencia y obligación profesional.
@@ -225,3 +227,31 @@ configuración externa ni operación productiva.
 El usuario autorizó publicar todo el estado local validado. La configuración real de
 App Check, documentos legales y políticas de producción no está en los archivos locales;
 se advirtió la limitación y el usuario reiteró el despliegue mediante CLI con la configuración existente. No se habilitan políticas ausentes.
+
+### Encuesta guiada y cierre de B-04 — 2026-10-20
+
+Se implementó el recorrido guiado inicial para minimizar uso del proveedor: inicio
+idempotente sin saludo obligatorio, tema o «solo conversar», modalidad explícita y
+recomendaciones. Género, edad y enfoque son opcionales y editables. Modalidad se
+impone en el servidor incluso si el cliente omite indispensables; híbrido admite
+online/presencial. Se recalcula completitud para perfiles anteriores y se verifica
+la disponibilidad antes de limitar las recomendaciones a cinco.
+
+Producción selecciona `SURVEY_INPUT_MODE=guided`; el compositor libre se oculta y
+el servidor rechaza entradas desconocidas antes de reservar cuota o invocar IA.
+No se vincula el secreto de Gemini al envío guiado. Se conservan los controles
+para una activación futura del proveedor. Límite inicial: 30 envíos por cuenta/día,
+2 simultáneos globales. No se afirma costo Firebase cero ni aprobación de Gemini.
+
+Validación final con datos sintéticos y red externa bloqueada: **87/87 backend**,
+**42/42 unitarias frontend**, **77/77 integraciones** del piloto y
+**10/10 pruebas de navegador** de encuesta/registro en escritorio y móvil. Incluye
+inicio/reapertura, cuota sin proveedor, modalidad/híbrido, resultados después del
+quinto profesional, acceso directo prohibido, recarga y preferencias opcionales.
+Lint backend, build, Knip y `git diff --check` pasan. Se inspeccionaron capturas de
+escritorio/móvil en `test-results/survey-guided-*.png`. Se corrigió una carrera en
+la preparación de la prueba de registro: espera los documentos vigentes antes de
+marcar el consentimiento, sin omitir el requisito de aceptación.
+
+Este cierre reemplaza el pendiente B-04 descrito en el contraste del 15 de octubre.
+Gemini real, revisiones clínicas/privacidad y validación con usuarios siguen aparte.

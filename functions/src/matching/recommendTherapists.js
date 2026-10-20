@@ -6,7 +6,10 @@ const {
   findMatchingTherapists,
   getMatchDetails,
 } = require("./therapistMatching");
-const {getCurrentProfile} = require("../profiles/profile");
+const {
+  getCurrentProfile, finalizeProfileForMatching,
+} = require("../profiles/profile");
+const {modalityMatches} = require("./modality");
 const {assertFutureSlot} = require("../appointments/appointmentDomain");
 
 const CRITERIA_KEYS = new Set([
@@ -26,7 +29,9 @@ async function getRecommendedTherapists(request) {
   const uid = request.auth.uid;
   const db = firestoreAdmin.getFirestore();
   const profileRef = db.collection("profiles").doc(uid);
-  const profile = await getCurrentProfile(profileRef);
+  const profile = finalizeProfileForMatching(
+      await getCurrentProfile(profileRef),
+  );
   if (!profile.completado) {
     throw new HttpsError(
         "failed-precondition",
@@ -43,6 +48,7 @@ async function getRecommendedTherapists(request) {
       therapists,
       criteria,
       requiredCriteria,
+      therapists.length,
   );
   const availability = await getFutureAvailabilityByTherapist(
       db,
@@ -50,7 +56,7 @@ async function getRecommendedTherapists(request) {
   );
   const recommendations = matches.filter((therapist) =>
     availability.has(therapist.id),
-  );
+  ).slice(0, 5);
   const outcome = recommendations.length ? "ok" :
     matches.length ? "no_availability" : "no_matches";
 
@@ -91,9 +97,7 @@ async function getFutureAvailabilityByTherapist(db, requiredModality = "") {
   snapshot.docs.forEach((doc) => {
     const slot = doc.data();
     const therapistId = (slot.therapistId || "").toString().trim();
-    const modality = normalizeModality(slot.modality);
-    const required = normalizeModality(requiredModality);
-    if (!therapistId || (required && modality !== required)) {
+    if (!therapistId || !modalityMatches(slot.modality, requiredModality)) {
       return;
     }
     try {
@@ -111,20 +115,14 @@ async function getFutureAvailabilityByTherapist(db, requiredModality = "") {
 
 function normalizeRequiredCriteria(value, criteria) {
   const requested = Array.isArray(value) ? value : [];
-  return [...new Set(requested)]
+  const required = [...requested, ...(criteria.modalidad ? ["modalidad"] : [])];
+  return [...new Set(required)]
       .filter((key) => CRITERIA_KEYS.has(key))
       .filter((key) => {
         const criterion = criteria[key];
         return Array.isArray(criterion) ?
           criterion.length > 0 : Boolean(criterion);
       });
-}
-
-function normalizeModality(value) {
-  const normalized = (value || "").toString().trim().toLowerCase();
-  if (["online", "remota", "virtual"].includes(normalized)) return "remoto";
-  if (["hibrida", "híbrida", "híbrido"].includes(normalized)) return "hibrido";
-  return normalized;
 }
 
 function sanitizeTherapistForClient(therapist = {}) {

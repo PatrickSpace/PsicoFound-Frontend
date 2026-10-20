@@ -16,7 +16,7 @@ const consent = {legalAccepted: true, legalVersion: "review-2026-10-06",
 test("A-01/02: direct chat/matching/reset blocked for legacy consent, minor and unverified account", async () => {
   for (const fields of [{legalAcceptance: null}, {fechaNacimiento: "2020-01-01"}, {patientOnboardingStatus: "pending"}]) {
     await seedPatient(); await db.doc("users/patient-b").update(fields);
-    for (const name of ["sendProfileChatMessage", "getRecommendedTherapists", "resetProfileChatConversation", "updateProfilePreferences", "getBookingQuote", "reserveAppointment"]) {
+    for (const name of ["startProfileChatConversation", "sendProfileChatMessage", "getRecommendedTherapists", "resetProfileChatConversation", "updateProfilePreferences", "getBookingQuote", "reserveAppointment"]) {
       await assert.rejects(httpCall("B", name, {message: "hola", requestId: "direct-bypass", profile: {modalidad: "remoto"}}), failed);
     }
   }

@@ -251,3 +251,20 @@ El intento queda limitado a uno por minuto en la sesión; si el almacenamiento
 está bloqueado no se recarga automáticamente. Los errores de autenticación o
 permisos no provocan esta recuperación. La sesión de Firebase y el perfil creado
 se conservan: no se repite el alta ni la aceptación legal.
+
+## Encuesta guiada inicial — 2026-10-20
+
+La configuración pública de producción selecciona `SURVEY_INPUT_MODE=guided`.
+El paciente elige tema/solo conversar y modalidad; las preferencias restantes
+son opcionales. El editor guarda datos directamente en Firebase. Este modo
+no usa Gemini, oculta el compositor libre y rechaza entradas no reconocidas
+en el servidor antes de consumir cuota. La función de envío no vincula el
+secreto de Gemini en esta entrega. Activar texto libre en producción requiere
+restaurar explícitamente esa vinculación después de la revisión del proveedor,
+además de configurar modo, límites y aprobaciones. Se conservan los controles
+de acceso, consentimiento, App Check, concurrencia y ayuda independiente.
+
+Límite inicial: 30 envíos por cuenta/día y 2 envíos simultáneos globales.
+No elimina los posibles costos de Authentication, Firestore o Functions ni
+aprueba el uso de IA. Contrato y verificación en
+[encuesta y recomendaciones](../functional/encuesta-matching.md).
