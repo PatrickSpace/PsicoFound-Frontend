@@ -39,7 +39,9 @@ export async function seedPatient() {
     if (error.code !== "auth/uid-already-exists") throw error;
     await adminAuth.getAuth(app).updateUser("review-admin", { emailVerified: true, password });
   }
-  await db.doc("users/review-admin").set({ roles: ["admin"], nombre: "Administrador sintético" });
+  await db.doc("users/review-admin").set({ roles: ["admin"], nombre: "Administrador sintético",
+    legalAcceptance: {version: "review-2026-10-06", termsUrl: "https://example.test/terms",
+      privacyUrl: "https://example.test/privacy", acceptedAt: "2026-10-09"} });
   await db.doc("users/patient-b").update({ fechaNacimiento: "1991-02-03", telefono: "999000111",
     pais: "España", zonaHoraria: "Europe/Madrid" });
   await db.doc("profiles/patient-b").set({ temas: ["Ansiedad"], motivoConsulta: "Motivo sintético",

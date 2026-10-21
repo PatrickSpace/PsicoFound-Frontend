@@ -28,12 +28,14 @@
 </template>
 <script setup>
 import { onBeforeUnmount, onMounted, ref, watch } from "vue";
-import { useRouter } from "vue-router";
+import { useRoute, useRouter } from "vue-router";
+import { safeReturnPath } from "@/utils/returnPath";
 import { auth } from "@/plugins/Firebase/firebase";
 import { getUserById } from "@/services/userService";
 import { hasPublishedLegalDocuments, legalConfig } from "@/config/legal";
 import { finalizeRegistration, getPostAuthenticationRoute, REGISTRATION_INTENT_STORAGE_KEY, REGISTRATION_INTENTS } from "@/services/onboardingService";
 const router = useRouter();
+const route = useRoute();
 const errorMessage = ref(""), needsConsent = ref(false), accepted = ref(false), loading = ref(false);
 let generation = 0;
 watch(() => legalConfig.version, () => { accepted.value = false; });
@@ -51,6 +53,10 @@ async function resolveOnboarding() {
     let profile = await getUserById(uid);
     if (!active()) return;
     if (!profile) {
+      if (route.path !== "/registro") {
+        await router.replace({path: "/registro", query: {redirect: safeReturnPath(route.query.redirect)}});
+        return;
+      }
       needsConsent.value = true;
       if (!accepted.value || !hasPublishedLegalDocuments.value) return;
       const storedIntent = sessionStorage.getItem(REGISTRATION_INTENT_STORAGE_KEY);
@@ -61,7 +67,10 @@ async function resolveOnboarding() {
       profile = result.profile;
       sessionStorage.removeItem(REGISTRATION_INTENT_STORAGE_KEY);
     }
-    await router.replace(getPostAuthenticationRoute(profile));
+    const next = getPostAuthenticationRoute(profile);
+    await router.replace(typeof route.query.redirect === "string" ?
+      (profile.onboardingStatus === "complete" ? safeReturnPath(route.query.redirect) :
+        {path: next, query: {redirect: safeReturnPath(route.query.redirect)}}) : next);
   } catch (error) {
     if (!active()) return;
     console.error("Onboarding resolution error:", error);

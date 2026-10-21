@@ -114,6 +114,7 @@ import {
   signInWithPopup,
 } from "firebase/auth";
 import { useRouter } from "vue-router";
+import { safeReturnPath } from "@/utils/returnPath";
 import { useAppContextStore } from "@/store/appContext";
 import { getUserById } from "@/services/userService";
 import {
@@ -195,7 +196,9 @@ async function routeAfterLogin(user) {
   let profile = await getUserById(user.uid);
 
   if (!profile) {
-    await router.replace("/onboarding");
+    const redirect = router.currentRoute.value.query.redirect;
+    await router.replace(typeof redirect === "string" ?
+      {path: "/onboarding", query: {redirect: safeReturnPath(redirect)}} : "/onboarding");
     return;
   }
 

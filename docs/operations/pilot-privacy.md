@@ -268,3 +268,23 @@ Límite inicial: 30 envíos por cuenta/día y 2 envíos simultáneos globales.
 No elimina los posibles costos de Authentication, Firestore o Functions ni
 aprueba el uso de IA. Contrato y verificación en
 [encuesta y recomendaciones](../functional/encuesta-matching.md).
+
+## Aceptación de documentos en registro — 2026-10-21
+
+La aceptación y renovación del consentimiento se presentan en `/registro`, también
+para una cuenta autenticada. La encuesta comprueba acceso sin mostrar el formulario
+de documentos. Si falta el consentimiento vigente, la navegación protegida lleva a
+`/registro?redirect=...`; después de aceptar vuelve al destino original con sus
+parámetros y fragmento. Los documentos públicos siguen accesibles antes de aceptar.
+
+La renovación conserva la identidad y el perfil existentes: no crea otra cuenta.
+Si el alta quedó incompleta, su recuperación se presenta en la misma ruta de
+registro. El retorno también se conserva durante verificación y datos de paciente;
+se evitan retornos a pantallas de autenticación, destinos externos y bucles de
+onboarding. Las comprobaciones y el historial de consentimiento del servidor se
+mantienen como autoridad sobre la versión vigente.
+
+Validación: `tests/unit/returnPath.test.mjs` y recorridos de consentimiento,
+renovación en una encuesta abierta, recarga, registro, cuenta incompleta y correo
+en `tests/browser/legal-documents.spec.mjs` y `patient-http.spec.mjs`. Las pruebas
+usan identidades sintéticas y emuladores aislados; no envían correo real.

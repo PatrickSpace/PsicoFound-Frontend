@@ -1,6 +1,6 @@
 <template>
   <section class="survey-shell">
-    <AccountAccessCard @access="accountAllowed = $event" @status="applySurveyStatus" />
+    <AccountAccessCard redirect-to-registration @access="accountAllowed = $event" @status="applySurveyStatus" />
     <v-btn class="pf-btn-ghost mb-2" to="/elegirterapeuta?crisis=1">Consultar recursos de ayuda</v-btn>
     <div class="chat-layout">
       <div class="chat-header">

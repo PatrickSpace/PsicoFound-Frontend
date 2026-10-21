@@ -47,6 +47,7 @@ import { computed, onBeforeUnmount, onMounted, ref } from "vue";
 import { signOut } from "firebase/auth";
 import { useAuthStore } from "@/store/auth";
 import { sendVerificationEmail, verificationDelivery, verificationLastAttempt, verificationSendError } from "@/services/emailVerificationService";
+import { safeReturnPath } from "@/utils/returnPath";
 import { verificationResendSeconds } from "@/utils/emailVerification";
 import { useRoute, useRouter } from "vue-router";
 import MainLogo from "@/components/Common/MainLogo.vue";
@@ -87,9 +88,9 @@ async function checkVerification(silent = false) {
       const profile = await getUserById(uid);
       if (!active()) return;
       await router.replace(
-        profile && typeof route.query.redirect === "string"
-          ? route.query.redirect
-          : "/onboarding"
+        typeof route.query.redirect === "string" ?
+          (profile ? safeReturnPath(route.query.redirect) :
+            {path: "/onboarding", query: {redirect: safeReturnPath(route.query.redirect)}}) : "/onboarding"
       );
       return;
     }

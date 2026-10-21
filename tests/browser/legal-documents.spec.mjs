@@ -52,3 +52,37 @@ test('published legal documents are accessible before login and linked to regist
  await page.goto('/registro');await expect(page.getByRole('link',{name:'términos de uso',exact:true})).toHaveAttribute('href','https://app.lurems.lat/terminos?version=public-v1');
  await page.goto('/privacidad?version=public-v1');await expect(page.locator('.legal-text')).toHaveText('Privacidad pública');
 });
+
+test('consent belongs to registration and returns to the original page without creating another account',async({page},info)=>{
+ await db.doc('users/patient-b').update({legalAcceptance:adminFirestore.FieldValue.delete()});
+ const target='/encuesta?source=terms#continuar';
+ await login(page,'patient-b',target);
+ await expect(page).toHaveURL(url=>url.pathname==='/registro'&&url.searchParams.get('redirect')===target);
+ await expect(page.getByRole('heading',{name:'Requisitos de la cuenta',exact:true})).toBeVisible();
+ await expect(page.getByRole('button',{name:'Crear cuenta',exact:true})).toHaveCount(0);
+ await expect(page.getByRole('button',{name:'Aceptar versión vigente',exact:true})).toBeDisabled();
+ await page.reload();
+ await expect(page.getByRole('heading',{name:'Completa tu registro',exact:true})).toBeVisible();
+ await page.getByRole('checkbox',{name:'He leído y acepto los documentos de la versión review-2026-10-06'}).check();
+ await page.getByRole('button',{name:'Aceptar versión vigente',exact:true}).click();
+ await expect(page).toHaveURL(url=>url.pathname==='/encuesta'&&url.searchParams.get('source')==='terms'&&url.hash==='#continuar');
+ await expect(page.getByRole('heading',{name:'Requisitos de la cuenta',exact:true})).toHaveCount(0);
+ expect((await db.collection('users/patient-b/consents').get()).size).toBe(1);
+ await page.reload();await expect(page).toHaveURL(/\/encuesta/);
+ await expect(page.getByRole('checkbox',{name:/He leído y acepto/})).toHaveCount(0);
+ await page.screenshot({path:info.outputPath(`survey-without-consent-banner-${info.project.name}.png`),fullPage:true});
+});
+
+test('a newly published legal version redirects an open survey to registration and preserves its destination',async({page})=>{
+ const target='/encuesta?source=renewal';
+ await login(page,'patient-b',target);
+ await expect(page.getByRole('button',{name:'Ajustar preferencias (opcional)',exact:true})).toBeVisible();
+ await httpCall('review-admin','saveLegalDraft',{id:'renewal-one',version:'renewal-v1',termsText:'Términos renovados',privacyText:'Privacidad renovada',expectedRevision:0});
+ await httpCall('review-admin','publishLegalDraft',{id:'renewal-one',expectedRevision:1,expectedCurrentVersion:'review-2026-10-06',confirmReviewed:true,approvalReference:'Prueba de renovación'});
+ await expect(page).toHaveURL(url=>url.pathname==='/registro'&&url.searchParams.get('redirect')===target);
+ await page.goto(target);await expect(page).toHaveURL(/\/registro\?/);
+ await page.getByRole('checkbox',{name:'He leído y acepto los documentos de la versión renewal-v1'}).check();
+ await page.getByRole('button',{name:'Aceptar versión vigente',exact:true}).click();
+ await expect(page).toHaveURL(url=>url.pathname==='/encuesta'&&url.searchParams.get('source')==='renewal');
+ expect((await db.doc('users/patient-b').get()).data().legalAcceptance.version).toBe('renewal-v1');
+});

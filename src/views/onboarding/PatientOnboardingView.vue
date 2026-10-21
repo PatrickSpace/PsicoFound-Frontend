@@ -75,7 +75,8 @@
 <script setup>
 import { onBeforeUnmount, reactive, ref } from "vue";
 import { onAuthStateChanged } from "firebase/auth";
-import { useRouter } from "vue-router";
+import { useRoute, useRouter } from "vue-router";
+import { safeReturnPath } from "@/utils/returnPath";
 import OnboardingShell from "@/components/onboarding/OnboardingShell.vue";
 import { auth } from "@/plugins/Firebase/firebase";
 import { useAppContextStore } from "@/store/appContext";
@@ -89,6 +90,7 @@ import { ageOnDate } from "@/utils/accountPolicy";
 import { agendaDate } from "@/utils/dateTime";
 
 const router = useRouter();
+const route = useRoute();
 const appContext = useAppContextStore();
 const valid = ref(false);
 const initializing = ref(true);
@@ -154,7 +156,8 @@ async function submit() {
     if (current !== generation || auth.currentUser?.uid !== uid) return;
     await appContext.loadForUser(uid, { force: true });
     if (current !== generation || auth.currentUser?.uid !== uid) return;
-    await router.replace(result.nextRoute || "/encuesta");
+    const target = safeReturnPath(route.query.redirect, result.nextRoute || "/encuesta");
+    await router.replace(target.startsWith("/onboarding") ? result.nextRoute || "/encuesta" : target);
   } catch (error) {
     if (current !== generation) return;
     console.error("Patient onboarding error:", error);

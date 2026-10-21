@@ -255,3 +255,20 @@ marcar el consentimiento, sin omitir el requisito de aceptación.
 
 Este cierre reemplaza el pendiente B-04 descrito en el contraste del 15 de octubre.
 Gemini real, revisiones clínicas/privacidad y validación con usuarios siguen aparte.
+
+### Consentimiento centralizado en registro — 2026-10-21
+
+La encuesta comprueba acceso sin mostrar el banner de documentos. Si falta aceptar
+la versión vigente, las rutas protegidas devuelven a `/registro`, conservando el
+destino, sus parámetros y fragmento. Una cuenta autenticada acepta allí sin crear
+otra identidad; el registro incompleto también se recupera en esa ruta. Tras la
+aceptación, y los datos de onboarding si corresponden, se recupera el destino
+original. Documentos públicos siguen accesibles. Se rechazan retornos externos y
+pantallas de autenticación que producirían bucles.
+
+Validación local con emuladores aislados: **44/44 unitarias frontend** y
+**18/18 navegador** en escritorio/móvil (14 de consentimiento/registro/encuesta,
+4 de administración legal). Incluye renovación mientras la encuesta está abierta,
+recarga, historial único, retorno con query/fragmento, recuperación de cuenta,
+verificación de correo y administración de versiones. Build, Knip y comprobación
+de formato pasan. No cambia el contrato de consentimiento del servidor.

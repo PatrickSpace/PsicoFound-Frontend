@@ -1,5 +1,5 @@
 <template>
-  <v-card v-if="!status?.allowed" class="card-backgoundcustom pa-4 mb-4" variant="text">
+  <v-card v-if="!redirectToRegistration && !status?.allowed" class="card-backgoundcustom pa-4 mb-4" variant="text">
     <h2 class="text-h6 mb-2">Requisitos de la cuenta</h2>
     <p v-if="status?.eligibility" class="text-body-2 mb-3">La política vigente requiere {{ status.eligibility.minimumAge }} años o más. La fecha declarada no equivale a verificación documental.</p>
     <v-alert v-if="error" color="error" variant="tonal" class="mb-3">{{ error }}</v-alert>
@@ -22,9 +22,13 @@
 
 <script setup>
 import { computed, onBeforeUnmount, ref, watch } from "vue";
+import { useRoute, useRouter } from "vue-router";
+import { safeReturnPath } from "@/utils/returnPath";
 import { useAuthStore } from "@/store/auth";
 import { acceptCurrentConsent, getAccountAccessStatus } from "@/services/accountService";
 import { legalConfig } from "@/config/legal";
+const props = defineProps({redirectToRegistration: Boolean});
+const route = useRoute(), router = useRouter();
 const emit = defineEmits(["access", "status"]);
 const authStore = useAuthStore();
 const status = ref(null), error = ref(""), loading = ref(false), accepted = ref(false);
@@ -45,7 +49,14 @@ async function refresh() {
   try {
     const result = await getAccountAccessStatus();
     if (current !== generation) return;
-    status.value = result; emit("access", result.allowed); emit("status", result);
+    status.value = result;
+    if (props.redirectToRegistration && !result.allowed) {
+      const path = ["onboarding_required", "eligibility_required"].includes(result.reason) ?
+        "/onboarding/paciente" : result.reason === "verification_required" ? "/verificar-correo" : "/registro";
+      await router.replace({path, query: {redirect: safeReturnPath(route.fullPath)}});
+      return;
+    }
+    emit("access", result.allowed); emit("status", result);
   } catch {
     if (current === generation) error.value = "No pudimos comprobar tu cuenta. Intenta nuevamente.";
   } finally { if (current === generation) loading.value = false; }

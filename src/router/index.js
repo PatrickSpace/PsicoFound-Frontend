@@ -1,5 +1,7 @@
 import { createRouter, createWebHistory } from "vue-router";
 import { onAuthStateChanged } from "firebase/auth";
+import { getAccountAccessStatus } from "@/services/accountService";
+import { safeReturnPath } from "@/utils/returnPath";
 import { installChunkRecovery } from "@/utils/chunkRecovery";
 const InicioencuestaView = () => import("@/views/encuesta/InicioEncuestaView.vue");
 const EncuestaView = () => import("@/views/encuesta/EncuestaView.vue");
@@ -266,7 +268,9 @@ router.beforeEach(async (to) => {
   }
 
   if (user && isGuestOnlyRoute) {
-    return "/onboarding";
+    if (to.name === "registro") return;
+    return typeof to.query.redirect === "string" ?
+      {path: "/onboarding", query: {redirect: safeReturnPath(to.query.redirect)}} : "/onboarding";
   }
 
   // Verification needs Auth only; profile queries must not delay this screen.
@@ -275,6 +279,12 @@ router.beforeEach(async (to) => {
   if (user && !isPublicRoute) {
     const appContext = useAppContextStore();
     await appContext.loadForUser(user.uid, { force: true });
+    if (appContext.userProfile) {
+      const access = await getAccountAccessStatus();
+      if (access.reason === "consent_required") {
+        return {path: "/registro", query: {redirect: safeReturnPath(to.fullPath)}};
+      }
+    }
     const blockingOnboardingRoute = getBlockingOnboardingRoute(
       appContext.userProfile || {}
     );
@@ -284,7 +294,7 @@ router.beforeEach(async (to) => {
       !to.meta.onboarding &&
       to.path !== blockingOnboardingRoute
     ) {
-      return blockingOnboardingRoute;
+      return {path: blockingOnboardingRoute, query: {redirect: safeReturnPath(to.fullPath)}};
     }
 
     const allowedModes = Array.isArray(to.meta.modes) ? to.meta.modes : [];
