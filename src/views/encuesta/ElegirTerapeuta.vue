@@ -17,8 +17,11 @@
         prepend-icon="mdi-tune-variant"
         @click="router.push('/encuesta')"
       >
-        <span class="restart-survey-button__desktop">Ajustar preferencias</span>
-        <span class="restart-survey-button__mobile">Ajustar</span>
+        <span v-if="isCrisisMode">Regresar a la encuesta</span>
+        <template v-else>
+          <span class="restart-survey-button__desktop">Ajustar preferencias</span>
+          <span class="restart-survey-button__mobile">Ajustar</span>
+        </template>
       </v-btn>
       <!--
       <v-btn append-icon="mdi-refresh" class="theme-contrast-text text-body-1 my-5 pf-btn-ghost" variant="text" size="large">
