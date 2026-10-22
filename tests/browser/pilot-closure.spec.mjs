@@ -20,10 +20,9 @@ async function send(page,message) {
   await page.getByRole('button',{name:'Enviar mensaje',exact:true}).click();
   return response;
 }
-test('B-02/F-01: local survey turns, reload and reset preserve authoritative session',async ({page})=>{
+test('B-02/F-01: guided options, reload and reset preserve authoritative session',async ({page})=>{
   await httpCall('B','resetProfileChatConversation',{requestId:'browser-reset-initial'});
   await login(page);
-  expect((await send(page,'hola')).ok()).toBe(true);
   await expect(page.getByRole('button',{name:'Solo conversar',exact:true})).toBeVisible();
   await page.getByRole('button',{name:'Solo conversar',exact:true}).click();
   await expect(page.getByRole('button',{name:'Online',exact:true})).toBeVisible();
@@ -36,7 +35,6 @@ test('B-02/F-01: local survey turns, reload and reset preserve authoritative ses
   await page.getByRole('button',{name:'Reiniciar encuesta',exact:true}).click();
   await expect.poll(async()=>(await db.doc('conversations/patient-b').get()).data().activeSessionId).not.toBe(before.activeSessionId);
   await expect(page.getByText('No sé',{exact:true})).toHaveCount(0);
-  await send(page,'hola');
   await expect(page.getByRole('button',{name:'Solo conversar',exact:true})).toBeVisible();
 });
 test('B-03/C-01: quota error keeps independent help accessible',async ({page})=>{

@@ -74,8 +74,8 @@ test("B-02: correction preserves fields and invalidates an in-flight result; no 
   assert.equal((await db.collection(`conversations/${uid}/messages`).get()).size, 0);
 });
 test("B-02: HTTP turns survive reload, reject stale options and keep AI fallback pending", async () => {
-  await httpCall("B", "resetProfileChatConversation", {requestId: "http-local-reset"});
-  const first = await httpCall("B", "sendProfileChatMessage", {message: "hola", requestId: "http-local-first"});
+  const reset = await httpCall("B", "resetProfileChatConversation", {requestId: "http-local-reset"});
+  const first = {activeTurn: reset.activeTurn, sessionId: reset.activeSessionId};
   const next = await httpCall("B", "sendProfileChatMessage", {message: "Solo quiero conversar", requestId: "http-local-second",
     turnId: first.activeTurn.id, sessionId: first.sessionId, option: first.activeTurn.options.find(o => o.label === "Solo conversar")});
   assert.equal(next.activeTurn.field, "modalidad");
