@@ -24,7 +24,7 @@ test("B-02/C-01/02: concurrent retries invoke one provider and commit profile, t
   const result = await pending;
   assert.deepEqual(await service.send(uid, data), result); assert.equal(calls, 1);
   assert.equal((await db.collection(`conversations/${uid}/messages`).get()).size, 2);
-  assert.equal((await db.doc(`profiles/${uid}`).get()).data().modalidad, "online");
+  assert.equal((await db.doc(`profiles/${uid}`).get()).data().modalidad, "remoto");
   await assert.rejects(service.send(uid, {...data, message: "Changed"}), {code: "already-exists"});
   assert.deepEqual((await db.doc("runtime_controls/chat_concurrency").get()).data().leases, {});
 });
@@ -40,7 +40,10 @@ test("B-02/C-02: reset while provider runs discards late response and old operat
   await assert.rejects(service.send(uid, data), {code: "aborted"});
   const profile = (await db.doc(`profiles/${uid}`).get()).data();
   assert.equal(profile.sessionId, reset.activeSessionId); assert.equal(profile.motivoConsulta, "");
-  assert.equal((await db.collection(`conversations/${uid}/messages`).get()).size, 0);
+  const messages = await db.collection(`conversations/${uid}/messages`).get();
+  assert.equal(messages.size, 1);
+  assert.equal(messages.docs[0].data().role, "assistant");
+  assert.equal(messages.docs[0].data().sessionId, reset.activeSessionId);
 });
 test("C-01/02: failed provider not repeated, expired lease recoverable, daily quota remains distributed", async () => {
   let calls = 0, clock = Date.now();
@@ -70,7 +73,7 @@ test("B-02: correction preserves fields and invalidates an in-flight result; no 
   assert.equal((await db.doc(`profiles/${uid}`).get()).data().motivoConsulta, "Motivo sintético");
   assert.equal((await db.collection(`conversations/${uid}/messages`).get()).size, 0);
 });
-test("B-02: HTTP local turns survive reload, reject stale options and keep uncertainty pending", async () => {
+test("B-02: HTTP turns survive reload, reject stale options and keep AI fallback pending", async () => {
   await httpCall("B", "resetProfileChatConversation", {requestId: "http-local-reset"});
   const first = await httpCall("B", "sendProfileChatMessage", {message: "hola", requestId: "http-local-first"});
   const next = await httpCall("B", "sendProfileChatMessage", {message: "Solo quiero conversar", requestId: "http-local-second",
@@ -78,9 +81,16 @@ test("B-02: HTTP local turns survive reload, reject stale options and keep uncer
   assert.equal(next.activeTurn.field, "modalidad");
   await assert.rejects(httpCall("B", "sendProfileChatMessage", {message: "Ansiedad", requestId: "http-stale-option",
     turnId: first.activeTurn.id, option: first.activeTurn.options[0]}), {code: "aborted"});
-  const third = await httpCall("B", "sendProfileChatMessage", {message: "No sé", requestId: "http-local-third", turnId: next.activeTurn.id, sessionId: next.sessionId});
-  assert.equal(third.activeTurn.field, "modalidad"); assert.equal(third.profile.modalidad, "");
-  assert.equal((await db.doc(`conversations/${uid}`).get()).data().activeTurn.id, third.activeTurn.id);
+  await assert.rejects(httpCall("B", "sendProfileChatMessage", {message: "No sé", requestId: "http-local-third",
+    turnId: next.activeTurn.id, sessionId: next.sessionId}), {code: "unavailable"});
+  const conversation = (await db.doc(`conversations/${uid}`).get()).data();
+  assert.equal(conversation.activeTurn.field, "modalidad");
+  assert.match(conversation.lastMessage, /IA no está disponible/);
+  assert.match(conversation.lastMessage, new RegExp(next.activeTurn.question.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
+  assert.equal((await db.doc(`profiles/${uid}`).get()).data().modalidad, "");
+  const fallback = await db.collection(`conversations/${uid}/messages`)
+      .where("requestId", "==", "http-local-third").get();
+  assert.equal(fallback.size, 2);
 });
 
 test("B-04: guided answers complete without AI and require summary confirmation", async () => {

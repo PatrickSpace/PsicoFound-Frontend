@@ -13,7 +13,8 @@ function assertProviderApproved(env = process.env) {
       (env.PRIMARY_AI_PROVIDER && env.PRIMARY_AI_PROVIDER !== "openai") ||
       (env.AI_MODEL && env.AI_MODEL !== "gpt-6-luna") ||
       env.FALLBACK_AI_PROVIDER) {
-    throw new HttpsError("failed-precondition", "El uso del proveedor todavía requiere configuración y aprobaciones. La ayuda sigue disponible.");
+    throw new HttpsError("failed-precondition", "El uso del proveedor todavía requiere configuración y aprobaciones. La ayuda sigue disponible.",
+        {reason: "provider_unavailable"});
   }
   return policy;
 }

@@ -207,6 +207,8 @@ function createSurveyService({
       });
       return result;
     } catch (error) {
+      const providerUnavailable = error instanceof HttpsError &&
+        error.details?.reason === "provider_unavailable";
       await db.runTransaction(async (tx) => {
         const [conversation, operation, quota, global] = await Promise.all(
             [conversationRef, operationRef, quotaRef, globalRef]
@@ -216,7 +218,8 @@ function createSurveyService({
           const unchanged = conversation.data()?.activeSessionId ===
               claim.sessionId && conversation.data()?.activeTurn?.id ===
               claim.activeTurn.id;
-          if (unchanged && !(error instanceof HttpsError)) {
+          if (unchanged &&
+              (!(error instanceof HttpsError) || providerUnavailable)) {
             const stamp = FieldValue.serverTimestamp();
             const fallbackReply = [AI_UNAVAILABLE_REPLY,
               claim.activeTurn.question].filter(Boolean).join(" ");
@@ -240,6 +243,10 @@ function createSurveyService({
         }
         release(tx, quotaRef, globalRef, quota.data(), global.data(), lease, globalKey);
       });
+      if (providerUnavailable) {
+        throw new HttpsError("unavailable", AI_UNAVAILABLE_REPLY,
+            {historyPersisted: true});
+      }
       if (error instanceof HttpsError) throw error;
       throw new HttpsError("unavailable", AI_UNAVAILABLE_REPLY,
           {historyPersisted: true});
