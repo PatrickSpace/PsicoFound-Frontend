@@ -25,14 +25,17 @@ after(async () => {
   for (const { app, db } of clients.values()) { await terminate(db); await deleteApp(app); }
   if (adminApp) await adminApps.deleteApp(adminApp);
 });
-test("minimal summary authorizes the therapy, including earlier therapies, without private fields", async () => {
+test("approved summary requires confirmed consent, including earlier therapies, without private fields", async () => {
   for (const therapyId of ["b-active", "b-old"]) {
     const result = await handlers.getTherapySharedSummary(call("A", { therapyId, mode: "psychologist" }));
-    assert.deepEqual(Object.keys(result).sort(), ["reason", "recordedAt", "source", "status", "topics"]);
+    assert.deepEqual(Object.keys(result).sort(), ["historyAvailable", "preferences", "reason", "recordedAt", "source", "status", "topics"]);
+    assert.equal(result.status, "available");
     assert.equal(result.reason, "Motivo compartido de B");
-    assert.equal(result.recordedAt, "2026-09-01T12:00:00.000Z");
+    assert.equal(result.recordedAt, "2026-10-21T12:00:00.000Z");
+    assert.equal(result.historyAvailable, true);
+    assert.equal(result.preferences.enfoque, "Indiferente");
   }
-  assert.equal((await handlers.getTherapySharedSummary(call("A", { therapyId: "c-old", mode: "psychologist" }))).status, "absent");
+  await assert.rejects(handlers.getTherapySharedSummary(call("A", { therapyId: "c-old", mode: "psychologist" })), denied);
   for (const who of ["D", "X"]) await assert.rejects(handlers.getTherapySharedSummary(call(who, { therapyId: "b-active", mode: "psychologist" })), denied);
   await assert.rejects(getDoc(doc(clients.get("A").db, "profiles/patient-b")), denied);
   await assert.rejects(getDoc(doc(clients.get("A").db, "conversations/patient-b")), denied);

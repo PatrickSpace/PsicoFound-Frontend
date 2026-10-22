@@ -55,6 +55,24 @@ export async function seedFollowup({ therapySelectionCases = false } = {}) {
     await db.doc(`terapias/${id}`).set({ ...identity, estado, pacienteEmail: `${accounts[patient].uid}@example.test`,
       ...(fechaCreacion === null ? {} : { fechaCreacion }), citas: [cita] });
     await db.doc(`citas/${cita.citaId}`).set({ ...identity, ...cita });
+    if (["b-active", "b-old"].includes(id)) {
+      await db.doc(`citas/survey-share-${id}`).set({
+        ...identity,
+        citaId: `survey-share-${id}`,
+        estado: "confirmada",
+        surveyHistoryConsent: true,
+        surveyHistoryConsentAt: "2026-10-21T12:00:00.000Z",
+        surveySummarySnapshot: {
+          motivoConsulta: "Motivo compartido de B",
+          soloConversar: false,
+          temas: ["Ansiedad"],
+          modalidad: "remoto",
+          preferenciaGenero: "Indiferente",
+          preferenciaEdad: "Indiferente",
+          enfoque: "Indiferente",
+        },
+      });
+    }
     await db.doc(`longitudinal_history/event-${id}`).set({ ...identity, eventType: "appointment_completed", sourceType: "appointment",
       sourceId: cita.citaId, title: `Sesión ${id}`, summary: `Evento ${id}`, occurredAt: cita.completedAt, createdBy: accounts[therapist].uid });
     if (id !== "b-active") {

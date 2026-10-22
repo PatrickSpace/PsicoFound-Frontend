@@ -49,7 +49,7 @@ test("A-D: patients, two progress entries, exercise completion and consistent ea
   await login(page, "A", "psychologist", "/pacientes");
   await expect(page.getByRole("button", { name: "Abrir paciente Paciente B" })).toBeEnabled();
   await expect(page.getByRole("button", { name: "Abrir paciente Paciente C" })).toBeEnabled();
-  await expect(page.getByText("Resumen no disponible", { exact: true }).first()).toBeVisible();
+  await expect(page.getByText("Acceso restringido", { exact: true }).first()).toBeVisible();
   await page.getByRole("button", { name: "Abrir paciente Paciente B" }).click();
   await expect(page.getByText("Motivo compartido de B", { exact: false })).toBeVisible();
   await expect(page.getByText("PRIVADO-NO-COMPARTIR")).toHaveCount(0);
@@ -217,7 +217,7 @@ test("E: dual role, empty filters, late requests and stale forms", async ({ page
 
 test("A,F: summary absent/error/restricted and direct unrelated therapy", async ({ page }, testInfo) => {
   await login(page, "A", "psychologist", "/terapiadetail?id=c-old");
-  await expect(page.getByText("Resumen no disponible: no hay motivo ni temas registrados.")).toBeVisible();
+  await expect(page.getByText("Acceso restringido al resumen inicial.")).toBeVisible();
   await page.route("**/getTherapySharedSummary", (route) => route.fulfill({ status: 500, contentType: "application/json", body: JSON.stringify({ error: { status: "INTERNAL", message: "Synthetic failure" } }) }));
   await page.goto("/terapiadetail?id=b-active");
   await expect(page.getByText("Error de carga del resumen. Puedes reintentar.")).toBeVisible();
