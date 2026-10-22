@@ -69,6 +69,22 @@ async function seedSlot(id, options = {}) {
 }
 
 async function reservation(who, slotId, requestId, extra = {}) {
+  await adminFirestore.getFirestore().doc(
+    `survey_summaries/${accounts[who].uid}`
+  ).set({
+    uid: accounts[who].uid,
+    sessionId: "appointment-test-survey",
+    confirmed: true,
+    summary: {
+      motivoConsulta: "Motivo sintético",
+      soloConversar: false,
+      temas: ["Ansiedad"],
+      modalidad: "remoto",
+      preferenciaGenero: "Indiferente",
+      preferenciaEdad: "Indiferente",
+      enfoque: "Indiferente",
+    },
+  });
   const quote = await getBookingQuote(call(who, {
     therapistId: extra.terapeutaId || "therapist-a",
   }));
@@ -78,6 +94,7 @@ async function reservation(who, slotId, requestId, extra = {}) {
     availabilitySlotId: slotId,
     requestId,
     quoteId: quote.quoteId,
+    shareSurveyHistoryConsent: true,
     ...extra,
   }));
 }

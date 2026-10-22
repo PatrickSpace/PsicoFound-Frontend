@@ -8,7 +8,7 @@ const OWNED_QUERIES = Object.freeze({
   psychologist_requests: "userUid", therapists: "uid", profile_chat_operations: "uid",
   admin_audit: "targetUid", appointment_operations: "actorUid", professional_obligations: "patientUid",
 });
-const SUBCOLLECTIONS = {users: ["consents"], conversations: ["messages"],
+const SUBCOLLECTIONS = {users: ["consents"], conversations: ["messages", "safety_events"],
   therapy_goals: ["progress"], therapists: ["rate_history"]};
 
 async function inventoryAccount(db, uid) {
@@ -26,7 +26,7 @@ async function inventoryAccount(db, uid) {
       for (const child of docs.docs) await include(child, `${category}/${collection.id}`);
     }
   }
-  for (const category of ["users", "profiles", "conversations", "profile_chat_quotas"]) {
+  for (const category of ["users", "profiles", "conversations", "profile_chat_quotas", "survey_summaries"]) {
     await include(await db.doc(`${category}/${uid}`).get(), category);
   }
   for (const [category, field] of Object.entries(OWNED_QUERIES)) {

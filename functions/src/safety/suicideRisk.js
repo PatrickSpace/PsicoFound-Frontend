@@ -42,16 +42,7 @@ function getCrisisResult(message) {
 
   return {
     reply: CRISIS_REPLY,
-    data: {
-      motivoConsulta: "Se mostraron recursos de ayuda por una expresión del mensaje.",
-      soloConversar: false,
-      riesgoSuicida: true,
-      temas: [],
-      enfoque: "indiferente",
-      urgencia: "alta",
-      observaciones: "Activación automática de recursos; no constituye evaluación clínica.",
-      completado: true,
-    },
+    riskSignal: "literal",
   };
 }
 
@@ -68,5 +59,6 @@ function hasClearSuicideRisk(message) {
 }
 
 module.exports = {
+  CRISIS_REPLY,
   getCrisisResult,
 };

@@ -370,7 +370,8 @@ test("professional rejects a confirmed appointment and patient sees the reason a
   await slots();
   const quote = await httpCall("B", "getBookingQuote", {therapistId: "therapist-a"});
   const {appointmentId} = await httpCall("B", "reserveAppointment", {mode: "patient",
-    terapeutaId: "therapist-a", availabilitySlotId: "review-ten", quoteId: quote.quoteId, requestId: "browser-rejection-reserve"});
+    terapeutaId: "therapist-a", availabilitySlotId: "review-ten", quoteId: quote.quoteId,
+    requestId: "browser-rejection-reserve", shareSurveyHistoryConsent: true});
   await httpCall("A", "changeAppointmentStatus", {mode: "psychologist", appointmentId,
     status: "confirmada", requestId: "browser-rejection-confirm"});
   await login(page, "/configuracion", "A");

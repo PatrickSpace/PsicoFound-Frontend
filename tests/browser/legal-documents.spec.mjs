@@ -76,7 +76,7 @@ test('consent belongs to registration and returns to the original page without c
 test('a newly published legal version redirects an open survey to registration and preserves its destination',async({page})=>{
  const target='/encuesta?source=renewal';
  await login(page,'patient-b',target);
- await expect(page.getByRole('button',{name:'Ajustar preferencias (opcional)',exact:true})).toBeVisible();
+ await expect(page.getByRole('button',{name:'Ajustar preferencias',exact:true})).toBeVisible();
  await httpCall('review-admin','saveLegalDraft',{id:'renewal-one',version:'renewal-v1',termsText:'Términos renovados',privacyText:'Privacidad renovada',expectedRevision:0});
  await httpCall('review-admin','publishLegalDraft',{id:'renewal-one',expectedRevision:1,expectedCurrentVersion:'review-2026-10-06',confirmReviewed:true,approvalReference:'Prueba de renovación'});
  await expect(page).toHaveURL(url=>url.pathname==='/registro'&&url.searchParams.get('redirect')===target);

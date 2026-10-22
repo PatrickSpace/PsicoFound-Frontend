@@ -31,11 +31,11 @@ Antecedentes: [informe del 10 de octubre](../archive/functional/informe-cierre-t
 | A-03 | Exportación propia y subcolecciones | Verificado local (9 casos de cuentas) | `pilot-accounts.integration.test.mjs`: Auth seguro, mensajes, consentimientos, progreso, tarifas y ledger profesional sin otro paciente/profesional | Política sobre expedientes compartidos |
 | A-04 | Recuperación y cambio de correo | Verificado en Auth emulator | `pilot-accounts.integration.test.mjs`: acciones OOB de un uso, nueva sesión verificada y sincronización desde Auth | Entrega real y Google en staging autorizado |
 | A-05 | Retención/eliminación: política, diagnóstico, autorización e idempotencia | Verificado local | `privacyHandlers.test.js`, `pilot-accounts.integration.test.mjs`: política ausente, inventario desconocido, operador, mantenimiento, cursor parcial, cambio de datos, recibos compartidos sin política y tokens antiguos bloqueados | Plazos/acciones sobre registros compartidos aprobados; [procedimiento](../operations/pilot-privacy.md) |
-| B-01 | Proveedor y minimización | Controles implementados y probados; proveedor real sin validar | `surveyTurn.test.js`, `AIService.test.js`: payload mínimo, sin contenido en logs y sin proveedor real en emulador; [fuentes y revisión previa](../operations/pilot-provider-review.md) | El recorrido guiado no requiere Gemini; aprobar contrato, facturación, privacidad y alcance antes de activar texto libre con proveedor |
-| B-02 | Turnos, corrección, recarga, fallo/reintento/reset | Verificado local | `pilot-survey.integration.test.mjs`: 7 casos de concurrencia, corrección, reset tardío, reintento, continuidad y modo guiado; `pilot-closure.spec.mjs`: recarga/reset/paginación | No se llamó a IA real; contrato guiado conservado |
-| B-04 | Fase 6 de encuesta: modalidad requerida y demás preferencias opcionales | Cerrado técnicamente; validación local documentada el 2026-10-20 | Mínimo tema/solo conversar + modalidad; preferencias opcionales, híbrido compatible, servidor impone modalidad, disponibilidad antes del límite de cinco; [contrato vigente](encuesta-matching.md) | Validación con usuarios; activación de Gemini y revisión del proveedor separadas |
+| B-01 | Proveedor y minimización | OpenAI/Luna aprobado y acceso real validado sin inferencia | `OpenAIProvider.test.js`, `history.test.js`, `surveyTurn.test.js`: Responses API, salida estructurada, 15 intercambios, payload mínimo y sin fallback; [revisión del proveedor](../operations/pilot-provider-review.md) | Revalidar si cambia proveedor, modelo, alcance o tratamiento de datos |
+| B-02 | Turnos, corrección, recarga, fallo/reintento/reset | Implementado y Functions publicadas | Confirmación de contradicciones, persistencia total, fallo recuperable, pregunta dinámica y redirección tras cinco turnos sin datos; unitarias verdes y endpoints desplegados alcanzables | Recorrido autenticado pendiente con una cuenta de prueba designada; por decisión del proyecto no se usan emuladores |
+| B-04 | Encuesta híbrida y resumen aprobado | Implementado y backend publicado | Motivo/solo conversar, modalidad, género, edad y enfoque; indiferencia válida, resumen editable confirmado, ranking flexible y opciones cercanas; [contrato vigente](encuesta-matching.md) | Validación autenticada con usuarios de prueba |
 | B-03 | Ayuda independiente y casos de riesgo | Verificado técnicamente | `suicideRisk.test.js`, `pilot-closure.spec.mjs`: negación/terceros/pasado/ambigüedad y ayuda con cuota agotada | [Revisión clínica pendiente](../operations/pilot-help-review.md); tests no validan un detector clínico |
-| C-01 | Cuotas distribuidas y concurrencia | Verificado local | `pilot-survey.integration.test.mjs`: contadores/leases transaccionales por usuario y globales, fallo cerrado sin configuración | Configuración inicial 30 envíos/día y 2 simultáneos globales documentada el 2026-10-20; consumo, alertas y configuración desplegada no revalidados aquí |
+| C-01 | Cuotas distribuidas y concurrencia | Verificado local; configuración publicada | `pilot-survey.integration.test.mjs`: contadores/leases transaccionales por usuario y globales, fallo cerrado sin configuración | Configuración activa de 30 envíos/día y 2 simultáneos globales; métricas y alertas pendientes de observación con tráfico autorizado |
 | C-02 | Idempotencia, leases y respuestas obsoletas | Verificado local | Mismo ID/payload no repite proveedor; resultado incierto no se reintenta, lease abandonado libera concurrencia; reset/corrección descartan resultado tardío | Proveedor sin garantía exactly-once |
 | C-03 | App Check por entorno | Código/configuración verificados localmente | `appCheckPolicy.test.js`: bypass solo demo emulado; producción exige enforcement; integración web reCAPTCHA Enterprise | Registro, métricas y enforcement reales en staging |
 | C-04 | Telemetría, alertas e incidentes | Telemetría verificada; activación pendiente | Correlación/latencia/códigos/consumo sin contenido; `pilot-alerts.example.json` y [procedimiento](../operations/pilot-release.md) | Umbrales, canales y responsables; alertas no activadas |
@@ -123,7 +123,7 @@ emuladores demo y aislamiento de red. Esta revisión modifica documentación, no
 | Comprobación | Resultado actual |
 | --- | --- |
 | `npm test` | 44/44 aprobadas |
-| `npm run test:backend` | 87/87 aprobadas |
+| `npm run test:backend` | 93/93 aprobadas |
 | `npm run lint:backend` y `npm run build` | Aprobados; persiste el aviso de tamaño del paquete principal |
 | `npm run audit:unused`, también modo producción | Aprobados; cuatro sugerencias de configuración de Knip, sin errores |
 | `npm audit --audit-level=moderate`, también en Functions | 0 vulnerabilidades en ambos árboles |
@@ -334,33 +334,23 @@ El usuario autorizó publicar todo el estado local validado. La configuración r
 App Check, documentos legales y políticas de producción no está en los archivos locales;
 se advirtió la limitación y el usuario reiteró el despliegue mediante CLI con la configuración existente. No se habilitan políticas ausentes.
 
-### Encuesta guiada y cierre de B-04 — 2026-10-20
+### Encuesta híbrida — 2026-10-21
 
-Se implementó el recorrido guiado inicial para minimizar uso del proveedor: inicio
-idempotente sin saludo obligatorio, tema o «solo conversar», modalidad explícita y
-recomendaciones. Género, edad y enfoque son opcionales y editables. Modalidad se
-impone en el servidor incluso si el cliente omite indispensables; híbrido admite
-online/presencial. Se recalcula completitud para perfiles anteriores y se verifica
-la disponibilidad antes de limitar las recomendaciones a cinco.
+El cierre guiado del 2026-10-20 queda reemplazado por el contrato híbrido descrito
+en [encuesta y matching](encuesta-matching.md): opciones locales siempre
+disponibles, texto libre con OpenAI `gpt-6-luna`, cinco respuestas registradas,
+orden dinámico, resumen confirmado y matching sin criterios indispensables. El
+historial se conserva completo; el modelo recibe solo 15 intercambios de la sesión
+activa. El psicólogo solo accede al resumen aprobado y, opcionalmente, al historial
+tras una cita confirmada con consentimiento específico.
 
-Producción selecciona `SURVEY_INPUT_MODE=guided`; el compositor libre se oculta y
-el servidor rechaza entradas desconocidas antes de reservar cuota o invocar IA.
-No se vincula el secreto de Gemini al envío guiado. Se conservan los controles
-para una activación futura del proveedor. Límite inicial: 30 envíos por cuenta/día,
-2 simultáneos globales. No se afirma costo Firebase cero ni aprobación de Gemini.
-
-Validación final con datos sintéticos y red externa bloqueada: **87/87 backend**,
-**42/42 unitarias frontend**, **77/77 integraciones** del piloto y
-**10/10 pruebas de navegador** de encuesta/registro en escritorio y móvil. Incluye
-inicio/reapertura, cuota sin proveedor, modalidad/híbrido, resultados después del
-quinto profesional, acceso directo prohibido, recarga y preferencias opcionales.
-Lint backend, build, Knip y `git diff --check` pasan. Se inspeccionaron capturas de
-escritorio/móvil en `test-results/survey-guided-*.png`. Se corrigió una carrera en
-la preparación de la prueba de registro: espera los documentos vigentes antes de
-marcar el consentimiento, sin omitir el requisito de aceptación.
-
-Este cierre reemplaza el pendiente B-04 descrito en el contraste del 15 de octubre.
-Gemini real, revisiones clínicas/privacidad y validación con usuarios siguen aparte.
+Validación de esta implementación: **93/93 pruebas backend**, **44/44 unitarias
+frontend**, lint, compilación, Knip y `git diff --check` pasan. Por decisión del
+proyecto no se usaron emuladores: el frontend se levantó localmente con `npm`
+contra Firebase real. Las diez Functions afectadas quedaron `ACTIVE`; sus pruebas
+de humo públicas confirmaron alcance y rechazo de solicitudes anónimas. El secret,
+la aprobación productiva y el acceso a `gpt-6-luna` se verificaron sin ejecutar
+inferencia. Falta el recorrido autenticado con una cuenta de prueba designada.
 
 ### Consentimiento centralizado en registro — 2026-10-21
 

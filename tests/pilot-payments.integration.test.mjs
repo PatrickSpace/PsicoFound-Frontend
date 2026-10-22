@@ -58,7 +58,8 @@ test('D-02: concurrent duplicate provider receipt credits only one appointment',
   const first = await submitted();
   const quote = await httpCall('C', 'getBookingQuote', {therapistId: 'therapist-a'});
   const second = (await httpCall('C', 'reserveAppointment', {terapeutaId:'therapist-a', availabilitySlotId:'review-fourteen',
-    requestId:'other-patient', quoteId:quote.quoteId, mode:'patient'})).appointmentId;
+    requestId:'other-patient', quoteId:quote.quoteId, mode:'patient',
+    shareSurveyHistoryConsent:true})).appointmentId;
   await httpCall('C','markPaymentSubmitted',{operationId:second});
   const results = await Promise.allSettled([review(first), review(second)]);
   assert.equal(results.filter(r => r.status === 'fulfilled').length, 1);

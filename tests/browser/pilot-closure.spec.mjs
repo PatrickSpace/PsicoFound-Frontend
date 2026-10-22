@@ -84,7 +84,7 @@ test('B-02: bounded history pages retrieve previous messages without extending p
 });
 
 
-test('B-04: guided survey completes with topic and modality, preserves reload and optional preferences',async ({page},info)=>{
+test('B-04: guided survey records all answers and confirms the summary',async ({page},info)=>{
   await db.doc('conversations/patient-b').delete();
   await db.doc('profiles/patient-b').delete();
   await seedSlots(db);
@@ -104,15 +104,21 @@ test('B-04: guided survey completes with topic and modality, preserves reload an
   await expect(page.getByRole('button',{name:'Online',exact:true})).toBeVisible();
   expect((await db.doc('conversations/patient-b').get()).data().activeSessionId).toBe(first.activeSessionId);
   await page.getByRole('button',{name:'Online',exact:true}).click();
+  await page.getByRole('button',{name:'Me da igual',exact:true}).click();
+  await page.getByRole('button',{name:'Me da igual',exact:true}).click();
+  await page.getByRole('button',{name:'Me da igual',exact:true}).click();
+  await expect(page.getByRole('button',{name:'Revisar resumen',exact:true})).toBeVisible();
+  await page.getByRole('button',{name:'Revisar resumen',exact:true}).click();
+  await page.getByRole('button',{name:'Confirmar y ver psicólogos',exact:true}).click();
   await expect(page.getByRole('button',{name:'Ver psicólogos',exact:true})).toBeVisible();
   const profile=(await db.doc('profiles/patient-b').get()).data();
   expect(profile.completado).toBe(true);
-  for(const field of ['preferenciaGenero','preferenciaEdad','enfoque'])expect(profile[field]).toBe('');
-  await page.getByRole('button',{name:'Ajustar preferencias (opcional)',exact:true}).click();
+  expect(profile.summaryConfirmed).toBe(true);
+  for(const field of ['preferenciaGenero','preferenciaEdad','enfoque'])expect(profile[field]).toBe('indiferente');
+  await page.getByRole('button',{name:'Ajustar preferencias',exact:true}).click();
   await page.getByRole('button',{name:'Guardar correcciones',exact:true}).click();
   await expect(page.getByRole('dialog')).toHaveCount(0);
   await page.screenshot({path:`test-results/survey-guided-${info.project.name}.png`,fullPage:true});
   await page.getByRole('button',{name:'Ver psicólogos',exact:true}).click();
-  await expect(page.getByText(/Modalidad: remoto · Obligatorio/)).toBeVisible();
   await expect(page.getByText('Psicólogos afines a tu perfil',{exact:true})).toBeVisible();
 });

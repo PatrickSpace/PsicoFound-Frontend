@@ -35,8 +35,10 @@ test("profileChatHandlers consume AIService y no un proveedor concreto", () => {
 
 test("reset writes conversation, profile and operation atomically", async (t) => {
   const writes = [];
+  const fakeRef = (path) => ({path, get: accountRef().get,
+    collection: (name) => ({doc: (id) => fakeRef(`${path}/${name}/${id}`)})});
   const fakeDb = {
-    doc: (path) => ({path, get: accountRef().get}),
+    doc: fakeRef,
     runTransaction: async (run) => run({
       get: async () => ({data: () => undefined}),
       set: (ref, data) => writes.push({path: ref.path, data}),
@@ -45,7 +47,10 @@ test("reset writes conversation, profile and operation atomically", async (t) =>
   };
   t.mock.method(firestoreAdmin, "getFirestore", () => fakeDb);
   const result = await resetProfileChatConversation({auth: patientAuth});
-  assert.equal(writes.length, 3);
+  assert.equal(writes.length, 5);
+  assert.ok(writes.some((item) => item.path === "survey_summaries/patient"));
+  assert.ok(writes.some((item) =>
+    item.path.startsWith("conversations/patient/messages/assistant_start_")));
   const conversation = writes.find((item) => item.path === "conversations/patient").data;
   const profile = writes.find((item) => item.path === "profiles/patient").data;
   assert.equal(profile.sessionId, result.activeSessionId);

@@ -1,6 +1,7 @@
 const admin = require("firebase-admin");
 const {
-  getTherapySharedSummary, createFollowupGoal, recordGoalProgress,
+  getTherapySharedHistory, getTherapySharedSummary,
+  createFollowupGoal, recordGoalProgress,
   assignFollowupExercise, completeFollowupExercise, createEmotionalCheckin,
 } = require("./src/therapy/followupHandlers");
 const {
@@ -30,10 +31,12 @@ const {
 } = require("./src/accounts/privacyHandlers");
 const {
   resetProfileChatConversation,
+  confirmProfileSummary,
   startProfileChatConversation,
   sendProfileChatMessage,
   updateProfilePreferences,
 } = require("./src/chat/profileChatHandlers");
+const {OPENAI_API_KEY} = require("./src/config");
 const {
   getRecommendedTherapists,
 } = require("./src/matching/recommendTherapists");
@@ -65,8 +68,7 @@ setGlobalOptions({
 exports.sendProfileChatMessage = onCall(
     {
       minInstances: 0,
-      // Restore the provider secret only after its activation review.
-      secrets: [],
+      secrets: [OPENAI_API_KEY],
       timeoutSeconds: 60,
     },
     sendProfileChatMessage,
@@ -88,6 +90,11 @@ exports.resetProfileChatConversation = onCall(
 exports.updateProfilePreferences = onCall(
     {minInstances: 0, timeoutSeconds: 20},
     updateProfilePreferences,
+);
+
+exports.confirmProfileSummary = onCall(
+    {minInstances: 0, timeoutSeconds: 20},
+    confirmProfileSummary,
 );
 
 exports.getRecommendedTherapists = onCall(
@@ -158,6 +165,7 @@ exports.reviewPaymentOperation = onCall(
 
 exports.manageAvailability = onCall(manageAvailability);
 exports.getTherapySharedSummary = onCall(getTherapySharedSummary);
+exports.getTherapySharedHistory = onCall(getTherapySharedHistory);
 exports.createFollowupGoal = onCall(createFollowupGoal);
 exports.recordGoalProgress = onCall(recordGoalProgress);
 exports.assignFollowupExercise = onCall(assignFollowupExercise);

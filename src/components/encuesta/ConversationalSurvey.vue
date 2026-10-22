@@ -9,7 +9,7 @@
         </div>
         <div class="chat-heading">
           <p class="text-caption text-medium-emphasis mb-1">
-            {{ surveyInputMode === "guided" ? "Encuesta guiada" : "Encuesta conversacional" }}
+            {{ surveyInputMode === "hybrid" ? "Encuesta híbrida" : surveyInputMode === "guided" ? "Encuesta guiada" : "Encuesta conversacional" }}
           </p>
           <h1 class="survey-title font-weight-bold">
             <span class="desktop-copy">Cuéntame cómo te sientes</span>
@@ -99,16 +99,16 @@
             Reiniciar
           </v-btn>
           <v-btn
-            v-if="canViewRecommendations"
+            v-if="canReviewSummary"
             class="recommendations-button pf-btn-primary"
-            aria-label="Ver psicólogos"
+            :aria-label="canViewRecommendations ? 'Ver psicólogos' : 'Revisar resumen'"
             variant="flat"
             color="primary"
             size="small"
             append-icon="mdi-arrow-right"
             @click="goToRecommendations"
           >
-            Ver psicólogos
+            {{ canViewRecommendations ? "Ver psicólogos" : "Revisar resumen" }}
           </v-btn>
         </div>
       </div>
@@ -201,17 +201,21 @@
       </div>
 
       <div class="composer-shell">
-        <p v-if="surveyInputMode === 'guided'" class="text-body-2 mb-3" role="status">
-          {{ canViewRecommendations ? "Tus preferencias están listas. Puedes ver psicólogos o ajustar tus respuestas." : "Elige una respuesta para continuar. Las demás preferencias son opcionales." }}
-        </p>
+        <v-alert v-if="helpReminder" color="warning" variant="tonal" class="mb-3" density="compact">
+          Si vuelves a necesitar ayuda inmediata, los recursos de apoyo siguen disponibles.
+          <v-btn variant="text" size="small" to="/elegirterapeuta?crisis=1">Ver recursos</v-btn>
+        </v-alert>
+        <v-alert v-if="aiUnavailable" color="warning" variant="tonal" class="mb-3" role="status">
+          La asistencia con IA no está disponible en este momento. Puedes intentarlo nuevamente en unos minutos o continuar seleccionando una de las opciones.
+        </v-alert>
         <v-alert v-if="startError" color="error" variant="tonal" class="mb-3">
           {{ startError }}
           <v-btn variant="text" :loading="startingSurvey" @click="ensureSurveyStarted">Reintentar inicio</v-btn>
         </v-alert>
         <v-btn v-if="activeSessionId" variant="tonal" class="mb-3 pf-btn-secondary" :disabled="loading || savingProfile" @click="openProfileEditor">
-          Ajustar preferencias (opcional)
+          Ajustar preferencias
         </v-btn>
-        <form v-if="surveyInputMode === 'conversational'" class="composer" @submit.prevent="handleSubmit">
+        <form v-if="surveyInputMode !== 'guided'" class="composer" @submit.prevent="handleSubmit">
           <v-textarea
             v-model="draft"
             auto-grow
@@ -240,6 +244,9 @@
             >Tu información ayuda a orientar la recomendación, no reemplaza
             diagnóstico clínico.</span
           >
+          <span v-if="surveyInputMode !== 'guided'">
+            El texto libre se procesa con OpenAI; las opciones se registran localmente.
+          </span>
         </div>
       </div>
     </div>
@@ -251,7 +258,10 @@
         </v-card-title>
         <v-card-text>
           <v-divider class="mb-4" />
-          <p class="text-body-2 mb-4">Para continuar solo necesitas un tema o elegir «solo conversar» y una modalidad. Las demás preferencias son opcionales.</p>
+          <p class="text-body-2 mb-4">
+            Para continuar responderás sobre el motivo, la modalidad y tus preferencias de género, edad y enfoque.
+            «Me da igual» cuenta como una respuesta válida. Si eliges «solo conversar», no te preguntaremos por tema ni enfoque.
+          </p>
           <p class="text-body-2 mb-3">
             Iniciarás una encuesta nueva y se reiniciarán el resumen y las recomendaciones.
             Los mensajes anteriores se conservan; reiniciar no es una solicitud de eliminación.
@@ -271,6 +281,35 @@
             @click="handleResetConversation"
           >
             Reiniciar encuesta
+          </v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+
+    <v-dialog v-model="summaryDialog" max-width="620">
+      <v-card class="pa-4 card-backgoundcustom" elevation="2" variant="text">
+        <v-card-title class="text-h6 font-weight-bold px-0 pt-0">
+          Revisa tu resumen
+        </v-card-title>
+        <v-card-text>
+          <v-divider class="mb-4" />
+          <p class="text-body-2 text-medium-emphasis mb-4">
+            Confirma que estas respuestas representan tus preferencias antes de ver psicólogos.
+          </p>
+          <v-list class="bg-transparent" density="compact">
+            <v-list-item v-for="item in profileSummaryItems" :key="item.label"
+              :title="item.label" :subtitle="item.value" />
+          </v-list>
+          <v-alert v-if="summaryError" color="error" variant="tonal" class="mt-3">
+            {{ summaryError }}
+          </v-alert>
+        </v-card-text>
+        <v-card-actions>
+          <v-btn variant="text" @click="openProfileEditorFromSummary">Corregir respuestas</v-btn>
+          <v-spacer />
+          <v-btn variant="text" @click="summaryDialog = false">Volver</v-btn>
+          <v-btn color="primary" variant="flat" :loading="confirmingSummary" @click="confirmSummary">
+            Confirmar y ver psicólogos
           </v-btn>
         </v-card-actions>
       </v-card>
@@ -323,7 +362,7 @@
             <v-col cols="12" sm="6">
               <v-select
                 v-model="profileForm.preferenciaGenero"
-                label="Género del profesional (opcional)"
+                label="Género del profesional"
                 clearable
                 :items="genderOptions"
                 variant="outlined"
@@ -332,7 +371,7 @@
             <v-col cols="12" sm="6">
               <v-select
                 v-model="profileForm.enfoque"
-                label="Tipo de acompañamiento (opcional)"
+                label="Tipo de acompañamiento"
                 clearable
                 :items="approachOptions"
                 variant="outlined"
@@ -341,7 +380,7 @@
             <v-col cols="12" sm="6">
               <v-select
                 v-model="profileForm.preferenciaEdad"
-                label="Rango de edad (opcional)"
+                label="Rango de edad"
                 clearable
                 :items="ageOptions"
                 variant="outlined"
@@ -379,6 +418,7 @@ import { useAuthStore } from "@/store/auth";
 import AccountAccessCard from "@/components/auth/AccountAccessCard.vue";
 import {
   resetProfileChatConversation,
+  confirmProfileSummary,
   startProfileChatConversation,
   sendProfileChatMessage,
   updateProfilePreferences,
@@ -396,7 +436,7 @@ const authStore = useAuthStore();
 
 const draft = ref("");
 const accountAllowed = ref(false);
-const surveyInputMode = ref("guided");
+const surveyInputMode = ref("hybrid");
 const startingSurvey = ref(false);
 const startError = ref("");
 const loading = ref(false);
@@ -419,6 +459,11 @@ const resetDialog = ref(false);
 const profileDialog = ref(false);
 const savingProfile = ref(false);
 const profileEditError = ref("");
+const aiUnavailable = ref(false);
+const helpReminder = ref(false);
+const summaryDialog = ref(false);
+const confirmingSummary = ref(false);
+const summaryError = ref("");
 const profileForm = reactive({
   motivoConsulta: "",
   soloConversar: false,
@@ -455,7 +500,7 @@ let unsubscribeProfile = null;
 const welcomeMessage = {
   id: "welcome",
   role: "assistant",
-  text: "Hola, soy Lurems. Cuéntame qué tipo de apoyo buscas.",
+  text: "Hola, soy Lurems. Gracias por estar aquí. Quiero conocerte un poco para ayudarte a encontrar un psicólogo que se ajuste a lo que necesitas. Puedes contarme con tus propias palabras qué estás viviendo o elegir una opción para comenzar. ¿Qué te gustaría compartir hoy?",
   suggestedOptions: [
     { label: "Ansiedad", value: "Ansiedad", field: "temas" },
     { label: "Depresión", value: "Depresión", field: "temas" },
@@ -496,6 +541,12 @@ const canViewRecommendations = computed(() => {
 
   return isProfileReadyForRecommendations(profile.value);
 });
+const canReviewSummary = computed(() => {
+  if (!activeSessionId.value || profile.value?.sessionId !== activeSessionId.value) {
+    return false;
+  }
+  return Boolean(profile.value?.completado);
+});
 const profileSummaryItems = computed(() => {
   if (
     !activeSessionId.value ||
@@ -521,10 +572,6 @@ const profileSummaryItems = computed(() => {
     items.unshift(["Tipo de apoyo", "Solo conversar"]);
   }
 
-  if (currentProfile.riesgoSuicida) {
-    items.unshift(["Riesgo", "Requiere apoyo urgente"]);
-  }
-
   return items
     .map(([label, value]) => ({
       label,
@@ -541,6 +588,8 @@ watch(
     activeSessionId.value = ""; profile.value = null; crisisRouteTriggered.value = false;
     resetting.value = false; savingProfile.value = false; resetRequestId = null;
     profileDialog.value = false; resetDialog.value = false;
+    summaryDialog.value = false; confirmingSummary.value = false;
+    summaryError.value = ""; aiUnavailable.value = false; helpReminder.value = false;
     activeTurn.value = null; startingSurvey.value = false; startError.value = "";
     earlierMessages.value = []; historyCursor = null; historyHasMore.value = false; loadingHistory.value = false;
     messages.value = []; optimisticMessages.value = []; draft.value = ""; loading.value = false;
@@ -563,6 +612,7 @@ watch(
         if (generation !== contextGeneration) return;
         const sessionId = conversation?.activeSessionId || "";
         activeTurn.value = conversation?.activeTurn || null;
+        helpReminder.value = Boolean(conversation?.helpReminder);
 
         if (sessionId === activeSessionId.value) {
           return;
@@ -604,13 +654,6 @@ watch(
         if (generation !== contextGeneration) return;
         profile.value = item;
 
-        if (item?.riesgoSuicida && !crisisRouteTriggered.value) {
-          crisisRouteTriggered.value = true;
-          router.push({
-            path: "/elegirterapeuta",
-            query: { crisis: "1" },
-          });
-        }
       },
       () => {
         if (generation !== contextGeneration) return;
@@ -658,7 +701,7 @@ async function handleSubmit() {
 }
 
 function applySurveyStatus(status) {
-  surveyInputMode.value = status?.survey?.inputMode || "conversational";
+  surveyInputMode.value = status?.survey?.inputMode || "hybrid";
   if (status?.allowed) ensureSurveyStarted();
 }
 
@@ -694,6 +737,7 @@ async function sendChatMessage(message, retryingMessage = null, option = null) {
   const generation = contextGeneration;
   const sending = sendGeneration;
   if (!accountAllowed.value) return;
+  aiUnavailable.value = false;
   loading.value = true;
   const optimisticMessage = retryingMessage || addOptimisticMessage(message);
   if (!retryingMessage) optimisticMessage.context = {sessionId: activeSessionId.value, turnId: activeTurn.value?.id || "", ...(option ? {option} : {})};
@@ -714,9 +758,25 @@ async function sendChatMessage(message, retryingMessage = null, option = null) {
     if ((generation !== contextGeneration || sending !== sendGeneration) || (activeSessionId.value && result.sessionId !== activeSessionId.value)) return;
     activeTurn.value = result.activeTurn;
     syncProfileFromChatResult(result);
+    helpReminder.value = Boolean(result.helpReminder);
+    if (result.helpMode && !crisisRouteTriggered.value) {
+      crisisRouteTriggered.value = true;
+      await router.push({ path: "/elegirterapeuta", query: { crisis: "1" } });
+      return;
+    }
+    if (result.summaryRequired) summaryDialog.value = true;
   } catch (err) {
     if ((generation !== contextGeneration || sending !== sendGeneration)) return;
     markOptimisticMessageAsFailed(optimisticMessage.id);
+    if (err?.code === "functions/unavailable") {
+      aiUnavailable.value = true;
+      if (err?.details?.historyPersisted) {
+        optimisticMessages.value = optimisticMessages.value.filter(
+          (item) => item.id !== optimisticMessage.id
+        );
+      }
+      if (!option) draft.value = message;
+    }
     notifyError(
       getReadableErrorMessage(err) ||
         "No pudimos enviar el mensaje. Inténtalo nuevamente en unos segundos."
@@ -751,6 +811,8 @@ async function handleResetConversation() {
     messages.value = [];
     optimisticMessages.value = [];
     profile.value = null;
+    summaryDialog.value = false;
+    aiUnavailable.value = false;
     resetDialog.value = false;
   } catch (err) {
     if (generation !== contextGeneration) return;
@@ -828,6 +890,7 @@ async function saveProfileCorrections() {
     profile.value = result.profile;
     activeTurn.value = result.activeTurn;
     profileDialog.value = false;
+    summaryDialog.value = Boolean(result.profile?.completado);
   } catch (error) {
     if (generation !== contextGeneration) return;
     profileEditError.value =
@@ -913,7 +976,34 @@ function getMessageCreatedAt(message) {
 }
 
 function goToRecommendations() {
+  if (!canViewRecommendations.value) {
+    summaryError.value = "";
+    summaryDialog.value = true;
+    return;
+  }
   router.push("/elegirterapeuta");
+}
+
+function openProfileEditorFromSummary() {
+  summaryDialog.value = false;
+  openProfileEditor();
+}
+
+async function confirmSummary() {
+  if (confirmingSummary.value) return;
+  confirmingSummary.value = true;
+  summaryError.value = "";
+  try {
+    const result = await confirmProfileSummary(activeSessionId.value);
+    syncProfileFromChatResult(result);
+    summaryDialog.value = false;
+    await router.push("/elegirterapeuta");
+  } catch (error) {
+    summaryError.value = getReadableErrorMessage(error) ||
+      "No pudimos confirmar el resumen. Revisa tus respuestas e inténtalo nuevamente.";
+  } finally {
+    confirmingSummary.value = false;
+  }
 }
 
 function getMessageOptions(message) {

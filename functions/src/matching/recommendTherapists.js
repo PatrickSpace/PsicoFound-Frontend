@@ -12,14 +12,6 @@ const {
 const {modalityMatches} = require("./modality");
 const {assertFutureSlot} = require("../appointments/appointmentDomain");
 
-const CRITERIA_KEYS = new Set([
-  "especialidades",
-  "enfoque",
-  "genero",
-  "modalidad",
-  "edad",
-]);
-
 async function getRecommendedTherapists(request) {
   await requirePatientAccess(request);
   if (!request.auth) {
@@ -32,17 +24,14 @@ async function getRecommendedTherapists(request) {
   const profile = finalizeProfileForMatching(
       await getCurrentProfile(profileRef),
   );
-  if (!profile.completado) {
+  if (!profile.completado || !profile.summaryConfirmed) {
     throw new HttpsError(
         "failed-precondition",
-        "Completa tu perfil antes de solicitar recomendaciones.",
+        "Revisa y confirma el resumen antes de solicitar recomendaciones.",
     );
   }
   const criteria = buildSearchCriteriaFromProfile(profile);
-  const requiredCriteria = normalizeRequiredCriteria(
-      request.data && request.data.requiredCriteria,
-      criteria,
-  );
+  const requiredCriteria = [];
   const therapists = await getActiveTherapists(db);
   const matches = findMatchingTherapists(
       therapists,
@@ -52,13 +41,12 @@ async function getRecommendedTherapists(request) {
   );
   const availability = await getFutureAvailabilityByTherapist(
       db,
-      requiredCriteria.includes("modalidad") ? criteria.modalidad : "",
   );
   const recommendations = matches.filter((therapist) =>
     availability.has(therapist.id),
   ).slice(0, 5);
   const outcome = recommendations.length ? "ok" :
-    matches.length ? "no_availability" : "no_matches";
+    therapists.length ? "no_availability" : "no_matches";
 
   return {
     profile,
@@ -67,9 +55,11 @@ async function getRecommendedTherapists(request) {
     outcome,
     therapists: recommendations.map((therapist) => {
       const slots = availability.get(therapist.id) || [];
+      const matchDetails = getMatchDetails(therapist, criteria);
       return {
         ...sanitizeTherapistForClient(therapist),
-        matchDetails: getMatchDetails(therapist, criteria),
+        matchDetails,
+        matchQuality: matchDetails.differs.length ? "closest" : "exact",
         availableSlots: slots.length,
       };
     }),
@@ -113,16 +103,8 @@ async function getFutureAvailabilityByTherapist(db, requiredModality = "") {
   return slotsByTherapist;
 }
 
-function normalizeRequiredCriteria(value, criteria) {
-  const requested = Array.isArray(value) ? value : [];
-  const required = [...requested, ...(criteria.modalidad ? ["modalidad"] : [])];
-  return [...new Set(required)]
-      .filter((key) => CRITERIA_KEYS.has(key))
-      .filter((key) => {
-        const criterion = criteria[key];
-        return Array.isArray(criterion) ?
-          criterion.length > 0 : Boolean(criterion);
-      });
+function normalizeRequiredCriteria() {
+  return [];
 }
 
 function sanitizeTherapistForClient(therapist = {}) {

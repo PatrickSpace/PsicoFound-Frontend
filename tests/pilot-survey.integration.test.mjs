@@ -51,9 +51,11 @@ test("C-01/02: failed provider not repeated, expired lease recoverable, daily qu
   await db.doc(`profile_chat_quotas/${uid}`).update({leaseUntil: clock + 1000});
   await assert.rejects(service.send(uid, {message: "hola", requestId: "recover-lease-one"}), {code: "aborted"});
   clock += 2000;
-  await service.send(uid, {message: "hola", requestId: "recover-lease-one"});
-  await service.send(uid, {message: "hola", requestId: "third-operation"});
-  await assert.rejects(service.send(uid, {message: "hola", requestId: "fourth-operation"}), {code: "resource-exhausted"});
+  const recoveryService = createSurveyService({db, limits, now: () => clock,
+    generate: async () => ({reply: "Gracias por compartirlo.", data: {}, riskSignal: "none"})});
+  await recoveryService.send(uid, {message: "hola", requestId: "recover-lease-one"});
+  await recoveryService.send(uid, {message: "hola", requestId: "third-operation"});
+  await assert.rejects(recoveryService.send(uid, {message: "hola", requestId: "fourth-operation"}), {code: "resource-exhausted"});
   assert.equal(calls, 1);
   assert.equal(JSON.stringify((await db.doc(`profile_chat_operations/${uid}_failed-provider-one`).get()).data()).includes("sensitive-provider-payload"), false);
 });
@@ -81,7 +83,7 @@ test("B-02: HTTP local turns survive reload, reject stale options and keep uncer
   assert.equal((await db.doc(`conversations/${uid}`).get()).data().activeTurn.id, third.activeTurn.id);
 });
 
-test("B-04: guided minimum completes without any AI invocation; unknown input never consumes quota", async () => {
+test("B-04: guided answers complete without AI and require summary confirmation", async () => {
   await db.doc(`profiles/${uid}`).delete();
   await db.doc(`conversations/${uid}`).delete();
   const first = await httpCall("B", "startProfileChatConversation", {});
@@ -89,27 +91,41 @@ test("B-04: guided minimum completes without any AI invocation; unknown input ne
   assert.equal(first.sessionId, again.sessionId);
   assert.equal(first.activeTurn.id, again.activeTurn.id);
   let providerCalls = 0;
-  const service = createSurveyService({db, limits, inputMode: () => "guided",
+  const service = createSurveyService({db,
+    limits: () => ({version: "guided-test", requestsPerDay: 10, globalConcurrency: 1}),
+    inputMode: () => "guided",
     generate: async () => { providerCalls++; throw new Error("must not call AI"); }});
   await assert.rejects(service.send(uid, {message: "Unknown free text", requestId: "guided-unknown"}), {code: "invalid-argument"});
   assert.equal((await db.doc(`profile_chat_quotas/${uid}`).get()).exists, false);
   const topic = await service.send(uid, {message: "Ansiedad", requestId: "guided-topic", sessionId: first.sessionId,
     turnId: first.activeTurn.id, option: first.activeTurn.options.find(o => o.label === "Ansiedad")});
-  const ready = await service.send(uid, {message: "Online", requestId: "guided-modality", sessionId: topic.sessionId,
+  const modality = await service.send(uid, {message: "Online", requestId: "guided-modality", sessionId: topic.sessionId,
     turnId: topic.activeTurn.id, option: topic.activeTurn.options.find(o => o.label === "Online")});
-  assert.equal(ready.readyForRecommendations, true);
+  const gender = await service.send(uid, {message: "Me da igual", requestId: "guided-gender", sessionId: topic.sessionId,
+    turnId: modality.activeTurn.id, option: modality.activeTurn.options.find(o => o.label === "Me da igual")});
+  const age = await service.send(uid, {message: "Me da igual", requestId: "guided-age", sessionId: topic.sessionId,
+    turnId: gender.activeTurn.id, option: gender.activeTurn.options.find(o => o.label === "Me da igual")});
+  const ready = await service.send(uid, {message: "Me da igual", requestId: "guided-approach", sessionId: topic.sessionId,
+    turnId: age.activeTurn.id, option: age.activeTurn.options.find(o => o.label === "Me da igual")});
+  assert.equal(ready.readyForRecommendations, false);
+  assert.equal(ready.summaryRequired, true);
   assert.equal(ready.activeTurn.status, "complete");
-  for (const field of ["preferenciaEdad", "preferenciaGenero", "enfoque"]) assert.equal(ready.profile[field], "");
+  for (const field of ["preferenciaEdad", "preferenciaGenero", "enfoque"]) assert.equal(ready.profile[field], "indiferente");
+  const confirmed = await httpCall("B", "confirmProfileSummary", {sessionId: first.sessionId});
+  assert.equal(confirmed.readyForRecommendations, true);
   const reopened = await httpCall("B", "startProfileChatConversation", {});
   assert.equal(reopened.sessionId, first.sessionId);
   assert.equal(reopened.profile.completado, true);
-  assert.equal((await db.collection(`conversations/${uid}/messages`).get()).size, 4);
+  assert.equal(reopened.profile.summaryConfirmed, true);
+  assert.equal((await db.collection(`conversations/${uid}/messages`).get()).size, 11);
   assert.equal(providerCalls, 0);
 });
 
-test("B-04: mandatory modality, hybrid slots, compatible availability before top five, and legacy completion", async () => {
+test("B-04: preferences rank closest available profiles without mandatory filters", async () => {
   const date = new Date(Date.now() + 86400000).toISOString().slice(0,10);
-  await db.doc(`profiles/${uid}`).set({temas: ["Ansiedad"], modalidad: "Online", completado: false});
+  await db.doc(`profiles/${uid}`).set({temas: ["Ansiedad"], modalidad: "Online",
+    preferenciaGenero: "Indiferente", preferenciaEdad: "Indiferente",
+    enfoque: "Indiferente", summaryConfirmed: true, completado: false});
   const therapists = await db.collection("therapists").get();
   const slots = await db.collection("therapist_availability").get();
   const batch = db.batch();
@@ -122,8 +138,8 @@ test("B-04: mandatory modality, hybrid slots, compatible availability before top
   await batch.commit();
   const result=await httpCall("B","getRecommendedTherapists",{requiredCriteria:[]});
   assert.equal(result.outcome,"ok");
-  assert.deepEqual(result.requiredCriteria,["modalidad"]);
-  assert.deepEqual(result.therapists.map(t=>t.id),["survey-professional-5"]);
+  assert.deepEqual(result.requiredCriteria,[]);
+  assert.deepEqual(result.therapists.map(t=>t.id),["survey-professional-5","survey-professional-6"]);
   assert.equal(result.profile.completado,true);
   await db.doc(`profiles/${uid}`).update({modalidad:"Híbrido"});
   const hybrid=await httpCall("B","getRecommendedTherapists",{requiredCriteria:[]});

@@ -125,6 +125,7 @@ function appointmentSummary(appointment) {
     paymentOperationId: appointment.paymentOperationId || "",
     paymentStatus: appointment.paymentStatus || "",
     paymentSnapshot: appointment.paymentSnapshot || null,
+    surveyHistoryConsent: appointment.surveyHistoryConsent === true,
     version: appointment.version || 1,
   };
 }
@@ -330,6 +331,19 @@ async function reserveAppointment(request) {
       const patientUid = therapy ? therapy.pacienteUid : auth.uid;
       const patientUser = patientUid === auth.uid ? actor.user :
         (await transaction.get(db.doc(`users/${patientUid}`))).data() || {};
+      let approvedSurveySummary = null;
+      if (mode === "patient") {
+        if (data.shareSurveyHistoryConsent !== true) {
+          throw new HttpsError("failed-precondition", "Debes aceptar compartir el resumen y el historial con el psicólogo de esta cita.");
+        }
+        const summarySnapshot = await transaction.get(
+            db.doc(`survey_summaries/${patientUid}`));
+        const summaryData = summarySnapshot.data();
+        if (!summaryData?.confirmed || !summaryData.summary) {
+          throw new HttpsError("failed-precondition", "Confirma el resumen de la encuesta antes de reservar.");
+        }
+        approvedSurveySummary = summaryData;
+      }
       const now = FieldValue.serverTimestamp();
       const appointment = {
         id: appointmentRef.id,
@@ -348,6 +362,10 @@ async function reserveAppointment(request) {
         version: 1,
         paymentOperationId: paymentQuote ? appointmentRef.id : "",
         paymentStatus: paymentQuote ? "pending" : "not_applicable",
+        surveyHistoryConsent: mode === "patient",
+        surveyHistoryConsentAt: mode === "patient" ? new Date().toISOString() : "",
+        surveySummarySessionId: approvedSurveySummary?.sessionId || "",
+        surveySummarySnapshot: approvedSurveySummary?.summary || null,
         paymentSnapshot: paymentQuote ? {
           isTest: paymentQuote.isTest,
           rateId: paymentQuote.rateId,

@@ -3,6 +3,7 @@ function buildProfileChatResponseSchema() {
     type: "OBJECT",
     properties: {
       confirmSoloConversar: {type: "BOOLEAN"},
+      riskSignal: {type: "STRING", enum: ["none", "contextual"]},
       reply: {type: "STRING"},
       suggestedOptions: {
         type: "ARRAY",
@@ -20,7 +21,6 @@ function buildProfileChatResponseSchema() {
         properties: {
           motivoConsulta: {type: "STRING"},
           soloConversar: {type: "BOOLEAN"},
-          riesgoSuicida: {type: "BOOLEAN"},
           temas: {
             type: "ARRAY",
             items: {type: "STRING"},
@@ -41,7 +41,7 @@ function buildProfileChatResponseSchema() {
         },
       },
     },
-    required: ["reply", "data"],
+    required: ["reply", "data", "riskSignal"],
   };
 }
 

@@ -8,7 +8,7 @@ test("18-25 preference respects both inclusive boundaries", () => {
   const criteria = buildSearchCriteriaFromProfile({preferenciaEdad: "18-25"});
   assert.equal(criteria.edad, "18-25");
   assert.deepEqual(findMatchingTherapists(therapists, criteria)
-      .map((item) => item.id), [18, 25]);
+      .map((item) => item.id), [18, 25, 17, 26]);
 });
 
 test("existing age preferences still behave the same", () => {
@@ -16,8 +16,9 @@ test("existing age preferences still behave the same", () => {
   for (const [edad, expected] of [
     ["25-35", [25, 35]], ["35-45", [35, 45]], ["+45", [45, 50]],
   ]) {
-    assert.deepEqual(findMatchingTherapists(therapists, {edad})
-        .map((item) => item.edad), expected);
+    const ranked = findMatchingTherapists(therapists, {edad})
+        .map((item) => item.edad);
+    assert.deepEqual(ranked.slice(0, expected.length), expected);
   }
 });
 
@@ -36,7 +37,7 @@ test("ranking preserves approach weight, normalization and stable ties", () => {
     preferenciaGenero: "mujer",
   });
   assert.deepEqual(findMatchingTherapists(therapists, criteria)
-      .map((item) => item.id), ["all", "approach", "topic", "tie"]);
+      .map((item) => item.id), ["all", "approach", "topic", "tie", "none"]);
   assert.equal(JSON.stringify(therapists), original);
 });
 

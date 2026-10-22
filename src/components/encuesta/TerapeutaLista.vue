@@ -50,11 +50,11 @@
                       <v-chip
                         class="mt-2"
                         size="x-small"
-                        color="warning"
+                        :color="therapist.matchQuality === 'exact' ? 'success' : 'warning'"
                         variant="tonal"
                         prepend-icon="mdi-star-circle"
                       >
-                        Recomendado
+                        {{ therapist.matchQuality === "exact" ? "Coincidencia completa" : "Opción cercana" }}
                       </v-chip>
                     </div>
                   </div>
@@ -76,11 +76,11 @@
                     </div>
                     <v-chip
                       size="small"
-                      color="warning"
+                      :color="therapist.matchQuality === 'exact' ? 'success' : 'warning'"
                       variant="tonal"
                       prepend-icon="mdi-star-circle"
                     >
-                      Recomendado
+                      {{ therapist.matchQuality === "exact" ? "Coincidencia completa" : "Opción cercana" }}
                     </v-chip>
                   </div>
 
@@ -112,11 +112,13 @@
                     </v-chip>
                   </div>
                   <div
-                    v-if="therapist.matchDetails?.matches?.length"
+                    v-if="therapist.matchDetails?.matches?.length || therapist.matchDetails?.differs?.length"
                     class="text-caption text-medium-emphasis mt-3"
                   >
-                    <strong>Coincide con:</strong>
-                    {{ matchLabels(therapist.matchDetails.matches) }}.
+                    <template v-if="therapist.matchDetails?.matches?.length">
+                      <strong>Coincide con:</strong>
+                      {{ matchLabels(therapist.matchDetails.matches) }}.
+                    </template>
                     <template v-if="therapist.matchDetails?.differs?.length">
                       <strong>No coincide en:</strong>
                       {{ matchLabels(therapist.matchDetails.differs) }}.
