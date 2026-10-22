@@ -1,0 +1,23 @@
+Asunto: ¡Tu registro profesional fue aprobado! | Lurems
+Preencabezado: Tu perfil profesional fue aprobado. Ya puedes entrar a tu espacio en Lurems.
+
+¡Hola!
+
+¡Tenemos buenas noticias! Tu registro profesional fue aprobado. Nos alegra darte la bienvenida a nuestra comunidad y acompañarte en esta nueva etapa.
+
+¡Tu registro profesional está aprobado!
+
+Tu espacio profesional te espera
+
+1. Entra a tu espacio: Accede con la misma cuenta que usaste para registrarte.
+
+2. Conoce tus herramientas: Explora tu espacio para organizar tus sesiones y consultar tu agenda.
+
+3. Prepárate para acompañar: Familiarízate con tu espacio profesional y los próximos pasos disponibles.
+
+Ir a mi espacio profesional: {{ACCOUNT_URL}}
+
+Gracias por poner tu experiencia al servicio de quienes buscan acompañamiento. Nos alegra comenzar este camino contigo.
+
+¡Bienvenido a esta nueva etapa!
+El equipo de Lurems

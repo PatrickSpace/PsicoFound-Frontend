@@ -1,13 +1,19 @@
 # Matriz de aceptación y pendientes del piloto
 
-Consolidación documental: 2026-10-15, America/Lima. Alcance: paciente, psicólogo y
-administrador. Esta edición no ejecuta pruebas ni aprueba lanzamiento.
+Consolidación original: 2026-10-15. Revisión independiente del seguimiento:
+2026-10-21, America/Lima. Alcance: paciente, psicólogo y administrador.
+La revisión actual contrasta código y repite las pruebas locales; no aprueba lanzamiento.
 
-«Verificado local» conserva el resultado fechado de la revisión que lo documenta,
-con datos sintéticos y emuladores; no se extiende automáticamente al árbol actual,
-a Linux ni a staging. La revisión administrativa del 14 de octubre conservaba validación abierta;
-la actualización final del 15 de octubre, al final del documento, registra la
-aceptación local completa de esta entrega.
+«Verificado local» identifica evidencia con datos sintéticos y emuladores; no acredita
+Linux, staging ni producción. Las secciones históricas conservan sus resultados
+originales: los pendientes de un corte anterior no reabren lo cerrado en una entrega
+posterior. El cierre administrativo del 15, la encuesta del 20 y el consentimiento
+del 21 sustituyen las observaciones anteriores sobre esos recorridos, salvo las
+regresiones expresamente identificadas en la verificación actual.
+
+**Resultado actual:** 80/80 pruebas de integración, 32/32 de Lima y 98/102 de
+navegador general. Dos incidencias, repetidas en escritorio/móvil, impiden cerrar
+la aceptación global. Ver [verificación del 21 de octubre](#verificación-independiente--2026-10-21).
 
 Funcionamiento: [referencia por rol](revision-funcional-por-rol.md) y
 [encuesta/matching](encuesta-matching.md). Reproducción: [guía de validación](../operations/validation.md).
@@ -20,72 +26,75 @@ Antecedentes: [informe del 10 de octubre](../archive/functional/informe-cierre-t
 | ID | Requisito | Estado | Prueba / evidencia mantenible | Dependencia externa |
 | --- | --- | --- | --- | --- |
 | REV-PIL-01 | No invitar a pagar fuera del plazo; revisión vinculada por soporte | Verificado localmente; cerrado técnicamente | [Corrección 2026-10-11](../archive/functional/cierre-correcciones-piloto-2026-10-11.md); pruebas nuevas de fecha, tiempo vivo, estados, soporte y cambio de cuenta | Conciliador/suplente y frecuencia de la cola manual por asignar |
-| A-01 | Elegibilidad en servidor/UI, cuentas existentes y nacimiento | Verificado local | `accessPolicy.test.js`, `pilot-accounts.integration.test.mjs`: edad límite, fechas imposibles, política ausente, llamadas directas y cuenta antigua | Edad mínima/alcance aprobados; responsable por asignar |
-| A-02 | Consentimiento vigente, versionado e historial | Verificado local | `pilot-accounts.integration.test.mjs`: renovación idempotente, documentos/versiones obsoletos, historial propio; transacción rechaza cambiar URLs sin versión | Documentos y versiones aprobados |
+| A-01 | Elegibilidad en servidor/UI, cuentas existentes y nacimiento | Verificado local | `accessPolicy.test.js`, `pilot-accounts.integration.test.mjs`: edad límite, fechas imposibles, política ausente, llamadas directas y cuenta antigua | Aprobación 18+ documentada el 2026-10-17; configuración desplegada no revalidada en esta revisión |
+| A-02 | Consentimiento vigente, versionado e historial | Verificado local; aceptación centralizada en registro implementada | `pilot-accounts.integration.test.mjs`, `legal-documents.integration.test.mjs` y `legal-documents.spec.mjs`: versión vigente, renovación, historial inmutable y retorno a la ruta original | Primera versión publicada según registro del 2026-10-17; futuras publicaciones requieren revisión. Retención/privacidad siguen aparte |
 | A-03 | Exportación propia y subcolecciones | Verificado local (9 casos de cuentas) | `pilot-accounts.integration.test.mjs`: Auth seguro, mensajes, consentimientos, progreso, tarifas y ledger profesional sin otro paciente/profesional | Política sobre expedientes compartidos |
 | A-04 | Recuperación y cambio de correo | Verificado en Auth emulator | `pilot-accounts.integration.test.mjs`: acciones OOB de un uso, nueva sesión verificada y sincronización desde Auth | Entrega real y Google en staging autorizado |
 | A-05 | Retención/eliminación: política, diagnóstico, autorización e idempotencia | Verificado local | `privacyHandlers.test.js`, `pilot-accounts.integration.test.mjs`: política ausente, inventario desconocido, operador, mantenimiento, cursor parcial, cambio de datos, recibos compartidos sin política y tokens antiguos bloqueados | Plazos/acciones sobre registros compartidos aprobados; [procedimiento](../operations/pilot-privacy.md) |
-| B-01 | Proveedor y minimización | Verificado técnicamente; aprobación pendiente | `surveyTurn.test.js`, `AIService.test.js`: payload mínimo, sin contenido en logs y sin proveedor real en emulador; [fuentes oficiales y fecha](../operations/pilot-provider-review.md) | Contrato, facturación, privacidad y alcance aprobados |
-| B-02 | Turnos, corrección, recarga, fallo/reintento/reset | Verificado local | `pilot-survey.integration.test.mjs`: 5 casos de concurrencia, corrección, reset tardío, reintento y continuidad; `pilot-closure.spec.mjs`: recarga/reset/paginación | No se llamó a IA real; contrato actual conservado |
-| B-04 | Fase 6 de encuesta: modalidad requerida y demás preferencias opcionales | Implementado 2026-10-20; validación y publicación al final del documento | Mínimo tema/solo conversar + modalidad; preferencias opcionales, híbrido compatible, servidor impone modalidad, disponibilidad antes del límite de cinco; [contrato vigente](encuesta-matching.md) | Activación de Gemini y revisión del proveedor siguen separadas |
+| B-01 | Proveedor y minimización | Controles implementados y probados; proveedor real sin validar | `surveyTurn.test.js`, `AIService.test.js`: payload mínimo, sin contenido en logs y sin proveedor real en emulador; [fuentes y revisión previa](../operations/pilot-provider-review.md) | El recorrido guiado no requiere Gemini; aprobar contrato, facturación, privacidad y alcance antes de activar texto libre con proveedor |
+| B-02 | Turnos, corrección, recarga, fallo/reintento/reset | Verificado local | `pilot-survey.integration.test.mjs`: 7 casos de concurrencia, corrección, reset tardío, reintento, continuidad y modo guiado; `pilot-closure.spec.mjs`: recarga/reset/paginación | No se llamó a IA real; contrato guiado conservado |
+| B-04 | Fase 6 de encuesta: modalidad requerida y demás preferencias opcionales | Cerrado técnicamente; validación local documentada el 2026-10-20 | Mínimo tema/solo conversar + modalidad; preferencias opcionales, híbrido compatible, servidor impone modalidad, disponibilidad antes del límite de cinco; [contrato vigente](encuesta-matching.md) | Validación con usuarios; activación de Gemini y revisión del proveedor separadas |
 | B-03 | Ayuda independiente y casos de riesgo | Verificado técnicamente | `suicideRisk.test.js`, `pilot-closure.spec.mjs`: negación/terceros/pasado/ambigüedad y ayuda con cuota agotada | [Revisión clínica pendiente](../operations/pilot-help-review.md); tests no validan un detector clínico |
-| C-01 | Cuotas distribuidas y concurrencia | Verificado local | `pilot-survey.integration.test.mjs`: contadores/leases transaccionales por usuario y globales, fallo cerrado sin configuración | Límites reales aprobados |
+| C-01 | Cuotas distribuidas y concurrencia | Verificado local | `pilot-survey.integration.test.mjs`: contadores/leases transaccionales por usuario y globales, fallo cerrado sin configuración | Configuración inicial 30 envíos/día y 2 simultáneos globales documentada el 2026-10-20; consumo, alertas y configuración desplegada no revalidados aquí |
 | C-02 | Idempotencia, leases y respuestas obsoletas | Verificado local | Mismo ID/payload no repite proveedor; resultado incierto no se reintenta, lease abandonado libera concurrencia; reset/corrección descartan resultado tardío | Proveedor sin garantía exactly-once |
 | C-03 | App Check por entorno | Código/configuración verificados localmente | `appCheckPolicy.test.js`: bypass solo demo emulado; producción exige enforcement; integración web reCAPTCHA Enterprise | Registro, métricas y enforcement reales en staging |
 | C-04 | Telemetría, alertas e incidentes | Telemetría verificada; activación pendiente | Correlación/latencia/códigos/consumo sin contenido; `pilot-alerts.example.json` y [procedimiento](../operations/pilot-release.md) | Umbrales, canales y responsables; alertas no activadas |
 | D-01 | Políticas versionadas y tarifas de prueba | Verificado local | `pilot-payments.integration.test.mjs`: política ausente, snapshot inmutable, corte/cita pasada explícitos, tarifa test excluida; condiciones en cotización | Plazos/penalidades/condiciones aprobados |
 | D-02 | Expiración, cancelación y carreras con pago | Verificado local | `pilot-payments.integration.test.mjs`: transacción cita/terapia/slot/pago/evento/aviso; confirmación-expiración y confirmación-cancelación concurrentes | Configuración sintética hasta aprobación |
-| D-03 | Referencia única, devolución y obligaciones | Verificado local | `pilot-payments.integration.test.mjs`: recibo único por comercio/proveedor, importe calculado/pendiente/transferido separados, sobrepago y duplicados rechazados | Conciliación/liquidación operativas; [contratos](../operations/pilot-payments.md) con revisión administrativa en validación |
-| E-01 | Dependencias y CI Linux aislado | Local verificado; Linux pendiente de ejecución | Auditorías del informe de cierre: 0 vulnerabilidades, unit/backend/lint/build/Knip pasan; workflow y namespace de red Linux preparados | Resultado real del workflow Ubuntu; no ejecutado en macOS |
+| D-03 | Referencia única, devolución y obligaciones | Verificado local | `pilot-payments.integration.test.mjs`: recibo único por comercio/proveedor, importe calculado/pendiente/transferido separados, sobrepago y duplicados rechazados | Responsables y conciliación/liquidación reales; [contratos](../operations/pilot-payments.md). La interfaz administrativa ya fue aceptada localmente |
+| E-01 | Dependencias y CI Linux aislado | Auditorías/checks estáticos aprobados; suite funcional falla localmente y en Ubuntu | 0 vulnerabilidades en ambos paquetes; unit/backend/lint/build/Knip pasan. [Quality para 7bb347c](https://github.com/PatrickSpace/PsicoFound-Frontend/actions/runs/39555504112): 80/80 integración, 32/32 Lima, 98/102 navegador; mismos cuatro fallos que en local | Corregir REV-SEG-01/02 y obtener ejecución completa aprobada |
 | E-02 | Configuración, despliegue, rollback y restauración | Herramientas y ensayo sintético verificados | `verify-pilot-config.mjs` rechaza ejemplo incompleto; `pilot-operations.integration.test.mjs` restaura en otro proyecto demo y compara hash/subcolecciones/timestamps | Console/IAM/Auth/backup real requieren staging autorizado |
-| F-01 | Paciente/profesional escritorio/móvil | Verificado local: 52/52; pagos repetidos 10/10 | [Evidencia nueva](../archive/functional/cierre-correcciones-piloto-2026-10-11.md). Playwright: roles, permisos, cuenta/vista con carga pendiente, seguimiento, soporte, reserva/pago/cancelación y onboarding | Safari, dispositivos reales y Google no ejecutados |
+| F-01 | Paciente/profesional escritorio/móvil | Aceptación global abierta: 98/102 en suite general, 2026-10-21 | Incluye administración/legal; 10/10 de vencimiento de pagos aprobados. Fallan recuperación del registro y test desactualizado de modalidad, en ambos tamaños | Resolver REV-SEG-01/02; Safari, dispositivos reales y Google no ejecutados |
 | F-02 | Avisos: conteo, lectura, misma ruta y recuperación | Verificado local | `pilot-closure.spec.mjs`: 25 avisos, leído, recarga de misma ruta y error/reintento; listeners ligados al UID | Canal externo de recordatorios por decidir |
-| F-03 | Lima y REV-PAC-04B | Verificado local: 32/32 | `agenda-lima.spec.mjs`: 32 casos en 4 zonas y 2 tamaños; [cierre previo](../archive/functional/cierre-politica-horaria-mvp.md) preservado | Sin política horaria alternativa |
+| F-03 | Lima y REV-PAC-04B | Revalidado local: 32/32, 2026-10-21 | `agenda-lima.spec.mjs`: 32 casos en 4 zonas y 2 tamaños; [cierre previo](../archive/functional/cierre-politica-horaria-mvp.md) preservado | Sin política horaria alternativa |
 
 ## Aceptación administrativa
 
-La revisión del 14 de octubre documenta 34/34 unitarias, 81/81 servidor,
-67/67 integración y 32/32 navegador Lima. El navegador general figura en ejecución.
-Son resultados del informe original, no comprobaciones repetidas en esta limpieza.
-Los criterios no se cierran a partir de conteos globales: falta aceptación final
-por recorrido sobre el mismo artefacto. Evidencia original en el informe enlazado arriba.
+La aceptación local administrativa se cerró el 2026-10-15, después del corte
+incompleto del día 14. No sigue pendiente desarrollar ni aceptar localmente esos
+recorridos por el hecho de que el informe antiguo terminara durante una ejecución.
+La revisión actual también incluye los servicios de documentos legales añadidos
+posteriormente. La operación real y los permisos/configuración desplegados son
+comprobaciones separadas.
 
-| ID | Requisito | Estado conservador | Evidencia requerida para cierre |
+| ID | Requisito | Estado | Evidencia |
 | --- | --- | --- | --- |
-| ADM-A01 | Rutas y llamadas directas prohibidas | Verificado local: integración y navegador, 2026-10-15 | ADMIN-01/02 y navegador |
-| ADM-A02 | Aprobación/rechazo y acceso efectivo | Verificado local: integración y navegador, 2026-10-15 | ADMIN-03/04 y navegador solicitante |
-| ADM-A03 | Decisiones concurrentes | Verificado local: integración y navegador, 2026-10-15 | ADMIN-03 |
-| ADM-A04 | Auth, roles y último admin utilizable | Verificado local: integración y navegador, 2026-10-15 | ADMIN-05/17 y navegador usuario |
-| ADM-A05 | Tarifas, cotizaciones, snapshots y redondeo | Verificado local: integración y navegador, 2026-10-15 | Reglas tarifas, integración pagos y navegador |
-| ADM-A06 | Recibo único e idempotencia | Verificado local: integración y navegador, 2026-10-15 | Integración pagos |
-| ADM-A07 | Vencimiento, slot y registros coherentes | Verificado local: integración y navegador, 2026-10-15 | Integración pagos y navegador |
-| ADM-A08 | Carreras financieras | Verificado local: integración y navegador, 2026-10-15 | Integración pagos |
-| ADM-A09 | Pago tardío y soporte trazable | Verificado local: integración y navegador, 2026-10-15 | ADMIN-07 y navegador |
-| ADM-A10 | Transferencias y saldo | Verificado local: integración y navegador, 2026-10-15 | Integración pagos y navegador |
-| ADM-A11 | Respuesta visible solo al titular/admin | Verificado local: integración y navegador, 2026-10-15 | ADMIN-07 y navegador |
-| ADM-A12 | Privacidad privilegiada y seguimiento administrativo | Verificado local: integración y navegador, 2026-10-15 | ADMIN-08 e integración cuentas |
-| ADM-A13 | Cambio de cuenta/vista durante carga | Verificado local: integración y navegador, 2026-10-15 | Navegador y regresión contexto |
-| ADM-A14 | Escritorio/móvil, error y reintento | Verificado local: integración y navegador, 2026-10-15 | Playwright ambos proyectos y capturas |
+| ADM-A01 | Rutas y llamadas directas prohibidas | Verificado local: integración y navegador, 2026-10-21 | ADMIN-01/02 y navegador |
+| ADM-A02 | Aprobación/rechazo y acceso efectivo | Verificado local: integración y navegador, 2026-10-21 | ADMIN-03/04 y navegador solicitante |
+| ADM-A03 | Decisiones concurrentes | Verificado local: integración y navegador, 2026-10-21 | ADMIN-03 |
+| ADM-A04 | Auth, roles y último admin utilizable | Verificado local: integración y navegador, 2026-10-21 | ADMIN-05/17 y navegador usuario |
+| ADM-A05 | Tarifas, cotizaciones, snapshots y redondeo | Verificado local: integración y navegador, 2026-10-21 | Reglas tarifas, integración pagos y navegador |
+| ADM-A06 | Recibo único e idempotencia | Verificado local: integración y navegador, 2026-10-21 | Integración pagos |
+| ADM-A07 | Vencimiento, slot y registros coherentes | Verificado local: integración y navegador, 2026-10-21 | Integración pagos y navegador |
+| ADM-A08 | Carreras financieras | Verificado local: integración y navegador, 2026-10-21 | Integración pagos |
+| ADM-A09 | Pago tardío y soporte trazable | Verificado local: integración y navegador, 2026-10-21 | ADMIN-07 y navegador |
+| ADM-A10 | Transferencias y saldo | Verificado local: integración y navegador, 2026-10-21 | Integración pagos y navegador |
+| ADM-A11 | Respuesta visible solo al titular/admin | Verificado local: integración y navegador, 2026-10-21 | ADMIN-07 y navegador |
+| ADM-A12 | Privacidad privilegiada y seguimiento administrativo | Verificado local: integración y navegador, 2026-10-21 | ADMIN-08 e integración cuentas |
+| ADM-A13 | Cambio de cuenta/vista durante carga | Verificado local: integración y navegador, 2026-10-21 | Navegador y regresión contexto |
+| ADM-A14 | Escritorio/móvil, error y reintento | Verificado local: integración y navegador, 2026-10-21 | Playwright ambos proyectos y capturas |
 
-## Pendientes de producto, UX y mantenimiento
+| ADM-A15 | Borradores legales privados, publicación e historial inmutable | Verificado local: integración y navegador, 2026-10-21 | 6 casos de integración legal; 4 recorridos administrativos en navegador. Otros 6 recorridos validan publicación pública y consentimiento/retorno |
+
+## Estado de producto, UX y mantenimiento
 
 | ID | Pendiente rescatado | Siguiente paso / condición |
 | --- | --- | --- |
 | UX-01 | Pruebas con usuarios reales en móvil; estados vacíos y tabla de pacientes | Estados vacíos y búsqueda/tabla ya implementados; no hay variante propia de tarjetas móvil en Pacientes. Falta validar UX y legibilidad en dispositivos físicos. |
 | UX-02 | Claridad al alternar vista paciente/psicólogo | Selector y etiqueta de vista en Configuración, menús por modo y separación asíncrona ya implementados. Falta validar comprensión con usuarios. |
-| PROD-01 | Cierre de sesión y rechazo de horario | Rechazo con motivo y aviso implementado el 2026-10-15; se retiró el reset operativo a pendiente y se alinearon confirmar/completar con estados permitidos. Fecha real, registro automático, correcciones auditadas y deshacer realización implementados según acuerdo del 2026-10-15; validación de navegador y publicación en seguimiento al final del documento. |
+| PROD-01 | Registro de atención y rechazo de horario | Cerrado técnicamente según entrega del 2026-10-15. Rechazo con motivo/aviso, fecha real separada del registro, corrección y deshacer con motivo, versión e historial. `attendancePolicy.js` y el handler siguen implementando el contrato; no se reabre como desarrollo pendiente. |
 | PROD-02 | Facultades para finalizar/reactivar terapias, inasistencia y nuevas acciones profesionales | Paciente ya puede activar/pausar/cancelar con restricciones; profesional no puede cambiar estado de terapia. No hay estado específico de alta/finalización terapéutica ni inasistencia. Requiere decisión de alcance. |
 | OPS-01 | Perfil profesional inactivo con citas existentes | Desactivación y bloqueo de nuevas acciones/cotizaciones ya implementados. Falta procedimiento para citas existentes; no hay reasignación ni cancelación automática. |
-| PERF-01 | Chunk grande, registro global Vuetify y fuente MDI | Medir carga actual; evaluar importación selectiva con comparación visual. |
+| PERF-01 | Chunk grande, registro global Vuetify y fuente MDI | Build del 2026-10-21: paquete principal 1.257,51 kB minificado / 391,35 kB gzip. Compila; el aviso persiste. Falta medir carga real y evaluar importación selectiva con comparación visual. |
 | DEBT-01 | Estilos globales y componentes grandes de encuesta/cita | Revalidar deuda señalada en auditoría de septiembre; priorizar extracción por responsabilidad y regresión visual, sin conservar conteos antiguos como actuales. |
-| QA-01 | Linux, Safari, móviles reales, Google y correo real | Evidencia específica del entorno; staging según procedimiento de release. |
-| QA-02 | Registro/verificación de correo en navegador | Corregido durante la entrega de atención: la ruta de verificación ya no espera consultas de perfil. Los cuatro casos de registro/reintento pasan en escritorio y móvil, también en la pasada general de 80 casos. |
+| QA-01 | Linux, Safari, móviles reales, Google y correo real | Ubuntu ejecutado: reproduce REV-SEG-01/02, pendiente aprobación completa (E-01). Safari, dispositivos físicos, Google, entrega real de correo y entorno desplegado no comprobados en esta revisión. |
+| QA-02 | Registro/verificación de correo en navegador | Flujo normal aprobado en escritorio/móvil; recuperación ante fallo de inicialización reabierta por REV-SEG-01. Consentimiento centralizado y retorno original pasan sus pruebas. Entrega real de correo sigue en QA-01. |
 | SCALE-01 | Listeners administrativos sobre conjunto del piloto | Medir volumen y decidir paginación/búsqueda remota antes de ampliar escala. |
 
-Las vulnerabilidades y exports sin uso de informes antiguos son antecedentes. La
-revisión del 14 de octubre reporta auditorías sin vulnerabilidades y Knip aprobado;
-para conocer un árbol posterior repetir comprobaciones. No se arrastran avisos antiguos
-como incidencias abiertas sin verificarlos.
+Las vulnerabilidades y exports sin uso de informes antiguos son antecedentes. Las
+auditorías repetidas el 2026-10-21 reportan 0 vulnerabilidades en raíz y Functions;
+Knip normal y producción aprobados. No se arrastran avisos antiguos como incidencias
+abiertas sin verificarlos.
 
 ## Decisiones externas y estado de aprobación
 
@@ -98,12 +107,109 @@ como incidencias abiertas sin verificarlos.
 - Privacidad: acción y retención por categoría, expedientes compartidos, obligaciones y autoridad ejecutora.
 - IA: proveedor/plan/retención/uso permitido, revisión clínica del protocolo y fuentes de ayuda.
 - Comercial: vencimiento, cancelación/reprogramación, devolución, ausencia y obligación profesional.
-- Operación: responsables, umbrales y canales de alertas, staging autorizado y cierre de aceptación administrativa.
+- Operación: responsables, umbrales y canales de alertas y comprobación del entorno desplegado. La aceptación administrativa local está cerrada; no sustituye operación real.
 
 Las verificaciones externas tienen acceso, procedimiento, resultado esperado y responsable
 por asignar en [operación y staging](../operations/pilot-release.md). «No ejecutado» no se contabiliza como aprobado.
 
-## Contraste con el código — 2026-10-15
+## Verificación independiente — 2026-10-21
+
+Artefacto revisado: `7bb347c1acba27b30e1811884edd37bf82366ccd`. Lectura del código,
+contraste con los acuerdos y ejecución de las suites existentes con datos sintéticos,
+emuladores demo y aislamiento de red. Esta revisión modifica documentación, no la app.
+
+### Resultado reproducible
+
+| Comprobación | Resultado actual |
+| --- | --- |
+| `npm test` | 44/44 aprobadas |
+| `npm run test:backend` | 87/87 aprobadas |
+| `npm run lint:backend` y `npm run build` | Aprobados; persiste el aviso de tamaño del paquete principal |
+| `npm run audit:unused`, también modo producción | Aprobados; cuatro sugerencias de configuración de Knip, sin errores |
+| `npm audit --audit-level=moderate`, también en Functions | 0 vulnerabilidades en ambos árboles |
+| `npm run verify:pilot-config` sobre el ejemplo | Rechazo esperado: el ejemplo incompleto no acredita configuración productiva |
+| `npm run test:pilot`: integración | 80/80 aprobadas, incluidos 17 casos administrativos y 6 legales |
+| `npm run test:pilot`: navegador Lima | 32/32 aprobadas, cuatro zonas y dos tamaños |
+| `npm run test:pilot`: navegador general | 98/102 aprobadas; cuatro fallos descritos abajo; comando finaliza con código 1 |
+| CI Ubuntu 22.04, mismo commit | Fallido por los mismos cuatro casos; integración 80/80, Lima 32/32, general 98/102 |
+
+La suite general aprobada incluye administración 24/24, atención 2/2, seguimiento
+12/12, documentos legales/consentimiento 10/10, vencimiento de pagos 10/10 y cierre
+piloto 10/10. En `patient-http.spec.mjs` pasan 30/34. Esos números son recorridos
+por tamaño, no cantidades de funcionalidades independientes.
+
+[CI y resultado final](https://github.com/PatrickSpace/PsicoFound-Frontend/actions/runs/39555504112),
+[artefactos de CI](https://github.com/PatrickSpace/PsicoFound-Frontend/actions/runs/39555504112/artifacts/12326049669).
+Evidencia local no versionada: `test-results/tracking-review-2026-10-21/`, con logs,
+auditorías, manifiesto SHA-256, estado remoto y copias de informes/capturas/trazas.
+Los 224 archivos de código/configuración/pruebas del manifiesto conservaron sus
+hashes durante la revisión; `git diff --check` aprobó la actualización documental.
+Se inspeccionaron además las capturas de recuperación de registro y aprobación
+administrativa móvil; esto no sustituye pruebas con dispositivos físicos.
+
+### Incidencias actuales y condición de cierre
+
+**REV-SEG-01 — Recuperación del registro oculta tras crear Auth (prioridad alta).**
+Al provocar un error de `finalizeRegistration`, la sesión ya existe y
+[SingUp.vue](../../src/views/Auth/SingUp.vue) sustituye `SignUpForm` por
+`AccountAccessCard`. El error y el reintento de creación quedan fuera de la vista.
+La captura muestra «Verifica tu correo», no una acción para reparar el perfil.
+`handleAccessStatus` solo activa recuperación con `consent_required`, mientras
+[accessPolicy.js](../../functions/src/accounts/accessPolicy.js) devuelve primero
+`verification_required` para esa cuenta. El flujo normal de registro sí pasa.
+
+Reproducido en escritorio y móvil, tanto localmente como en CI:
+`patient-http.spec.mjs:240`, aserción en la línea 244. No se afirma que la cuenta
+sea irrecuperable por todas las rutas: el defecto comprobado es perder la explicación
+y la recuperación en el punto de fallo. Resolver el estado de registro en curso y
+la recuperación de Auth sin perfil, conservando intención paciente/psicólogo,
+consentimiento y destino, sin crear otro usuario. Para cerrar: fallar inicialización,
+retirar el fallo, recuperar desde la interfaz, comprobar el mismo UID y un solo
+perfil/consentimiento, y completar verificación/onboarding en ambos tamaños. Si
+cambia el texto o el botón, actualizar el test al contrato acordado sin eliminar
+la comprobación de recuperación efectiva.
+
+**REV-SEG-02 — Prueba de recomendaciones desactualizada (prioridad media).**
+`patient-http.spec.mjs:358` intenta pulsar `Modalidad: … Flexible`; el contrato
+vigente y [ElegirTerapeuta.vue](../../src/views/encuesta/ElegirTerapeuta.vue) mantienen
+modalidad obligatoria. La captura muestra correctamente `Modalidad: remoto · Obligatorio`.
+El error/reintento previo sí pasa, pero el caso no llega a verificar las aserciones
+posteriores de ausencia de coincidencias y ayuda con error del recomendador.
+
+Corregir la preparación/interacción del test para usar preferencias opcionales o
+editar modalidad por la vía vigente. Mantener la modalidad obligatoria en producto;
+comprobar los estados vacíos y la ayuda que quedaron sin ejecutar. Cierre: los dos
+recorridos pasan y una ejecución completa de `test:pilot` y CI queda aprobada.
+Este fallo no demuestra que el matching implementado en B-04 sea incorrecto.
+
+### Qué sigue listo y qué sigue pendiente
+
+- **Revalidado:** administración operativa, permisos, solicitudes profesionales,
+  tarifas/conciliación/devoluciones/transferencias, soporte y proyección de privacidad;
+  administración legal; reservas, vencimientos, seguimiento, registro/corrección de
+  atención y hora de Lima. Se conservan los límites y dependencias de cada fila.
+- **Implementado:** encuesta guiada y preferencias opcionales con modalidad obligatoria;
+  consentimiento centralizado, renovación y retorno. REV-SEG-02 deja pendiente un
+  recorrido de aceptación; REV-SEG-01 afecta la recuperación del registro nuevo.
+- **Antes de aceptación técnica global:** cerrar REV-SEG-01/02 y repetir los checks
+  afectados y la suite completa. Los cierres históricos de QA-02 no anulan la regresión.
+- **Decisiones/operación:** resolver citas existentes de profesionales inactivos
+  (OPS-01); acordar si alta terapéutica/inasistencia entran al lanzamiento (PROD-02);
+  responsables de conciliación, políticas comerciales/privacidad, revisión de ayuda
+  y comprobaciones reales de App Check, alertas, correo, Google, backup y restauración.
+  El proveedor Gemini requiere aprobación antes de activarse, no para el modo guiado.
+- **Mejoras por priorizar:** UX en móviles reales, rendimiento, deuda de componentes
+  y paginación remota. Su existencia no demuestra por sí sola un bloqueo del piloto.
+
+La aprobación 18+ y la publicación legal del 17 se conservan como hechos documentados
+por entregas previas; no se revalidaron en consola. No se desplegó, no se enviaron
+correos reales ni se operaron pagos/datos reales. No se declara listo el lanzamiento.
+
+## Histórico: contraste con el código — 2026-10-15
+
+Este corte se conserva como antecedente, no como lista actual de trabajo. B-04,
+PROD-01 y QA-02 se resolvieron después; ver las actualizaciones fechadas y las
+tablas vigentes al inicio. Sus conteos y observaciones describen aquel artefacto.
 
 Revisión estática del árbol local, incluidos cambios sin commit. Se leyó la
 implementación y la cobertura existente; no se ejecutaron suites, build ni auditorías,

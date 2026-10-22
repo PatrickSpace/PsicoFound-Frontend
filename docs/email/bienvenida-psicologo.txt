@@ -1,0 +1,23 @@
+Asunto: ¡Bienvenido a Lurems! Gracias por sumarte
+Preencabezado: Nos alegra que quieras sumarte. Recibimos tus datos y tu solicitud está pendiente de revisión.
+
+¡Hola!
+
+Nos alegra que quieras acompañar a más personas con Lurems. Gracias por compartir tu experiencia y completar tus datos: ya recibimos tu registro profesional.
+
+¡Registro recibido! Tu solicitud está pendiente de revisión
+
+Te contamos qué viene ahora
+
+1. Ya diste el primer paso: Recibimos los datos que compartiste con nosotros.
+
+2. Ahora nos toca a nosotros: Nuestro equipo revisará tu solicitud profesional con atención.
+
+3. Sigue de cerca tu solicitud: Cuando quieras, entra a tu cuenta para consultar cómo va tu registro.
+
+Ver mi solicitud: {{ACCOUNT_URL}}
+
+Por ahora, tu solicitud está pendiente de revisión. Cuando sea aprobada, tendrás acceso a las herramientas profesionales.
+
+Gracias por ser parte de este comienzo.
+El equipo de Lurems

@@ -1,0 +1,23 @@
+Asunto: ¡Bienvenido a Lurems! Tu espacio ya está listo
+Preencabezado: Nos alegra tenerte aquí. Tu cuenta está lista para empezar, a tu ritmo.
+
+¡Hola!
+
+Qué alegría tenerte aquí. Ya completaste tu registro y tu cuenta está lista. Queremos acompañarte a encontrar claridad en tu camino terapéutico, paso a paso y a tu ritmo.
+
+Tu cuenta ya está lista
+
+Empieza por donde te sientas más cómodo
+
+1. Conoce tu espacio: Entra a tu cuenta y descubre lo que hemos preparado para ti.
+
+2. Encuentra tu próximo paso: Explora las opciones de acompañamiento disponibles para ti.
+
+3. Avanza a tu ritmo: Tómate tu tiempo. Tu espacio estará aquí cuando quieras volver.
+
+Ir a mi espacio: {{ACCOUNT_URL}}
+
+No necesitas tener todas las respuestas hoy. Nos alegra que hayas dado este primer paso.
+
+Gracias por ser parte de este comienzo.
+El equipo de Lurems

@@ -1,0 +1,14 @@
+Asunto: Confirma tu correo y empieza en Lurems
+
+Hola,
+
+Gracias por crear tu cuenta en Lurems. Para completar este paso, necesitamos confirmar que esta dirección de correo te pertenece.
+
+Confirma tu correo abriendo este enlace:
+{{VERIFICATION_URL}}
+
+Después de confirmar, vuelve a Lurems para continuar.
+
+Si no creaste esta cuenta, puedes ignorar este correo.
+
+El equipo de Lurems
