@@ -106,8 +106,10 @@ test('B-04: guided survey records all answers and confirms the summary',async ({
   await page.getByRole('button',{name:'Me da igual',exact:true}).click();
   await page.getByRole('button',{name:'Me da igual',exact:true}).click();
   await expect(page.getByRole('button',{name:'Revisar resumen',exact:true})).toBeVisible();
-  await page.getByRole('button',{name:'Revisar resumen',exact:true}).click();
-  await page.getByRole('button',{name:'Confirmar y ver psicólogos',exact:true}).click();
+  const summary=page.getByRole('dialog');
+  await expect(summary).toBeVisible();
+  await expect(summary.getByText('Revisa tu resumen',{exact:true})).toBeVisible();
+  await summary.getByRole('button',{name:'Confirmar y ver psicólogos',exact:true}).click();
   await expect(page.getByRole('button',{name:'Ver psicólogos',exact:true})).toBeVisible();
   const profile=(await db.doc('profiles/patient-b').get()).data();
   expect(profile.completado).toBe(true);

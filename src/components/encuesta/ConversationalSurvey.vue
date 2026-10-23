@@ -1008,6 +1008,17 @@ async function confirmSummary() {
 
 function getMessageOptions(message) {
   if (!activeTurn.value || message?.turnId !== activeTurn.value.id) return [];
+
+  const currentOptionsMessage = [...visibleMessages.value]
+    .reverse()
+    .find((item) =>
+      item.role !== "user" && item.turnId === activeTurn.value.id
+    );
+
+  if (!currentOptionsMessage || currentOptionsMessage.id !== message.id) {
+    return [];
+  }
+
   return Array.isArray(message?.suggestedOptions)
     ? message.suggestedOptions.filter(
         (option) => option?.label && option?.value

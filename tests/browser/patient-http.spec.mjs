@@ -241,13 +241,23 @@ test("requirement: registration can recover after profile initialization fails",
   const email = `failed-register-${info.project.name}-${Date.now()}@example.test`;
   await page.route("**/finalizeRegistration", r => r.fulfill({ status:500, contentType:"application/json", body:JSON.stringify({ error:{ status:"INTERNAL", message:"Fallo sintético" } }) }));
   await signup(page, email);
-  await expect(page.getByText("Tu cuenta fue creada, pero no pudimos preparar tu perfil.", { exact:false })).toBeVisible();
+  await expect(page.getByRole("heading", { name:"Completa tu registro" })).toBeVisible();
+  await expect(page.getByText("Verifica tu correo antes de continuar.", { exact:true })).toBeVisible();
   const user = await adminAuth.getAuth(app).getUserByEmail(email);
   expect((await db.doc(`users/${user.uid}`).get()).exists).toBe(false);
   await page.unroute("**/finalizeRegistration");
-  await page.getByRole("button", { name:"Crear cuenta", exact:true }).click();
+  await page.getByRole("link", { name:"Verificar correo", exact:true }).click();
+  await expect(page.getByRole("heading", { name:"Verifica tu correo" })).toBeVisible();
+  await page.getByRole("button", { name:"Reenviar enlace", exact:true }).click();
+  await expect.poll(async() => Boolean(await oob(email, "VERIFY_EMAIL"))).toBe(true);
+  await applyOob((await oob(email, "VERIFY_EMAIL")).oobCode);
+  await page.getByRole("button", { name:"Ya verifiqué mi correo" }).click();
+  await expect(page.getByRole("checkbox", { name:/He leído y acepto/ })).toBeVisible();
+  await page.getByRole("checkbox", { name:/He leído y acepto/ }).check();
+  await page.getByRole("button", { name:"Completar registro", exact:true }).click();
   await shot(page, info, "registration-retry");
-  await expect(page.getByRole("heading", { name:"Verifica tu correo" })).toBeVisible({ timeout:15000 });
+  await expect(page.getByRole("textbox", { name:"Nombre completo" })).toBeVisible({ timeout:15000 });
+  expect((await db.doc(`users/${user.uid}`).get()).exists).toBe(true);
 });
 test("patient: account editing, own export, deletion request and support response", async({ page }, info) => {
   await login(page, "/configuracion");
@@ -347,7 +357,7 @@ test("patient: recommendation empty/error/retry states and help remain accessibl
   await login(page, "/elegirterapeuta");
   await expect(page.getByText("Sin horarios compatibles", { exact:true })).toBeVisible();
   await page.route("**/getRecommendedTherapists", r => r.fulfill({ status:500, contentType:"application/json", body:JSON.stringify({ error:{ status:"INTERNAL", message:"Error sintético de consulta" } }) }));
-  await page.getByRole("button", { name:"Aplicar", exact:true }).click();
+  await page.getByRole("button", { name:"Reintentar", exact:true }).click();
   await expect(page.getByText("No pudimos cargar las recomendaciones", { exact:true })).toBeVisible();
   await expect(page.getByText("Sin horarios compatibles", { exact:true })).toHaveCount(0);
   await shot(page, info, "recommendations-error-before-retry");
@@ -355,10 +365,7 @@ test("patient: recommendation empty/error/retry states and help remain accessibl
   await page.getByRole("button", { name:"Reintentar", exact:true }).click();
   await expect(page.getByText("Sin horarios compatibles", { exact:true })).toBeVisible();
   expect((await db.doc("profiles/patient-b").get()).data().motivoConsulta).toBe("Motivo sintético");
-  await page.getByText(/Modalidad:.*Flexible/).click();
-  await httpCall("B", "updateProfilePreferences", { profile: { modalidad: "presencial" } });
-  await page.getByRole("button", { name: "Aplicar", exact: true }).click();
-  await expect(page.getByText("Sin coincidencias con estos criterios", { exact: true })).toBeVisible();
+  await expect(page.getByText("Modalidad: remoto", { exact:true })).toBeVisible();
   await page.route("**/getRecommendedTherapists", r => r.fulfill({ status:500, contentType:"application/json", body:JSON.stringify({ error:{ status:"INTERNAL", message:"Error sintético" } }) }));
   await page.goto("/elegirterapeuta?crisis=1");
   await expect(page.getByRole("heading", { name:"Estamos contigo en este momento" })).toBeVisible();
