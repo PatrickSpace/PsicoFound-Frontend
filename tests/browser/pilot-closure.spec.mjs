@@ -110,15 +110,11 @@ test('B-04: guided survey records all answers and confirms the summary',async ({
   await expect(summary).toBeVisible();
   await expect(summary.getByText('Revisa tu resumen',{exact:true})).toBeVisible();
   await summary.getByRole('button',{name:'Confirmar y ver psicólogos',exact:true}).click();
-  await expect(page.getByRole('button',{name:'Ver psicólogos',exact:true})).toBeVisible();
+  await expect(page).toHaveURL(/\/elegirterapeuta/);
+  await expect(page.getByText('Psicólogos afines a tu perfil',{exact:true})).toBeVisible();
   const profile=(await db.doc('profiles/patient-b').get()).data();
   expect(profile.completado).toBe(true);
   expect(profile.summaryConfirmed).toBe(true);
   for(const field of ['preferenciaGenero','preferenciaEdad','enfoque'])expect(profile[field]).toBe('indiferente');
-  await page.getByRole('button',{name:'Ajustar preferencias',exact:true}).click();
-  await page.getByRole('button',{name:'Guardar correcciones',exact:true}).click();
-  await expect(page.getByRole('dialog')).toHaveCount(0);
   await page.screenshot({path:`test-results/survey-guided-${info.project.name}.png`,fullPage:true});
-  await page.getByRole('button',{name:'Ver psicólogos',exact:true}).click();
-  await expect(page.getByText('Psicólogos afines a tu perfil',{exact:true})).toBeVisible();
 });
