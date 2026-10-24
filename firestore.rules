@@ -77,10 +77,6 @@ service cloud.firestore {
       return signedIn() && resource.data.pacienteUid == request.auth.uid;
     }
 
-    function ownsIncomingPatientDoc() {
-      return signedIn() && request.resource.data.pacienteUid == request.auth.uid;
-    }
-
     function assignedTherapist(therapistId) {
       return signedIn() &&
         (userHasRole("psychologist") || currentUserDoc().data.rol == "psicologo") &&
@@ -92,12 +88,6 @@ service cloud.firestore {
 
     function ownsExistingTherapistDoc() {
       return signedIn() && assignedTherapist(resource.data.terapeutaId);
-    }
-
-    function ownsIncomingTherapistDoc() {
-      return signedIn() &&
-        request.resource.data.terapeutaId == resource.data.terapeutaId &&
-        assignedTherapist(request.resource.data.terapeutaId);
     }
 
     function assignedTherapistForTherapy(therapyId) {
@@ -114,41 +104,6 @@ service cloud.firestore {
         exists(/databases/$(database)/documents/terapias/$(therapyId)) &&
         (get(/databases/$(database)/documents/terapias/$(therapyId)).data.pacienteUid == request.auth.uid ||
           assignedTherapistForTherapy(therapyId));
-    }
-
-    function incomingNotificationHasTherapy() {
-      return request.resource.data.metadata is map &&
-        request.resource.data.metadata.terapiaId is string &&
-        request.resource.data.metadata.terapiaId != "" &&
-        exists(
-          /databases/$(database)/documents/terapias/$(request.resource.data.metadata.terapiaId)
-        );
-    }
-
-    function incomingNotificationFromPatientToTherapist() {
-      return incomingNotificationHasTherapy() &&
-        get(
-          /databases/$(database)/documents/terapias/$(request.resource.data.metadata.terapiaId)
-        ).data.pacienteUid == request.auth.uid &&
-        request.resource.data.metadata.terapeutaId is string &&
-        exists(
-          /databases/$(database)/documents/therapists/$(request.resource.data.metadata.terapeutaId)
-        ) &&
-        get(
-          /databases/$(database)/documents/therapists/$(request.resource.data.metadata.terapeutaId)
-        ).data.uid == request.resource.data.recipientUid;
-    }
-
-    function incomingNotificationFromTherapistToPatient() {
-      return incomingNotificationHasTherapy() &&
-        assignedTherapist(
-          get(
-            /databases/$(database)/documents/terapias/$(request.resource.data.metadata.terapiaId)
-          ).data.terapeutaId
-        ) &&
-        get(
-          /databases/$(database)/documents/terapias/$(request.resource.data.metadata.terapiaId)
-        ).data.pacienteUid == request.resource.data.recipientUid;
     }
 
     match /users/{uid} {
