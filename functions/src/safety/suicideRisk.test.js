@@ -7,7 +7,8 @@ for (const text of ["Quiero suicidarme", "Voy a quitarme la vida",
   "Antes no quería, pero ahora quiero suicidarme"]) {
   test(`explicit current phrase routes to resources: ${text}`, () => {
     const result = getCrisisResult(text);
-    assert.equal(result.data.riesgoSuicida, true);
+    assert.equal(result.riskSignal, "literal");
+    assert.equal(result.data, undefined);
     assert.match(result.reply, /113/);
     assert.doesNotMatch(result.reply, /vigilamos|responderemos|diagnostico/);
   });

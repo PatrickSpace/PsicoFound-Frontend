@@ -1,6 +1,6 @@
 const {requirePatientRole} = require("../accounts/accessPolicy");
 const firestoreAdmin = require("firebase-admin/firestore");
-const {FieldValue} = require("firebase-admin/firestore");
+const {FieldPath, FieldValue} = require("firebase-admin/firestore");
 const {createHash} = require("node:crypto");
 const {HttpsError} = require("firebase-functions/v2/https");
 
@@ -108,6 +108,26 @@ async function getTherapySharedSummary(request) {
   const db = firestoreAdmin.getFirestore();
   return db.runTransaction(async (transaction) => {
     const ctx = await context(request, transaction, request.data.therapyId);
+    if (ctx.mode === "psychologist") {
+      const appointment = await findSurveySharingAppointment(
+          transaction, db, ctx);
+      const summary = appointment.surveySummarySnapshot || {};
+      return {
+        status: "available",
+        reason: summary.motivoConsulta || "",
+        topics: Array.isArray(summary.temas) ? summary.temas : [],
+        preferences: {
+          modalidad: summary.modalidad || "",
+          genero: summary.preferenciaGenero || "",
+          edad: summary.preferenciaEdad || "",
+          enfoque: summary.enfoque || "",
+          soloConversar: Boolean(summary.soloConversar),
+        },
+        source: "Resumen aprobado por el paciente",
+        recordedAt: appointment.surveyHistoryConsentAt || "",
+        historyAvailable: true,
+      };
+    }
     const profile = (await transaction.get(
         db.doc(`profiles/${ctx.therapy.pacienteUid}`),
     )).data();
@@ -121,8 +141,85 @@ async function getTherapySharedSummary(request) {
       reason, topics, source: profile ? "Perfil inicial del paciente" : "",
       recordedAt: date && typeof date.toDate === "function" ?
         date.toDate().toISOString() : typeof date === "string" ? date : "",
+      historyAvailable: false,
     };
   });
+}
+
+async function getTherapySharedHistory(request) {
+  const db = firestoreAdmin.getFirestore();
+  const access = await db.runTransaction(async (transaction) => {
+    const ctx = await context(request, transaction, request.data.therapyId);
+    if (ctx.mode !== "psychologist") {
+      throw new HttpsError(
+          "permission-denied",
+          "El historial compartido requiere una cita confirmada.",
+      );
+    }
+    const appointment = await findSurveySharingAppointment(
+        transaction, db, ctx);
+    return {patientUid: ctx.therapy.pacienteUid,
+      appointmentId: appointment.id};
+  });
+  const pageSize = Math.min(
+      Math.max(Number(request.data.pageSize) || 50, 1), 100,
+  );
+  let messagesQuery = db
+      .collection(`conversations/${access.patientUid}/messages`)
+      .orderBy("createdAt", "asc")
+      .orderBy(FieldPath.documentId(), "asc")
+      .limit(pageSize + 1);
+  const cursor = typeof request.data.cursor === "string" ?
+    request.data.cursor.trim() : "";
+  if (cursor) {
+    const cursorSnapshot = await db.doc(
+        `conversations/${access.patientUid}/messages/${id(cursor)}`).get();
+    if (!cursorSnapshot.exists) {
+      throw new HttpsError(
+          "aborted", "El historial cambió. Vuelve a cargarlo.",
+      );
+    }
+    messagesQuery = messagesQuery.startAfter(cursorSnapshot);
+  }
+  const snapshot = await messagesQuery.get();
+  const docs = snapshot.docs.slice(0, pageSize);
+  return {
+    appointmentId: access.appointmentId,
+    items: docs.map((doc) => ({
+      id: doc.id,
+      role: doc.data().role === "assistant" ? "assistant" : "user",
+      text: text(doc.data().text || ""),
+      sessionId: typeof doc.data().sessionId === "string" ?
+        doc.data().sessionId : "",
+      createdAt: timestampIso(doc.data().createdAt),
+    })),
+    nextCursor: snapshot.size > pageSize ? docs.at(-1)?.id || "" : "",
+  };
+}
+
+async function findSurveySharingAppointment(transaction, db, ctx) {
+  const snapshot = await transaction.get(db.collection("citas")
+      .where("terapiaId", "==", ctx.therapy.id).limit(20));
+  const appointment = snapshot.docs
+      .map((doc) => ({id: doc.id, ...doc.data()}))
+      .find((item) => item.estado === "confirmada" &&
+        item.surveyHistoryConsent === true &&
+        item.pacienteUid === ctx.therapy.pacienteUid &&
+        item.terapeutaId === ctx.therapy.terapeutaId);
+  if (!appointment) {
+    throw new HttpsError(
+        "permission-denied",
+        "El historial requiere cita confirmada y consentimiento.",
+    );
+  }
+  return appointment;
+}
+
+function timestampIso(value) {
+  if (value && typeof value.toDate === "function") {
+    return value.toDate().toISOString();
+  }
+  return typeof value === "string" ? value : "";
 }
 
 async function createFollowupGoal(request) {
@@ -365,6 +462,7 @@ async function createEmotionalCheckin(request) {
 }
 
 module.exports = {
-  getTherapySharedSummary, createFollowupGoal, recordGoalProgress,
+  getTherapySharedHistory, getTherapySharedSummary,
+  createFollowupGoal, recordGoalProgress,
   assignFollowupExercise, completeFollowupExercise, createEmotionalCheckin,
 };

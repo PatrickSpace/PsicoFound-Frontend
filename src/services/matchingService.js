@@ -12,9 +12,9 @@ const getRecommendedTherapistsCallable = httpsCallable(
   "getRecommendedTherapists"
 );
 
-export async function getRecommendedTherapists({ requiredCriteria = [] } = {}) {
+export async function getRecommendedTherapists() {
   try {
-    const result = await getRecommendedTherapistsCallable({ requiredCriteria });
+    const result = await getRecommendedTherapistsCallable({});
     return {
       therapists: Array.isArray(result.data?.therapists)
         ? result.data.therapists

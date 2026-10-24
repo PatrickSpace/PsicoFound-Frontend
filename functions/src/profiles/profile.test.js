@@ -20,9 +20,11 @@ test("saludo o perfil vacio no queda listo para recomendaciones", () => {
   assert.equal(getMissingProfileField(profile), "temas");
 });
 
-test("tema y modalidad bastan; las demás preferencias son opcionales", () => {
+test("el flujo solo pregunta los campos que todavía no tienen valor", () => {
   const profile = finalizeProfileForMatching({...PROFILE_DEFAULTS,
-    temas: ["Ansiedad"], modalidad: "Online"});
+    temas: ["Ansiedad"], modalidad: "Online",
+    preferenciaGenero: "indiferente", preferenciaEdad: "35-45",
+    enfoque: "Humanista"});
   assert.equal(profile.completado, true);
   assert.equal(getMissingProfileField(profile), "");
   for (const modalidad of ["", "inventada"]) {
@@ -36,8 +38,8 @@ test("solo conversar no exige tema ni enfoque", () => {
     ...PROFILE_DEFAULTS,
     soloConversar: true,
     modalidad: "indiferente",
-    preferenciaGenero: "",
-    preferenciaEdad: "",
+    preferenciaGenero: "indiferente",
+    preferenciaEdad: "indiferente",
   });
 
   assert.equal(profile.completado, true);

@@ -52,8 +52,9 @@ en emuladores demo con datos sintéticos y sin salida de red externa.
 
 `ELIGIBILITY_POLICY_JSON` no tiene valor por defecto. Requiere versión, edad mínima,
 base `declared_birth_date`, zona `America/Lima`, estado `approved` y referencia de la
-aprobación. El soporte de Gemini impide configurar menores de 18; eso no aprueba
-el piloto 18+. El 2026-10-17 el responsable del proyecto aprobó explícitamente
+aprobación. La elegibilidad de producto se mantiene separada de las condiciones
+del proveedor de IA; ninguna de ellas aprueba por sí sola el piloto 18+. El
+2026-10-17 el responsable del proyecto aprobó explícitamente
 el acceso a partir de 18 años en esta conversación. La configuración pública
 versionada `functions/.env.psicosaas-3c819` establece la política `2026-10-v1`
 para el proyecto de producción; no contiene secretos. No constituye una
@@ -252,21 +253,23 @@ está bloqueado no se recarga automáticamente. Los errores de autenticación o
 permisos no provocan esta recuperación. La sesión de Firebase y el perfil creado
 se conservan: no se repite el alta ni la aceptación legal.
 
-## Encuesta guiada inicial — 2026-10-20
+## Encuesta híbrida — 2026-10-21
 
-La configuración pública de producción selecciona `SURVEY_INPUT_MODE=guided`.
-El paciente elige tema/solo conversar y modalidad; las preferencias restantes
-son opcionales. El editor guarda datos directamente en Firebase. Este modo
-no usa Gemini, oculta el compositor libre y rechaza entradas no reconocidas
-en el servidor antes de consumir cuota. La función de envío no vincula el
-secreto de Gemini en esta entrega. Activar texto libre en producción requiere
-restaurar explícitamente esa vinculación después de la revisión del proveedor,
-además de configurar modo, límites y aprobaciones. Se conservan los controles
-de acceso, consentimiento, App Check, concurrencia y ayuda independiente.
+La configuración pública selecciona `SURVEY_INPUT_MODE=hybrid`. Las opciones
+guiadas se resuelven localmente y el texto libre usa OpenAI `gpt-6-luna` solo
+cuando existen las aprobaciones exigidas por el servidor. Se registran motivo o
+solo conversar, modalidad, género, edad y enfoque; «indiferente» es un valor
+válido. Antes del matching se confirma un resumen editable.
+
+El proveedor recibe únicamente el perfil permitido, el mensaje actual y hasta
+15 intercambios completos de la sesión activa, con datos de contacto detectables
+enmascarados y `store: false`. No hay fallback. Si el proveedor falla se conserva
+el borrador y siguen disponibles las opciones locales. El historial completo se
+mantiene en Firestore sin caducidad automática de 30 días.
 
 Límite inicial: 30 envíos por cuenta/día y 2 envíos simultáneos globales.
-No elimina los posibles costos de Authentication, Firestore o Functions ni
-aprueba el uso de IA. Contrato y verificación en
+No elimina los posibles costos de OpenAI, Authentication, Firestore o Functions,
+ni sustituye la aprobación requerida. Contrato y verificación en
 [encuesta y recomendaciones](../functional/encuesta-matching.md).
 
 ## Aceptación de documentos en registro — 2026-10-21

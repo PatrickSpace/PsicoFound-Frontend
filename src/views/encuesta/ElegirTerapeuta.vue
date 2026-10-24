@@ -151,35 +151,19 @@
                 Cómo aplicaremos tus preferencias
               </h2>
               <p class="text-body-2 text-medium-emphasis mb-0">
-                La modalidad elegida se respeta siempre; híbrido permite online o presencial.
-                Las demás preferencias son flexibles y puedes marcarlas como obligatorias.
+                Usamos todas tus respuestas para ordenar los perfiles. Una preferencia concreta mejora la afinidad, pero no excluye automáticamente a otros profesionales.
               </p>
             </div>
-            <v-btn
-              color="secondary"
-              variant="tonal"
-              size="small"
-              :loading="loading"
-              @click="buscarTerapeutas"
-            >
-              Aplicar
-            </v-btn>
           </div>
           <div class="d-flex flex-wrap ga-2">
             <v-chip
               v-for="criterion in criteriaChoices"
               :key="criterion.key"
-              :color="isRequired(criterion.key) ? 'primary' : 'secondary'"
-              :variant="isRequired(criterion.key) ? 'flat' : 'tonal'"
-              :prepend-icon="
-                isRequired(criterion.key)
-                  ? 'mdi-lock-outline'
-                  : 'mdi-swap-horizontal'
-              "
-              @click="toggleRequired(criterion.key)"
+              color="secondary"
+              variant="tonal"
+              prepend-icon="mdi-swap-horizontal"
             >
-              {{ criterion.label }}: {{ criterion.value }} ·
-              {{ isRequired(criterion.key) ? "Obligatorio" : "Flexible" }}
+              {{ criterion.label }}: {{ criterion.value }}
             </v-chip>
           </div>
         </v-card>
@@ -256,7 +240,6 @@ const resetting = ref(false);
 const errorMessage = ref("");
 const outcome = ref("");
 const criteria = ref(null);
-const requiredCriteria = ref([]);
 const isCrisisMode = computed(() => route.query.crisis === "1");
 const criteriaChoices = computed(() => {
   const current = criteria.value || {};
@@ -281,8 +264,8 @@ const emptyStateTitle = computed(() =>
 );
 const emptyStateText = computed(() =>
   outcome.value === "no_availability"
-    ? "Encontramos profesionales afines, pero ninguno tiene bloques futuros compatibles con tus requisitos obligatorios. Tus respuestas se conservaron."
-    : "No encontramos profesionales que cumplan la combinación actual. Puedes cambiar qué condiciones son obligatorias o corregir tu perfil sin reiniciar la encuesta."
+    ? "No encontramos profesionales con horarios futuros disponibles. Tus respuestas se conservaron para que puedas intentarlo más tarde."
+    : "Todavía no hay perfiles disponibles. Puedes conservar o corregir tus respuestas sin reiniciar la encuesta."
 );
 
 async function buscarTerapeutas() {
@@ -290,13 +273,10 @@ async function buscarTerapeutas() {
   errorMessage.value = "";
 
   try {
-    const result = await getRecommendedTherapists({
-      requiredCriteria: requiredCriteria.value,
-    });
+    const result = await getRecommendedTherapists();
     const results = result.therapists;
     therapists.value = results;
     criteria.value = result.criteria;
-    requiredCriteria.value = result.requiredCriteria;
     outcome.value = result.outcome;
   } catch (error) {
     console.error("Error buscando terapeutas:", error);
@@ -306,17 +286,6 @@ async function buscarTerapeutas() {
   } finally {
     loading.value = false;
   }
-}
-
-function isRequired(key) {
-  return requiredCriteria.value.includes(key);
-}
-
-function toggleRequired(key) {
-  if (key === "modalidad") return;
-  requiredCriteria.value = isRequired(key)
-    ? requiredCriteria.value.filter((item) => item !== key)
-    : [...requiredCriteria.value, key];
 }
 
 async function handleRestartSurvey() {

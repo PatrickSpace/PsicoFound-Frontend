@@ -10,6 +10,14 @@ export async function callFollowup(name, data) {
 export async function getTherapySharedSummary(therapyId, mode) {
   return callFollowup("getTherapySharedSummary", { therapyId, mode });
 }
+export async function getTherapySharedHistory(therapyId, cursor = "") {
+  return callFollowup("getTherapySharedHistory", {
+    therapyId,
+    mode: "psychologist",
+    cursor,
+    pageSize: 50,
+  });
+}
 export async function getItemsForTherapies(name, therapies) {
   const groups = await Promise.all(therapies.map(async (therapy) => {
     const snapshot = await getDocs(query(collection(db, name), where("terapiaId", "==", therapy.id)));

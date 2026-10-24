@@ -28,6 +28,10 @@ const updateProfilePreferencesCallable = httpsCallable(
   functions,
   "updateProfilePreferences"
 );
+const confirmProfileSummaryCallable = httpsCallable(
+  functions,
+  "confirmProfileSummary"
+);
 
 export async function startProfileChatConversation() {
   const result = await httpsCallable(functions, "startProfileChatConversation")();
@@ -46,6 +50,15 @@ export async function sendProfileChatMessage(message, requestId, context = {}) {
 export async function updateProfilePreferences(profile, context = {}) {
   try {
     const result = await updateProfilePreferencesCallable({ profile, ...context });
+    return result.data;
+  } catch (error) {
+    throw createProfileChatError(error);
+  }
+}
+
+export async function confirmProfileSummary(sessionId) {
+  try {
+    const result = await confirmProfileSummaryCallable({ sessionId });
     return result.data;
   } catch (error) {
     throw createProfileChatError(error);
@@ -130,6 +143,7 @@ function createProfileChatError(error) {
   const code = normalizeFunctionErrorCode(error?.code);
   const readableError = new Error(getProfileChatErrorMessage(error, code));
   readableError.code = code;
+  readableError.details = error?.details || null;
   readableError.originalMessage = (error?.message || "").toString();
   return readableError;
 }
@@ -148,7 +162,7 @@ function getProfileChatErrorMessage(error, normalizedCode) {
     "functions/deadline-exceeded":
       "El proveedor de IA tardó demasiado en responder. Intenta enviar un mensaje más breve o espera unos segundos.",
     "functions/unavailable":
-      "El servicio de IA no está disponible por el momento. Inténtalo nuevamente en unos segundos.",
+      "La asistencia con IA no está disponible en este momento. Puedes intentarlo nuevamente en unos minutos o continuar seleccionando una de las opciones.",
     "functions/internal":
       serverMessage && !serverMessage.includes("internal")
         ? `La IA no pudo procesar el mensaje: ${serverMessage}`

@@ -202,6 +202,16 @@ service cloud.firestore {
         allow read: if isOwner(uid);
         allow write: if false;
       }
+
+      match /safety_events/{eventId} {
+        allow read: if isOwner(uid);
+        allow write: if false;
+      }
+    }
+
+    match /survey_summaries/{uid} {
+      allow read: if isOwner(uid);
+      allow write: if false;
     }
 
     match /profile_chat_operations/{operationId} {

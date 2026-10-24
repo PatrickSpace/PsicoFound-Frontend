@@ -5,6 +5,7 @@ const {makeTurn, validateTurn, localAnswer} = require("./surveyTurn");
 const {buildProfileChatMessages} = require("../ai/profilePrompt");
 const {assertProviderApproved} = require("../ai/providerPolicy");
 const {getActiveChatSession} = require("./session");
+const {buildReply, findConflicts} = require("./surveyService");
 
 test("turn options and question agree; stale chips are rejected", () => {
   const turn = makeTurn({temas: ["Ansiedad"]}, "s");
@@ -32,8 +33,38 @@ test("provider payload omits administrative attributes and masks contact details
 });
 test("real provider cannot run in emulators or without explicit approved evidence", () => {
   assert.throws(() => assertProviderApproved({}), {code: "failed-precondition"});
-  const policy = {status: "approved", provider: "gemini", plan: "paid", scope: "administrative_matching", version: "v1",
+  const policy = {status: "approved", provider: "openai", model: "gpt-6-luna", plan: "paid", scope: "hybrid_survey_matching", version: "v1",
     approvalReference: "ref", billingEvidenceReference: "ref", clinicalReviewReference: "ref", privacyReviewReference: "ref"};
   assert.throws(() => assertProviderApproved({FUNCTIONS_EMULATOR: "true", AI_USE_APPROVAL_JSON: JSON.stringify(policy)}));
   assert.equal(assertProviderApproved({AI_USE_APPROVAL_JSON: JSON.stringify(policy)}).version, "v1");
+});
+test("a contradictory value becomes an explicit confirmation turn", () => {
+  const turn = makeTurn({}, "s", {field: "modalidad", previous: "online",
+    next: "presencial", data: {modalidad: "presencial"},
+    pendingConflicts: [{field: "enfoque", previous: "Humanista",
+      next: "Integrativo", data: {enfoque: "Integrativo"}}]});
+  assert.equal(turn.kind, "overwrite_confirmation");
+  assert.deepEqual(localAnswer("sí", turn).data, {modalidad: "presencial"});
+  assert.deepEqual(localAnswer("no", turn).data, {});
+  assert.equal(localAnswer("no", turn).nextConfirmation.field, "enfoque");
+});
+test("every contradictory field is isolated until the user confirms it", () => {
+  const conflicts = findConflicts(
+      {modalidad: "online", enfoque: "Humanista"},
+      {modalidad: "presencial", enfoque: "Integrativo",
+        preferenciaEdad: "indiferente"},
+  );
+  assert.deepEqual(conflicts, [
+    {field: "modalidad", previous: "online", next: "presencial"},
+    {field: "enfoque", previous: "Humanista", next: "Integrativo"},
+  ]);
+});
+test("the fifth no-progress turn redirects gently to the pending answer", () => {
+  const reply = buildReply(
+      {reply: "Entiendo que esto puede ser difícil."},
+      {status: "active", question: "¿Prefieres atención online o presencial?"},
+      {redirected: true, conflict: null, changed: false},
+  );
+  assert.match(reply, /Gracias por confiarme esto/);
+  assert.match(reply, /¿Prefieres atención online o presencial\?/);
 });

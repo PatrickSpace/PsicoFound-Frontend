@@ -20,10 +20,9 @@ async function send(page,message) {
   await page.getByRole('button',{name:'Enviar mensaje',exact:true}).click();
   return response;
 }
-test('B-02/F-01: local survey turns, reload and reset preserve authoritative session',async ({page})=>{
+test('B-02/F-01: guided options, reload and reset preserve authoritative session',async ({page})=>{
   await httpCall('B','resetProfileChatConversation',{requestId:'browser-reset-initial'});
   await login(page);
-  expect((await send(page,'hola')).ok()).toBe(true);
   await expect(page.getByRole('button',{name:'Solo conversar',exact:true})).toBeVisible();
   await page.getByRole('button',{name:'Solo conversar',exact:true}).click();
   await expect(page.getByRole('button',{name:'Online',exact:true})).toBeVisible();
@@ -36,7 +35,6 @@ test('B-02/F-01: local survey turns, reload and reset preserve authoritative ses
   await page.getByRole('button',{name:'Reiniciar encuesta',exact:true}).click();
   await expect.poll(async()=>(await db.doc('conversations/patient-b').get()).data().activeSessionId).not.toBe(before.activeSessionId);
   await expect(page.getByText('No sé',{exact:true})).toHaveCount(0);
-  await send(page,'hola');
   await expect(page.getByRole('button',{name:'Solo conversar',exact:true})).toBeVisible();
 });
 test('B-03/C-01: quota error keeps independent help accessible',async ({page})=>{
@@ -84,7 +82,7 @@ test('B-02: bounded history pages retrieve previous messages without extending p
 });
 
 
-test('B-04: guided survey completes with topic and modality, preserves reload and optional preferences',async ({page},info)=>{
+test('B-04: guided survey records all answers and confirms the summary',async ({page},info)=>{
   await db.doc('conversations/patient-b').delete();
   await db.doc('profiles/patient-b').delete();
   await seedSlots(db);
@@ -104,15 +102,19 @@ test('B-04: guided survey completes with topic and modality, preserves reload an
   await expect(page.getByRole('button',{name:'Online',exact:true})).toBeVisible();
   expect((await db.doc('conversations/patient-b').get()).data().activeSessionId).toBe(first.activeSessionId);
   await page.getByRole('button',{name:'Online',exact:true}).click();
-  await expect(page.getByRole('button',{name:'Ver psicólogos',exact:true})).toBeVisible();
+  await page.getByRole('button',{name:'Me da igual',exact:true}).click();
+  await page.getByRole('button',{name:'Me da igual',exact:true}).click();
+  await page.getByRole('button',{name:'Me da igual',exact:true}).click();
+  await expect(page.getByRole('button',{name:'Revisar resumen',exact:true})).toBeVisible();
+  const summary=page.getByRole('dialog');
+  await expect(summary).toBeVisible();
+  await expect(summary.getByText('Revisa tu resumen',{exact:true})).toBeVisible();
+  await summary.getByRole('button',{name:'Confirmar y ver psicólogos',exact:true}).click();
+  await expect(page).toHaveURL(/\/elegirterapeuta/);
+  await expect(page.getByText('Psicólogos afines a tu perfil',{exact:true})).toBeVisible();
   const profile=(await db.doc('profiles/patient-b').get()).data();
   expect(profile.completado).toBe(true);
-  for(const field of ['preferenciaGenero','preferenciaEdad','enfoque'])expect(profile[field]).toBe('');
-  await page.getByRole('button',{name:'Ajustar preferencias (opcional)',exact:true}).click();
-  await page.getByRole('button',{name:'Guardar correcciones',exact:true}).click();
-  await expect(page.getByRole('dialog')).toHaveCount(0);
+  expect(profile.summaryConfirmed).toBe(true);
+  for(const field of ['preferenciaGenero','preferenciaEdad','enfoque'])expect(profile[field]).toBe('indiferente');
   await page.screenshot({path:`test-results/survey-guided-${info.project.name}.png`,fullPage:true});
-  await page.getByRole('button',{name:'Ver psicólogos',exact:true}).click();
-  await expect(page.getByText(/Modalidad: remoto · Obligatorio/)).toBeVisible();
-  await expect(page.getByText('Psicólogos afines a tu perfil',{exact:true})).toBeVisible();
 });

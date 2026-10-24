@@ -44,7 +44,7 @@ function findMatchingTherapists(
             therapist,
             request,
             requiredCriteria,
-        ) && (anyCriterion ? score > 0 : true);
+        ) && (anyCriterion ? score >= 0 : true);
       })
       .sort((a, b) => b.score - a.score)
       .slice(0, limit)

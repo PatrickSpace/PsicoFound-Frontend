@@ -200,6 +200,9 @@
                   pendiente con esta tarifa y versión. Abrir el enlace o volver
                   a Lurems no acredita el pago.
                 </p>
+                <v-alert color="info" variant="tonal" class="mb-3" density="compact">
+                  Al confirmar la cita, autorizas a compartir con este psicólogo el resumen que aprobaste y el historial completo de esta conversación. Su acceso se retirará si cancelas la cita.
+                </v-alert>
                 <p class="text-caption text-medium-emphasis mb-0">
                   Política {{ bookingQuote.commercialPolicy.version }}.
                   Plazo para informar el pago: {{ bookingQuote.conditions.holdMinutes }} minutos
@@ -912,6 +915,7 @@ async function submitAppointment() {
         mode: appContext.activeMode,
         requestId: operationRequestId.value,
         quoteId: bookingQuote.value?.quoteId || "",
+        shareSurveyHistoryConsent: appContext.activeMode === "patient",
       });
     }
 

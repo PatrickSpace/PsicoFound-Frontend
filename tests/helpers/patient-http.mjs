@@ -46,7 +46,17 @@ export async function seedPatient() {
     pais: "España", zonaHoraria: "Europe/Madrid" });
   await db.doc("profiles/patient-b").set({ temas: ["Ansiedad"], motivoConsulta: "Motivo sintético",
     modalidad: "remoto", preferenciaGenero: "Indiferente", preferenciaEdad: "Indiferente",
-    enfoque: "Indiferente", riesgoSuicida: false, completado: true });
+    enfoque: "Indiferente", riesgoSuicida: false, completado: true,
+    summaryConfirmed: true, sessionId: "seeded-survey-session" });
+  const approvedSummary = {motivoConsulta: "Motivo sintético",
+    soloConversar: false, temas: ["Ansiedad"], modalidad: "remoto",
+    preferenciaGenero: "Indiferente", preferenciaEdad: "Indiferente",
+    enfoque: "Indiferente"};
+  for (const patientUid of ["patient-b", "patient-c"]) {
+    await db.doc(`survey_summaries/${patientUid}`).set({uid: patientUid,
+      sessionId: "seeded-survey-session", confirmed: true,
+      summary: approvedSummary});
+  }
   await db.doc("therapists/therapist-a").update({ especialidades: ["Ansiedad"], modalidades: ["Remoto"],
     direccion: "Terapia Online", paymentRateId: "review-rate", paymentRateSelectionVersion: 1 });
   await db.doc("payment_rates/review-rate").set({ name: "Tarifa sintética", amountMinor: 12000,
@@ -67,7 +77,8 @@ export async function seedSlots(db, date = new Date(Date.now() + 86400000).toISO
 export async function reserve(slot = "review-ten", requestId = "patient-reserve") {
   const quote = await httpCall("B", "getBookingQuote", { therapistId: "therapist-a" });
   return httpCall("B", "reserveAppointment", { mode: "patient", terapeutaId: "therapist-a",
-    terapiaId: "b-active", availabilitySlotId: slot, requestId, quoteId: quote.quoteId });
+    terapiaId: "b-active", availabilitySlotId: slot, requestId, quoteId: quote.quoteId,
+    shareSurveyHistoryConsent: true });
 }
 
 export async function seedPastAppointment(db, status) {

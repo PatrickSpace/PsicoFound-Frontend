@@ -27,8 +27,8 @@ La implementacion vive en `functions/src/ai`:
 - `types.js`: contrato comun documentado con JSDoc.
 - `types.d.ts`: contrato TypeScript para proveedores y entradas/salidas.
 - `errors.js`: errores estandarizados de proveedores.
-- `providers/GeminiProvider.js`: proveedor funcional actual.
-- `providers/OpenAIProvider.js`: proveedor preparado para uso futuro.
+- `providers/OpenAIProvider.js`: proveedor activo para la encuesta híbrida.
+- `providers/GeminiProvider.js`: adaptador heredado, no habilitado en la encuesta.
 - `providers/ClaudeProvider.js`: proveedor preparado para uso futuro.
 - `responseSchemas.js`: esquemas neutrales para salidas estructuradas.
 
@@ -47,16 +47,12 @@ recomendación ni verificación de disponibilidad del servicio externo.
 
 Proveedor principal actual:
 
-- `gemini` con `gemini-2.5-flash`.
+- `openai` con `gpt-6-luna` mediante Responses API.
 
-Proveedor secundario actual:
-
-- `gemini` con `gemini-2.5-flash`.
-
-Proveedores preparados para configuracion futura:
-
-- `openai`
-- `claude` / `anthropic`
+La encuesta no configura proveedor secundario para evitar enviar el mismo texto
+sensible a otro servicio después de un fallo. Gemini y Claude/Anthropic siguen
+disponibles como adaptadores de la abstracción, pero no están habilitados en este
+flujo.
 
 Si OpenAI o Claude se seleccionan sin API key, el provider lanza
 `AIProviderConfigurationError` con un mensaje claro.
@@ -66,10 +62,10 @@ Si OpenAI o Claude se seleccionan sin API key, el provider lanza
 Configuracion generica:
 
 ```bash
-PRIMARY_AI_PROVIDER=gemini
-FALLBACK_AI_PROVIDER=gemini
-AI_MODEL=gemini-2.5-flash
-FALLBACK_AI_MODEL=gemini-2.5-flash
+PRIMARY_AI_PROVIDER=openai
+FALLBACK_AI_PROVIDER=
+AI_MODEL=gpt-6-luna
+FALLBACK_AI_MODEL=
 ```
 
 Credenciales y modelos por proveedor:
@@ -79,7 +75,7 @@ GEMINI_API_KEY=
 GEMINI_MODEL=gemini-2.5-flash
 
 OPENAI_API_KEY=
-OPENAI_MODEL=gpt-4.1-mini
+OPENAI_MODEL=gpt-6-luna
 
 ANTHROPIC_API_KEY=
 ANTHROPIC_MODEL=claude-3-5-haiku-latest
@@ -90,14 +86,13 @@ del entorno de Functions. Nunca deben exponerse en el cliente.
 
 ## Estrategia De Fallback
 
-`AIService` intenta primero el proveedor principal. Si falla con un error
-retryable, como disponibilidad, timeout o rate limit, intenta el proveedor
-secundario.
+`AIService` soporta fallback para otros usos, pero la encuesta llama con
+`allowFallback: false`. Si OpenAI no está disponible, la interfaz conserva el
+texto, mantiene las opciones locales y permite reintentar más tarde.
 
-El secundario se instancia solamente tras ese error. Si tiene el mismo nombre
-y modelo efectivo que el principal, no se repite la llamada. Un modelo distinto
-del mismo proveedor si puede actuar como respaldo. El default actual (Gemini
-con el mismo modelo) hace una sola peticion y no duplica costo/latencia.
+Cuando otro flujo configure un secundario, este se instancia solamente tras un
+error recuperable. Si tiene el mismo nombre y modelo efectivo que el principal,
+no se repite la llamada.
 
 Errores retryable:
 

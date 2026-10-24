@@ -5,16 +5,18 @@ import { isProfileReadyForRecommendations as ready } from "../../src/utils/recom
 const complete = {
   temas: ["Ansiedad"], enfoque: "Humanista", modalidad: "online",
   preferenciaGenero: "indiferente", preferenciaEdad: "18-25",
+  summaryConfirmed: true,
 };
 
-test("readiness requires topic and explicit valid modality, not optional preferences or stored completion", () => {
+test("readiness requires every answer and the approved summary", () => {
   assert.equal(ready(complete), true);
   for (const field of ["temas", "modalidad"]) {
     assert.equal(ready({ ...complete, [field]: field === "temas" ? [] : " ", completado: true }), false, field);
   }
-  assert.equal(ready({temas:["Ansiedad"], modalidad:"online"}), true);
+  assert.equal(ready({...complete, summaryConfirmed: false}), false);
+  assert.equal(ready({temas:["Ansiedad"], modalidad:"online"}), false);
   assert.equal(ready({temas:["Ansiedad"], modalidad:"desconocida"}), false);
-  assert.equal(ready({temas:["Ansiedad"], modalidad:"indiferente"}), true);
+  assert.equal(ready({...complete, modalidad: "indiferente"}), true);
 });
 
 test("talk-only omits specialty and approach but keeps preferences", () => {
@@ -31,7 +33,7 @@ test("a reset/absent profile never inherits a prior profile", () => {
   }
 });
 
-test("crisis bypass remains available without survey completion", () => {
-  assert.equal(ready({ riesgoSuicida: true }), true);
+test("a safety signal never becomes matching readiness", () => {
+  assert.equal(ready({ riesgoSuicida: true }), false);
   assert.equal(ready({ riesgoSuicida: false }), false);
 });

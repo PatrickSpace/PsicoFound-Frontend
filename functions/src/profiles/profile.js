@@ -17,11 +17,12 @@ const PROFILE_DEFAULTS = {
   ciudad: "",
   observaciones: "",
   completado: false,
+  summaryConfirmed: false,
 };
 
 const PROFILE_KEYS = Object.keys(PROFILE_DEFAULTS);
 const MODEL_WRITABLE_PROFILE_KEYS = PROFILE_KEYS.filter(
-    (key) => !["completado", "sessionId"].includes(key),
+    (key) => !["completado", "sessionId", "summaryConfirmed"].includes(key),
 );
 const OPTIONAL_PREFERENCE_FIELDS = new Set([
   "enfoque",
@@ -33,18 +34,20 @@ const PROFILE_READY_TEXT = {
   modalidad:
     "¿Prefieres atención online, presencial, híbrida o te es indiferente?",
   preferenciaGenero: [
-    "Tienes alguna preferencia sobre el genero del terapeuta",
+    "¿Tienes alguna preferencia sobre el género del terapeuta",
     "o te es indiferente?",
   ].join(" "),
   preferenciaEdad:
-    "Tienes alguna preferencia sobre el rango de edad del terapeuta?",
+    "¿Tienes alguna preferencia sobre el rango de edad del terapeuta " +
+    "o te es indiferente?",
   temas: [
-    "¿Cuál es el motivo principal por el que buscas apoyo?",
-    "También puedes elegir solo conversar con un terapeuta.",
+    "Gracias por estar aquí. Puedes contarme con tus propias palabras qué",
+    "estás viviendo o elegir una opción. ¿Qué te gustaría compartir hoy?",
   ].join(" "),
   enfoque: [
-    "Para el estilo de ayuda, prefieres algo practico con herramientas,",
-    "un espacio de escucha profunda, trabajar vinculos/familia, o una mezcla?",
+    "Para el estilo de ayuda, ¿prefieres algo práctico con herramientas,",
+    "un espacio de escucha profunda, trabajar vínculos o familia, " +
+    "una mezcla flexible o te es indiferente?",
   ].join(" "),
 };
 const PROFILE_OPTION_SETS = {
@@ -61,25 +64,25 @@ const PROFILE_OPTION_SETS = {
     {label: "Online", value: "Online"},
     {label: "Presencial", value: "Presencial"},
     {label: "Híbrido", value: "Híbrido"},
-    {label: "Cualquier alternativa", value: "Me da igual"},
+    {label: "Me da igual", value: "Me da igual"},
   ],
   preferenciaGenero: [
     {label: "Mujer", value: "Femenino"},
     {label: "Hombre", value: "Masculino"},
-    {label: "Cualquier alternativa", value: "Me da igual"},
+    {label: "Me da igual", value: "Me da igual"},
   ],
   enfoque: [
     {label: "Algo práctico", value: "Algo práctico con herramientas"},
     {label: "Escucha profunda", value: "Un espacio de escucha profunda"},
     {label: "Vínculos/familia", value: "Trabajar vínculos o familia"},
     {label: "Mezcla flexible", value: "Una mezcla flexible"},
-    {label: "Cualquier alternativa", value: "Me da igual"},
+    {label: "Me da igual", value: "Me da igual"},
   ],
   preferenciaEdad: [
     {label: "25-35", value: "25-35"},
     {label: "35-45", value: "35-45"},
     {label: "+45", value: "+45"},
-    {label: "Cualquier alternativa", value: "Me da igual"},
+    {label: "Me da igual", value: "Me da igual"},
   ],
 };
 
@@ -154,13 +157,17 @@ function finalizeProfileForMatching(profile = {}) {
 }
 
 function isProfileComplete(profile = {}) {
-  if (profile.riesgoSuicida) {
-    return true;
-  }
+  const hasTopic = Boolean(profile.soloConversar) ||
+    (Array.isArray(profile.temas) && profile.temas.length > 0);
+  const practicalPreferences = [
+    profile.preferenciaGenero,
+    profile.preferenciaEdad,
+  ].every(hasPreferenceValue);
+  const hasApproach = Boolean(profile.soloConversar) ||
+    hasPreferenceValue(profile.enfoque);
 
-  return hasValidModality(profile.modalidad) &&
-    (Boolean(profile.soloConversar) ||
-      (Array.isArray(profile.temas) && profile.temas.length > 0));
+  return hasTopic && hasValidModality(profile.modalidad) &&
+    practicalPreferences && hasApproach;
 }
 
 function getNextProfileQuestion(profile = {}) {
@@ -187,15 +194,23 @@ function getSuggestedOptionsForProfile(profile = {}) {
 }
 
 function getMissingProfileField(profile = {}) {
-  if (profile.riesgoSuicida) {
-    return "";
-  }
-
   if (!profile.soloConversar &&
       (!Array.isArray(profile.temas) || profile.temas.length === 0)) {
     return "temas";
   }
-  return hasValidModality(profile.modalidad) ? "" : "modalidad";
+  if (!hasValidModality(profile.modalidad)) return "modalidad";
+  if (!hasPreferenceValue(profile.preferenciaGenero)) {
+    return "preferenciaGenero";
+  }
+  if (!hasPreferenceValue(profile.preferenciaEdad)) return "preferenciaEdad";
+  if (!profile.soloConversar && !hasPreferenceValue(profile.enfoque)) {
+    return "enfoque";
+  }
+  return "";
+}
+
+function hasPreferenceValue(value) {
+  return typeof value === "string" && value.trim().length > 0;
 }
 
 function sanitizeTextValue(key, value) {
@@ -237,5 +252,6 @@ module.exports = {
   getSuggestedOptionsForProfile,
   getCurrentProfile,
   isProfileComplete,
+  isIndifferentValue,
   sanitizeModelProfileData,
 };

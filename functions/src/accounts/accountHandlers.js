@@ -83,6 +83,7 @@ async function exportOwnData(request) {
   }
   const conversationSnapshot = await db.doc(`conversations/${uid}`).get();
   const profileSnapshot = await db.doc(`profiles/${uid}`).get();
+  const surveySummarySnapshot = await db.doc(`survey_summaries/${uid}`).get();
   const queries = {
     therapies: db.collection("terapias").where("pacienteUid", "==", uid),
     appointments: db.collection("citas").where("pacienteUid", "==", uid),
@@ -111,6 +112,9 @@ async function exportOwnData(request) {
   ));
   const messages = await documentsForQuery(
       db.collection(`conversations/${uid}/messages`),
+  );
+  const surveySafetyEvents = await documentsForQuery(
+      db.collection(`conversations/${uid}/safety_events`),
   );
   const data = Object.fromEntries(entries);
   // Only goals selected by patient ownership; never follow a client supplied ID.
@@ -157,6 +161,9 @@ async function exportOwnData(request) {
       conversation: conversationSnapshot.exists ?
         conversationSnapshot.data() : null,
       messages,
+      surveySafetyEvents,
+      surveySummary: surveySummarySnapshot.exists ?
+        surveySummarySnapshot.data() : null,
       authentication,
       consents,
       ...data,
