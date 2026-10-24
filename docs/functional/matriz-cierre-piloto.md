@@ -1,8 +1,8 @@
 # Matriz de aceptación y pendientes del piloto
 
-Consolidación original: 2026-10-15. Revisión independiente del seguimiento:
-2026-10-21, America/Lima. Alcance: paciente, psicólogo y administrador.
-La revisión actual contrasta código y repite las pruebas locales; no aprueba lanzamiento.
+Consolidación original: 2026-10-15. Última actualización técnica:
+2026-10-24, America/Lima. Alcance: paciente, psicólogo y administrador.
+La revisión técnica no sustituye la aceptación operativa ni legal.
 
 «Verificado local» identifica evidencia con datos sintéticos y emuladores; no acredita
 Linux, staging ni producción. Las secciones históricas conservan sus resultados
@@ -11,9 +11,12 @@ posterior. El cierre administrativo del 15, la encuesta del 20 y el consentimien
 del 21 sustituyen las observaciones anteriores sobre esos recorridos, salvo las
 regresiones expresamente identificadas en la verificación actual.
 
-**Resultado actual:** 80/80 pruebas de integración, 32/32 de Lima y 98/102 de
-navegador general. Dos incidencias, repetidas en escritorio/móvil, impiden cerrar
-la aceptación global. Ver [verificación del 21 de octubre](#verificación-independiente--2026-10-21).
+**Resultado actual:** el release `481f60b` aprobó 44/44 pruebas unitarias frontend,
+93/93 pruebas backend, lint, build, auditorías y la suite completa Quality en GitHub.
+Las 102 pruebas de navegador quedaron aprobadas. Las incidencias REV-SEG-01/02 del
+corte del 21 de octubre están cerradas; sus resultados se conservan como histórico.
+La aceptación operativa pendiente se sigue en
+[preparación para producción](../production-readiness.md).
 
 Funcionamiento: [referencia por rol](revision-funcional-por-rol.md) y
 [encuesta/matching](encuesta-matching.md). Reproducción: [guía de validación](../operations/validation.md).
@@ -42,9 +45,9 @@ Antecedentes: [informe del 10 de octubre](../archive/functional/informe-cierre-t
 | D-01 | Políticas versionadas y tarifas de prueba | Verificado local | `pilot-payments.integration.test.mjs`: política ausente, snapshot inmutable, corte/cita pasada explícitos, tarifa test excluida; condiciones en cotización | Plazos/penalidades/condiciones aprobados |
 | D-02 | Expiración, cancelación y carreras con pago | Verificado local | `pilot-payments.integration.test.mjs`: transacción cita/terapia/slot/pago/evento/aviso; confirmación-expiración y confirmación-cancelación concurrentes | Configuración sintética hasta aprobación |
 | D-03 | Referencia única, devolución y obligaciones | Verificado local | `pilot-payments.integration.test.mjs`: recibo único por comercio/proveedor, importe calculado/pendiente/transferido separados, sobrepago y duplicados rechazados | Responsables y conciliación/liquidación reales; [contratos](../operations/pilot-payments.md). La interfaz administrativa ya fue aceptada localmente |
-| E-01 | Dependencias y CI Linux aislado | Auditorías/checks estáticos aprobados; suite funcional falla localmente y en Ubuntu | 0 vulnerabilidades en ambos paquetes; unit/backend/lint/build/Knip pasan. [Quality para 7bb347c](https://github.com/PatrickSpace/PsicoFound-Frontend/actions/runs/39555504112): 80/80 integración, 32/32 Lima, 98/102 navegador; mismos cuatro fallos que en local | Corregir REV-SEG-01/02 y obtener ejecución completa aprobada |
+| E-01 | Dependencias y CI Linux aislado | Cerrado técnicamente en el release | 0 vulnerabilidades; unit/backend/lint/build/Knip y 102/102 navegador aprobados. [Quality para 481f60b](https://github.com/PatrickSpace/PsicoFound-Frontend/actions/runs/40048277432) | Actualizar Actions y repetir Quality en el cierre técnico posterior |
 | E-02 | Configuración, despliegue, rollback y restauración | Herramientas y ensayo sintético verificados | `verify-pilot-config.mjs` rechaza ejemplo incompleto; `pilot-operations.integration.test.mjs` restaura en otro proyecto demo y compara hash/subcolecciones/timestamps | Console/IAM/Auth/backup real requieren staging autorizado |
-| F-01 | Paciente/profesional escritorio/móvil | Aceptación global abierta: 98/102 en suite general, 2026-10-21 | Incluye administración/legal; 10/10 de vencimiento de pagos aprobados. Fallan recuperación del registro y test desactualizado de modalidad, en ambos tamaños | Resolver REV-SEG-01/02; Safari, dispositivos reales y Google no ejecutados |
+| F-01 | Paciente/profesional escritorio/móvil | Suite automatizada cerrada: 102/102 | Incluye registro, consentimiento, encuesta, administración y legal en tamaños desktop/móvil automatizados | Safari, dispositivos físicos, Google, correo real y smoke autenticado productivo pendientes |
 | F-02 | Avisos: conteo, lectura, misma ruta y recuperación | Verificado local | `pilot-closure.spec.mjs`: 25 avisos, leído, recarga de misma ruta y error/reintento; listeners ligados al UID | Canal externo de recordatorios por decidir |
 | F-03 | Lima y REV-PAC-04B | Revalidado local: 32/32, 2026-10-21 | `agenda-lima.spec.mjs`: 32 casos en 4 zonas y 2 tamaños; [cierre previo](../archive/functional/cierre-politica-horaria-mvp.md) preservado | Sin política horaria alternativa |
 
@@ -85,7 +88,7 @@ comprobaciones separadas.
 | PROD-01 | Registro de atención y rechazo de horario | Cerrado técnicamente según entrega del 2026-10-15. Rechazo con motivo/aviso, fecha real separada del registro, corrección y deshacer con motivo, versión e historial. `attendancePolicy.js` y el handler siguen implementando el contrato; no se reabre como desarrollo pendiente. |
 | PROD-02 | Facultades para finalizar/reactivar terapias, inasistencia y nuevas acciones profesionales | Paciente ya puede activar/pausar/cancelar con restricciones; profesional no puede cambiar estado de terapia. No hay estado específico de alta/finalización terapéutica ni inasistencia. Requiere decisión de alcance. |
 | OPS-01 | Perfil profesional inactivo con citas existentes | Desactivación y bloqueo de nuevas acciones/cotizaciones ya implementados. Falta procedimiento para citas existentes; no hay reasignación ni cancelación automática. |
-| PERF-01 | Chunk grande, registro global Vuetify y fuente MDI | Build del 2026-10-21: paquete principal 1.257,51 kB minificado / 391,35 kB gzip. Compila; el aviso persiste. Falta medir carga real y evaluar importación selectiva con comparación visual. |
+| PERF-01 | Chunk grande, registro global Vuetify y fuente MDI | Cierre técnico 2026-10-24: bundle dividido; entrada principal ~32 kB, vendors Firebase/Vuetify por debajo de 600 kB y build sin aviso de chunk. Falta medir carga real y evaluar fuente MDI/importación selectiva con comparación visual. |
 | DEBT-01 | Estilos globales y componentes grandes de encuesta/cita | Revalidar deuda señalada en auditoría de septiembre; priorizar extracción por responsabilidad y regresión visual, sin conservar conteos antiguos como actuales. |
 | QA-01 | Linux, Safari, móviles reales, Google y correo real | Ubuntu ejecutado: reproduce REV-SEG-01/02, pendiente aprobación completa (E-01). Safari, dispositivos físicos, Google, entrega real de correo y entorno desplegado no comprobados en esta revisión. |
 | QA-02 | Registro/verificación de correo en navegador | Flujo normal aprobado en escritorio/móvil; recuperación ante fallo de inicialización reabierta por REV-SEG-01. Consentimiento centralizado y retorno original pasan sus pruebas. Entrega real de correo sigue en QA-01. |
