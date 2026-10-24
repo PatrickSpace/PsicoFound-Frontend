@@ -2,7 +2,7 @@
 
 Última revisión: 2026-10-24, America/Lima.
 
-Release base desplegado: `main` en `481f60b579b5fe64834f1038451036e384e5e625`.
+Release desplegado: `main` en `1eba0f2`. Release base de la encuesta: `481f60b`.
 
 Proyecto Firebase: `psicosaas-3c819`. Dominio: <https://app.lurems.lat>.
 
@@ -14,10 +14,11 @@ el release aprobado. Las pruebas unitarias, backend, navegador, lint, build y
 auditorías terminaron correctamente.
 
 El lanzamiento operativo permanece abierto hasta completar las comprobaciones que
-necesitan una identidad QA autenticada, recepción real de correo, revisión humana
-del texto legal y responsables externos. Los pagos reales son un release separado
-y no bloquean la aceptación funcional de la encuesta mientras se mantenga el
-comportamiento publicado en `main`.
+necesitan identidades QA de psicólogo y administrador, revisión humana del texto
+legal, responsables externos y dispositivos físicos. La identidad QA de paciente,
+el correo real y la encuesta productiva ya fueron comprobados. Los pagos reales son
+un release separado y no bloquean la aceptación funcional de la encuesta mientras
+se mantenga el comportamiento publicado en `main`.
 
 ## Completado
 
@@ -34,6 +35,14 @@ comportamiento publicado en `main`.
       conservado en Firestore sin eliminación automática a 30 días.
 - [x] Datos de contacto detectables enmascarados y peticiones con `store: false`.
 - [x] Fallo de IA recuperable con borrador y opciones guiadas disponibles.
+- [x] Smoke autenticado productivo con texto libre: Luna respondió con empatía,
+      las opciones guiadas completaron solo criterios faltantes y el resumen fue
+      coherente antes de ejecutar el matching.
+- [x] Modalidad y género «Me da igual» persistieron como valores válidos y no se
+      interpretaron como respuestas faltantes.
+- [x] El historial completo de la conversación reapareció tras recargar la encuesta.
+      La exposición futura de ese contenido al psicólogo sigue pendiente de diseño
+      de permisos y experiencia.
 
 ### Seguridad y acceso
 
@@ -43,6 +52,11 @@ comportamiento publicado en `main`.
 - [x] Consentimiento legal versionado y recuperación de cuentas incompletas.
 - [x] Verificación de correo mediante Firebase Authentication.
 - [x] Reglas de Firestore compiladas sin advertencias de helpers sin uso.
+- [x] App Check productivo observado con `auth: VALID` y `app: VALID`; una llamada
+      directa sin credenciales fue rechazada con HTTP 401.
+- [x] Correo de verificación entregado a un buzón temporal, enlace aceptado y retorno
+      al onboarding comprobados. La sesión anterior mostró el bloqueo esperado y se
+      recuperó mediante «Ya verifiqué mi correo».
 
 ### Calidad, despliegue y operación pública
 
@@ -57,18 +71,19 @@ comportamiento publicado en `main`.
 - [x] Bundle dividido entre aplicación, Vue, Vuetify y Firebase; build sin aviso de
       chunks superiores al límite definido.
 - [x] GitHub Actions actualizadas a runtimes compatibles con Node.js 24.
+- [x] Encuesta autenticada revalidada en viewport móvil sin desbordamiento horizontal
+      ni errores de consola.
 
 ## Puerta de lanzamiento pendiente
 
 | Prioridad | Comprobación | Dependencia humana o externa | Criterio de cierre |
 |---|---|---|---|
-| P0 | Encuesta autenticada en producción | Cuenta QA y creación de identidad | Texto libre recibe respuesta de Luna; opciones guiadas, resumen y recomendaciones funcionan. |
 | P0 | Recuperación ante fallo real de IA | Sesión QA y ventana controlada | Se muestra el aviso, se conserva el borrador y se puede continuar con opciones. |
 | P0 | Política de privacidad `v2` | Revisión legal y aprobación de producto | Nueva versión sustituye Gemini por OpenAI Luna y se solicita reaceptación. |
-| P0 | App Check posterior al release | Sesión QA y acceso a métricas | Sesión válida aceptada, solicitud sin token rechazada y sin rechazos inesperados. |
-| P0 | Smoke por roles | Cuentas de paciente, psicólogo y administrador | Recorridos principales completados con identidades separadas. |
+| P0 | Smoke por roles restantes | Cuentas de psicólogo y administrador | El paciente está comprobado; faltan los recorridos principales de psicólogo y administrador con identidades separadas. |
 | P0 | Alertas y responsables | Destinatarios y decisiones operativas | Alertas de error, latencia, cuota y presupuesto probadas con acuse. |
-| P1 | Correo real | Buzón de prueba y creación de cuenta | Entrega, enlace válido/expirado, recuperación y retorno al onboarding comprobados. |
+| P1 | Correo real restante | Buzón temporal disponible; cambio de contraseña requiere intervención humana | Entrega, enlace válido y retorno al onboarding están comprobados; faltan enlace expirado y recuperación completa. |
+| P1 | Historial conversacional para psicólogo | Decisión de producto, privacidad y permisos | El transcript se conserva en `conversations/{uid}/messages`, pero hoy solo puede leerlo su propietario y no aparece en el historial terapéutico del psicólogo. |
 | P1 | Dispositivos físicos | Acceso a Safari/Chrome iOS y navegadores desktop | Recorrido autenticado sin defectos bloqueantes. |
 | P1 | Backup y restauración | Proyecto aislado, permisos y aprobación | Restauración ensayada con conteos y accesos verificados. |
 | Separado | Cobros reales | Proveedor, sandbox y revisión legal/contable | Puerta comercial aprobada antes de usar credenciales productivas. |
@@ -98,6 +113,8 @@ el despliegue del 2026-10-24; la comprobación visual posterior es obligatoria.
 
 - PR de encuesta: <https://github.com/PatrickSpace/PsicoFound-Frontend/pull/1>
 - Quality del release: <https://github.com/PatrickSpace/PsicoFound-Frontend/actions/runs/40048277432>
+- PR de cierre técnico: <https://github.com/PatrickSpace/PsicoFound-Frontend/pull/2>
+- Quality del cierre técnico: <https://github.com/PatrickSpace/PsicoFound-Frontend/actions/runs/40122503712>
 - Aplicación: <https://app.lurems.lat>
 - Hosting alternativo: <https://luremsapp.web.app>
 
