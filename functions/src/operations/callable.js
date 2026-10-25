@@ -5,6 +5,7 @@ const logger = require("firebase-functions/logger");
 const {appCheckOptions} = require("./appCheckPolicy");
 const firestoreAdmin = require("firebase-admin/firestore");
 const {onCall: firebaseOnCall, HttpsError} = require("firebase-functions/v2/https");
+const {recordOperationalAlert} = require("./operationalAlerts");
 const PRIVACY_OPERATIONS = new Set(["diagnoseAccountDeletion", "authorizeAccountDeletion", "executeAccountDeletion"]);
 function onCall(options, handler) {
   if (typeof options === "function") {
@@ -29,8 +30,18 @@ function onCall(options, handler) {
       return result;
     } catch (error) {
       const known = error instanceof HttpsError;
+      const code = known ? error.code : "internal";
       logger.warn("callable failed", {operation: handler.name, correlationId, elapsedMs: Date.now() - startedAt,
-        code: known ? error.code : "internal"});
+        code});
+      try {
+        await recordOperationalAlert({operation: handler.name, code,
+          correlationId});
+      } catch (alertError) {
+        logger.error("operational alert persistence failed", {
+          operation: handler.name, correlationId,
+          code: typeof alertError?.code === "string" ? alertError.code : "internal",
+        });
+      }
       if (known) throw error;
       throw new HttpsError("internal", "No pudimos completar la operación. Intenta nuevamente.", {correlationId});
     }

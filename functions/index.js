@@ -57,6 +57,9 @@ const {
   reviewPsychologistApplication,
   submitPsychologistApplication,
 } = require("./src/onboarding/registrationHandlers");
+const {
+  acknowledgeOperationalAlert,
+} = require("./src/operations/operationalAlerts");
 
 admin.initializeApp();
 
@@ -161,6 +164,10 @@ exports.requestPaymentRefundReview = onCall(
 exports.reviewPaymentOperation = onCall(
     {minInstances: 0, timeoutSeconds: 20},
     reviewPaymentOperation,
+);
+exports.acknowledgeOperationalAlert = onCall(
+    {minInstances: 0, timeoutSeconds: 20},
+    acknowledgeOperationalAlert,
 );
 
 exports.manageAvailability = onCall(manageAvailability);

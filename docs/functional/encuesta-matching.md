@@ -60,15 +60,15 @@ afinidad para ese criterio.
 
 Al reservar como paciente se muestra este consentimiento:
 
-> Al confirmar la cita, autorizas a compartir con este psicólogo el resumen que
-> aprobaste y el historial completo de esta conversación. Su acceso se retirará
-> si cancelas la cita.
+> Al reservar, autorizas a compartir con este psicólogo el resumen que aprobaste
+> y el historial completo de esta conversación. El acceso se habilita cuando el
+> pago de la primera cita sea aprobado y se retirará si esa cita se cancela.
 
 La reserva exige el resumen confirmado y la aceptación incluida en la acción de
 confirmar. El psicólogo recibe primero una copia inmutable del resumen aprobado y
 puede abrir el historial completo de forma opcional. El acceso solo existe con una
-cita confirmada, se retira al cancelarla y una cita con otro profesional requiere
-un consentimiento nuevo.
+cita inicial con pago aprobado, se retira al cancelarla y una cita con otro
+profesional requiere un consentimiento nuevo.
 
 ## Verificación
 

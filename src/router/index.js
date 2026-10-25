@@ -26,6 +26,7 @@ const UsersAdminView = () => import("@/views/admin/UsersAdminView.vue");
 const PaymentRatesView = () => import("@/views/admin/PaymentRatesView.vue");
 const SupportRequestsView = () => import("@/views/admin/SupportRequestsView.vue");
 const PaymentOperationsView = () => import("@/views/admin/PaymentOperationsView.vue");
+const OperationalAlertsView = () => import("@/views/admin/OperationalAlertsView.vue");
 const OnboardingEntryView = () => import("@/views/onboarding/OnboardingEntryView.vue");
 const PatientOnboardingView = () => import("@/views/onboarding/PatientOnboardingView.vue");
 const PsychologistOnboardingView = () => import("@/views/onboarding/PsychologistOnboardingView.vue");
@@ -227,6 +228,12 @@ const router = createRouter({
       path: "/admin/conciliacion",
       name: "admin-payment-operations",
       component: PaymentOperationsView,
+      meta: { modes: ["admin"] },
+    },
+    {
+      path: "/admin/alertas",
+      name: "admin-operational-alerts",
+      component: OperationalAlertsView,
       meta: { modes: ["admin"] },
     },
  

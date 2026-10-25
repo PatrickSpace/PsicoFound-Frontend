@@ -101,7 +101,7 @@ export const initialTermsSections = [
     id: "versiones",
     title: "Versiones y entrada en vigor",
     paragraphs: [
-      "La primera versión, 2026-10-v1, entra en vigor al publicarse el 17 de octubre de 2026. Los términos y la política de privacidad se identifican con la misma versión y se conservan para consulta posterior.",
+      "La versión 2026-10-v2 entra en vigor al publicarse. Los términos y la política de privacidad se identifican con la misma versión y las versiones anteriores se conservan para consulta posterior.",
       "Los cambios relevantes deben identificarse con una nueva versión y comunicarse a los usuarios. Cuando se requiera una nueva aceptación, la plataforma conservará la versión, los enlaces y la fecha correspondientes. Navegar por esta página no constituye aceptación y un cambio de versión no modifica retroactivamente las condiciones de una reserva anterior.",
     ],
   },

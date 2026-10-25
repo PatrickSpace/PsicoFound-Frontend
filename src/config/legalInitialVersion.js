@@ -4,7 +4,7 @@ export const initialPrivacyText = `1. Responsable y contacto
 
 Lurems es el responsable de la gestión de los datos personales tratados mediante su plataforma. Domicilio de contacto: Av. Javier Prado Este 1095. Correo para consultas sobre privacidad y ejercicio de derechos: jplosta01@gmail.com.
 
-Esta política corresponde a la versión 2026-10-v1 y entra en vigor con su publicación el 17 de octubre de 2026. Describe el tratamiento asociado a las funciones habilitadas de Lurems; una función deshabilitada no queda autorizada a tratar datos por la sola publicación de este documento.
+Esta política corresponde a la versión 2026-10-v2 y entra en vigor con su publicación. Describe el tratamiento asociado a las funciones habilitadas de Lurems; una función deshabilitada no queda autorizada a tratar datos por la sola publicación de este documento.
 
 2. Datos que puede gestionar la plataforma
 
@@ -22,7 +22,7 @@ Los datos requeridos se identifican en los formularios y requisitos de acceso. S
 
 4. Acceso y destinatarios
 
-El paciente accede a los registros de su cuenta y a la información compartida de su proceso. El psicólogo vinculado accede a la información necesaria para las funciones de atención y seguimiento que tiene autorizadas. Las correcciones de sesiones conservan el historial compartido, el motivo, autor y fecha correspondientes.
+El paciente accede a los registros de su cuenta y a la información compartida de su proceso. El psicólogo vinculado accede a la información necesaria para las funciones de atención y seguimiento que tiene autorizadas. El resumen y el transcript de la encuesta solo se muestran al psicólogo vinculado cuando el pago de la primera cita fue aprobado, existe consentimiento y esa primera cita no está cancelada. Si se cancela, el acceso se retira y una cita posterior no lo reactiva automáticamente. Las correcciones de sesiones conservan el historial compartido, el motivo, autor y fecha correspondientes.
 
 Los administradores realizan tareas de habilitación profesional, soporte y operaciones de pago según sus permisos. El rol administrativo ordinario no habilita la consulta de conversaciones, perfiles clínicos o contenido terapéutico privado. El soporte técnico no constituye una consulta terapéutica; evita incluir detalles clínicos innecesarios al comunicar una incidencia.
 
@@ -30,9 +30,15 @@ Pueden intervenir proveedores de infraestructura como Google Firebase y, en el s
 
 5. Inteligencia artificial y decisiones
 
-Las funciones de IA, si se habilitan, pueden apoyar la recogida de preferencias y la orientación para encontrar profesionales. Antes de su uso deben informarse el proveedor, la finalidad, los datos que se enviarán y los consentimientos que correspondan. La integración prevista con Gemini no sustituye esa información ni permite usos clínicos por la aceptación general de esta política.
+La encuesta conversacional puede usar OpenAI gpt-6-luna para responder de forma empática y ayudar a identificar preferencias para encontrar profesionales. Las opciones guiadas se procesan localmente y no requieren una solicitud al proveedor de inteligencia artificial.
 
-Las sugerencias pueden contener errores y no son diagnósticos ni garantizan afinidad o resultados. La elección de profesional corresponde al usuario y las decisiones clínicas al psicólogo. No debe asumirse una supervisión humana permanente de mensajes ni utilizar la plataforma como canal de emergencia.
+Cuando la persona escribe texto libre, se puede enviar a OpenAI el mensaje actual, el perfil de preferencias permitido y hasta los últimos 15 intercambios completos de la sesión activa. La plataforma omite atributos administrativos y enmascara correos y teléfonos detectables antes del envío. Las solicitudes se configuran con store: false. El historial completo permanece en Firebase conforme a la finalidad del servicio y a los criterios de conservación descritos en esta política; no se envía íntegramente al proveedor en cada turno.
+
+La finalidad de esta asistencia es sostener una conversación empática, extraer las preferencias expresadas y detectar señales contextuales que permitan mostrar recursos de ayuda. La inteligencia artificial no realiza diagnósticos, no selecciona por sí sola a un profesional, no sustituye el criterio clínico ni constituye un canal de emergencia. Las recomendaciones se determinan mediante reglas de matching separadas.
+
+Las respuestas pueden contener errores. Si el proveedor no está disponible, la plataforma informa la incidencia, conserva el borrador y permite continuar mediante las opciones guiadas. No se usa otro proveedor para enviar el mismo contenido como respuesta automática al fallo.
+
+Antes de ampliar el proveedor, modelo, finalidad, información enviada o criterios de conservación se debe realizar una nueva revisión y obtener los consentimientos que correspondan.
 
 6. Conservación y solicitudes de eliminación
 
@@ -59,7 +65,7 @@ Las nuevas versiones se publican en https://app.lurems.lat/privacidad junto con 
 Referencia normativa: Ley N.° 29733 y su Reglamento aprobado por Decreto Supremo N.° 016-2024-JUS. Esta política no limita los derechos que reconozca la normativa aplicable.`;
 
 export const initialLegalVersion = Object.freeze({
-  version: "2026-10-v1",
+  version: "2026-10-v2",
   termsText: initialTermsText,
   privacyText: initialPrivacyText,
 });

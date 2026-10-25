@@ -1,4 +1,4 @@
-import { adminApps, adminAuth } from "./helpers/admin-sdk.mjs";
+import { adminApps, adminAuth, adminFirestore } from "./helpers/admin-sdk.mjs";
 import { before, after, test } from "node:test";
 import assert from "node:assert/strict";
 import { createRequire } from "node:module";
@@ -40,6 +40,46 @@ test("approved summary requires confirmed consent, including earlier therapies, 
   await assert.rejects(getDoc(doc(clients.get("A").db, "profiles/patient-b")), denied);
   await assert.rejects(getDoc(doc(clients.get("A").db, "conversations/patient-b")), denied);
   await assert.rejects(getDoc(doc(clients.get("A").db, "terapias/b-other")), denied);
+});
+test("survey transcript requires approved payment on the first appointment and disappears when it is cancelled", async () => {
+  const db = adminFirestore.getFirestore(adminApp);
+  const firstMessage = db.doc(`conversations/${accounts.B.uid}/messages/shared-001`);
+  const secondMessage = db.doc(`conversations/${accounts.B.uid}/messages/shared-002`);
+  await firstMessage.set({
+    role: "user", text: "Mensaje sintético del paciente", sessionId: "survey-session",
+    createdAt: adminFirestore.Timestamp.fromDate(new Date("2026-10-21T12:01:00Z")),
+  });
+  await secondMessage.set({
+    role: "assistant", text: "Respuesta empática sintética", sessionId: "survey-session",
+    createdAt: adminFirestore.Timestamp.fromDate(new Date("2026-10-21T12:02:00Z")),
+  });
+  const result = await handlers.getTherapySharedHistory(call("A", {
+    therapyId: "b-active", mode: "psychologist", pageSize: 10,
+  }));
+  assert.equal(result.appointmentId, "survey-share-b-active");
+  assert.deepEqual(result.items.map((item) => item.role), ["user", "assistant"]);
+  assert.equal(result.items[0].text, "Mensaje sintético del paciente");
+
+  const first = db.doc("citas/survey-share-b-active");
+  await first.update({paymentStatus: "submitted"});
+  await assert.rejects(handlers.getTherapySharedHistory(call("A", {
+    therapyId: "b-active", mode: "psychologist",
+  })), denied);
+
+  await first.update({paymentStatus: "confirmed", estado: "cancelada"});
+  await db.doc("citas/later-share-b-active").set({
+    terapiaId: "b-active", pacienteUid: accounts.B.uid,
+    terapeutaId: "therapist-a", estado: "confirmada",
+    paymentStatus: "confirmed", surveyHistoryConsent: true,
+    fecha: "2026-11-20", hora: "10:00",
+  });
+  await assert.rejects(handlers.getTherapySharedSummary(call("A", {
+    therapyId: "b-active", mode: "psychologist",
+  })), denied, "A later paid appointment must not restore access");
+
+  await first.update({estado: "confirmada"});
+  await db.doc("citas/later-share-b-active").delete();
+  await Promise.all([firstMessage.delete(), secondMessage.delete()]);
 });
 test("goal progress is atomic, persistent, authored, coherent and rejects stale corrections", async () => {
   const { id } = await handlers.createFollowupGoal(call("A", { mode: "psychologist", terapiaId: "b-active", title: "Integration goal" }));

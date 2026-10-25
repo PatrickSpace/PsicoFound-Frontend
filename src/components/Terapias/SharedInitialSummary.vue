@@ -91,7 +91,7 @@ async function loadHistory() {
     historyCursor.value = data.nextCursor || "";
   } catch (cause) {
     historyError.value = cause.code?.includes("permission-denied")
-      ? "El acceso ya no está disponible. Verifica que la cita siga confirmada."
+      ? "El acceso ya no está disponible. Verifica que el pago de la primera cita esté aprobado y que esa cita no haya sido cancelada."
       : "No pudimos cargar el historial compartido.";
   } finally {
     historyLoading.value = false;
