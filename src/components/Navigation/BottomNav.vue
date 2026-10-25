@@ -102,6 +102,7 @@ const navigationByMode = {
     { name: "Documentos legales", icon: "mdi-file-document-edit-outline", link: "/admin/documentos-legales" },
     { name: "Cobros", icon: "mdi-cash-multiple", link: "/admin/cobros" },
     { name: "Conciliación", icon: "mdi-receipt-text-check", link: "/admin/conciliacion" },
+    { name: "Alertas", icon: "mdi-alert-circle-outline", link: "/admin/alertas" },
     { name: "Soporte", icon: "mdi-message-alert-outline", link: "/admin/soporte" },
     { name: "Psicólogos", icon: "mdi-account-heart", link: "/psicologos" },
   ],

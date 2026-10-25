@@ -1,7 +1,8 @@
 # Tarifas, reservas y conciliación manual del piloto
 
-Implementación técnica 2026-10-10. No aprueba condiciones comerciales, no realiza
-cobros/devoluciones/transferencias y no certifica pantallas administrativas.
+Implementación técnica 2026-10-10. Activación conservadora aprobada por el titular
+el 2026-10-24 para incluir enlaces reales de cobro en el flujo final. La plataforma
+no ejecuta devoluciones ni transferencias y la conciliación permanece manual.
 
 `COMMERCIAL_POLICY_JSON` es obligatorio para cotizar/reservar con pago. Contiene
 version, status (`approved`; `synthetic` solo en emuladores demo), approvalReference,
@@ -12,7 +13,11 @@ patientCancellationCutoffMinutes, patientRescheduleCutoffMinutes, patientPastRes
 (`floor_professional_remainder_platform`). Este MVP solo soporta ese disparador y
 redondeo: necesitan aceptación comercial expresa antes de configurarse en producción.
 No hay penalidades ni devolución automática. Si se requiere otro acuerdo, falta código.
-Los números en `tests/helpers/pilot-policy.mjs` son exclusivamente sintéticos.
+La configuración productiva conserva el aviso de pago para revisión, no aplica
+penalidades ni plazos adicionales de cancelación/reprogramación antes de la cita,
+mantiene una reserva durante 60 minutos y envía los casos pasados y devoluciones a
+revisión manual. Los números en `tests/helpers/pilot-policy.mjs` son exclusivamente
+sintéticos.
 
 La cotización incluye el hash de tarifa, selección y política. La reserva conserva
 su snapshot y vence como máximo en el inicio de la cita. Cambiar configuración no
@@ -149,7 +154,8 @@ paciente atención inmediata.
    vinculada y resolver bajo la política aprobada. No resucitar una reserva cerrada ni
    acreditar otra cita usando un recibo ya registrado. Responder por soporte tras revisión.
 
-Responsables, frecuencia, entorno sandbox y comprobantes autorizados: pendientes externos.
+Responsable principal de alertas: `jplosta01@gmail.com`. La frecuencia de
+conciliación, el suplente y los comprobantes autorizados siguen pendientes externos.
 Este procedimiento se ensaya localmente con datos ficticios; no certifica la interfaz
 administrativa ni una operación real de Mercado Pago.
 

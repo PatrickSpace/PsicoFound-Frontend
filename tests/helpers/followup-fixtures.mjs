@@ -53,13 +53,15 @@ export async function seedFollowup({ therapySelectionCases = false } = {}) {
     const cita = { citaId: `session-${id}`, fecha: "2026-09-20", hora: "10:00", estado: "realizada", modalidad: "remoto",
       sessionSummary: `Resumen compartido ${id}`, completedAt: "2026-09-20T16:00:00.000Z", completedBy: accounts[therapist].nombre };
     await db.doc(`terapias/${id}`).set({ ...identity, estado, pacienteEmail: `${accounts[patient].uid}@example.test`,
-      ...(fechaCreacion === null ? {} : { fechaCreacion }), citas: [cita] });
+      ...(fechaCreacion === null ? {} : { fechaCreacion }), citas: [cita],
+      ...(["b-active", "b-old"].includes(id) ? { initialAppointmentId: `survey-share-${id}` } : {}) });
     await db.doc(`citas/${cita.citaId}`).set({ ...identity, ...cita });
     if (["b-active", "b-old"].includes(id)) {
       await db.doc(`citas/survey-share-${id}`).set({
         ...identity,
         citaId: `survey-share-${id}`,
         estado: "confirmada",
+        paymentStatus: "confirmed",
         surveyHistoryConsent: true,
         surveyHistoryConsentAt: "2026-10-21T12:00:00.000Z",
         surveySummarySnapshot: {

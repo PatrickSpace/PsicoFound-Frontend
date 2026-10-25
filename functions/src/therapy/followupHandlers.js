@@ -3,6 +3,7 @@ const firestoreAdmin = require("firebase-admin/firestore");
 const {FieldPath, FieldValue} = require("firebase-admin/firestore");
 const {createHash} = require("node:crypto");
 const {HttpsError} = require("firebase-functions/v2/https");
+const {resolveSchedule} = require("../appointments/schedulePolicy.mjs");
 
 function text(value, max = 2000) {
   if (typeof value !== "string" || value.length > max) {
@@ -153,7 +154,8 @@ async function getTherapySharedHistory(request) {
     if (ctx.mode !== "psychologist") {
       throw new HttpsError(
           "permission-denied",
-          "El historial compartido requiere una cita confirmada.",
+          "El historial compartido solo está disponible para el psicólogo " +
+          "vinculado cuando el pago inicial está aprobado.",
       );
     }
     const appointment = await findSurveySharingAppointment(
@@ -198,21 +200,63 @@ async function getTherapySharedHistory(request) {
 }
 
 async function findSurveySharingAppointment(transaction, db, ctx) {
-  const snapshot = await transaction.get(db.collection("citas")
-      .where("terapiaId", "==", ctx.therapy.id).limit(20));
-  const appointment = snapshot.docs
-      .map((doc) => ({id: doc.id, ...doc.data()}))
-      .find((item) => item.estado === "confirmada" &&
-        item.surveyHistoryConsent === true &&
-        item.pacienteUid === ctx.therapy.pacienteUid &&
-        item.terapeutaId === ctx.therapy.terapeutaId);
-  if (!appointment) {
+  const storedInitial = Array.isArray(ctx.therapy.citas) ?
+    ctx.therapy.citas.find((item) => item && (item.citaId || item.id)) : null;
+  let initialId = typeof ctx.therapy.initialAppointmentId === "string" ?
+    ctx.therapy.initialAppointmentId :
+    storedInitial?.citaId || storedInitial?.id || "";
+  let appointment = null;
+  if (initialId) {
+    const initialSnapshot = await transaction.get(
+        db.doc(`citas/${initialId}`));
+    if (initialSnapshot.exists) {
+      appointment = {id: initialSnapshot.id, ...initialSnapshot.data()};
+    }
+  } else {
+    const snapshot = await transaction.get(db.collection("citas")
+        .where("terapiaId", "==", ctx.therapy.id).limit(100));
+    const appointments = snapshot.docs.map((doc) => ({
+      id: doc.id,
+      ...doc.data(),
+    }));
+    initialId = inferInitialAppointmentId(appointments);
+    appointment = appointments.find((item) => item.id === initialId) || null;
+  }
+  const allowed = appointment && appointment.estado !== "cancelada" &&
+    appointment.paymentStatus === "confirmed" &&
+    appointment.surveyHistoryConsent === true &&
+    appointment.pacienteUid === ctx.therapy.pacienteUid &&
+    appointment.terapeutaId === ctx.therapy.terapeutaId;
+  if (!allowed) {
     throw new HttpsError(
         "permission-denied",
-        "El historial requiere cita confirmada y consentimiento.",
+        "El historial requiere el pago aprobado de la primera cita, " +
+        "su consentimiento vigente y que esa cita no esté cancelada.",
     );
   }
   return appointment;
+}
+
+function inferInitialAppointmentId(appointments) {
+  return [...appointments].sort((left, right) => {
+    const leftTime = appointmentTime(left);
+    const rightTime = appointmentTime(right);
+    if (leftTime !== rightTime) return leftTime - rightTime;
+    return left.id.localeCompare(right.id);
+  })[0]?.id || "";
+}
+
+function appointmentTime(appointment) {
+  const scheduled = resolveSchedule(appointment).start;
+  if (scheduled) return scheduled.getTime();
+  if (typeof appointment.createdAt?.toMillis === "function") {
+    return appointment.createdAt.toMillis();
+  }
+  if (typeof appointment.createdAt === "string") {
+    const parsed = Date.parse(appointment.createdAt);
+    if (Number.isFinite(parsed)) return parsed;
+  }
+  return Number.MAX_SAFE_INTEGER;
 }
 
 function timestampIso(value) {
@@ -463,6 +507,7 @@ async function createEmotionalCheckin(request) {
 
 module.exports = {
   getTherapySharedHistory, getTherapySharedSummary,
+  inferInitialAppointmentId,
   createFollowupGoal, recordGoalProgress,
   assignFollowupExercise, completeFollowupExercise, createEmotionalCheckin,
 };

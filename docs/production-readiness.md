@@ -1,24 +1,23 @@
 # Seguimiento de preparación para producción de Lurems
 
-Última revisión: 2026-10-24, America/Lima.
+Última revisión: 2026-10-25, America/Lima.
 
-Release desplegado: `main` en `1eba0f2`. Release base de la encuesta: `481f60b`.
+Release desplegado: candidato de cierre de esta entrega; se fusionará a `main` al
+terminar las comprobaciones automáticas. Release base de la encuesta: `481f60b`.
 
 Proyecto Firebase: `psicosaas-3c819`. Dominio: <https://app.lurems.lat>.
 
 ## Estado ejecutivo
 
-La encuesta conversacional híbrida está fusionada, desplegada y disponible. El
-frontend, las Functions, las reglas y los índices de Firestore se publicaron desde
-el release aprobado. Las pruebas unitarias, backend, navegador, lint, build y
-auditorías terminaron correctamente.
+La encuesta conversacional híbrida, el acceso condicionado al transcript, las
+alertas operativas y el flujo de cobro manual están desplegados en producción. El
+frontend, Functions y las reglas de Firestore se publicaron desde el mismo candidato.
+Las pruebas unitarias, backend, lint y build terminaron correctamente, sin emuladores.
 
-El lanzamiento operativo permanece abierto hasta completar las comprobaciones que
-necesitan identidades QA de psicólogo y administrador, revisión humana del texto
-legal, responsables externos y dispositivos físicos. La identidad QA de paciente,
-el correo real y la encuesta productiva ya fueron comprobados. Los pagos reales son
-un release separado y no bloquean la aceptación funcional de la encuesta mientras
-se mantenga el comportamiento publicado en `main`.
+Los recorridos de administrador y psicólogo se comprobaron con datos sintéticos en
+`app.lurems.lat`. La versión legal `2026-10-v2` está publicada y exige una nueva
+aceptación. Permanecen fuera del alcance de esta entrega, por decisión del titular,
+la caída real de OpenAI, dispositivos físicos y el ensayo de backup/restauración.
 
 ## Completado
 
@@ -41,8 +40,10 @@ se mantenga el comportamiento publicado en `main`.
 - [x] Modalidad y género «Me da igual» persistieron como valores válidos y no se
       interpretaron como respuestas faltantes.
 - [x] El historial completo de la conversación reapareció tras recargar la encuesta.
-      La exposición futura de ese contenido al psicólogo sigue pendiente de diseño
-      de permisos y experiencia.
+- [x] El resumen y el transcript solo aparecen al psicólogo vinculado después de que
+      el pago de la primera cita esté aprobado y exista consentimiento.
+- [x] Una cancelación de esa primera cita retira el acceso aunque el pago permanezca
+      aprobado; una cita posterior no puede reactivarlo automáticamente.
 
 ### Seguridad y acceso
 
@@ -60,8 +61,8 @@ se mantenga el comportamiento publicado en `main`.
 
 ### Calidad, despliegue y operación pública
 
-- [x] 44 pruebas unitarias frontend y 93 pruebas backend aprobadas.
-- [x] Workflow Quality completo aprobado sobre el release fusionado.
+- [x] 44 pruebas unitarias frontend y 96 pruebas backend aprobadas.
+- [x] Lint backend, build productivo y comprobación de diferencias aprobados.
 - [x] Frontend, Functions Node.js 22, reglas e índices publicados en Firebase.
 - [x] Vercel publicó el mismo `main`.
 - [x] Inicio, login, registro, términos, privacidad y entrada de encuesta responden
@@ -73,28 +74,35 @@ se mantenga el comportamiento publicado en `main`.
 - [x] GitHub Actions actualizadas a runtimes compatibles con Node.js 24.
 - [x] Encuesta autenticada revalidada en viewport móvil sin desbordamiento horizontal
       ni errores de consola.
+- [x] Panel administrativo de alertas visible y protegido por rol; contiene una
+      alerta sintética sin datos personales.
+- [x] Canal de correo de Cloud Monitoring, métrica de logs y política de alertas
+      habilitados para `jplosta01@gmail.com`.
+- [x] Tres tarifas activas visibles en administración: una de prueba y dos reales.
+      No se abrió un enlace de Mercado Pago ni se ejecutó una transacción.
+- [x] `2026-10-v2` publicada, consultable e inmutable; una cuenta existente fue
+      obligada a reaceptarla antes de continuar.
+- [x] Smoke de psicólogo con resumen/transcript pagado y posterior ocultamiento por
+      cancelación sintética; smoke de administrador sobre legal, alertas y tarifas.
 
-## Puerta de lanzamiento pendiente
+## Pendientes y exclusiones explícitas
 
-| Prioridad | Comprobación | Dependencia humana o externa | Criterio de cierre |
+| Estado | Comprobación | Motivo | Criterio de cierre |
 |---|---|---|---|
-| P0 | Recuperación ante fallo real de IA | Sesión QA y ventana controlada | Se muestra el aviso, se conserva el borrador y se puede continuar con opciones. |
-| P0 | Política de privacidad `v2` | Revisión legal y aprobación de producto | Nueva versión sustituye Gemini por OpenAI Luna y se solicita reaceptación. |
-| P0 | Smoke por roles restantes | Cuentas de psicólogo y administrador | El paciente está comprobado; faltan los recorridos principales de psicólogo y administrador con identidades separadas. |
-| P0 | Alertas y responsables | Destinatarios y decisiones operativas | Alertas de error, latencia, cuota y presupuesto probadas con acuse. |
-| P1 | Correo real restante | Buzón temporal disponible; cambio de contraseña requiere intervención humana | Entrega, enlace válido y retorno al onboarding están comprobados; faltan enlace expirado y recuperación completa. |
-| P1 | Historial conversacional para psicólogo | Decisión de producto, privacidad y permisos | El transcript se conserva en `conversations/{uid}/messages`, pero hoy solo puede leerlo su propietario y no aparece en el historial terapéutico del psicólogo. |
-| P1 | Dispositivos físicos | Acceso a Safari/Chrome iOS y navegadores desktop | Recorrido autenticado sin defectos bloqueantes. |
-| P1 | Backup y restauración | Proyecto aislado, permisos y aprobación | Restauración ensayada con conteos y accesos verificados. |
-| Separado | Cobros reales | Proveedor, sandbox y revisión legal/contable | Puerta comercial aprobada antes de usar credenciales productivas. |
+| Excluida | Recuperación ante caída real de OpenAI | El titular indicó no ejecutar esta prueba ahora | Ventana controlada futura; conservar borrador y opciones guiadas. |
+| Excluida | Dispositivos físicos | El titular indicó no usar dispositivos físicos | Recorrido posterior en Safari/Chrome iOS y navegadores desktop. |
+| Excluida | Backup y restauración | El titular indicó no ensayarlo todavía | Proyecto aislado, conteos y accesos verificados. |
+| Externa | Recepción humana del correo de alertas | Requiere revisar el buzón de destino | Confirmar recepción y conservar evidencia sin reenviar contenido sensible. |
+| Externa | Recuperación completa de contraseña | El enlace se envió a un buzón temporal; el cambio final requiere intervención humana | Abrir el enlace y completar personalmente la nueva contraseña. |
+| Humana | Tarifa del psicólogo | Existen tarifas reales de S/100 y S/120; elegir una es una decisión comercial | Seleccionar una tarifa para cada profesional que aceptará reservas. |
+| Humana | Operación de pagos | No se realizaron cobros reales durante QA | Ejecutar una transacción controlada y conciliarla cuando exista autorización financiera. |
 
-## Trabajo preparado, pendiente de aprobación
+## Publicación legal
 
-La propuesta de reemplazo de la sección de IA se encuentra en
-[privacy-2026-10-v2-proposal.md](legal/privacy-2026-10-v2-proposal.md). La versión
-`2026-10-v1` publicada es inmutable. El borrador no se debe publicar hasta que
-producto y asesoría legal revisen el documento completo y aporten una referencia
-de aprobación.
+La versión publicada se documenta en
+[privacy-2026-10-v2-proposal.md](legal/privacy-2026-10-v2-proposal.md). Las versiones
+`2026-10-v1` y `2026-10-v2` permanecen inmutables y consultables. Cualquier cambio
+posterior debe usar un identificador nuevo y renovar la aceptación cuando corresponda.
 
 ## Procedimiento de build y publicación
 
@@ -120,6 +128,6 @@ el despliegue del 2026-10-24; la comprobación visual posterior es obligatoria.
 
 ## Criterio de cierre
 
-La encuesta puede aprobarse para lanzamiento controlado cuando todos los elementos
-P0 estén cerrados con evidencia reproducible. Los P1 deben tener responsable y fecha
-aceptada. Los cobros reales conservan su puerta independiente.
+La entrega puede fusionarse a `main` porque sus comprobaciones técnicas y smokes
+productivos están cerrados. Las exclusiones y acciones humanas de la tabla anterior
+no deben registrarse como ejecutadas; conservan su propia autorización y evidencia.

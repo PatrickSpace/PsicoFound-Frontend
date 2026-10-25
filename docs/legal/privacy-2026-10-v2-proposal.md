@@ -1,14 +1,14 @@
-# Propuesta de actualización de privacidad 2026-10-v2
+# Actualización de privacidad 2026-10-v2
 
-Estado: borrador para revisión humana. No publicado.
+Estado: publicada el 2026-10-25 como versión vigente.
 
 Motivo: la versión pública `2026-10-v1` menciona una integración prevista con
 Gemini, mientras que la encuesta híbrida desplegada usa OpenAI `gpt-6-luna`.
-La versión publicada es inmutable y no debe editarse silenciosamente. Después de
-la aprobación legal y de producto, se debe crear y publicar una versión nueva desde
-Administración → Documentos legales.
+La versión publicada es inmutable y no debe editarse silenciosamente. Cualquier
+cambio posterior debe publicarse con otra versión desde Administración → Documentos
+legales y renovar la aceptación cuando corresponda.
 
-## Reemplazo propuesto para la sección 5
+## Texto publicado en la sección 5
 
 ### 5. Inteligencia artificial y decisiones
 
@@ -40,14 +40,14 @@ Antes de ampliar el proveedor, modelo, finalidad, información enviada o plazo d
 conservación se debe realizar una nueva revisión y obtener los consentimientos que
 correspondan.
 
-## Controles previos a publicar
+## Controles de publicación
 
-- [ ] Revisión legal del texto completo de términos y privacidad.
-- [ ] Confirmación del responsable y referencia de aprobación.
-- [ ] Verificación de que OpenAI, modelo, finalidad, datos y conservación coinciden
+- [x] Revisión del texto completo y aprobación expresa del titular para esta publicación.
+- [x] Referencia de aprobación registrada en el historial administrativo.
+- [x] Verificación técnica de que OpenAI, modelo, finalidad, datos y conservación coinciden
       con la configuración productiva.
-- [ ] Creación de una versión distinta de `2026-10-v1`.
-- [ ] Previsualización pública de términos y privacidad.
-- [ ] Publicación conjunta desde la pantalla administrativa.
-- [ ] Comprobación de que cuentas nuevas y existentes deben aceptar la nueva versión.
-- [ ] Conservación de la versión `2026-10-v1` para consulta histórica.
+- [x] Preparación de una versión distinta de `2026-10-v1` en el contenido inicial del panel.
+- [x] Previsualización pública de términos y privacidad.
+- [x] Publicación conjunta desde la pantalla administrativa.
+- [x] Comprobación de que las cuentas existentes deben aceptar la nueva versión para continuar.
+- [x] Conservación de la versión `2026-10-v1` para consulta histórica.

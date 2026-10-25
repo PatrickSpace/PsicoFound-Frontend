@@ -130,6 +130,16 @@ function appointmentSummary(appointment) {
   };
 }
 
+function initialAppointmentId(therapy, nextAppointmentId) {
+  if (typeof therapy?.initialAppointmentId === "string" &&
+      therapy.initialAppointmentId) {
+    return therapy.initialAppointmentId;
+  }
+  const firstStored = Array.isArray(therapy?.citas) ?
+    therapy.citas.find((item) => item && (item.citaId || item.id)) : null;
+  return firstStored ? firstStored.citaId || firstStored.id : nextAppointmentId;
+}
+
 function setEventAndNotification(transaction, db, options) {
   const {appointment, actorUid, recipientUid, type, title, requestId} = options;
   let {message} = options;
@@ -345,6 +355,8 @@ async function reserveAppointment(request) {
         approvedSurveySummary = summaryData;
       }
       const now = FieldValue.serverTimestamp();
+      const firstAppointmentId = initialAppointmentId(
+          therapy, appointmentRef.id);
       const appointment = {
         id: appointmentRef.id,
         terapiaId: therapyRef.id,
@@ -359,6 +371,7 @@ async function reserveAppointment(request) {
         meetingUrl: mode === "patient" ? "" : cleanText(data.meetingUrl || "", 600),
         availabilitySlotId: slotId,
         estado: "pendiente",
+        isInitialAppointment: firstAppointmentId === appointmentRef.id,
         version: 1,
         paymentOperationId: paymentQuote ? appointmentRef.id : "",
         paymentStatus: paymentQuote ? "pending" : "not_applicable",
@@ -418,6 +431,7 @@ async function reserveAppointment(request) {
       }
       transaction.set(therapyRef, {
         ...therapyBase,
+        initialAppointmentId: firstAppointmentId,
         citas: replaceAppointmentSummary(therapyBase.citas, appointment.id, appointmentSummary(appointment)),
         updatedAt: now,
       }, {merge: true});

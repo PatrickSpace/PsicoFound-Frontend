@@ -201,7 +201,7 @@
                   a Lurems no acredita el pago.
                 </p>
                 <v-alert color="info" variant="tonal" class="mb-3" density="compact">
-                  Al confirmar la cita, autorizas a compartir con este psicólogo el resumen que aprobaste y el historial completo de esta conversación. Su acceso se retirará si cancelas la cita.
+                  Al reservar, autorizas a compartir con este psicólogo el resumen que aprobaste y el historial completo de esta conversación. El acceso se habilita cuando el pago de la primera cita sea aprobado y se retirará si esa cita se cancela.
                 </v-alert>
                 <p class="text-caption text-medium-emphasis mb-0">
                   Política {{ bookingQuote.commercialPolicy.version }}.
