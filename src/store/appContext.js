@@ -19,13 +19,13 @@ export const useAppContextStore = defineStore("appContext", () => {
   let stopProfessional;
   let watchingUid = "";
   function watchIdentity(uid) {
-    if (watchingUid === uid) return;
     stopIdentity?.(); stopProfessional?.(); watchingUid = uid;
     stopIdentity = onSnapshot(doc(db, "users", uid), snapshot => {
       if (watchingUid !== uid || loadedForUid.value !== uid) return;
       userProfile.value = snapshot.exists() ? { ...snapshot.data(), id: uid } : null;
       ensureValidMode();
     }, () => { if (watchingUid === uid) { userProfile.value = null; ensureValidMode(); } });
+    if (userProfile.value?.accountStatus === "suspended") return;
     stopProfessional = onSnapshot(query(collection(db, "therapists"), where("uid", "==", uid)), snapshot => {
       if (watchingUid !== uid || loadedForUid.value !== uid) return;
       const item = snapshot.docs[0];
@@ -103,10 +103,8 @@ export const useAppContextStore = defineStore("appContext", () => {
     loading.value = true;
 
     try {
-      const [user, therapist] = await Promise.all([
-        getUserById(uid),
-        getTherapistByUserUid(uid),
-      ]);
+      const user = await getUserById(uid);
+      const therapist = user?.accountStatus === "suspended" ? null : await getTherapistByUserUid(uid);
       if (version !== loadVersion) return;
 
       userProfile.value = user || {

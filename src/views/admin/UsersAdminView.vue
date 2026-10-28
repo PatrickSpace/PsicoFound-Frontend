@@ -1,12 +1,13 @@
 <template>
   <LayoutDefault layout><v-container v-if="workspace.active.value" class="pa-0">
     <div class="page-header"><h1 class="text-h4 font-weight-bold">Usuarios y permisos</h1><p class="mt-2">Cuentas registradas. El correo y las credenciales se gestionan desde la cuenta del titular.</p></div>
-    <v-alert type="info" variant="tonal" class="mb-4">Las altas utilizan el registro de la aplicación. La eliminación requiere solicitud del titular y el proceso de privacidad; no se borran perfiles aislados.</v-alert>
+    <v-alert type="info" variant="tonal" class="mb-4">Las altas utilizan el registro de la aplicación. La suspensión conserva la información. El estado de cuenta se consulta aquí; no se borran perfiles aislados.</v-alert>
     <v-alert v-if="error" type="error" class="mb-4">{{ error }}</v-alert>
     <v-btn class="mb-4" @click="workspace.reload" :loading="loading">Actualizar</v-btn>
     <v-btn class="mb-4 ml-2" to="/admin/soporte">Solicitudes de cuenta</v-btn>
     <v-text-field v-model="search" label="Buscar por nombre, correo, UID o rol" clearable variant="outlined" />
     <v-data-table :headers="headers" :items="filtered" :loading="loading" :items-per-page="10">
+      <template #item.accountStatus="{ item }">{{ item.accountStatus === 'suspended' ? item.suspensionType === 'involuntary' ? 'Suspendida por inactividad' : 'Suspendida voluntaria' : item.accountStatus === 'active' || !item.accountStatus ? 'Activa' : item.accountStatus }}</template>
       <template #item.roles="{ item }">{{ getUserRoles(item).join(', ') }}</template>
       <template #item.actions="{ item }"><v-btn aria-label="Editar usuario" @click="edit(item)">Editar</v-btn></template>
       <template #no-data>No hay cuentas para estos filtros.</template>
@@ -35,8 +36,8 @@ import { adminCall, adminDate, watchAdminCollection } from "@/services/adminServ
 import { getUserRoles } from "@/utils/roles";
 const users=ref([]), audit=ref([]), loading=ref(false), error=ref(""), search=ref(""), dialog=ref(false), selected=ref(null), saving=ref(false), formError=ref(""), confirmed=ref(false);
 const form=reactive({nombre:"",telefono:"",patient:false,admin:false});
-const headers=[{title:"Nombre",key:"nombre"},{title:"Correo",key:"email"},{title:"UID",key:"id"},{title:"Roles",key:"roles"},{title:"Acciones",key:"actions",sortable:false}];
-const filtered=computed(()=>users.value.filter(item=>[item.nombre,item.email,item.id,...getUserRoles(item)].join(" ").toLowerCase().includes((search.value||"").toLowerCase())));
+const headers=[{title:"Nombre",key:"nombre"},{title:"Correo",key:"email"},{title:"UID",key:"id"},{title:"Estado",key:"accountStatus"},{title:"Roles",key:"roles"},{title:"Acciones",key:"actions",sortable:false}];
+const filtered=computed(()=>users.value.filter(item=>[item.nombre,item.email,item.id,item.accountStatus,item.suspensionType,...getUserRoles(item)].join(" ").toLowerCase().includes((search.value||"").toLowerCase())));
 const history=computed(()=>audit.value.filter(item=>item.targetUid===selected.value?.id).sort((a,b)=>(b.createdAt?.toMillis?.()||0)-(a.createdAt?.toMillis?.()||0)));
 const workspace=useAdminWorkspace(()=>{users.value=[];audit.value=[];dialog.value=false;selected.value=null;saving.value=false;search.value="";error.value="";formError.value="";Object.assign(form,{nombre:"",telefono:"",patient:false,admin:false});}, current=>{
   loading.value=true;

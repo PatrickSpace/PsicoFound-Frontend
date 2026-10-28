@@ -6,6 +6,7 @@ const {FieldValue} = require("firebase-admin/firestore");
 const {HttpsError} = require("firebase-functions/v2/https");
 const {assertEligible, evaluateAccess, readLegalPolicy} = require("./accessPolicy");
 const {sanitizeLegalAcceptance} = require("../onboarding/registrationHandlers");
+const {suspendOwnAccount, reactivateOwnAccount} = require("./accountLifecycle");
 
 function requireAuth(request) {
   if (!request.auth) {
@@ -261,6 +262,8 @@ module.exports = {
   syncOwnAuthEmail,
   exportOwnData,
   requestAccountDeletion,
+  suspendOwnAccount,
+  reactivateOwnAccount,
   updateOwnProfile,
   validDate,
   validTimeZone,

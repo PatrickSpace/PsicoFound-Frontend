@@ -13,6 +13,35 @@ const failed = {code: "failed-precondition"};
 const consent = {legalAccepted: true, legalVersion: "review-2026-10-06",
   termsUrl: "https://example.test/terms", privacyUrl: "https://example.test/privacy"};
 
+test("suspension preserves data, blocks stale client tokens and keeps identity readable", async () => {
+  // Use the fixture password and a token issued before the state transition.
+  const {password} = await import("./helpers/followup-fixtures.mjs");
+  const authenticated = await fetch(`http://${process.env.FIREBASE_AUTH_EMULATOR_HOST}/identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=synthetic-only`, {
+    method: "POST", headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({email: "patient-b@example.test", password, returnSecureToken: true}),
+  });
+  assert.equal(authenticated.ok, true);
+  const {idToken} = await authenticated.json();
+  const user = (await db.doc("users/patient-b").get()).data();
+  const read = (path) => fetch(`http://${process.env.FIRESTORE_EMULATOR_HOST}/v1/projects/${app.options.projectId}/databases/(default)/documents/${path}`, {
+    headers: {Authorization: `Bearer ${idToken}`},
+  });
+  assert.equal((await read("users/patient-b")).status, 200);
+  await db.doc("conversations/patient-b/messages/kept").set({text: "OWN-MESSAGE"});
+  const result = await httpCall("B", "suspendOwnAccount", {confirmation: "SUSPENDER MI CUENTA"});
+  assert.equal(result.status, "suspended");
+  assert.equal((await db.doc("users/patient-b").get()).data().nombre, user.nombre);
+  assert.equal((await db.doc("conversations/patient-b/messages/kept").get()).exists, true);
+  assert.equal((await read("users/patient-b")).status, 200);
+  assert.equal((await read("conversations/patient-b/messages/kept")).status, 403);
+  await assert.rejects(httpCall("B", "updateOwnProfile", {}), denied);
+  assert.equal((await httpCall("B", "getAccountAccessStatus", {})).reason, "account_suspended");
+  assert.equal((await httpCall("B", "suspendOwnAccount", {confirmation: "SUSPENDER MI CUENTA"})).status, "suspended");
+  assert.equal((await db.doc("account_requests/patient-b_deletion").get()).exists, false);
+  assert.equal((await httpCall("B", "reactivateOwnAccount", {confirmation: "REACTIVAR MI CUENTA"})).status, "active");
+  assert.equal((await read("conversations/patient-b/messages/kept")).status, 200);
+});
+
 test("A-01/02: direct chat/matching/reset blocked for legacy consent, minor and unverified account", async () => {
   for (const fields of [{legalAcceptance: null}, {fechaNacimiento: "2020-01-01"}, {patientOnboardingStatus: "pending"}]) {
     await seedPatient(); await db.doc("users/patient-b").update(fields);

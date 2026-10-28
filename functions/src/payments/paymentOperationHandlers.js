@@ -299,7 +299,9 @@ async function reviewPaymentOperation(request) {
     const slot = release ? await releaseContext(transaction, db, context) : null;
     const obligationRef = db.doc(`professional_obligations/${operationId}`);
     const obligation = (await transaction.get(obligationRef)).data();
+    const patient = await transaction.get(db.doc(`users/${operation.patientUid}`));
     const now = FieldValue.serverTimestamp();
+    if (patient.exists) transaction.update(patient.ref, {lastActivityAt: now});
     if (receipt && !existingReceipt) transaction.create(receipt, {operationId, kind: nextStatus, createdAt: now});
     transaction.create(db.collection("payment_audit").doc(), {operationId, actorUid: auth.uid, previousStatus: operation.status, status: nextStatus, providerReference, note, createdAt: now});
     transaction.update(ref, {
@@ -384,7 +386,10 @@ async function recordProfessionalTransfer(request) {
         amountMinor > obligation.pendingMinor || currency !== obligation.currency) {
       throw new HttpsError("failed-precondition", "La obligación no admite esta transferencia.");
     }
+    const professional = (await transaction.get(db.doc(`therapists/${obligation.therapistId}`))).data();
+    const owner = professional?.uid ? await transaction.get(db.doc(`users/${professional.uid}`)) : null;
     const now = FieldValue.serverTimestamp();
+    if (owner?.exists) transaction.update(owner.ref, {lastActivityAt: now});
     transaction.create(transferRef, {operationId, therapistId: obligation.therapistId, amountMinor, currency,
       transferReference: reference, recordedBy: auth.uid, createdAt: now});
     transaction.update(ref, {paidMinor: obligation.paidMinor + amountMinor, pendingMinor: obligation.pendingMinor - amountMinor,

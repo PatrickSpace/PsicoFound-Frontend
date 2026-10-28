@@ -2,6 +2,7 @@ import { computed, ref } from "vue";
 import { defineStore } from "pinia";
 import { onAuthStateChanged } from "firebase/auth";
 import { auth } from "@/plugins/Firebase/firebase";
+import { getAccountAccessStatus } from "@/services/accountService";
 import { useAppContextStore } from "@/store/appContext";
 
 export const useAuthStore = defineStore("auth", () => {
@@ -21,6 +22,7 @@ export const useAuthStore = defineStore("auth", () => {
       const appContext = useAppContextStore();
       if (user?.uid) {
         appContext.loadForUser(user.uid);
+        getAccountAccessStatus().catch(() => {});
       } else {
         appContext.reset();
       }

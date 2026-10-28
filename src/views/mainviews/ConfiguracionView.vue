@@ -286,8 +286,7 @@
             <v-card-text>
               <v-divider class="mb-4"></v-divider>
               <p class="text-body-2 text-medium-emphasis mb-4">
-                Descarga una copia de tus datos o registra una solicitud para
-                eliminar tu cuenta.
+                Descarga una copia de tus datos o suspende tu cuenta. Tu información se conserva.
               </p>
               <v-alert
                 v-if="accountMessage"
@@ -312,11 +311,11 @@
                 <v-btn
                   color="error"
                   variant="text"
-                  prepend-icon="mdi-account-remove-outline"
-                  @click="openDeletionRequest"
+                  prepend-icon="mdi-account-pause-outline"
+                  @click="openSuspension"
                   class="pf-btn-destructive"
                 >
-                  Solicitar eliminación
+                  Suspender cuenta
                 </v-btn>
               </div>
             </v-card-text>
@@ -532,25 +531,27 @@
         </v-card>
       </v-dialog>
 
-      <v-dialog v-model="deletionDialog" max-width="680">
+      <v-dialog v-model="suspensionDialog" max-width="680">
         <v-card class="pa-4 card-backgoundcustom" elevation="2" variant="text">
           <v-card-title class="text-h6 font-weight-bold px-0 pt-0">
-            Solicitar eliminación de cuenta
+            Suspender cuenta
           </v-card-title>
           <v-card-text>
             <v-divider class="mb-4" />
+            <v-alert v-if="appContext.isAdmin" type="info" variant="tonal" class="mb-4">
+              Antes de suspender tu cuenta, transfiere tus responsabilidades y solicita que retiren tu rol de administrador.
+            </v-alert>
             <v-alert color="warning" variant="tonal" class="mb-4">
-              Esta acción registra una solicitud; no elimina la cuenta de forma
-              inmediata. Los registros compartidos de terapias, citas y pagos
-              requieren una política de retención y anonimización aprobada.
+              La suspensión bloquea el uso de tu cuenta y conserva toda tu información.
+              Si eres psicólogo, tu perfil dejará de aceptar nuevas reservas.
+              Las citas y pagos existentes no se cancelan: coordina los pendientes antes de continuar.
             </v-alert>
             <p class="text-body-2 mb-4">
-              La solicitud contempla acceso de autenticación, perfil, encuesta,
-              conversación y seguimiento personal. Escribe
-              <strong>ELIMINAR MI CUENTA</strong> para continuar.
+              Podrás reactivar tu cuenta al iniciar sesión. Escribe
+              <strong>SUSPENDER MI CUENTA</strong> para continuar.
             </p>
             <v-text-field
-              v-model="deletionConfirmation"
+              v-model="suspensionConfirmation"
               label="Confirmación"
               variant="outlined"
               density="comfortable"
@@ -558,17 +559,17 @@
           </v-card-text>
           <v-card-actions>
             <v-spacer />
-            <v-btn variant="text" @click="deletionDialog = false">
+            <v-btn variant="text" @click="suspensionDialog = false">
               Cancelar
             </v-btn>
             <v-btn
               color="error"
               variant="tonal"
-              :loading="requestingDeletion"
-              :disabled="deletionConfirmation !== 'ELIMINAR MI CUENTA'"
-              @click="submitDeletionRequest"
+              :loading="suspendingAccount"
+              :disabled="appContext.isAdmin || suspensionConfirmation !== 'SUSPENDER MI CUENTA'"
+              @click="submitSuspension"
             >
-              Registrar solicitud
+              Suspender cuenta
             </v-btn>
           </v-card-actions>
         </v-card>
@@ -748,7 +749,7 @@ import { useAuthStore } from "@/store/auth";
 import {
   syncOwnAuthEmail,
   exportOwnData,
-  requestAccountDeletion,
+  suspendOwnAccount,
   updateOwnProfile,
 } from "@/services/accountService";
 import {
@@ -784,9 +785,9 @@ const emailDialog = ref(false);
 const changingEmail = ref(false);
 const emailError = ref("");
 const exportingData = ref(false);
-const deletionDialog = ref(false);
-const requestingDeletion = ref(false);
-const deletionConfirmation = ref("");
+const suspensionDialog = ref(false);
+const suspendingAccount = ref(false);
+const suspensionConfirmation = ref("");
 const accountMessage = ref("");
 const accountMessageColor = ref("info");
 
@@ -1196,32 +1197,28 @@ async function downloadAccountData() {
   }
 }
 
-function openDeletionRequest() {
-  deletionConfirmation.value = "";
+function openSuspension() {
+  suspensionConfirmation.value = "";
   accountMessage.value = "";
-  deletionDialog.value = true;
+  suspensionDialog.value = true;
 }
 
-async function submitDeletionRequest() {
+async function submitSuspension() {
   if (
-    deletionConfirmation.value !== "ELIMINAR MI CUENTA" ||
-    requestingDeletion.value
+    suspensionConfirmation.value !== "SUSPENDER MI CUENTA" ||
+    suspendingAccount.value
   ) {
     return;
   }
-  requestingDeletion.value = true;
+  suspendingAccount.value = true;
   try {
-    const result = await requestAccountDeletion(deletionConfirmation.value);
-    deletionDialog.value = false;
-    accountMessageColor.value = "warning";
-    accountMessage.value =
-      result.status === "pending_policy"
-        ? "Solicitud registrada. Está pendiente de definir la política de retención y anonimización."
-        : "Tu solicitud ya se encuentra en revisión.";
+    await suspendOwnAccount(suspensionConfirmation.value);
+    suspensionDialog.value = false;
+    await router.replace("/cuenta-suspendida");
   } catch (error) {
-    showAccountError(error, "No pudimos registrar la solicitud.");
+    showAccountError(error, "No pudimos suspender tu cuenta.");
   } finally {
-    requestingDeletion.value = false;
+    suspendingAccount.value = false;
   }
 }
 

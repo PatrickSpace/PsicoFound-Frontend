@@ -1,7 +1,12 @@
 # Matriz de aceptación y pendientes del piloto
 
+Actualización de suspensión/reactivación y validación integrada del 27/10:
+[informe de entrega](../operations/validacion-produccion-2026-10-27.md). La revisión
+del sistema de apoyo por psicólogos reales conserva una acción humana pendiente.
+La suspensión conserva datos y sustituye la eliminación productiva en esta fase.
+
 Consolidación original: 2026-10-15. Última actualización técnica:
-2026-10-24, America/Lima. Alcance: paciente, psicólogo y administrador.
+2026-10-27, America/Lima. Alcance: paciente, psicólogo y administrador.
 La revisión técnica no sustituye la aceptación operativa ni legal.
 
 «Verificado local» identifica evidencia con datos sintéticos y emuladores; no acredita
@@ -33,7 +38,7 @@ Antecedentes: [informe del 10 de octubre](../archive/functional/informe-cierre-t
 | A-02 | Consentimiento vigente, versionado e historial | Verificado local; aceptación centralizada en registro implementada | `pilot-accounts.integration.test.mjs`, `legal-documents.integration.test.mjs` y `legal-documents.spec.mjs`: versión vigente, renovación, historial inmutable y retorno a la ruta original | Primera versión publicada según registro del 2026-10-17; futuras publicaciones requieren revisión. Retención/privacidad siguen aparte |
 | A-03 | Exportación propia y subcolecciones | Verificado local (9 casos de cuentas) | `pilot-accounts.integration.test.mjs`: Auth seguro, mensajes, consentimientos, progreso, tarifas y ledger profesional sin otro paciente/profesional | Política sobre expedientes compartidos |
 | A-04 | Recuperación y cambio de correo | Verificado en Auth emulator | `pilot-accounts.integration.test.mjs`: acciones OOB de un uso, nueva sesión verificada y sincronización desde Auth | Entrega real y Google en staging autorizado |
-| A-05 | Retención/eliminación: política, diagnóstico, autorización e idempotencia | Verificado local | `privacyHandlers.test.js`, `pilot-accounts.integration.test.mjs`: política ausente, inventario desconocido, operador, mantenimiento, cursor parcial, cambio de datos, recibos compartidos sin política y tokens antiguos bloqueados | Plazos/acciones sobre registros compartidos aprobados; [procedimiento](../operations/pilot-privacy.md) |
+| A-05 | Suspensión voluntaria/involuntaria, reactivación y conservación | Integración aprobada; publicación en preparación | `pilot-accounts.integration.test.mjs`, `account-inactivity.integration.test.mjs`, unitarias de lifecycle y navegador: conservación, tokens anteriores y pagos recientes; [contrato vigente](suspension-cuentas.md) | No hay eliminación productiva; la revisión clínica queda como acción humana separada |
 | B-01 | Proveedor y minimización | OpenAI/Luna aprobado y acceso real validado sin inferencia | `OpenAIProvider.test.js`, `history.test.js`, `surveyTurn.test.js`: Responses API, salida estructurada, 15 intercambios, payload mínimo y sin fallback; [revisión del proveedor](../operations/pilot-provider-review.md) | Revalidar si cambia proveedor, modelo, alcance o tratamiento de datos |
 | B-02 | Turnos, corrección, recarga, fallo/reintento/reset | Implementado y Functions publicadas | Confirmación de contradicciones, persistencia total, fallo recuperable, pregunta dinámica y redirección tras cinco turnos sin datos; unitarias verdes y endpoints desplegados alcanzables | Recorrido autenticado pendiente con una cuenta de prueba designada; por decisión del proyecto no se usan emuladores |
 | B-04 | Encuesta híbrida y resumen aprobado | Implementado y backend publicado | Motivo/solo conversar, modalidad, género, edad y enfoque; indiferencia válida, resumen editable confirmado, ranking flexible y opciones cercanas; [contrato vigente](encuesta-matching.md) | Validación autenticada con usuarios de prueba |

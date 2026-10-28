@@ -40,10 +40,12 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onBeforeUnmount } from "vue";
-import { RouterView } from "vue-router";
+import { ref, watch, onMounted, onBeforeUnmount } from "vue";
+import { RouterView, useRouter, useRoute } from "vue-router";
 import { Analytics } from "@vercel/analytics/vue";
 import { useAppTheme } from "@/composables/useAppTheme";
+import { auth } from "@/plugins/Firebase/firebase";
+import { getAccountAccessStatus } from "@/services/accountService";
 import { useAppContextStore } from "@/store/appContext";
 
 import { watchPublishedLegalDocuments } from "@/config/legal";
@@ -51,6 +53,13 @@ let stopLegalDocuments;
 
 const { initializeAppTheme } = useAppTheme();
 const appContext = useAppContextStore();
+const router = useRouter();
+const route = useRoute();
+watch(() => appContext.userProfile?.accountStatus, (status) => {
+  if (status === "suspended" && !route.meta.legalDocument && route.name !== "suspended-account") {
+    router.replace("/cuenta-suspendida");
+  }
+});
 const analyticsEnabled = import.meta.env.VITE_VERCEL_ANALYTICS_ENABLED === "true";
 initializeAppTheme();
 
@@ -86,13 +95,20 @@ const onUiSuccess = (e) => {
   snackOk.value.open = true;
 };
 
+function recordVisibleVisit() {
+  if (document.visibilityState === "visible" && auth.currentUser) {
+    getAccountAccessStatus().catch(() => {});
+  }
+}
 onMounted(() => {
   stopLegalDocuments = watchPublishedLegalDocuments();
+  document.addEventListener("visibilitychange", recordVisibleVisit);
   window.addEventListener("api-error", onApiError);
   window.addEventListener("ui-success", onUiSuccess);
 });
 onBeforeUnmount(() => {
   stopLegalDocuments?.();
+  document.removeEventListener("visibilitychange", recordVisibleVisit);
   window.removeEventListener("api-error", onApiError);
   window.removeEventListener("ui-success", onUiSuccess);
 });

@@ -54,6 +54,7 @@ async function finalizeRegistration(request) {
 
     if (!snapshot.exists) {
       payload.createdAt = now;
+      payload.accountStatus = "active";
     }
 
     let consentRef; let priorConsent;
@@ -129,7 +130,7 @@ async function completePatientOnboarding(request) {
           onboardingStatus: "complete",
           patientOnboardingStatus: "complete",
           updatedAt: now,
-          ...(!snapshot.exists ? {createdAt: now} : {}),
+          ...(!snapshot.exists ? {createdAt: now, accountStatus: "active"} : {}),
         },
         {merge: true},
     );
@@ -167,7 +168,7 @@ async function submitPsychologistApplication(request) {
       registrationIntent: PSYCHOLOGIST_ROLE, onboardingStatus: "complete",
       professionalOnboardingStatus: "complete", professionalAccessStatus: "pending",
       latestPsychologistRequestId: requestRef.id, updatedAt: now,
-      ...(!userSnapshot.exists ? {createdAt: now} : {}),
+      ...(!userSnapshot.exists ? {createdAt: now, accountStatus: "active"} : {}),
     }, {merge: true});
   });
 

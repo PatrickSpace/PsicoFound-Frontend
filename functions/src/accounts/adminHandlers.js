@@ -51,7 +51,8 @@ async function updateUserByAdmin(request) {
     await tx.get(lock);
     const users = await tx.get(db.collection("users"));
     if (previousRoles.includes("admin") && !roles.includes("admin")) {
-      const candidates = users.docs.filter((item) => item.id !== uid && rolesOf(item.data()).includes("admin"));
+      const candidates = users.docs.filter((item) => item.id !== uid && rolesOf(item.data()).includes("admin") &&
+        (!item.data().accountStatus || item.data().accountStatus === "active"));
       const available = await Promise.all(candidates.map(async (item) => {
         try {
           return !(await getAuth().getUser(item.id)).disabled;
@@ -133,4 +134,4 @@ async function getAdministrativeAccountRequests(request) {
   await db.runTransaction((tx) => requireAdmin(tx, db, request.auth));
   return {items};
 }
-module.exports = {updateUserByAdmin, updateProfessionalByAdmin, getAdministrativeAccountRequests, getPaymentOperationContext, requireAdmin, audit};
+module.exports = {rolesOf, updateUserByAdmin, updateProfessionalByAdmin, getAdministrativeAccountRequests, getPaymentOperationContext, requireAdmin, audit};

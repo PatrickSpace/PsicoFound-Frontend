@@ -15,6 +15,8 @@ const {
 const {
   exportOwnData,
   requestAccountDeletion,
+  suspendOwnAccount,
+  reactivateOwnAccount,
   updateOwnProfile,
   getAccountAccessStatus,
   acceptCurrentConsent,
@@ -26,6 +28,8 @@ const {
 } = require("./src/support/supportHandlers");
 const {setGlobalOptions} = require("firebase-functions/v2");
 const {onCall} = require("./src/operations/callable");
+const {onSchedule} = require("firebase-functions/v2/scheduler");
+const {suspendInactiveAccounts} = require("./src/accounts/accountLifecycle");
 const {
   diagnoseAccountDeletion, authorizeAccountDeletion, executeAccountDeletion,
 } = require("./src/accounts/privacyHandlers");
@@ -212,6 +216,16 @@ exports.exportOwnData = onCall(
 exports.requestAccountDeletion = onCall(
     {minInstances: 0, timeoutSeconds: 20},
     requestAccountDeletion,
+);
+exports.reactivateOwnAccount = onCall(
+    {minInstances: 0, timeoutSeconds: 20}, reactivateOwnAccount,
+);
+exports.suspendInactiveAccounts = onSchedule(
+    {schedule: "0 4 * * *", timeZone: "America/Lima", maxInstances: 1,
+      timeoutSeconds: 540, retryCount: 0}, suspendInactiveAccounts,
+);
+exports.suspendOwnAccount = onCall(
+    {minInstances: 0, timeoutSeconds: 20}, suspendOwnAccount,
 );
 exports.createSupportRequest = onCall(
     {minInstances: 0, timeoutSeconds: 20},

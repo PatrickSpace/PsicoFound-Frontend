@@ -216,6 +216,16 @@ test('ADMIN-16 deleting a former operator requires an explicit shared-audit poli
 });
 
 
+test('ADMIN-18 suspended accounts cannot substitute for the last usable administrator',async()=>{
+ await adminAuth.getAuth(app).updateUser('admin-second',{disabled:false});
+ await db.doc('users/admin-second').update({accountStatus:'suspended',suspensionType:'voluntary'});
+ await assert.rejects(httpCall('review-admin','updateUserByAdmin',userEdit('review-admin')),{code:'failed-precondition'});
+ assert.ok((await db.doc('users/review-admin').get()).data().roles.includes('admin'));
+ await db.doc('users/admin-second').update({accountStatus:'active'});
+ await httpCall('review-admin','updateUserByAdmin',userEdit('review-admin'));
+ assert.deepEqual((await db.doc('users/review-admin').get()).data().roles,['patient']);
+});
+
 test('ADMIN-17 orphaned or disabled Auth accounts cannot substitute for the last usable administrator',async()=>{
  await httpCall('review-admin','updateUserByAdmin',userEdit('admin-second'));
  await db.doc('users/orphan-admin').set({roles:['admin'],rol:'admin'});

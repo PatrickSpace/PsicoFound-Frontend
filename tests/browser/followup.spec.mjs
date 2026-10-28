@@ -45,6 +45,32 @@ async function shot(page, testInfo, name, target) {
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1)).toBe(true);
 }
 
+test("therapy change hides old followup links while route validation is pending", async ({page}) => {
+  await login(page, "A", "psychologist", "/terapiadetail?id=b-old");
+  await expect(page.getByRole("link", {name: "Objetivos de esta terapia"})).toBeVisible();
+  let release;
+  let reached;
+  const pending = new Promise(resolve => { release = resolve; });
+  const intercepted = new Promise(resolve => { reached = resolve; });
+  await page.route("**/getAccountAccessStatus", async route => {
+    reached();
+    await pending;
+    await route.continue();
+  });
+  await choose(page, "Terapia del paciente", /b-active/);
+  await intercepted;
+  try {
+    await expect(page.getByRole("link", {name: "Objetivos de esta terapia"})).toHaveCount(0);
+  } finally {
+    release();
+  }
+  await expect(page).toHaveURL(/id=b-active/);
+  const objectives = page.getByRole("link", {name: "Objetivos de esta terapia"});
+  await expect(objectives).toHaveAttribute("href", /therapyId=b-active/);
+  await objectives.click();
+  await expect(page).toHaveURL(/therapyId=b-active/);
+});
+
 test("A-D: patients, two progress entries, exercise completion and consistent earlier history", async ({ page, browser }, testInfo) => {
   await login(page, "A", "psychologist", "/pacientes");
   await expect(page.getByRole("button", { name: "Abrir paciente Paciente B" })).toBeEnabled();

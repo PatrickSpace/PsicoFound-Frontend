@@ -206,8 +206,25 @@ const siblingTherapies = ref([]);
 const therapyOptions = computed(() => siblingTherapies.value.map((t) => ({ title: therapyLabel(t), value: t.id })));
 const gate = createRequestGate();
 onBeforeUnmount(() => gate.next());
-function selectTherapy(id) {
-  if (id) router.replace({ path: "/terapiadetail", query: { id, contextMode: appContext.activeMode } });
+async function selectTherapy(id) {
+  if (!id || id === therapy.value?.id) return;
+  // Clear the old context before asynchronous route guards run. Its links must
+  // not remain actionable while the newly selected therapy is loading.
+  gate.next();
+  therapy.value = null;
+  siblingTherapies.value = [];
+  dialog.value = false;
+  loadError.value = "";
+  loading.value = true;
+  try {
+    const failure = await router.replace({ path: "/terapiadetail", query: { id, contextMode: appContext.activeMode } });
+    if (failure) await loadTherapy();
+  } catch {
+    if (route.path === "/terapiadetail") {
+      loading.value = false;
+      loadError.value = "No pudimos cambiar de terapia. Actualiza la página e inténtalo de nuevo.";
+    }
+  }
 }
 function followupRoute(path) {
   return { path, query: { contextMode: appContext.activeMode, patientUid: therapy.value.pacienteUid, therapyId: therapy.value.id } };

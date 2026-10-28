@@ -35,6 +35,10 @@ export function exportOwnData() {
   return callAccountFunction("exportOwnData");
 }
 
-export function requestAccountDeletion(confirmation) {
-  return callAccountFunction("requestAccountDeletion", { confirmation });
+export function suspendOwnAccount(confirmation) {
+  return callAccountFunction("suspendOwnAccount", { confirmation });
+}
+
+export function reactivateOwnAccount() {
+  return callAccountFunction("reactivateOwnAccount", { confirmation: "REACTIVAR MI CUENTA" });
 }

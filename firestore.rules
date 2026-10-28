@@ -16,12 +16,18 @@ service cloud.firestore {
       allow write: if false;
     }
 
-    function signedIn() {
+    function authenticatedAccount() {
       return request.auth != null &&
         (!exists(/databases/$(database)/documents/account_requests/$(request.auth.uid + '_deletion')) ||
           get(/databases/$(database)/documents/account_requests/$(request.auth.uid + '_deletion')).data.get('accessBlocked', false) != true) &&
         (!exists(/databases/$(database)/documents/runtime_controls/maintenance) ||
           get(/databases/$(database)/documents/runtime_controls/maintenance).data.enabled != true);
+    }
+
+    function signedIn() {
+      return authenticatedAccount() &&
+        (!exists(/databases/$(database)/documents/users/$(request.auth.uid)) ||
+          get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('accountStatus', 'active') != 'suspended');
     }
 
     function isOwner(uid) {
@@ -107,7 +113,9 @@ service cloud.firestore {
     }
 
     match /users/{uid} {
-      allow read: if isOwner(uid) || isAdmin();
+      // Suspended users may read only their identity to render the access notice.
+      allow get: if (authenticatedAccount() && request.auth.uid == uid) || isAdmin();
+      allow list: if isAdmin();
       allow create: if validSelfUserCreate(uid);
       // Self-service profile changes are validated by a callable function.
       allow update: if false;

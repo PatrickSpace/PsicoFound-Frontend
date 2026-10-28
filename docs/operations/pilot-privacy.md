@@ -1,5 +1,19 @@
 # Cuenta y privacidad del piloto
 
+**Decisión vigente del titular, 26/10/2026:** ofrecer suspensión de cuenta y
+conservar la información, sin ejecutar eliminaciones productivas. La nueva acción
+usa `users/{uid}.accountStatus` y distingue `suspensionType: voluntary/involuntary`;
+el titular puede reactivar su cuenta y la inactividad se revisa a los tres meses; ver [contrato de suspensión](../functional/suspension-cuentas.md).
+Los procedimientos de eliminación siguientes son antecedentes, no instrucciones
+de ejecución para esta fase. Su política ejecutable deja de ser una dependencia
+para implementar la suspensión; los plazos de conservación no se inventan.
+
+Estado posterior consolidado en el [expediente de cierre operativo](cierre-operativo-2026-10-25.md).
+Legal `2026-10-v2` y uso de IA constan publicados; no deben confundirse con la
+política ejecutable de eliminación. La consulta posterior de metadatos de
+`diagnoseAccountDeletion` no encontró `PRIVACY_POLICY_JSON`; no se ejecutaron
+diagnósticos ni eliminaciones productivas para comprobarlo.
+
 Trabajo local 2026-10-09, America/Lima. Configuración real no aprobada ni desplegada.
 
 ## Políticas

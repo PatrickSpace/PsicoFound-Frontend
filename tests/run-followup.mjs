@@ -48,6 +48,7 @@ try {
   }
   if (process.env.PILOT_ACCOUNTS_ONLY) {
     await run(["--test", "tests/pilot-accounts.integration.test.mjs"]);
+    await run(["--test", "tests/account-inactivity.integration.test.mjs"]);
     process.exit(0);
   }
   if (process.env.LEGAL_VALIDATION) await run(["--test", "tests/legal-documents.integration.test.mjs"]);
@@ -61,6 +62,7 @@ try {
     await run(["--test", "tests/paymentRates.integration.test.mjs"]);
     await run(["--test", "tests/pilot-payments.integration.test.mjs"]);
     await run(["--test", "tests/pilot-accounts.integration.test.mjs"]);
+    await run(["--test", "tests/account-inactivity.integration.test.mjs"]);
     await run(["--test", "tests/pilot-survey.integration.test.mjs"]);
   }
   if (process.env.PATIENT_VALIDATION) await run(["--test", "tests/patient.integration.test.mjs"]);

@@ -1,6 +1,7 @@
 import { createRouter, createWebHistory } from "vue-router";
 import { onAuthStateChanged } from "firebase/auth";
 import { getAccountAccessStatus } from "@/services/accountService";
+import { getUserById } from "@/services/userService";
 import { safeReturnPath } from "@/utils/returnPath";
 import { installChunkRecovery } from "@/utils/chunkRecovery";
 const InicioencuestaView = () => import("@/views/encuesta/InicioEncuestaView.vue");
@@ -51,6 +52,10 @@ function getCurrentAuthUser() {
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
+    {
+      path: "/cuenta-suspendida", name: "suspended-account",
+      component: () => import("@/views/Auth/SuspendedAccountView.vue"),
+    },
     {
       path: "/privacidad",
       name: "privacy",
@@ -251,6 +256,15 @@ router.beforeEach(async (to) => {
       path: "/login",
       query: { redirect: to.fullPath },
     };
+  }
+
+  if (user) {
+    const profile = await getUserById(user.uid);
+    if (profile?.accountStatus === "suspended") {
+      if (to.name === "suspended-account") return;
+      return "/cuenta-suspendida";
+    }
+    if (to.name === "suspended-account") return "/configuracion";
   }
 
   const usesPassword = user?.providerData?.some(

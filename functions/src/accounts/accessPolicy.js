@@ -81,7 +81,8 @@ function hasCurrentConsent(user, policy) {
 
 function evaluateAccess(user = {}, auth = {}, policy = legalPolicy(), eligibility = eligibilityPolicy()) {
   let reason = "ready";
-  if (["deletion_pending", "deleting", "deleted", "disabled"].includes(user.accountStatus)) reason = "account_restricted";
+  if (user.accountStatus === "suspended") reason = "account_suspended";
+  else if (["deletion_pending", "deleting", "deleted", "disabled"].includes(user.accountStatus)) reason = "account_restricted";
   else if (auth.token?.email_verified !== true) reason = "verification_required";
   else if (!eligibility) reason = "eligibility_policy_unavailable";
   else if (!policy) reason = "policy_unavailable";

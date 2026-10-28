@@ -1,6 +1,14 @@
 # Seguimiento de preparación para producción de Lurems
 
-Última revisión: 2026-10-25, America/Lima.
+Plan consolidado para la decisión de apertura:
+[salida a producción](salida-a-produccion.md). Este seguimiento conserva la evidencia
+del cierre técnico y sus exclusiones.
+
+Última revisión: 2026-10-27, America/Lima.
+
+Actualización posterior validada: [suspensión, reactivación e inactividad](operations/validacion-produccion-2026-10-27.md).
+La publicación de esta actualización se documenta allí; los resultados del cierre
+del 25/10 siguientes se conservan como antecedente fechado.
 
 Release desplegado: candidato de cierre de esta entrega; se fusionará a `main` al
 terminar las comprobaciones automáticas. Release base de la encuesta: `481f60b`.
@@ -92,7 +100,7 @@ la caída real de OpenAI, dispositivos físicos y el ensayo de backup/restauraci
 | Excluida | Recuperación ante caída real de OpenAI | El titular indicó no ejecutar esta prueba ahora | Ventana controlada futura; conservar borrador y opciones guiadas. |
 | Excluida | Dispositivos físicos | El titular indicó no usar dispositivos físicos | Recorrido posterior en Safari/Chrome iOS y navegadores desktop. |
 | Excluida | Backup y restauración | El titular indicó no ensayarlo todavía | Proyecto aislado, conteos y accesos verificados. |
-| Externa | Recepción humana del correo de alertas | Requiere revisar el buzón de destino | Confirmar recepción y conservar evidencia sin reenviar contenido sensible. |
+| Entrega comprobada | Correo de alertas | El conector autorizado comprobó aviso y recuperación en el buzón de destino; la respuesta operativa humana sigue por definir | Evidencia y horarios en el [expediente de cierre](operations/cierre-operativo-2026-10-25.md). |
 | Externa | Recuperación completa de contraseña | El enlace se envió a un buzón temporal; el cambio final requiere intervención humana | Abrir el enlace y completar personalmente la nueva contraseña. |
 | Humana | Tarifa del psicólogo | Existen tarifas reales de S/100 y S/120; elegir una es una decisión comercial | Seleccionar una tarifa para cada profesional que aceptará reservas. |
 | Humana | Operación de pagos | No se realizaron cobros reales durante QA | Ejecutar una transacción controlada y conciliarla cuando exista autorización financiera. |

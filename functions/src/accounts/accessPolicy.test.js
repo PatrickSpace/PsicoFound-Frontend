@@ -42,6 +42,7 @@ test("existing accounts need current documents, verification, onboarding and eli
   assert.equal(evaluateAccess({...user, patientOnboardingStatus: "pending"}, auth, legal, policy).reason, "onboarding_required");
   assert.equal(evaluateAccess({...user, fechaNacimiento: "2020-01-01"}, auth, legal, policy).reason, "eligibility_required");
   assert.equal(evaluateAccess({...user, accountStatus: "deleting"}, auth, legal, policy).reason, "account_restricted");
+  assert.equal(evaluateAccess({...user, accountStatus: "suspended"}, {}, null, null).reason, "account_suspended");
 });
 
 test("legal configuration rejects missing and placeholder production URLs", () => {

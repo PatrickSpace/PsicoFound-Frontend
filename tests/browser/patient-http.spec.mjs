@@ -259,7 +259,7 @@ test("requirement: registration can recover after profile initialization fails",
   await expect(page.getByRole("textbox", { name:"Nombre completo" })).toBeVisible({ timeout:15000 });
   expect((await db.doc(`users/${user.uid}`).get()).exists).toBe(true);
 });
-test("patient: account editing, own export, deletion request and support response", async({ page }, info) => {
+test("patient: account editing, own export and support response", async({ page }, info) => {
   await login(page, "/configuracion");
   await page.getByRole("button", { name:"Editar perfil de usuario" }).click();
   const dialog = page.getByRole("dialog");
@@ -276,11 +276,6 @@ test("patient: account editing, own export, deletion request and support respons
   const json = JSON.parse(await readFile(await (await download).path(), "utf8"));
   expect(json.data.user.id).toBe(accounts.B.uid);
   expect(json.data.therapies.every(t => t.pacienteUid === accounts.B.uid)).toBe(true);
-  await page.getByRole("button", { name:"Solicitar eliminación", exact:true }).click();
-  await dialog.getByRole("textbox", { name:"Confirmación" }).fill("ELIMINAR MI CUENTA");
-  await dialog.getByRole("button", { name:"Registrar solicitud" }).click();
-  await expect(dialog).toHaveCount(0);
-  expect((await db.doc("account_requests/patient-b_deletion").get()).data().status).toBe("pending_policy");
   await page.getByRole("button", { name:"Enviar feedback", exact:true }).click();
   await dialog.getByRole("textbox", { name:"Observación" }).fill("Necesito revisar una cita: prueba sintética");
   await dialog.getByRole("button", { name:"Enviar solicitud" }).click();
@@ -291,6 +286,31 @@ test("patient: account editing, own export, deletion request and support respons
   await expect(dialog).toContainText("Respuesta visible para el paciente");
   await expect(dialog).toContainText("Resuelta");
   await shot(page, info, "account-and-support");
+});
+test("patient: suspension preserves information, blocks return and supports self reactivation", async({ page }, info) => {
+  await db.doc("conversations/patient-b/messages/suspension-kept").set({text:"QA preserved message"});
+  const appointments = (await db.collection("citas").where("pacienteUid", "==", "patient-b").get()).size;
+  await login(page, "/configuracion");
+  await page.getByRole("button", {name:"Suspender cuenta", exact:true}).click();
+  const dialog = page.getByRole("dialog");
+  await expect(dialog).toContainText("conserva toda tu información");
+  await dialog.getByRole("textbox", {name:"Confirmación"}).fill("SUSPENDER MI CUENTA");
+  await dialog.getByRole("button", {name:"Suspender cuenta", exact:true}).click();
+  await expect(page).toHaveURL(/\/cuenta-suspendida$/);
+  await expect(page.getByRole("heading", {name:"Tu cuenta está suspendida"})).toBeVisible();
+  expect((await db.doc("users/patient-b").get()).data().accountStatus).toBe("suspended");
+  expect((await db.doc("conversations/patient-b/messages/suspension-kept").get()).exists).toBe(true);
+  expect((await db.collection("citas").where("pacienteUid", "==", "patient-b").get()).size).toBe(appointments);
+  expect((await db.doc("account_requests/patient-b_deletion").get()).exists).toBe(false);
+  await page.goto("/dashboard");
+  await expect(page).toHaveURL(/\/cuenta-suspendida$/);
+  await page.reload();
+  await expect(page.getByRole("heading", {name:"Tu cuenta está suspendida"})).toBeVisible();
+  await shot(page, info, "account-suspended");
+  await page.getByRole("button", {name:"Reactivar mi cuenta", exact:true}).click();
+  await expect(page).toHaveURL(/\/configuracion$/);
+  expect((await db.doc("users/patient-b").get()).data().accountStatus).toBe("active");
+  await expect(page.getByRole("button", {name:"Suspender cuenta", exact:true})).toBeVisible();
 });
 test("patient: book with quote, live confirmation/link, payment, reschedule and cancel", async({ page }, info) => {
   await slots();

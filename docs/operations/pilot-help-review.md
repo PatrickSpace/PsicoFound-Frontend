@@ -1,5 +1,17 @@
 # Recursos de ayuda y revisión clínica pendiente
 
+**Decisión del titular, 26/10/2026:** mantener el sistema actual. Queda pendiente
+una acción y revisión humana: el titular contactará a psicólogos reales para
+revisar los casos y el sistema de apoyo. No se añade botón de aprobación, ni se
+declara concluida la revisión. Ver [decisión consolidada](../functional/suspension-cuentas.md).
+
+Seguimiento actualizado: [expediente de cierre operativo](cierre-operativo-2026-10-25.md).
+La configuración productiva contiene referencias de aprobación del titular para
+el flujo empático y de seguridad. Esta guía conserva la revisión profesional
+pendiente; la referencia de configuración no acredita por sí misma un dictamen
+clínico independiente. El uso real de IA está publicado según el cierre posterior;
+las afirmaciones históricas de acceso cerrado deben leerse con ese alcance.
+
 Revisión técnica: 2026-10-10. Las reglas de frases no son un instrumento diagnóstico,
 no determinan nivel de riesgo y no prometen vigilancia, contacto humano ni respuesta
 inmediata. `riesgoSuicida` es un nombre de campo heredado que activa recursos; su
