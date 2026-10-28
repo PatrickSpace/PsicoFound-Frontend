@@ -4,6 +4,9 @@ Fecha de consolidación: **25 de octubre de 2026**, America/Lima.
 Actualización de alcance: **26 de octubre de 2026**.
 Base local revisada: commit `d8ad39c` de `main`.
 
+Evidencia de la publicación del 27/10:
+[informe de validación integrada](operations/validacion-produccion-2026-10-27.md).
+
 Ejecución y propuestas posteriores:
 [expediente de cierre operativo](operations/cierre-operativo-2026-10-25.md).
 Recepción de alertas comprobada; perfil actual configurado con tarifa de prueba.
@@ -86,7 +89,7 @@ no basta con cambiar una casilla a completada.
 | ID | Comprobación | Criterio de cierre |
 | --- | --- | --- |
 | VD-01 | Acción humana pendiente: el titular contactará a psicólogos reales para revisar casos y sistema de apoyo. Por decisión del 26/10 se mantiene el comportamiento actual. | Registrar la revisión real cuando se realice; sin botón de aprobación ni cierre clínico automático. |
-| VD-02 | Decisión del 26/10: suspensión con reactivación por el titular, tipo voluntario/involuntario, revisión tras tres meses sin actividad y conservación de datos sin eliminación productiva. Implementación local pendiente de publicar. | Validar y publicar el [contrato de suspensión](functional/suspension-cuentas.md). La política ejecutable de eliminación deja de ser requisito de esta entrega; no equivale a aprobar conservación perpetua. |
+| VD-02 | Decisión del 26/10: suspensión con reactivación por el titular, tipo voluntario/involuntario, revisión tras tres meses sin actividad y conservación de datos sin eliminación productiva. Implementación validada y publicada el 27/10; ver informe de entrega. | Validar y publicar el [contrato de suspensión](functional/suspension-cuentas.md). La política ejecutable de eliminación deja de ser requisito de esta entrega; no equivale a aprobar conservación perpetua. |
 | VD-03 | Trazabilidad del candidato desplegado y comprobaciones de calidad. | Relacionar commit exacto, ejecución de Quality, despliegue Vercel, versión Hosting y componentes backend. Registrar cualquier diferencia con `d8ad39c`. |
 | VD-04 | Resolver referencias contradictorias de la matriz. | Mantener el cierre de registro/consentimiento REV-SEG-01/02; actualizar las filas antiguas de alertas, correo y smoke autenticado con referencias al cierre posterior. |
 

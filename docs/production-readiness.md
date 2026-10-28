@@ -6,7 +6,7 @@ del cierre técnico y sus exclusiones.
 
 Última revisión: 2026-10-27, America/Lima.
 
-Actualización posterior validada: [suspensión, reactivación e inactividad](operations/validacion-produccion-2026-10-27.md).
+Actualización posterior validada y publicada: [suspensión, reactivación e inactividad](operations/validacion-produccion-2026-10-27.md).
 La publicación de esta actualización se documenta allí; los resultados del cierre
 del 25/10 siguientes se conservan como antecedente fechado.
 

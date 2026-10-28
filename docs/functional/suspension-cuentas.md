@@ -1,7 +1,7 @@
 # Suspensión de cuentas y conservación de información
 
-Decisión del titular: 26 de octubre de 2026. Implementación local; pendiente de
-publicación. Sustituye el objetivo anterior de eliminación automática para esta
+Decisión del titular: 26 de octubre de 2026. Implementación publicada y comprobada el
+27 de octubre de 2026. Sustituye el objetivo anterior de eliminación automática para esta
 fase del producto. No modifica documentos legales publicados e inmutables.
 
 ## Comportamiento
@@ -56,7 +56,7 @@ no reactive accidentalmente una cuenta suspendida.
 ## Suspensión involuntaria por inactividad
 
 - Revisión programada diaria a las **04:00, America/Lima**. Se implementa como
-  Function programada, pendiente de publicar; no se ejecutó contra cuentas reales.
+  Function programada publicada; no se ejecutó manualmente contra cuentas reales.
 - Se exigen **tres meses calendario completos sin actividad**. Se conserva la
   hora de Lima y se ajusta el último día del mes si el mes de destino es más corto.
   La ejecución diaria puede marcarla después del instante exacto del umbral.
@@ -105,10 +105,10 @@ presentan como prueba de que esa revisión profesional se haya realizado.
 
 ## Publicación y validación
 
-Para activar la entrega hacen falta las nuevas Functions (incluida la tarea programada diaria), la actualización de
-callables existentes que comparten el wrapper, las reglas y Hosting. Publicar
-únicamente el frontend dejaría el botón sin el endpoint nuevo. Esta implementación
-no suspende cuentas reales durante las comprobaciones.
+La entrega se publicó en Functions (incluida la tarea diaria), callables existentes,
+reglas y Hosting. El backend quedó listo antes de publicar el frontend. Las
+comprobaciones no suspendieron cuentas reales. La tarea diaria quedó habilitada
+para las siguientes ejecuciones programadas.
 
 Validación integrada del 27/10: 44/44 unitarias frontend, 110/110 backend,
 81/81 integración general (incluye el job de inactividad con Firestore emulado),

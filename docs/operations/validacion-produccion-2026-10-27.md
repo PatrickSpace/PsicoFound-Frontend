@@ -1,6 +1,6 @@
 # Validación integrada y publicación — 27 de octubre de 2026
 
-Zona de referencia: America/Lima. Estado: **validación integrada aprobada; publicación en preparación**.
+Zona de referencia: America/Lima. Estado: **validación integrada aprobada; publicado y comprobado en producción**.
 
 ## Alcance
 
@@ -74,9 +74,29 @@ Antes de esta entrega, `suspendOwnAccount`, `reactivateOwnAccount` y
 La última versión Hosting observada fue `803d32c0d24bba7a`, publicada el 25/10.
 Por tanto, las funciones locales nuevas todavía no formaban parte de producción.
 
-Actualizar esta sección después de publicar: commit, estado de Functions, tarea
-programada, versión Hosting, comparación de assets y resultado de navegación.
-El backend debe quedar listo antes de habilitar el frontend nuevo en los sitios.
+Entrega de código: [`ce5903e`](https://github.com/PatrickSpace/PsicoFound-Frontend/commit/ce5903e3a0aa53fea7acd30730f281b611f84666).
+Backend y reglas publicados antes de habilitar el frontend nuevo.
+
+| Evidencia productiva | Resultado |
+| --- | --- |
+| Functions esperadas en `functions/index.js` | 52/52 presentes y `ACTIVE`; ninguna ausente o pendiente. |
+| Nuevas Functions | `suspendOwnAccount`, `reactivateOwnAccount` y `suspendInactiveAccounts` activas. |
+| Tarea de inactividad | Cloud Scheduler `ENABLED`, diaria a las 04:00, `America/Lima`. No se ejecutó manualmente sobre usuarios reales. |
+| Reglas | Compiladas y publicadas correctamente por Firebase CLI. |
+| Hosting | Versión `3f67767735e0db2c`, publicada el 27/10/2026 a las 20:33 de Lima; release asociado a `ce5903e`. |
+| Hosting y Vercel | HTTP 200 y HTML de entrada idéntico por SHA-256 al build local validado. |
+| Módulos nuevos en Hosting | Pantalla suspendida, Configuración y Detalle de terapia: HTTP 200, MIME JavaScript y contenido idéntico por SHA-256 al build. |
+| Acceso directo sin credenciales | Las nuevas callables de suspensión y reactivación rechazaron con HTTP 401. |
+| Revisión visual autenticada | Configuración muestra «Suspender cuenta», conserva la tarifa de prueba y explica la conservación de datos. Sin errores de consola observados. |
+| Confirmación | Se abrió y canceló sin ejecutar la suspensión. El rol administrador mostró la protección prevista. |
+
+La copia adicional de Quality en GitHub se inició con el push y estaba **en curso**
+al registrar esta evidencia; no se presenta como aprobada. Resultado local completo
+ya aprobado. [Ejecución de Quality del código publicado](https://github.com/PatrickSpace/PsicoFound-Frontend/actions/runs/40615727557).
+
+La actualización posterior de documentación no modifica código, reglas, build ni
+configuración productiva. El commit de código anterior identifica los componentes
+publicados; el historial posterior conserva el acta de validación y publicación.
 
 ## Pendientes que no se cierran con estas pruebas
 
