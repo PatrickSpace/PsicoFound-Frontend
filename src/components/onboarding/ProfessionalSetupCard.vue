@@ -102,7 +102,7 @@ let generation = 0, requestVersion = 0, stopSlots, stopRate, timer;
 const tasks = computed(() => state.value ? [
   { title: 'Revisa tu perfil', description: 'Comprueba cómo se presentará tu información profesional.', done: state.value.reviewed },
   { title: 'Elige tu tarifa', description: state.value.rateReady ? `Tarifa guardada: ${amount(state.value.rate.amountMinor)} por sesión.` : state.value.rate?.isTest ? 'Tienes una tarifa de prueba. Elige una tarifa de atención real.' : 'Selecciona una tarifa comercial activa del catálogo.', done: state.value.rateReady },
-  { title: 'Abre tus primeros horarios', description: `${state.value.slots.length} bloques futuros disponibles. Cada bloque dura una hora, en hora de Lima (UTC−5).`, done: state.value.slots.length > 0 },
+  { title: 'Abre tus primeros horarios', description: `${state.value.slots.length} ${state.value.slots.length === 1 ? 'bloque futuro disponible' : 'bloques futuros disponibles'}. Cada bloque dura una hora, en hora de Lima (UTC−5).`, done: state.value.slots.length > 0 },
   { title: 'Empieza a recibir reservas', description: 'Revisa el resumen y decide cuándo habilitar nuevas reservas.', done: state.value.completedAt && state.value.acceptingBookings },
 ] : []);
 const completed = computed(() => tasks.value.filter(task => task.done).length);
