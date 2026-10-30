@@ -30,6 +30,10 @@ try {
     await run(["--test", "tests/admin-pilot.integration.test.mjs"]);
     process.exit(0);
   }
+  if (process.env.SETUP_VALIDATION) {
+    await run(["--test", "tests/professional-setup.integration.test.mjs"]);
+    process.exit(0);
+  }
   if (process.env.PAYMENT_RULES_ONLY) {
     await run(["--test", "tests/paymentRates.integration.test.mjs"]);
     process.exit(0);
@@ -55,6 +59,7 @@ try {
   if (!process.env.LEGAL_VALIDATION && !process.env.PILOT_BROWSER_ONLY && !process.env.PAYMENT_DEADLINE_ONLY && !process.env.ADMIN_BROWSER_ONLY) {
   await run(["--test", "tests/followup.integration.test.mjs"]);
   await run(["--test", "tests/appointments.integration.test.mjs"]);
+  await run(["--test", "tests/professional-setup.integration.test.mjs"]);
   if (process.env.PILOT_VALIDATION) {
     await run(["--test", "tests/admin-pilot.integration.test.mjs"]);
     await run(["--test", "tests/legal-documents.integration.test.mjs"]);

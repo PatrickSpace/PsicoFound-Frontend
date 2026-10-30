@@ -1,5 +1,8 @@
 const admin = require("firebase-admin");
 const {
+  getProfessionalSetup, updateProfessionalSetup, saveProductGuide,
+} = require("./src/onboarding/setupHandlers");
+const {
   getTherapySharedHistory, getTherapySharedSummary,
   createFollowupGoal, recordGoalProgress,
   assignFollowupExercise, completeFollowupExercise, createEmotionalCheckin,
@@ -71,6 +74,12 @@ setGlobalOptions({
   maxInstances: 10,
   region: "southamerica-east1",
 });
+
+exports.getProfessionalSetup = onCall({minInstances: 0}, getProfessionalSetup);
+exports.updateProfessionalSetup = onCall(
+    {minInstances: 0}, updateProfessionalSetup,
+);
+exports.saveProductGuide = onCall({minInstances: 0}, saveProductGuide);
 
 exports.sendProfileChatMessage = onCall(
     {

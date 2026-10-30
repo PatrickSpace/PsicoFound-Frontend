@@ -14,6 +14,7 @@
     />
     <v-main class="layout-main-content">
       <v-container class="layout-container px-10">
+        <ProductGuide />
         <slot name="default"></slot>
       </v-container>
     </v-main>
@@ -23,6 +24,7 @@
 
 <script setup>
 import NavDrawer from "@/components/Navigation/NavDrawer.vue";
+import ProductGuide from "@/components/onboarding/ProductGuide.vue";
 import NavBar from "@/components/Navigation/NavBar.vue";
 import BottomNav from "@/components/Navigation/BottomNav.vue";
 import { useAppContextStore } from "@/store/appContext";

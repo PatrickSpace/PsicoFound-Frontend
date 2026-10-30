@@ -26,9 +26,10 @@
         <v-divider class="page-header-divider" />
       </div>
 
+      <ProfessionalSetupCard v-if="appContext.hasPsychologistAccess && appContext.activeMode === 'psychologist'" />
       <v-row align="stretch">
         <v-col v-if="appContext.hasPsychologistAccess && appContext.activeMode === 'psychologist'" cols="12" md="6" class="d-flex">
-          <PsychologistRateCard :therapist-id="appContext.therapistProfile.id" />
+          <PsychologistRateCard id="mi-tarifa" :therapist-id="appContext.therapistProfile.id" />
         </v-col>
         <v-col cols="12" md="6" class="d-flex">
           <v-card
@@ -743,6 +744,7 @@ import {
 import { useRouter } from "vue-router";
 import LayoutDefault from "@/components/Layout/Layoutmain.vue";
 import PsychologistRateCard from "@/components/Payments/PsychologistRateCard.vue";
+import ProfessionalSetupCard from "@/components/onboarding/ProfessionalSetupCard.vue";
 import { auth } from "@/plugins/Firebase/firebase";
 import { useAppContextStore } from "@/store/appContext";
 import { useAuthStore } from "@/store/auth";

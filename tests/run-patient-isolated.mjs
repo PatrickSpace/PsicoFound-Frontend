@@ -18,7 +18,7 @@ const args = ["emulators:exec", "--config", "firebase.followup-test.json",
   "--only", "auth,firestore,functions", "--project", "demo-lurems-followup", "node tests/run-followup.mjs"],
   env = { ...Object.fromEntries(Object.entries(process.env).filter(([key]) =>
     ["PATH", "HOME", "TMPDIR", "TEMP", "TMP", "JAVA_HOME", "LANG", "LC_ALL", "CI", "PLAYWRIGHT_BROWSERS_PATH",
-      "AGENDA_VALIDATION", "PILOT_VALIDATION", "PILOT_ACCOUNTS_ONLY", "PILOT_SURVEY_ONLY", "PILOT_PAYMENTS_ONLY", "PILOT_OPERATIONS_ONLY", "PAYMENT_RULES_ONLY", "PILOT_BROWSER_ONLY", "PILOT_INTEGRATION_ONLY", "PAYMENT_DEADLINE_ONLY", "ADMIN_ONLY", "ADMIN_BROWSER_ONLY", "VALIDATION_GREP", "LEGAL_VALIDATION"].includes(key))),
+      "SETUP_VALIDATION", "AGENDA_VALIDATION", "PILOT_VALIDATION", "PILOT_ACCOUNTS_ONLY", "PILOT_SURVEY_ONLY", "PILOT_PAYMENTS_ONLY", "PILOT_OPERATIONS_ONLY", "PAYMENT_RULES_ONLY", "PILOT_BROWSER_ONLY", "PILOT_INTEGRATION_ONLY", "PAYMENT_DEADLINE_ONLY", "ADMIN_ONLY", "ADMIN_BROWSER_ONLY", "VALIDATION_GREP", "LEGAL_VALIDATION"].includes(key))),
     PATIENT_VALIDATION: "true", FIREBASE_CLI_DISABLE_MOTD: "true", FIREBASE_CLI_DISABLE_UPDATE_CHECK: "true",
     ELIGIBILITY_POLICY_JSON: JSON.stringify(syntheticEligibility),
     CHAT_LIMITS_JSON: JSON.stringify({version: "synthetic-limits-v1", requestsPerDay: 40, globalConcurrency: 4}),

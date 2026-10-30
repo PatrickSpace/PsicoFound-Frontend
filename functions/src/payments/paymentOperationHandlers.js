@@ -1,5 +1,6 @@
 /* eslint-disable max-len */
 const {requirePatientAccess} = require("../accounts/accessPolicy");
+const {assertReceptionAllowed, commercialRateReady, usableSlots} = require("../onboarding/professionalSetup");
 const {assertFutureSlot} = require("../appointments/appointmentDomain");
 const {wallParts, DEFAULT_TIME_ZONE} = require("../appointments/schedulePolicy.mjs");
 const firestoreAdmin = require("firebase-admin/firestore");
@@ -118,6 +119,7 @@ async function getBookingQuote(request) {
   const therapistId = requireDocumentId(request.data && request.data.therapistId);
   const db = firestoreAdmin.getFirestore();
   const therapist = (await db.doc(`therapists/${therapistId}`).get()).data();
+  assertReceptionAllowed(therapist);
   if (!therapist || therapist.activo === false || !therapist.paymentRateId) {
     throw new HttpsError(
         "failed-precondition",
@@ -133,11 +135,24 @@ async function getBookingQuote(request) {
     );
   }
   const quote = quoteFromRate(therapistId, therapist, rateId, rate);
+  if (therapist.setupVersion === 1) {
+    const owner = (await db.doc(`users/${therapist.uid}`).get()).data();
+    if (!owner || owner.accountStatus === "suspended" || !commercialRateReady(rate)) {
+      throw new HttpsError("failed-precondition", "El profesional necesita actualizar su tarifa o disponibilidad.");
+    }
+    if (!request.data.availabilitySlotId) {
+      const slots = await db.collection("therapist_availability").where("therapistId", "==", therapistId).get();
+      if (!usableSlots(therapist, slots.docs.map((item) => item.data())).length) throw new HttpsError("failed-precondition", "El profesional necesita abrir nuevos horarios.");
+    }
+  }
   if (request.data.availabilitySlotId) {
     const id = requireDocumentId(request.data.availabilitySlotId);
     const slot = (await db.doc(`therapist_availability/${id}`).get()).data();
     if (!slot || slot.status !== "available" || slot.therapistId !== therapistId) {
       throw new HttpsError("failed-precondition", "El horario ya no está disponible.");
+    }
+    if (therapist.setupVersion === 1 && !usableSlots(therapist, [slot]).length) {
+      throw new HttpsError("failed-precondition", "El horario no corresponde a la modalidad disponible.");
     }
     try {
       const {start} = assertFutureSlot(slot);

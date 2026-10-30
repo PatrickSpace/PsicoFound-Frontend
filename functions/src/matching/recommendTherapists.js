@@ -1,4 +1,7 @@
 const firestoreAdmin = require("firebase-admin/firestore");
+const {
+  receptionAllowed, commercialRateReady, usableSlots,
+} = require("../onboarding/professionalSetup");
 const {HttpsError} = require("firebase-functions/v2/https");
 const {requirePatientAccess} = require("../accounts/accessPolicy");
 const {buildSearchCriteriaFromProfile} = require("./criteria");
@@ -41,6 +44,8 @@ async function getRecommendedTherapists(request) {
   );
   const availability = await getFutureAvailabilityByTherapist(
       db,
+      "",
+      therapists,
   );
   const recommendations = matches.filter((therapist) =>
     availability.has(therapist.id),
@@ -69,15 +74,31 @@ async function getRecommendedTherapists(request) {
 async function getActiveTherapists(db) {
   const snapshot = await db.collection("therapists").orderBy("nombre").get();
 
-  return snapshot.docs
+  const profiles = snapshot.docs
       .map((doc) => ({
         id: doc.id,
         ...doc.data(),
       }))
-      .filter((therapist) => therapist.activo !== false);
+      .filter((therapist) => receptionAllowed(therapist));
+  const eligible = await Promise.all(profiles.map(async (profile) => {
+    if (profile.setupVersion !== 1) return profile;
+    if (!profile.paymentRateId || !profile.uid) return null;
+    const [rate, owner] = await Promise.all([
+      db.doc(`payment_rates/${profile.paymentRateId}`).get(),
+      db.doc(`users/${profile.uid}`).get(),
+    ]);
+    const activeOwner = owner.exists &&
+      owner.data().accountStatus !== "suspended";
+    return commercialRateReady(rate.data()) && activeOwner ?
+      profile : null;
+  }));
+  return eligible.filter(Boolean);
 }
 
-async function getFutureAvailabilityByTherapist(db, requiredModality = "") {
+async function getFutureAvailabilityByTherapist(
+    db, requiredModality = "", therapists = null,
+) {
+  const profiles = new Map((therapists || []).map((item) => [item.id, item]));
   const snapshot = await db
       .collection("therapist_availability")
       .where("status", "==", "available")
@@ -89,6 +110,11 @@ async function getFutureAvailabilityByTherapist(db, requiredModality = "") {
     const therapistId = (slot.therapistId || "").toString().trim();
     if (!therapistId || !modalityMatches(slot.modality, requiredModality)) {
       return;
+    }
+    if (therapists) {
+      const profile = profiles.get(therapistId);
+      if (!profile || profile.setupVersion === 1 &&
+          !usableSlots(profile, [slot]).length) return;
     }
     try {
       assertFutureSlot(slot);

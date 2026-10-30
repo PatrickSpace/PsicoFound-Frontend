@@ -7,6 +7,10 @@ Base local revisada: commit `d8ad39c` de `main`.
 Evidencia de la publicación del 27/10:
 [informe de validación integrada](operations/validacion-produccion-2026-10-27.md).
 
+Entrega de preparación profesional y guía de uso del 29/10:
+[onboarding guiado](functional/onboarding-guiado.md) y
+[registro de validación/publicación](operations/onboarding-2026-10-29.md).
+
 Ejecución y propuestas posteriores:
 [expediente de cierre operativo](operations/cierre-operativo-2026-10-25.md).
 Recepción de alertas comprobada; perfil actual configurado con tarifa de prueba.

@@ -143,7 +143,7 @@ async function save() {
 </script>
 
 <style scoped>
-.psychologist-rate-card { min-width: 0; }
+.psychologist-rate-card { min-width: 0; scroll-margin-top: 145px; }
 .professional-rate-split { display: grid; gap: 12px; font-size: 0.9375rem; }
 .professional-rate-split > div { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px; }
 .professional-rate-split dd { margin: 0; font-weight: 600; }

@@ -73,6 +73,7 @@ Consolidación documental: 2026-10-15, America/Lima.
 | Aceptación y pendientes | [Matriz del piloto](docs/functional/matriz-cierre-piloto.md) |
 | Encuesta y recomendaciones | [Contrato de encuesta y matching](docs/functional/encuesta-matching.md) |
 | Agenda | [Política horaria de Lima](docs/functional/politica-horaria-mvp.md) |
+| Preparación y guía de uso | [Onboarding guiado](docs/functional/onboarding-guiado.md) |
 | Arquitectura | [Proveedores IA](docs/architecture/ai-provider-abstraction.md) · [Registro y onboarding](docs/architecture/registration-onboarding.md) |
 | Pagos | [Catálogo, reservas y conciliación manual](docs/operations/pilot-payments.md) |
 | Cuenta y privacidad | [Políticas, exportación y eliminación](docs/operations/pilot-privacy.md) |

@@ -1,4 +1,5 @@
 /* eslint-disable max-len */
+const {assertReceptionAllowed, commercialRateReady, usableSlots} = require("../onboarding/professionalSetup");
 const firestoreAdmin = require("firebase-admin/firestore");
 const {FieldValue, Timestamp} = require("firebase-admin/firestore");
 const {HttpsError} = require("firebase-functions/v2/https");
@@ -306,6 +307,11 @@ async function reserveAppointment(request) {
       if (!therapist || therapist.activo === false) {
         throw new HttpsError("failed-precondition", "El profesional no está disponible para nuevas citas.");
       }
+      assertReceptionAllowed(therapist);
+      if (therapist.setupVersion === 1) {
+        const owner = (await transaction.get(db.doc(`users/${therapist.uid}`))).data();
+        if (!owner || owner.accountStatus === "suspended") throw new HttpsError("failed-precondition", "La cuenta del profesional no está disponible.");
+      }
 
       let paymentQuote = null;
       if (mode === "patient") {
@@ -316,6 +322,9 @@ async function reserveAppointment(request) {
         const rate = (await transaction.get(db.doc(`payment_rates/${rateId}`))).data();
         if (!rate || rate.active !== true) {
           throw new HttpsError("failed-precondition", "La tarifa ya no está disponible. Solicita otra cotización.");
+        }
+        if (therapist.setupVersion === 1 && !commercialRateReady(rate)) {
+          throw new HttpsError("failed-precondition", "La tarifa no está disponible para atención comercial.");
         }
         paymentQuote = quoteFromRate(therapistId, therapist, rateId, rate);
         if (cleanId(data.quoteId, "cotización") !== paymentQuote.quoteId) {
@@ -330,6 +339,9 @@ async function reserveAppointment(request) {
         const slot = slotSnapshot.data();
         if (!slot || slot.status !== "available" || slot.therapistId !== therapistId) {
           throw new HttpsError("aborted", "El horario ya no está disponible. Elige otro bloque.");
+        }
+        if (therapist.setupVersion === 1 && !usableSlots(therapist, [slot]).length) {
+          throw new HttpsError("failed-precondition", "El horario no corresponde a la modalidad disponible.");
         }
         schedule = readSlotSchedule(slot);
       } else {

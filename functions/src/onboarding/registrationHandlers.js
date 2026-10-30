@@ -271,6 +271,9 @@ async function reviewPsychologistApplication(request) {
         yearsExperience: application.yearsExperience || 0,
         gradient: DEFAULT_THERAPIST_GRADIENT,
         activo: true,
+        setupVersion: 1,
+        acceptingBookings: false,
+        bookingSettingsVersion: 0,
         createdAt: now,
         updatedAt: now,
       });

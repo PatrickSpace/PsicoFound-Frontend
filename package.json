@@ -9,6 +9,7 @@
     "preview": "vite preview",
     "test": "node --test tests/unit/*.test.mjs",
     "test:backend": "npm --prefix functions test",
+    "test:setup": "SETUP_VALIDATION=true node tests/run-patient-isolated.mjs",
     "test:agenda": "AGENDA_VALIDATION=true node tests/run-patient-isolated.mjs",
     "test:patient": "node tests/run-patient-isolated.mjs",
     "lint:backend": "npm --prefix functions run lint",

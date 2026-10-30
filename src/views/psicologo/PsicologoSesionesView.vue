@@ -29,6 +29,8 @@
         <v-divider class="page-header-divider" />
       </div>
 
+      <ProfessionalSetupCard v-if="appContext.hasPsychologistAccess && appContext.activeMode === 'psychologist'" agenda-page @open-availability="availabilityDialog = true" />
+
       <v-alert
         v-if="errorMessage"
         class="mb-5"
@@ -49,7 +51,7 @@
           Perfil de psicólogo no encontrado
         </v-card-title>
         <v-card-text>
-          Tu usuario aún no está vinculado a un perfil de psicólogo activo. Un administrador debe asignar tu UID al registro del profesional.
+          Tu perfil profesional no está habilitado o no está vinculado a tu cuenta. Contacta con administración para revisarlo. Esta habilitación es distinta de pausar nuevas reservas.
         </v-card-text>
       </v-card>
 
@@ -480,8 +482,9 @@
 </template>
 
 <script setup>
-import { useRoute as useNotificationRoute } from "vue-router";
+import { useRoute as useNotificationRoute, useRouter } from "vue-router";
 const notificationRoute = useNotificationRoute();
+const setupRouter = useRouter();
 import { useAgendaClock } from "@/composables/useAgendaClock";
 const agendaNow = useAgendaClock();
 import { AGENDA_NOTICE, agendaDate, isFutureAppointment, resolveSchedule, wallParts, zonedDateTimeToDate, formatAgendaInstant } from "@/utils/dateTime";
@@ -489,6 +492,7 @@ import { computed, onBeforeUnmount, ref, watch } from "vue";
 import { storeToRefs } from "pinia";
 import LayoutDefault from "@/components/Layout/Layoutmain.vue";
 import CitaDialog from "@/components/Terapias/CitaDialog.vue";
+import ProfessionalSetupCard from "@/components/onboarding/ProfessionalSetupCard.vue";
 import { useAppContextStore } from "@/store/appContext";
 import { useAuthStore } from "@/store/auth";
 import { getTherapistByUserUid } from "@/services/psicologoService";
@@ -663,6 +667,13 @@ const upcomingAvailabilitySlots = computed(() => {
 });
 
 watch(() => notificationRoute.query.openedAt, () => loadTherapistSchedule());
+watch(() => [notificationRoute.query.abrirHorario, appContext.hasPsychologistAccess], async ([open, allowed]) => {
+  if (open === '1' && allowed && appContext.activeMode === 'psychologist') {
+    availabilityDialog.value = true;
+    const query = { ...notificationRoute.query }; delete query.abrirHorario;
+    await setupRouter.replace({ path: notificationRoute.path, query });
+  }
+}, { immediate: true });
 
 watch(
   () => [currentUser.value?.uid, appContext.activeMode],
