@@ -7,7 +7,7 @@
             <p class="page-header__eyebrow text-overline text-secondary mb-1">
               Agenda terapéutica
             </p>
-          <h1 class="text-h4 font-weight-bold">Mis sesiones</h1>
+          <h1 data-product-guide="sessions-title" class="text-h4 font-weight-bold">Mis sesiones</h1>
             <p class="text-body-1 text-medium-emphasis mt-2 mb-0">
             Revisa tu próxima cita, modalidad y acciones disponibles.
           </p>

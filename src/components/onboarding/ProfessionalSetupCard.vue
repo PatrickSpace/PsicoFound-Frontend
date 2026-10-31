@@ -1,9 +1,10 @@
 <template>
   <v-card class="setup-card pa-4 mb-5" variant="outlined" color="secondary" aria-label="Preparación de la consulta">
     <div class="d-flex align-center justify-space-between flex-wrap ga-2">
-      <h2 class="text-h6">{{ state?.completedAt ? 'Tu consulta' : 'Prepara tu consulta' }}</h2>
+      <h2 data-product-guide="setup-title" class="text-h6">{{ state?.completedAt ? 'Tu consulta' : 'Prepara tu consulta' }}</h2>
       <v-btn variant="text" size="small" :loading="loading" :disabled="busy" @click="load">Actualizar guía</v-btn>
     </div>
+    <v-btn v-if="state" variant="text" size="small" class="mt-2" @click="openPreparationGuide">Guía de preparación</v-btn>
     <v-progress-linear v-if="loading" indeterminate class="my-3" aria-label="Cargando preparación" />
     <v-alert v-if="error" type="error" variant="tonal" class="my-3" role="alert">{{ error }}</v-alert>
     <template v-if="state">
@@ -18,7 +19,7 @@
       <v-progress-linear v-if="showTasks" :model-value="completed * 25" color="secondary" height="6" rounded class="mb-4" />
       <template v-if="showTasks">
         <ol class="setup-list">
-          <li v-for="(task, index) in tasks" :key="task.title">
+          <li v-for="(task, index) in tasks" :key="task.title" :data-setup-step="index">
             <div class="d-flex align-start ga-3">
               <v-icon :color="task.done ? 'success' : 'secondary'" class="mt-1">{{ task.done ? 'mdi-check-circle' : 'mdi-circle-outline' }}</v-icon>
               <div class="flex-grow-1">
@@ -41,6 +42,10 @@
         <v-btn v-if="!state.welcomeDismissed && !state.completedAt" variant="text" size="small" :disabled="busy" @click="mutate('dismiss')">Más tarde</v-btn>
       </div>
     </template>
+    <GuidedSpotlight v-if="preparationOpen && showTasks" :key="preparationStep" controlled
+      :steps="[{ selector: `[data-setup-step='${preparationStep}'] .v-btn`, fallbackSelector: `[data-setup-step='${preparationStep}'] h3`, title: tasks[preparationStep].title, text: tasks[preparationStep].description + (preparationStep === 3 && !state.canActivate ? ' ' + missingReason : ''), closeOnClick: true }]"
+      :progress="`${preparationStep + 1} de 4`" :has-previous="preparationStep > 0" :next-label="preparationStep === 3 ? 'Terminar recorrido' : 'Siguiente'"
+      @previous="preparationStep--" @next="preparationStep === 3 ? preparationOpen = false : preparationStep++" @close="preparationOpen = false" />
     <v-dialog v-model="reviewDialog" max-width="600" scrollable>
       <v-card v-if="state" title="Revisa tu perfil profesional">
         <v-card-text>
@@ -83,6 +88,7 @@
 </template>
 
 <script setup>
+import GuidedSpotlight from "./GuidedSpotlight.vue";
 import { computed, nextTick, onBeforeUnmount, ref, watch } from "vue";
 import { useRoute } from 'vue-router';
 import { collection, doc, onSnapshot, query, where } from "firebase/firestore";
@@ -98,6 +104,8 @@ const context = useAppContextStore();
 const route = useRoute();
 const state = ref(null), loading = ref(false), busy = ref(false), error = ref('');
 const reviewDialog = ref(false), activationDialog = ref(false), pauseDialog = ref(false), expanded = ref(false);
+const preparationOpen = ref(false), preparationStep = ref(0);
+function openPreparationGuide() { expanded.value = true; preparationStep.value = 0; preparationOpen.value = true; }
 let generation = 0, requestVersion = 0, stopSlots, stopRate, timer;
 const tasks = computed(() => state.value ? [
   { title: 'Revisa tu perfil', description: 'Comprueba cómo se presentará tu información profesional.', done: state.value.reviewed },
@@ -136,6 +144,7 @@ async function mutate(action) {
   } finally { if (current === generation) busy.value = false; }
 }
 watch(() => [context.loadedForUid, context.activeMode, context.therapistProfile], () => {
+  preparationOpen.value = false;
   generation++; requestVersion++; clearTimeout(timer); stopSlots?.(); stopRate?.();
   state.value = null; busy.value = false; loading.value = false; error.value = '';
   reviewDialog.value = activationDialog.value = pauseDialog.value = false;

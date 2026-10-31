@@ -1,7 +1,7 @@
 <template>
   <section class="survey-shell">
     <AccountAccessCard redirect-to-registration @access="accountAllowed = $event" @status="applySurveyStatus" />
-    <v-btn class="pf-btn-ghost mb-2" to="/elegirterapeuta?crisis=1">Consultar recursos de ayuda</v-btn>
+    <v-btn data-product-guide="survey-help" class="pf-btn-ghost mb-2" to="/elegirterapeuta?crisis=1">Consultar recursos de ayuda</v-btn>
     <div class="chat-layout">
       <div class="chat-header">
         <div class="assistant-mark" aria-hidden="true">
@@ -11,7 +11,7 @@
           <p class="text-caption text-medium-emphasis mb-1">
             {{ surveyInputMode === "hybrid" ? "Encuesta híbrida" : surveyInputMode === "guided" ? "Encuesta guiada" : "Encuesta conversacional" }}
           </p>
-          <h1 class="survey-title font-weight-bold">
+          <h1 data-product-guide="survey-title" class="survey-title font-weight-bold">
             <span class="desktop-copy">Cuéntame cómo te sientes</span>
             <span class="mobile-copy">¿Cómo te sientes?</span>
           </h1>

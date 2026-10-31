@@ -4,12 +4,12 @@ import { app } from '@/plugins/Firebase/firebase';
 const functions = getFunctions(app, import.meta.env.VITE_FIREBASE_FUNCTIONS_REGION || 'southamerica-east1');
 // Survives layout remounts between views, but is reset on identity/mode changes.
 export const careGuide = reactive({ uid: '', loading: false, available: false, welcomeEligible: false,
-  appointment: null, progress: null, open: false, step: 0, section: '', error: '', saving: false });
+  appointment: null, progress: null, open: false, step: 0, section: '', error: '', saving: false, spotlight: false });
 let generation = 0;
 export function resetCareGuide(uid = '') {
   generation++;
   Object.assign(careGuide, { uid, loading: false, available: false, welcomeEligible: false,
-    appointment: null, progress: null, open: false, step: 0, section: '', error: '', saving: false });
+    appointment: null, progress: null, open: false, step: 0, section: '', error: '', saving: false, spotlight: false });
 }
 export async function refreshCareGuide() {
   if (!careGuide.uid) return;

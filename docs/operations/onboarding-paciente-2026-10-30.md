@@ -30,3 +30,8 @@ Grabaciones reales, sin información personal de producción:
 Publicar el frontend y las funciones `getPatientCareGuide` y `savePatientCareGuide` juntos. Esta entrega no requiere migrar usuarios ni añadir una dependencia externa. El siguiente control tras publicar es comprobar el flujo con una cuenta QA y una cita/pago autorizados del entorno destino.
 
 Las pruebas de acceso usan el wrapper operativo existente, pero no sustituyen una revisión de configuración App Check o de políticas legales en producción. La guía de ayuda no modifica el protocolo de apoyo ni su revisión humana pendiente.
+
+
+## Publicación posterior y prototipo interactivo
+
+La versión descrita arriba se subió a `main` en el commit `0bf1235`. Las funciones `getPatientCareGuide` y `savePatientCareGuide` se crearon correctamente en `psicosaas-3c819`, región `southamerica-east1`. El prototipo con fondo oscurecido es un cambio local posterior a ese commit; su validación y vídeo se detallan en `onboarding-spotlight-2026-10-30.md`.

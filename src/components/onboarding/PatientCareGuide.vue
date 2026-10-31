@@ -22,25 +22,13 @@
       </v-menu>
     </div>
     <v-alert v-if="careGuide.error" type="warning" variant="tonal" class="mt-2" role="alert">{{ careGuide.error }}</v-alert>
-    <v-card v-if="careGuide.open && current" ref="panel" class="care-panel pa-5 mt-3" variant="outlined" tabindex="-1" aria-label="Recorrido de acompañamiento">
-      <div class="d-flex align-center ga-2 mb-2">
-        <v-icon color="secondary">{{ current.icon || 'mdi-map-marker-path' }}</v-icon>
-        <p class="text-caption">{{ careGuide.section ? 'Conoce esta sección' : `Recorrido · Paso ${careGuide.step + 1} de 3` }}</p>
-        <v-spacer />
-        <v-btn icon="mdi-close" size="small" variant="text" aria-label="Cerrar guía" :disabled="careGuide.saving" @click="close" />
-      </div>
-      <h2 class="text-h6 font-weight-bold">{{ current.title }}</h2>
-      <p class="mt-2" aria-live="polite">{{ explanation }}</p>
-      <p class="text-caption mt-2">Puedes cerrar esta ayuda y retomarla desde Guía de mi proceso.</p>
-      <div class="d-flex flex-wrap align-center ga-2 mt-4">
-        <v-btn variant="text" :disabled="careGuide.saving" @click="close">Más tarde</v-btn>
-        <v-btn v-if="target" variant="text" @click="locate">Localizar en pantalla</v-btn>
-        <v-spacer />
-        <v-btn v-if="!careGuide.section && careGuide.step > 0" variant="outlined" :disabled="careGuide.saving" @click="move(-1)">Anterior</v-btn>
-        <v-btn color="secondary" :loading="careGuide.saving" @click="next">{{ careGuide.section ? 'Entendido' : careGuide.step === 2 ? 'Terminar recorrido' : 'Siguiente' }}</v-btn>
-      </div>
-    </v-card>
-    <v-card v-else-if="suggested && !welcome" class="pa-4 mt-3" variant="outlined">
+    <GuidedSpotlight v-if="careGuide.open && route.path === current.path" :key="`${careGuide.section}-${careGuide.step}`"
+      :steps="careGuide.section === 'emociones' ? emotionTour : [{ selector: focusSelector, fallbackSelector: '.page-header h1', title: current.title, text: explanation, advanceOnClick: current.anchor === 'navigation' }]"
+      :controlled="careGuide.section !== 'emociones'" :progress="careGuide.section ? undefined : `${careGuide.step + 1} de 3`"
+      :has-previous="!careGuide.section && careGuide.step > 0" :busy="careGuide.saving" :error="careGuide.error"
+      :next-label="careGuide.section === 'emociones' ? 'Terminar guía' : careGuide.section ? 'Entendido' : careGuide.step === 2 ? 'Terminar recorrido' : 'Siguiente'"
+      @previous="move(-1)" @next="next" @complete="next" @close="close" />
+    <v-card v-if="!careGuide.open && suggested && !welcome" class="pa-4 mt-3" variant="outlined">
       <h2 class="text-subtitle-1 font-weight-bold">{{ firstExercise ? 'Ya tienes una herramienta para explorar' : `Conoce ${suggested.title.toLowerCase()}` }}</h2>
       <p class="text-body-2 mt-1">{{ firstExercise ? 'Lee las instrucciones antes de comenzar. El recorrido no marcará el ejercicio como realizado.' : 'Una explicación breve de lo que puedes hacer aquí, cuando quieras.' }}</p>
       <div class="d-flex flex-wrap ga-2 mt-2">
@@ -55,6 +43,7 @@
 </template>
 
 <script setup>
+import GuidedSpotlight from './GuidedSpotlight.vue';
 import { computed, ref, watch, nextTick, onMounted, onBeforeUnmount } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { collection, getFirestore, onSnapshot, query, where } from 'firebase/firestore';
@@ -63,7 +52,9 @@ import { useAppContextStore } from '@/store/appContext';
 import { careGuide, resetCareGuide, refreshCareGuide, saveCareGuide } from '@/services/patientCareGuideService';
 const context = useAppContextStore(), route = useRoute(), router = useRouter();
 const patient = computed(() => context.activeMode === 'patient' && context.hasPatientAccess && !['suspended', 'deletion_pending', 'deleting', 'deleted', 'disabled'].includes(context.userProfile?.accountStatus));
-const panel = ref(null), target = ref(null), contentState = ref(''), exercisePresent = ref(false);
+const viewportWidth = ref(innerWidth);
+const updateViewport = () => { viewportWidth.value = innerWidth; };
+const target = ref(null), contentState = ref(''), exercisePresent = ref(false);
 const sections = [
   { key: 'sesiones', path: '/sesiones', title: 'Sesiones', anchor: 'next-appointment', text: 'Aquí encuentras la fecha, la hora de Lima y los datos de tu próxima cita. Si necesitas un cambio, revisa las opciones y condiciones de la cita.' },
   { key: 'inicio', path: '/dashboard', title: 'Inicio', anchor: 'summary', text: 'Este es el resumen de tu proceso: tu próxima sesión y la actividad disponible. Puedes volver aquí para orientarte sin repetir la encuesta.' },
@@ -72,8 +63,22 @@ const sections = [
   { key: 'herramientas', path: '/herramientas', title: 'Herramientas', anchor: 'tools', text: 'Aquí encontrarás los ejercicios asignados por tu psicólogo. Lee sus instrucciones y usa el botón para completar solo después de realizarlo. Explorar esta ayuda no cuenta como haberlo hecho.' },
   { key: 'historial', path: '/historial', title: 'Historial', anchor: 'history', text: 'Consulta las sesiones y los eventos disponibles de tu proceso. Los filtros de terapia, fechas y tipo de evento cambian lo que ves. Una selección vacía no significa que nunca haya existido actividad.' },
 ];
+const emotionTour = [
+  { selector: '[data-care-guide="add-emotion"]', title: 'Empieza un registro emocional', text: 'Pulsa Agregar registro para abrir el formulario. Todavía no se guardará ninguna información.', advanceOnClick: true },
+  { selector: '[data-care-guide="emotion-visibility"]', title: 'Antes de compartir, revisa quién lo verá', text: 'Este aviso identifica a tu profesional y explica el acceso del personal administrador autorizado. Después puedes completar el formulario o pulsar Cancelar. Terminar esta guía no guarda un registro.' },
+];
 const walkthrough = [sections[0], sections[1], { title: 'Tu espacio, a tu ritmo', path: '/dashboard', anchor: 'navigation', text: 'Usa el menú para ir a Sesiones, Emociones, Progreso, Herramientas e Historial. En el móvil, abre Más para encontrar las secciones adicionales. Desde Guía de mi proceso puedes repetir el recorrido o consultar cada ayuda. En Configuración puedes revisar tu cuenta.' }];
 const current = computed(() => careGuide.section ? sections.find(item => item.key === careGuide.section) : walkthrough[careGuide.step]);
+const focusSelector = computed(() => {
+  const anchor = current.value.anchor;
+  if (anchor === 'navigation') return viewportWidth.value < 1280 ? '[data-care-guide=navigation-more]' : '[data-care-guide=navigation]';
+  let root = `[data-care-guide="${anchor}"]`;
+  if (anchor === 'next-appointment') {
+    if (careGuide.appointment) root += `[data-care-appointment-id="${careGuide.appointment.id}"]`;
+    return `${root} .session-date`;
+  }
+  return `${root} ${['emotions', 'history'].includes(anchor) ? 'h1' : '.v-card-title'}`;
+});
 const welcome = computed(() => careGuide.welcomeEligible && !careGuide.progress?.status && !careGuide.open && ['/dashboard', '/sesiones'].includes(route.path));
 const routeSection = computed(() => sections.find(item => item.path === route.path));
 const firstExercise = computed(() => route.path === '/herramientas' && exercisePresent.value && !careGuide.progress?.firstExerciseSeen);
@@ -109,9 +114,10 @@ watch(() => [context.loadedForUid, patient.value], ([uid, enabled]) => {
 }, { immediate: true, flush: 'sync' });
 watch(() => context.userProfile?.productGuides?.patientCare, value => { if (value && patient.value && context.loadedForUid === careGuide.uid) careGuide.progress = value; });
 watch(() => [route.path, careGuide.open, careGuide.step, careGuide.section], () => nextTick(inspect));
-onMounted(() => { if (careGuide.open && route.path !== current.value?.path) close(); observer = new MutationObserver(inspect); observer.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['data-care-guide-state'] }); inspect(); });
-onBeforeUnmount(() => { observer?.disconnect(); unsubscribes.forEach(stop => stop()); clearTimeout(timer); clearTarget(); });
-async function reveal() { await router.push(current.value.path); await nextTick(); inspect(); panel.value?.$el?.focus({ preventScroll: true }); panel.value?.$el?.scrollIntoView({ block: 'start', behavior: 'instant' }); }
+watch(() => careGuide.open, value => { careGuide.spotlight = value; }, { immediate: true });
+onMounted(() => { window.addEventListener('resize', updateViewport); if (careGuide.open && route.path !== current.value?.path) close(); observer = new MutationObserver(inspect); observer.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['data-care-guide-state'] }); inspect(); });
+onBeforeUnmount(() => { window.removeEventListener('resize', updateViewport); careGuide.spotlight = false; observer?.disconnect(); unsubscribes.forEach(stop => stop()); clearTimeout(timer); clearTarget(); });
+async function reveal() { await router.push(current.value.path); await nextTick(); inspect(); }
 async function start(repeat = false) {
   const step = !repeat && ['dismissed', 'started'].includes(careGuide.progress?.status) ? careGuide.progress.step || 0 : 0;
   if (await saveCareGuide({ kind: 'walkthrough', step, status: 'started' })) { Object.assign(careGuide, { step, section: '', open: true }); await reveal(); }
@@ -119,11 +125,11 @@ async function start(repeat = false) {
 async function defer() { await saveCareGuide({ kind: 'walkthrough', step: careGuide.progress?.step || 0, status: 'dismissed' }); }
 async function move(delta) {
   const step = careGuide.step + delta;
-  if (await saveCareGuide({ kind: 'walkthrough', step, status: 'started' })) { careGuide.step = step; await reveal(); }
+  if (await saveCareGuide({ kind: 'walkthrough', step, status: 'started' }) && careGuide.open) { careGuide.step = step; await reveal(); }
 }
 async function close() {
-  const ok = await saveCareGuide(careGuide.section ? { kind: 'section', section: careGuide.section, status: 'deferred' } : { kind: 'walkthrough', step: careGuide.step, status: 'dismissed' });
-  if (ok) careGuide.open = false;
+  careGuide.open = false;
+  if (!careGuide.saving) await saveCareGuide(careGuide.section ? { kind: 'section', section: careGuide.section, status: 'deferred' } : { kind: 'walkthrough', step: careGuide.step, status: 'dismissed' });
 }
 async function next() {
   if (!careGuide.section && careGuide.step < 2) return move(1);
@@ -137,11 +143,10 @@ async function dismissSuggestion() {
   if (firstExercise.value && !await saveCareGuide({ kind: 'exercise', status: 'seen' })) return;
   await saveCareGuide({ kind: 'section', section, status: 'deferred' });
 }
-function locate() { target.value?.scrollIntoView({ block: 'center', behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth' }); }
+
 </script>
 <style>
 .care-guide-target { outline: 3px solid #43a99c !important; outline-offset: 5px; scroll-margin-top: 130px; }
-.care-panel { border-color: #43a99c !important; background: rgb(var(--v-theme-surface)); scroll-margin-top: 120px; }
 .care-guide .v-btn { max-width: 100%; }
 .care-guide .v-btn__content { white-space: normal; }
 </style>

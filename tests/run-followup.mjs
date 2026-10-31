@@ -28,7 +28,8 @@ try {
   });
   if (process.env.CARE_GUIDE_VALIDATION) {
     await run(["--test", "tests/patient-care-guide.integration.test.mjs"]);
-    process.exit(0);
+    await run(["--test", "tests/professional-setup.integration.test.mjs"]);
+    if (!process.env.CARE_GUIDE_REVIEW) process.exit(0);
   }
   if (process.env.CARE_GUIDE_REVIEW) {
     const { seedPatientCare } = await import('./helpers/patient-care-fixture.mjs');
@@ -68,6 +69,7 @@ try {
   await run(["--test", "tests/followup.integration.test.mjs"]);
   await run(["--test", "tests/appointments.integration.test.mjs"]);
   await run(["--test", "tests/professional-setup.integration.test.mjs"]);
+  await run(["--test", "tests/patient-care-guide.integration.test.mjs"]);
   if (process.env.PILOT_VALIDATION) {
     await run(["--test", "tests/admin-pilot.integration.test.mjs"]);
     await run(["--test", "tests/legal-documents.integration.test.mjs"]);

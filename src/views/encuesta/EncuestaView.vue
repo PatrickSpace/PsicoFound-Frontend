@@ -20,6 +20,7 @@
     </v-app-bar>
     <v-main>
       <v-container class="survey-container" fluid>
+        <ProductGuide />
         <ConversationalSurvey />
       </v-container>
     </v-main>
@@ -27,6 +28,7 @@
 </template>
 
 <script setup>
+import ProductGuide from "@/components/onboarding/ProductGuide.vue";
 import MainLogo from "@/components/Common/MainLogo.vue";
 import ConversationalSurvey from "@/components/encuesta/ConversationalSurvey.vue";
 </script>
@@ -36,6 +38,7 @@ import ConversationalSurvey from "@/components/encuesta/ConversationalSurvey.vue
   height: calc(100dvh - var(--v-layout-top, 64px));
   max-width: 960px;
   display: flex;
+  flex-direction: column;
   padding-top: 16px;
   padding-bottom: 16px;
 }

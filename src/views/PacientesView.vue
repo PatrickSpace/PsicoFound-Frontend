@@ -7,7 +7,7 @@
             <p class="page-header__eyebrow text-overline text-secondary mb-1">
               Seguimiento operativo
             </p>
-            <h1 class="text-h4 font-weight-bold">Pacientes</h1>
+            <h1 data-product-guide="patients" class="text-h4 font-weight-bold">Pacientes</h1>
             <p class="text-body-1 text-medium-emphasis mt-2 mb-0">
               Vista operativa de pacientes, perfil inicial y estado del proceso.
             </p>

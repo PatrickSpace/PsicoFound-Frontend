@@ -1,6 +1,6 @@
 # Diseño: onboarding del paciente después de confirmar su cita
 
-Fecha: **30/10/2026**, America/Lima. Estado: **primera versión implementada en local; pendiente de publicación**.
+Fecha: **30/10/2026**, America/Lima. Estado: **onboarding visual unificado para paciente y psicólogo**.
 
 ## Objetivo
 
@@ -202,7 +202,7 @@ Referencias internas: [diseño general de onboarding](onboarding-guiado.md),
 
 ## Implementación de la primera versión
 
-- `PatientCareGuide.vue` presenta una tarjeta opcional y un panel integrado en la página, sin tapar los controles. El botón «Localizar en pantalla» lleva al elemento resaltado. No se bloquea la navegación.
+- `PatientCareGuide.vue` presenta una bienvenida opcional y recorre las vistas con fondo oscurecido, un elemento iluminado y una explicación junto a él. Se puede salir con X, Escape o «Salir de la guía», incluso durante un guardado pendiente.
 - Recorrido inicial de tres pasos: Sesiones, Inicio y navegación. En móvil se explica el botón Más. El menú «Guía de mi proceso» permite repetirlo y abrir las seis ayudas por sección.
 - El servidor comprueba la propiedad de la terapia activa, la cita y la operación de pago confirmada vinculada a esa misma cita. Los estados enviados por el navegador no sirven para habilitar la bienvenida.
 - El avance se guarda en `users/{uid}.productGuides.patientCare`, separado de las guías anteriores. Cerrar o posponer conserva el paso. El cambio de cuenta o de vista paciente/profesional limpia el recorrido en memoria.
@@ -212,3 +212,16 @@ Referencias internas: [diseño general de onboarding](onboarding-guiado.md),
 - Funciones nuevas para publicar junto al frontend: `getPatientCareGuide` y `savePatientCareGuide`. No se añade un servicio externo de analítica, IA ni onboarding.
 
 Validación reproducible: `CARE_GUIDE_VALIDATION=true node tests/run-patient-isolated.mjs` (Java 21 en PATH). Demostración local: `CARE_GUIDE_REVIEW=true node tests/run-patient-isolated.mjs`. Ambos usan exclusivamente emuladores y el proyecto `demo-lurems-followup`; fallan si alguno de los puertos de pruebas ya está ocupado.
+
+
+## Estilo visual unificado
+
+El estilo con fondo oscurecido se utiliza en el recorrido inicial, las seis ayudas de acompañamiento, la guía inicial del paciente antes de una cita pagada, la guía de funciones del psicólogo y los cuatro pasos de preparación de su consulta.
+
+En Emociones, la guía ilumina «Agregar registro» y avanza cuando la persona pulsa el botón real. El segundo paso destaca el aviso de visibilidad del formulario. Terminar la guía no rellena ni guarda el formulario.
+
+`GuidedSpotlight.vue` calcula el hueco alrededor del elemento real y ajusta la explicación al desplazar o redimensionar. Usa una zona libre o un panel desplazable para evitar tapar el elemento. Incluye controles de teclado, Anterior/Siguiente cuando corresponde, errores de guardado y salida cuando no se encuentra el elemento.
+
+Los avances ya guardados se conservan; no se reinician todas las guías por el cambio visual. El recorrido profesional de funciones persiste por rol y el de acompañamiento en `patientCare`. La guía de preparación explica tareas cuyo cumplimiento real sigue calculándose en el servidor; pulsar Siguiente no revisa un perfil, elige una tarifa, crea un horario ni activa reservas.
+
+Evidencia de la entrega: [validación del onboarding unificado](../operations/onboarding-unificado-2026-10-30.md).

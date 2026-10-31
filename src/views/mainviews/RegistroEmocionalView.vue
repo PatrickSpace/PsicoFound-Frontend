@@ -20,6 +20,7 @@
               prepend-icon="mdi-plus"
               class="pf-btn-secondary"
               :disabled="loading || !activeTherapy"
+              data-care-guide="add-emotion"
               @click="openCheckin"
             >
               Agregar registro
@@ -178,13 +179,13 @@
         </v-card-text>
       </v-card>
 
-      <v-dialog v-if="isPatientMode" v-model="checkinDialog" class="bg-transparent" max-width="760">
+      <v-dialog :retain-focus="!careGuide.spotlight" v-if="isPatientMode" v-model="checkinDialog" class="bg-transparent" max-width="760">
         <v-card class="pa-4 card-backgoundcustom" elevation="2" variant="text">
           <v-card-title class="text-h6 font-weight-bold px-0 pt-0">
             Agregar registro emocional
           </v-card-title>
           <v-card-text>
-            <v-alert v-if="activeTherapy" class="mb-4" type="info" variant="tonal">
+            <v-alert data-care-guide="emotion-visibility" v-if="activeTherapy" class="mb-4" type="info" variant="tonal">
               Este registro y su nota serán visibles para el profesional vinculado
               a tu proceso: {{ activeTherapy.terapeutaNombre || 'tu profesional' }}.
               Terapia: {{ activeTherapy.id }}. El personal administrador autorizado también puede acceder.
@@ -294,6 +295,7 @@
 </template>
 
 <script setup>
+import { careGuide } from "@/services/patientCareGuideService";
 import { computed, onBeforeUnmount, reactive, ref, watch } from "vue";
 import { storeToRefs } from "pinia";
 import LayoutDefault from "@/components/Layout/Layoutmain.vue";

@@ -7,7 +7,7 @@
             <p class="page-header__eyebrow text-overline text-secondary mb-1">
               Gestión de sesiones
             </p>
-            <h1 class="text-h4 font-weight-bold">Agenda del psicólogo</h1>
+            <h1 data-product-guide="agenda" class="text-h4 font-weight-bold">Agenda del psicólogo</h1>
             <p class="text-caption mt-2">{{ AGENDA_NOTICE }}</p>
             <p class="text-body-1 text-medium-emphasis mt-2 mb-0">
               Gestiona tus citas, confirma sesiones y agrega el enlace externo de videollamada.

@@ -16,6 +16,7 @@
     </v-btn>
     <v-btn
       v-if="overflowItems.length"
+      data-care-guide="navigation-more"
       class="bottom-nav-more"
       :class="{ 'bottom-nav-more--active': isOverflowActive || isOverflowOpen }"
       value="more"

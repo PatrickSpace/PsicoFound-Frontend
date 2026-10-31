@@ -4,6 +4,12 @@ Fecha de propuesta: **27 de octubre de 2026**, America/Lima.
 Implementación: **29 de octubre de 2026**. La evidencia de publicación y pruebas se
 registra en [validación de la entrega](../operations/onboarding-2026-10-29.md).
 
+Actualización visual del **30 de octubre de 2026**: ambas guías usan fondo oscurecido,
+el elemento real iluminado y una explicación junto a él. También se aplica a las
+cuatro tareas de preparación profesional. Se conserva el progreso por rol y los
+controles de servidor para revisión, tarifa, horarios y activación. Véase la
+[validación unificada](../operations/onboarding-unificado-2026-10-30.md).
+
 ### Alcance de la implementación
 
 Se implementaron las cuatro tareas profesionales, la revisión final, activación y
