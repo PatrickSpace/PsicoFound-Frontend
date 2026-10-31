@@ -167,6 +167,7 @@ export const useAppContextStore = defineStore("appContext", () => {
   }
 
   return {
+    loadedForUid,
     userProfile,
     therapistProfile,
     loading,

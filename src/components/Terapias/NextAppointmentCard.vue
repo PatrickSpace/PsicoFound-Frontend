@@ -1,5 +1,7 @@
 <template>
   <v-card
+    data-care-guide="next-appointment"
+    :data-care-appointment-id="appointment.citaId || appointment.id"
     class="pa-4 card-backgoundcustom session-card next-session-card"
     elevation="2"
     variant="text"

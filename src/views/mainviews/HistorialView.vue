@@ -1,6 +1,6 @@
 <template>
   <LayoutDefault layout>
-    <v-container class="pa-0">
+    <v-container class="pa-0" data-care-guide="history" :data-care-guide-state="workspace.error.value ? 'error' : loading ? 'loading' : 'ready'">
       <div class="page-header">
         <div class="page-header__row">
           <div class="page-header__copy">

@@ -1,6 +1,6 @@
 <template>
   <LayoutDefault layout>
-    <v-container class="emotional-view pa-0">
+    <v-container class="emotional-view pa-0" data-care-guide="emotions" :data-care-guide-state="errorMessage ? 'error' : loading ? 'loading' : 'ready'">
       <div class="page-header">
         <div class="page-header__row">
           <div class="page-header__copy">

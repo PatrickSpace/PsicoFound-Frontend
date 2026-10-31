@@ -1,5 +1,6 @@
 <template>
   <v-navigation-drawer
+    data-care-guide="navigation"
     v-if="lgAndUp"
     floating
     class="app-nav-drawer bg-transparent"

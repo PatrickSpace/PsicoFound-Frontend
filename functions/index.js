@@ -1,3 +1,6 @@
+const {
+  getPatientCareGuide, savePatientCareGuide,
+} = require("./src/onboarding/patientCareHandlers");
 const admin = require("firebase-admin");
 const {
   getProfessionalSetup, updateProfessionalSetup, saveProductGuide,
@@ -273,3 +276,6 @@ exports.saveLegalDraft = onCall(
 exports.publishLegalDraft = onCall(
     {minInstances: 0, timeoutSeconds: 30}, publishLegalDraft,
 );
+
+exports.getPatientCareGuide = onCall({minInstances: 0}, getPatientCareGuide);
+exports.savePatientCareGuide = onCall({minInstances: 0}, savePatientCareGuide);

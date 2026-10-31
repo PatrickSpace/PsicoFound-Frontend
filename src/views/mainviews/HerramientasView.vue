@@ -87,7 +87,7 @@
         </v-col>
       </v-row>
 
-      <v-card class="pa-4 mb-6 card-backgoundcustom" elevation="2" variant="text">
+      <v-card data-care-guide="tools" :data-care-guide-state="errorMessage ? 'error' : loading ? 'loading' : patientExercises.length ? 'ready' : 'empty'" class="pa-4 mb-6 card-backgoundcustom" elevation="2" variant="text">
         <v-card-title class="d-flex align-center ga-2 text-h6 font-weight-bold px-0 pt-0">
           <v-icon color="secondary" size="small">mdi-toolbox-outline</v-icon>
           Herramientas asignadas

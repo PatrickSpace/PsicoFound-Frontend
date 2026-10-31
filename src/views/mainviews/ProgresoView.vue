@@ -45,7 +45,7 @@
         :learned-tools-count="learnedToolsCount"
       />
 
-      <v-card class="pa-4 mb-6 card-backgoundcustom" elevation="2" variant="text">
+      <v-card data-care-guide="goals" :data-care-guide-state="goalsError ? 'error' : loadingGoals ? 'loading' : goals.length ? 'ready' : 'empty'" class="pa-4 mb-6 card-backgoundcustom" elevation="2" variant="text">
         <v-card-title class="d-flex align-center ga-2 text-h6 font-weight-bold px-0 pt-0">
           <v-icon color="secondary" size="small">mdi-bullseye-arrow</v-icon>
           Objetivos terapéuticos

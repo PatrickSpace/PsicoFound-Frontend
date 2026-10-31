@@ -24,6 +24,7 @@
 
       <template v-else-if="activeTherapy">
         <v-card
+          data-care-guide="summary"
           class="progress-summary-card pa-4 card-backgoundcustom"
           elevation="2"
           variant="text"

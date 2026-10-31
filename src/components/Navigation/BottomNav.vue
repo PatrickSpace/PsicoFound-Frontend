@@ -1,5 +1,6 @@
 <template>
   <v-bottom-navigation
+    data-care-guide="navigation"
     class="bottom-nav-mobile bg-transparent d-lg-none"
     :class="`bottom-nav-mobile--${navItemCount}`"
     grow

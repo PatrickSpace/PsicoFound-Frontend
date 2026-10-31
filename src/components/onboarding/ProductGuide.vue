@@ -1,5 +1,5 @@
 <template>
-  <div v-if="role" class="mb-3">
+  <div v-if="role && !careActive" class="mb-3">
     <v-card v-if="showPatientWelcome" variant="tonal" color="secondary" class="pa-4 mb-4">
       <h2 class="text-h6">Tu primer paso en Lurems</h2>
       <p class="my-2">Cuéntanos cómo te sientes, encuentra un profesional y sigue tu proceso a tu ritmo.</p>
@@ -34,6 +34,7 @@
 </template>
 
 <script setup>
+import { careGuide } from '@/services/patientCareGuideService';
 import { computed, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useAppContextStore } from '@/store/appContext';
@@ -43,6 +44,7 @@ import { getCallableErrorMessage } from '@/services/onboardingService';
 const context = useAppContextStore(), route = useRoute(), router = useRouter();
 const error = ref(''), saving = ref(false), locallyDismissed = ref(false);
 const role = computed(() => context.activeMode === 'psychologist' && context.hasPsychologistAccess ? 'psychologist' : context.activeMode === 'patient' && context.hasPatientAccess ? 'patient' : '');
+const careActive = computed(() => role.value === 'patient' && (careGuide.loading || careGuide.available));
 const saved = computed(() => context.userProfile?.productGuides?.[role.value]);
 const showPatientWelcome = computed(() => role.value === 'patient' && route.path === '/dashboard' && !saved.value && !locallyDismissed.value);
 const professionalSteps = [
