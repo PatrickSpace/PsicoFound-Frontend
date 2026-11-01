@@ -1,7 +1,8 @@
 import "vuetify/styles";
-import "@mdi/font/css/materialdesignicons.css";
+import "@/assets/fonts/icons.css";
+import "@/assets/fonts/poppins.css";
 import { createVuetify } from "vuetify";
-import * as components from "vuetify/components";
+import components from "./components";
 import * as directives from "vuetify/directives";
 import { aliases, mdi } from "vuetify/iconsets/mdi";
 import { darkTheme } from "./dark";

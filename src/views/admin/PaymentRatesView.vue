@@ -15,7 +15,8 @@
         <v-divider class="page-header-divider" />
       </div>
 
-      <v-alert v-if="errorMessage" color="error" variant="tonal" class="mb-4" role="alert">{{ errorMessage }}</v-alert>
+      <CollectionPager :names="['payment_rates']" />
+<v-alert v-if="errorMessage" color="error" variant="tonal" class="mb-4" role="alert">{{ errorMessage }}</v-alert>
       <v-btn class="mb-4" @click="workspace.reload" :loading="loading">Actualizar</v-btn>
       <div class="rates-toolbar">
         <span class="text-body-2 text-medium-emphasis">{{ rates.length }} tarifas · Lurems 30% · Profesional 70%</span>
@@ -108,6 +109,7 @@
             <v-progress-linear v-if="historyLoading" indeterminate color="secondary" aria-label="Cargando historial" />
             <v-alert v-if="historyError" color="error" variant="tonal" role="alert">{{ historyError }}</v-alert>
             <p class="text-caption text-medium-emphasis mb-3">Últimas 20 versiones</p>
+            <v-btn v-if="hasMoreHistory" :loading="historyLoading" @click="loadMoreHistory">Ver versiones anteriores</v-btn>
             <section v-for="version in history" :key="version.id" class="rate-history-entry">
               <div class="d-flex flex-wrap ga-2 align-center justify-space-between">
                 <strong>Versión {{ version.version }} · {{ version.active ? 'Activa' : 'Inactiva' }}</strong>
@@ -126,6 +128,7 @@
 </template>
 
 <script setup>
+import CollectionPager from "@/components/admin/CollectionPager.vue";
 import { computed, reactive, ref } from "vue";
 import LayoutDefault from "@/components/Layout/Layoutmain.vue";
 import { getPaymentRateHistory, newPaymentRateId, savePaymentRate } from "@/services/paymentService";
@@ -161,6 +164,8 @@ const history = ref([]);
 const historyLoading = ref(false);
 const historyError = ref("");
 let historyRequest = 0;
+let historyRateId = "", historyCursor;
+const hasMoreHistory = ref(false);
 const workspace = useAdminWorkspace(() => {
   historyRequest++; rates.value = []; history.value = []; editDialog.value = false;
   historyDialog.value = false; activationDialog.value = false; activationRate.value = null; saving.value = false; busyId.value = ""; errorMessage.value = "";
@@ -232,6 +237,7 @@ async function setActive(rate, active) {
 
 async function openHistory(rate) {
   const request = ++historyRequest;
+  historyRateId = rate.id; historyCursor = null; hasMoreHistory.value = false;
   historyName.value = rate.name;
   history.value = [];
   historyError.value = "";
@@ -239,12 +245,24 @@ async function openHistory(rate) {
   historyDialog.value = true;
   try {
     const versions = await withTableLoadingTimeout(getPaymentRateHistory(rate.id));
-    if (request === historyRequest) history.value = versions;
+    if (request === historyRequest) { history.value = versions.items; historyCursor = versions.cursor; hasMoreHistory.value = versions.hasMore; }
   } catch {
     if (request === historyRequest) historyError.value = "No pudimos cargar el historial.";
   } finally {
     if (request === historyRequest) historyLoading.value = false;
   }
+}
+
+async function loadMoreHistory() {
+  if (historyLoading.value || !hasMoreHistory.value) return;
+  const request = historyRequest;
+  historyLoading.value = true; historyError.value = "";
+  try {
+    const page = await withTableLoadingTimeout(getPaymentRateHistory(historyRateId, historyCursor));
+    if (request !== historyRequest) return;
+    history.value.push(...page.items); historyCursor = page.cursor; hasMoreHistory.value = page.hasMore;
+  } catch { if(request === historyRequest) historyError.value = "No pudimos cargar más versiones."; }
+  finally { if(request === historyRequest) historyLoading.value = false; }
 }
 
 function formatDate(timestamp) {

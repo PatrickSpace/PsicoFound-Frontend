@@ -651,7 +651,6 @@ h6 {
 
 .auth-image {
   display: none;
-  background-image: url("@/assets/img/bg-home.jpg");
   background-size: cover;
   background-repeat: no-repeat;
   background-position-y: bottom;

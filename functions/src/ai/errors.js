@@ -6,6 +6,7 @@ class AIProviderError extends Error {
     this.model = options.model || "";
     this.retryable = Boolean(options.retryable);
     this.cause = options.cause;
+    this.usage = options.usage;
   }
 }
 

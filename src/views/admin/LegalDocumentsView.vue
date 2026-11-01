@@ -12,7 +12,8 @@
         </div>
         <v-divider class="page-header-divider" />
       </div>
-      <v-alert v-if="error" type="error" variant="tonal" class="mb-4">{{ error }}</v-alert>
+      <CollectionPager :names="['legal_drafts', 'legal_releases']" />
+<v-alert v-if="error" type="error" variant="tonal" class="mb-4">{{ error }}</v-alert>
       <v-alert v-if="success" type="success" variant="tonal" class="mb-4">{{ success }}</v-alert>
       <v-btn variant="text" :disabled="busy" @click="workspace.reload">Actualizar</v-btn>
       <v-card class="pa-5 mb-6" variant="outlined">
@@ -100,6 +101,7 @@
   </LayoutDefault>
 </template>
 <script setup>
+import CollectionPager from "@/components/admin/CollectionPager.vue";
 import { computed, reactive, ref } from "vue";
 import LayoutDefault from "@/components/Layout/Layoutmain.vue";
 import { useAdminWorkspace } from "@/composables/useAdminWorkspace";

@@ -1,3 +1,4 @@
+/* eslint-disable max-len */
 /**
  * @typedef {"system" | "user" | "assistant"} AIRole
  *
@@ -8,6 +9,8 @@
  * @typedef {Object} GenerateTextInput
  * @property {AIMessage[]} messages
  * @property {number=} temperature
+ * @property {number=} timeoutMs
+ * @property {boolean=} allowFallback
  * @property {number=} maxTokens
  * @property {string=} model
  * @property {Record<string, unknown>=} metadata
@@ -17,12 +20,15 @@
  * @property {string} provider
  * @property {string} model
  * @property {{inputTokens?: number, outputTokens?: number,
- * totalTokens?: number}=} usage
+ * totalTokens?: number, cachedInputTokens?: number, cacheWriteTokens?: number,
+ * reasoningTokens?: number}=} usage
  *
  * @typedef {Object} StructuredOutputInput
  * @property {AIMessage[]} messages
  * @property {unknown=} schema
  * @property {number=} temperature
+ * @property {number=} timeoutMs
+ * @property {boolean=} allowFallback
  * @property {number=} maxTokens
  * @property {string=} model
  * @property {Record<string, unknown>=} metadata
@@ -32,7 +38,8 @@
  * @property {string} provider
  * @property {string} model
  * @property {{inputTokens?: number, outputTokens?: number,
- * totalTokens?: number}=} usage
+ * totalTokens?: number, cachedInputTokens?: number, cacheWriteTokens?: number,
+ * reasoningTokens?: number}=} usage
  *
  * @typedef {Object} EmbeddingInput
  * @property {string | string[]} input

@@ -1,34 +1,30 @@
 import { computed, ref } from "vue";
 import { defineStore } from "pinia";
-import { onAuthStateChanged } from "firebase/auth";
-import { auth } from "@/plugins/Firebase/firebase";
-import { getAccountAccessStatus } from "@/services/accountService";
 import { useAppContextStore } from "@/store/appContext";
 
 export const useAuthStore = defineStore("auth", () => {
   const currentUser = ref(null);
   const isReady = ref(false);
-  let unsubscribe = null;
 
+  let initialization;
   function initAuth() {
-    if (unsubscribe) {
-      return unsubscribe;
-    }
+    if (initialization) return initialization;
+    initialization = initialize().catch(error => { initialization = null; throw error; });
+    return initialization;
+  }
 
-    unsubscribe = onAuthStateChanged(auth, (user) => {
-      currentUser.value = user;
-      isReady.value = true;
-
-      const appContext = useAppContextStore();
-      if (user?.uid) {
-        appContext.loadForUser(user.uid);
-        getAccountAccessStatus().catch(() => {});
-      } else {
-        appContext.reset();
-      }
+  async function initialize() {
+    const { observeAuth } = await import("@/plugins/Firebase/authObserver");
+    return new Promise(resolve => {
+      observeAuth(user => {
+        currentUser.value = user;
+        isReady.value = true;
+        const appContext = useAppContextStore();
+        if (user?.uid) appContext.loadForUser(user.uid).catch(error => console.error("Could not load account context", error));
+        else appContext.reset();
+        resolve(user);
+      });
     });
-
-    return unsubscribe;
   }
 
   const isAuthenticated = computed(() => Boolean(currentUser.value));

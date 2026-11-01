@@ -18,20 +18,10 @@ const firebaseConfig = {
 // Inicializar Firebase
 const firebaseApp = initializeApp(firebaseConfig);
 
-export const auth = getAuth(firebaseApp);
 export const app = firebaseApp;
 
 // Opt-in only; a demo project cannot reach real Firebase resources.
 export const useEmulators = import.meta.env.VITE_USE_FIREBASE_EMULATORS === "true";
-if (useEmulators) {
-  if (!firebaseConfig.projectId?.startsWith("demo-") ||
-      !["localhost", "127.0.0.1"].includes(window.location.hostname)) {
-    throw new Error("Los emuladores requieren un proyecto demo- y acceso local.");
-  }
-  connectAuthEmulator(auth, "http://127.0.0.1:9099", { disableWarnings: true });
-  connectFunctionsEmulator(getFunctions(app, import.meta.env.VITE_FIREBASE_FUNCTIONS_REGION || "southamerica-east1"), "127.0.0.1", 5001);
-}
-
 // Missing site keys leave help/navigation available; protected calls fail closed.
 // Debug tokens are intentionally not supported in production bundles.
 if (!useEmulators && appCheckSiteKey) {
@@ -39,4 +29,14 @@ if (!useEmulators && appCheckSiteKey) {
     provider: new ReCaptchaEnterpriseProvider(appCheckSiteKey),
     isTokenAutoRefreshEnabled: true,
   });
+}
+
+export const auth = getAuth(firebaseApp);
+if (useEmulators) {
+  if (!firebaseConfig.projectId?.startsWith("demo-") ||
+      !["localhost", "127.0.0.1"].includes(window.location.hostname)) {
+    throw new Error("Los emuladores requieren un proyecto demo- y acceso local.");
+  }
+  connectAuthEmulator(auth, `http://127.0.0.1:${import.meta.env.VITE_AUTH_EMULATOR_PORT || 9099}`, { disableWarnings: true });
+  connectFunctionsEmulator(getFunctions(app, import.meta.env.VITE_FIREBASE_FUNCTIONS_REGION || "southamerica-east1"), "127.0.0.1", Number(import.meta.env.VITE_FUNCTIONS_EMULATOR_PORT || 5001));
 }

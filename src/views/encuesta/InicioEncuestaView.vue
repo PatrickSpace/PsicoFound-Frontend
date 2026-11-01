@@ -8,7 +8,7 @@
     >
       <v-app-bar-title>
         <img
-          src="/brand/lurems-isotipo-transparent.png"
+          src="@/assets/img/lurems-isotipo-transparent.webp"
           alt="Lurems"
           class="intro-logo"
         />

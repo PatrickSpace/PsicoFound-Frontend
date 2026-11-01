@@ -1,5 +1,12 @@
 # Guía de validación local
 
+Estado del candidato revisado el **31/10/2026**:
+[expediente de producción](revision-produccion-2026-10-31.md). La nueva pasada
+local aprobó 50 unitarias frontend, 117 backend, build y Knip; auditoría de Functions
+fallida y lint observado durante cambios paralelos. Quality de `4896783` falló en
+dependencias antes de ejecutar integración/navegador. Los comandos siguientes
+siguen siendo procedimientos; ejecutarlos en otro SHA exige nueva evidencia.
+
 Referencia: 2026-10-15. Comandos contrastados con `package.json` y los runners actuales.
 Esta guía explica cómo reproducir pruebas; no afirma una ejecución nueva.
 Los resultados fechados están en los [informes históricos](../archive/functional/informe-cierre-tecnico-piloto.md)

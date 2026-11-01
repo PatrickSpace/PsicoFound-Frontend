@@ -3,6 +3,7 @@ import {
   doc,
   getDoc,
   getDocs,
+  limit,
   query,
   where,
 } from "firebase/firestore";
@@ -30,7 +31,7 @@ export async function getTherapistByUserUid(uid) {
   if (!uid) return null;
 
   const therapistsRef = collection(db, THERAPISTS_COLLECTION);
-  const therapistsQuery = query(therapistsRef, where("uid", "==", uid));
+  const therapistsQuery = query(therapistsRef, where("uid", "==", uid), limit(1));
   const snapshot = await getDocs(therapistsQuery);
   const item = snapshot.docs[0];
 

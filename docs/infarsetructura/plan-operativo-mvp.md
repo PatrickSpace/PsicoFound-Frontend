@@ -2,6 +2,11 @@
 
 Fecha: 21 de octubre de 2026 · Zona operativa: America/Lima.
 
+Actualización de estado **31/10/2026**: consultar el [plan de salida](../salida-a-produccion.md)
+y la [revisión de producción](../operations/revision-produccion-2026-10-31.md).
+Este plan conserva propuestas y no acredita su ejecución. La encuesta actual es
+híbrida con OpenAI. Las pruebas aplazadas por el titular siguen aplazadas.
+
 Estado: planificación; no acredita configuración remota, pruebas ejecutadas ni despliegues. Revisión del repositorio en `7bb347c` y de la documentación vigente. Los recursos y cuotas descritos en informes anteriores deben reconfirmarse en consola antes de darlos por activos.
 
 La ejecución de cada punto se desarrolla en [Estrategia de implementación](estrategia-implementacion.md).
@@ -31,7 +36,7 @@ El control principal será una entrega pequeña y trazable: pruebas automáticas
 | Mantenimiento | `runtime_controls/maintenance`, wrapper de callables y reglas | Es un control compartido; requiere acceso privilegiado para activarlo y retirarlo. No equivale a una página de mantenimiento ni detiene Admin SDK o Authentication. |
 | Logs | Wrapper con `operation`, `correlationId`, `elapsedMs`, `code`, mensajes `callable completed` y `callable failed` | Reutilizar Cloud Logging. Los fallos manejados se registran como warning; buscar solo severity ERROR omitiría incidentes. |
 | Alertas y revisión | `config/pilot-alerts.example.json` y `config/pilot-staging.example.json` contienen pendientes | Son plantillas; no demuestran alertas, canales, presupuesto ni respaldo activos. |
-| Encuesta | Configuración versionada `SURVEY_INPUT_MODE=guided`, límite 30 envíos/cuenta/día y 2 operaciones globales; envío sin secreto Gemini vinculado | Preservar modo guiado en cada release y rollback. Reactivar IA es otro cambio con sus requisitos. |
+| Encuesta | Configuración local híbrida con OpenAI `gpt-6-luna`; límite documentado 30 envíos/cuenta/día y 2 operaciones globales, pendiente de verificar en cada release | Preservar políticas aprobadas, continuación guiada y ayuda. Cambios de cuotas/contexto/modelo requieren validación; opciones guiadas no consumen inferencias. |
 | Analítica | `@vercel/analytics`, condicionada por `VITE_VERCEL_ANALYTICS_ENABLED` | No sustituye monitoreo de Firebase ni captura integral de errores del navegador. |
 | Pagos y archivos | Conciliación manual documentada, sin scheduler de vencimiento; Storage no verificado en consola | Asignar revisión manual de pendientes. Inventariar buckets y archivos antes de excluirlos del respaldo. |
 
@@ -114,7 +119,7 @@ No modificar los runners de CI para apuntarlos a Vercel. Las pruebas negativas r
 - Mantener fuente y configuración como referencia: `maxInstances` y otras opciones en código pueden sobrescribir cambios de consola al desplegar. Registrar cualquier intervención urgente y reconciliarla después. [Administración de Functions](https://firebase.google.com/docs/functions/manage-functions).
 - Revisar DNS, renovación del dominio y TLS administrado; dejar instrucciones de recuperación de cuentas del registrador. Evitar cambios DNS como mecanismo habitual de rollback.
 
-`verify:pilot-config` es un verificador offline diseñado para un manifiesto de staging y exige, entre otras cosas, aprobaciones del proveedor. No valida consolas, no certifica el modo guiado ni una publicación legal administrada, y no es hoy una puerta automática adecuada para este backend productivo compartido. No cambiar `APP_ENV` a `staging` para hacerlo pasar. Usar una revisión explícita de las comprobaciones aplicables y planificar su adaptación solo cuando se implemente.
+`verify:pilot-config` es un verificador offline diseñado para un manifiesto de staging y exige, entre otras cosas, aprobaciones del proveedor. No valida consolas, no certifica la encuesta híbrida ni una publicación legal administrada, y no es hoy una puerta automática adecuada para este backend productivo compartido. No cambiar `APP_ENV` a `staging` para hacerlo pasar. Usar una revisión explícita de las comprobaciones aplicables y planificar su adaptación solo cuando se implemente.
 
 ## 7. Monitoreo mínimo
 
@@ -147,7 +152,7 @@ Definir un presupuesto mensual del propietario para todo `psicosaas-3c819`, incl
 
 Configurar avisos al 50%, 80% y 100% del presupuesto y una alerta de previsión. Son avisos, no un corte garantizado del gasto. No suspender automáticamente la facturación como respuesta: puede dejar sin servicio el MVP. [Presupuestos de Cloud Billing](https://docs.cloud.google.com/billing/docs/how-to/budgets).
 
-La guía histórica registra reCAPTCHA en 250 evaluaciones/día, TTL de una hora y tres dominios autorizados. Confirmar valores reales antes de planificar capacidad; son evaluaciones, no un máximo equivalente de usuarios ni un costo cero garantizado. Mantener por ahora los límites del modo guiado y observar rechazos; las dos operaciones simultáneas globales pueden ser un cuello de botella antes que `maxInstances`.
+La guía histórica registra reCAPTCHA en 250 evaluaciones/día, TTL de una hora y tres dominios autorizados. Confirmar valores reales antes de planificar capacidad; son evaluaciones, no un máximo equivalente de usuarios ni un costo cero garantizado. Mantener los límites aprobados de la encuesta híbrida y observar rechazos; las dos operaciones simultáneas globales pueden ser un cuello de botella antes que `maxInstances`.
 
 Revisar semanalmente lecturas/escrituras, invocaciones, almacenamiento, egreso, duración, logs y artefactos de compilación. Definir retención/limpieza de artefactos después de garantizar releases recuperables. Evitar consultas completas o pruebas de carga en la base compartida. Evaluar aumentos con uso real y una prueba aislada.
 

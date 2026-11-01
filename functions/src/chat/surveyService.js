@@ -8,6 +8,13 @@ const {surveyInputMode} = require("./surveyPolicy");
 const {CRISIS_REPLY, getCrisisResult} = require("../safety/suicideRisk");
 const {getActiveChatSession} = require("./session");
 const {getRecentHistory} = require("./history");
+const logger = require("firebase-functions/logger");
+const {buildProfileChatMessages} = require("../ai/profilePrompt");
+const {buildProfileChatResponseSchema} = require("../ai/responseSchemas");
+const {createAdmissionControl, keyFor} = require("../ai/admissionControl");
+const {surveyAttemptCount} = require("./surveyAttempts");
+const {OPERATION_LEASE_MS, PROVIDER_TIMEOUT_MS} = require("../ai/admissionPolicy");
+const AI_EXHAUSTED_REPLY = "Puedes completar la admisión con las opciones guiadas, revisar tu resumen y continuar hacia la agenda. Los recursos de ayuda siguen disponibles.";
 
 const hash = (value) => createHash("sha256")
     .update(JSON.stringify(value)).digest("hex");
@@ -20,7 +27,7 @@ const AI_UNAVAILABLE_REPLY = "La asistencia con IA no está disponible en este m
 function chatLimits(env = process.env) {
   try {
     const policy = JSON.parse(env.CHAT_LIMITS_JSON || "null");
-    if (!policy || !/^[\w.-]{1,80}$/.test(policy.version) ||
+    if (!policy || typeof policy.version !== "string" || !/^[\w.-]{1,80}$/.test(policy.version) ||
         ![policy.requestsPerDay, policy.globalConcurrency]
             .every((value) => Number.isInteger(value) && value > 0 && value <= 10000)) {
       return null;
@@ -33,29 +40,27 @@ function chatLimits(env = process.env) {
 
 function createSurveyService({
   db, generate, now = Date.now, limits = chatLimits,
-  inputMode = surveyInputMode,
+  inputMode = surveyInputMode, admission = createAdmissionControl({db, now}),
+  telemetry = logger, authorize = () => {},
 }) {
   async function send(uid, data) {
+    const startedAt = now();
     const message = typeof data.message === "string" ? data.message.trim() : "";
     if (!message || message.length > 1200 ||
         !/^[A-Za-z0-9_-]{8,100}$/.test(data.requestId || "")) {
       throw new HttpsError("invalid-argument", "Revisa el mensaje y su identificador.");
     }
     const config = limits();
-    if (!config) {
-      throw new HttpsError("failed-precondition", "Los límites de uso todavía no están configurados. La ayuda sigue disponible.");
-    }
     const conversationRef = db.doc(`conversations/${uid}`);
     const profileRef = db.doc(`profiles/${uid}`);
     const operationRef = db.doc(`profile_chat_operations/${uid}_${data.requestId}`);
     const quotaRef = db.doc(`profile_chat_quotas/${uid}`);
-    const globalRef = db.doc("runtime_controls/chat_concurrency");
     const fingerprint = hash({message, sessionId: data.sessionId || "", turnId: data.turnId || "", option: data.option || null});
     const lease = randomUUID();
-    const globalKey = hash(uid);
+    const literalCrisis = getCrisisResult(message);
     const claim = await db.runTransaction(async (tx) => {
-      const [conversationSnap, profileSnap, operationSnap, quotaSnap, globalSnap] = await Promise.all(
-          [conversationRef, profileRef, operationRef, quotaRef, globalRef]
+      const [conversationSnap, profileSnap, operationSnap, quotaSnap] = await Promise.all(
+          [conversationRef, profileRef, operationRef, quotaRef]
               .map((ref) => tx.get(ref)));
       const previous = operationSnap.data();
       const conversation = conversationSnap.data() || {};
@@ -68,13 +73,10 @@ function createSurveyService({
       }
       validateTurn(data, conversation);
       const quota = quotaSnap.data() || {};
-      const global = globalSnap.data() || {};
       const day = new Date(now()).toISOString().slice(0, 10);
       const count = quota.day === day ? quota.count : 0;
-      const leases = Object.fromEntries(Object.entries(global.leases || {})
-          .filter(([, item]) => item.until > now()));
       if (quota.leaseUntil > now()) throw new HttpsError("aborted", "Ya tienes un envío en curso.");
-      if (count >= config.requestsPerDay || Object.keys(leases).length >= config.globalConcurrency) throw new HttpsError("resource-exhausted", "Se alcanzó el límite de uso. La ayuda sigue disponible.");
+      const attemptCount = surveyAttemptCount(conversation, !conversation.activeSessionId);
       const session = getActiveChatSession(conversation);
       const sessionId = session.id;
       const saved = profileSnap.data() || {};
@@ -86,27 +88,69 @@ function createSurveyService({
       if (inputMode() === "guided" && !getCrisisResult(message) && !data.option) {
         throw new HttpsError("invalid-argument", "Elige una de las opciones de la pregunta actual o ajusta tus preferencias.");
       }
-      const until = now() + 90000;
+      // Validated chips always use their canonical value; never fall through to AI.
+      const local = literalCrisis || (data.option ? localAnswer(data.option.value, activeTurn) : null) ||
+        (activeTurn.status === "complete" ? {data: {}} : null);
+      const guidedReason = !config ? "chat_policy_unavailable" :
+        count >= config.requestsPerDay ? "total_turns_exhausted" : null;
+      const until = now() + OPERATION_LEASE_MS;
       tx.set(operationRef, {uid, requestId: data.requestId, fingerprint, sessionId,
         status: "processing", lease, leaseUntil: until,
         createdAt: FieldValue.serverTimestamp()});
       tx.set(quotaRef, {day, count: count + 1, lease, leaseUntil: until,
-        policyVersion: config.version});
-      tx.set(globalRef, {leases: {...leases, [globalKey]: {lease, until}}});
-      tx.set(conversationRef, {uid, activeSessionId: sessionId, activeTurn,
+        policyVersion: config?.version || "guided-only"}, {merge: true});
+      tx.set(conversationRef, {uid, activeSessionId: sessionId, activeTurn, surveyAttemptCount: attemptCount,
         sessionStartedAt: session.startedAt, updatedAt: FieldValue.serverTimestamp()}, {merge: true});
-      return {profile, sessionId, activeTurn, noProgressTurns: Number(conversation.noProgressTurns || 0), helpReminder: Boolean(conversation.helpReminder)};
+      return {profile, sessionId, activeTurn, local, guidedReason, noProgressTurns: Number(conversation.noProgressTurns || 0), helpReminder: Boolean(conversation.helpReminder)};
     });
     if (claim.cached) return claim.cached;
 
+    let ticket;
+    let aiReason = claim.guidedReason;
+    let inferenceAttempted = false;
+    async function settleUsage(usage, outcome, model) {
+      try {
+        const accounting = await admission.settle(ticket, {usage, outcome, model});
+        if (accounting?.reservationExceeded) telemetry.warn("ai admission reservation exceeded", {operationKey: keyFor(`${uid}:${data.requestId}`)});
+      } catch (_) {
+        // Keep the reservation charged if accounting cannot be confirmed.
+        telemetry.warn("ai admission settlement unconfirmed", {operationKey: keyFor(`${uid}:${data.requestId}`)});
+      }
+    }
     try {
-      const literalCrisis = getCrisisResult(message);
-      const local = data.option ? localAnswer(message, claim.activeTurn) : null;
-      const answer = literalCrisis || local || await generate({
-        currentProfile: claim.profile,
-        history: await getRecentHistory(conversationRef.collection("messages"), claim.sessionId),
-        latestUserMessage: message,
-      });
+      let answer = claim.local;
+      if (!answer && !aiReason) {
+        authorize();
+        const input = {currentProfile: claim.profile, activeTurn: claim.activeTurn, helpPreviouslyShown: claim.helpReminder,
+          history: await getRecentHistory(conversationRef.collection("messages"), claim.sessionId),
+          latestUserMessage: message};
+        const payload = {messages: buildProfileChatMessages(input), schema: buildProfileChatResponseSchema()};
+        try {
+          ticket = await admission.reserve({uid, requestId: data.requestId,
+            sessionId: claim.sessionId, turnId: claim.activeTurn.id, lease, payload, globalConcurrency: config.globalConcurrency});
+        } catch (_) {
+          aiReason = "controls_unavailable";
+        }
+        if (ticket?.allowed) {
+          const remainingMs = 45000 - (now() - startedAt);
+          if (remainingMs <= 0) {
+            await settleUsage({inputTokens: 0, outputTokens: 0}, "not_dispatched");
+            aiReason = "admission_deadline";
+          } else {
+            inferenceAttempted = true;
+            try {
+              answer = await generate({...payload, timeoutMs: Math.min(PROVIDER_TIMEOUT_MS, remainingMs)});
+              await settleUsage(answer.usage, "success", answer.model);
+            } catch (error) {
+              await settleUsage(error.usage, "provider_failure", error.model);
+              throw error;
+            }
+          }
+        } else {
+          aiReason = aiReason || ticket?.reason || "controls_unavailable";
+        }
+      }
+      answer = answer || {data: {}, reply: AI_EXHAUSTED_REPLY};
       const helpMode = Boolean(literalCrisis || answer.riskSignal === "contextual");
       let clean = helpMode ? {} : sanitizeModelProfileData(answer.data || {});
       let conflict = null;
@@ -134,7 +178,7 @@ function createSurveyService({
         pendingConflicts: pendingConflicts.map((item) => ({...item,
           data: {[item.field]: item.next}})),
       } : answer.nextConfirmation || answer.confirmSoloConversar === true;
-      const activeTurn = helpMode ? claim.activeTurn :
+      const activeTurn = helpMode || (!claim.local && aiReason) ? claim.activeTurn :
         makeTurn(profile, claim.sessionId, confirmation);
       const answeredOverwrite = claim.activeTurn.kind ===
         "overwrite_confirmation" && Boolean(data.option);
@@ -156,11 +200,12 @@ function createSurveyService({
         helpMode,
         helpReminder: claim.helpReminder || helpMode,
         sessionId: claim.sessionId,
+        aiAvailability: {mode: aiReason ? "guided" : "hybrid", ...(aiReason ? {reason: aiReason} : {})},
       };
 
       await db.runTransaction(async (tx) => {
-        const [conversation, operation, quota, global] = await Promise.all(
-            [conversationRef, operationRef, quotaRef, globalRef]
+        const [conversation, operation, quota] = await Promise.all(
+            [conversationRef, operationRef, quotaRef]
                 .map((ref) => tx.get(ref)));
         if (conversation.data()?.activeSessionId !== claim.sessionId ||
             conversation.data()?.activeTurn?.id !== claim.activeTurn.id ||
@@ -174,7 +219,7 @@ function createSurveyService({
           updatedAt: stamp}, {merge: true});
         for (const [role, text] of [["user", message], ["assistant", reply]]) {
           tx.set(conversationRef.collection("messages").doc(`${role}_${data.requestId}`), {
-            role, text, sessionId: claim.sessionId, requestId: data.requestId,
+            role, text, modelContext: !helpMode && !aiReason, sessionId: claim.sessionId, requestId: data.requestId,
             createdAt: stamp,
             ...(role === "assistant" ? {
               suggestedOptions: helpMode ? [] : activeTurn.options,
@@ -203,15 +248,26 @@ function createSurveyService({
         }
         tx.update(operationRef, {status: "completed", result, leaseUntil: 0,
           updatedAt: stamp});
-        release(tx, quotaRef, globalRef, quota.data(), global.data(), lease, globalKey);
+        release(tx, quotaRef, quota.data(), lease);
+      });
+      telemetry.info("survey admission operation", {
+        accountKey: keyFor(uid), sessionKey: keyFor(claim.sessionId),
+        operationKey: keyFor(`${uid}:${data.requestId}`), day: new Date(now()).toISOString().slice(0, 10),
+        route: inferenceAttempted ? "ai" : "guided",
+        outcome: "completed", ...(aiReason ? {reason: aiReason} : {}),
       });
       return result;
     } catch (error) {
+      telemetry.info("survey admission operation", {
+        accountKey: keyFor(uid), sessionKey: keyFor(claim.sessionId),
+        operationKey: keyFor(`${uid}:${data.requestId}`), day: new Date(now()).toISOString().slice(0, 10),
+        route: inferenceAttempted ? "ai" : "guided", outcome: "failed",
+      });
       const providerUnavailable = error instanceof HttpsError &&
         error.details?.reason === "provider_unavailable";
       await db.runTransaction(async (tx) => {
-        const [conversation, operation, quota, global] = await Promise.all(
-            [conversationRef, operationRef, quotaRef, globalRef]
+        const [conversation, operation, quota] = await Promise.all(
+            [conversationRef, operationRef, quotaRef]
                 .map((ref) => tx.get(ref)));
         if (operation.data()?.lease === lease &&
             operation.data()?.status !== "completed") {
@@ -225,12 +281,12 @@ function createSurveyService({
               claim.activeTurn.question].filter(Boolean).join(" ");
             tx.set(conversationRef.collection("messages")
                 .doc(`user_${data.requestId}`), {
-              role: "user", text: message, sessionId: claim.sessionId,
+              role: "user", text: message, modelContext: false, sessionId: claim.sessionId,
               requestId: data.requestId, createdAt: stamp,
             });
             tx.set(conversationRef.collection("messages")
                 .doc(`assistant_${data.requestId}`), {
-              role: "assistant", text: fallbackReply,
+              role: "assistant", text: fallbackReply, modelContext: false,
               sessionId: claim.sessionId, requestId: data.requestId,
               suggestedOptions: claim.activeTurn.options,
               turnId: claim.activeTurn.id, createdAt: stamp,
@@ -241,7 +297,7 @@ function createSurveyService({
           tx.update(operationRef, {status: "failed", leaseUntil: 0,
             errorCode: "unconfirmed", updatedAt: FieldValue.serverTimestamp()});
         }
-        release(tx, quotaRef, globalRef, quota.data(), global.data(), lease, globalKey);
+        release(tx, quotaRef, quota.data(), lease);
       });
       if (providerUnavailable) {
         throw new HttpsError("unavailable", AI_UNAVAILABLE_REPLY,
@@ -290,13 +346,8 @@ function buildReply(answer, turn, {redirected, conflict, changed}) {
   return [acknowledgement, turn.question].filter(Boolean).join(" ");
 }
 
-function release(tx, quotaRef, globalRef, quota = {}, global = {}, lease, key) {
+function release(tx, quotaRef, quota = {}, lease) {
   if (quota.lease === lease) tx.update(quotaRef, {leaseUntil: 0});
-  if (global.leases?.[key]?.lease === lease) {
-    const leases = {...global.leases};
-    delete leases[key];
-    tx.set(globalRef, {leases});
-  }
 }
 
 module.exports = {

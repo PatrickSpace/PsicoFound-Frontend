@@ -32,7 +32,6 @@
     "vuetify": "^3.11.6"
   },
   "devDependencies": {
-    "@mdi/font": "^7.4.47",
     "@playwright/test": "^1.56.1",
     "@vitejs/plugin-vue": "^6.0.9",
     "knip": "6.39.0",

@@ -19,7 +19,7 @@ function wrapped(handler, accountStatus = "suspended", accessBlocked = false) {
   mock.method(https, "onCall", (options, callback) => callback);
   for (const method of ["info", "warn"]) mock.method(logger, method, () => {});
   const snapshot = (ref) => ({exists: true, data: () =>
-    ref.path.startsWith("users/") ? {accountStatus} : ref.path.startsWith("account_requests/") ? {accessBlocked} : {}});
+    ref.path.startsWith("users/") ? (typeof accountStatus === "object" ? accountStatus : {accountStatus}) : ref.path.startsWith("account_requests/") ? {accessBlocked} : {}});
   const db = {
     doc: (path) => ({path, get: async () => snapshot({path})}),
     runTransaction: async (fn) => fn({get: async (ref) => snapshot(ref), update: () => {}}),
@@ -68,4 +68,18 @@ test("legacy deletion operations cannot run in production, including with a poli
   process.env.FUNCTIONS_EMULATOR = "true";
   await assert.rejects(callable(request), {code: "failed-precondition"});
   assert.equal(called, false);
+});
+
+
+test("activity throttling never caches the wrapper suspension decision", async () => {
+  const user = {accountStatus: "active", lastActivityAt: firestore.Timestamp.now(),
+    activityWindowUntil: firestore.Timestamp.fromMillis(Date.now() + 15 * 60000)};
+  let called = 0;
+  const callable = wrapped(async function updateOwnProfile() {
+    called++; return "updated";
+  }, user);
+  assert.equal(await callable(request), "updated");
+  user.accountStatus = "suspended";
+  await assert.rejects(callable(request), (error) => error.code === "permission-denied" && error.details.reason === "account_suspended");
+  assert.equal(called, 1);
 });

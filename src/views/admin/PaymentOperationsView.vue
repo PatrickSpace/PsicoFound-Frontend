@@ -1,6 +1,7 @@
 <template><LayoutDefault layout><v-container v-if="workspace.active.value" class="pa-0">
-  <div class="page-header"><h1 class="text-h4 font-weight-bold">Conciliación y transferencias</h1><p>Registra comprobantes y transferencias verificados fuera del sistema. Ninguna acción de esta pantalla mueve dinero.</p></div>
-  <v-alert v-if="error" type="error" class="mb-4">{{ error }}</v-alert><v-btn class="mb-4" :loading="loading" @click="workspace.reload">Actualizar</v-btn>
+  <div class="page-header"><h1 class="text-h4 font-weight-bold">Conciliación y transferencias</h1><p>Los pagos automáticos se verifican con Mercado Pago. Atiende excepciones, devoluciones y transferencias pendientes; registra cada movimiento externo con evidencia.</p></div>
+  <CollectionPager :names="['payment_operations']" />
+<v-alert v-if="error" type="error" class="mb-4">{{ error }}</v-alert><v-btn class="mb-4" :loading="loading" @click="workspace.reload">Actualizar</v-btn>
   <v-text-field v-model="search" label="Buscar referencia, operación, paciente o profesional" clearable />
   <v-select v-model="filter" label="Estado del pago" :items="['Todas',...Object.keys(labels)]" />
   <v-checkbox v-model="overdue" label="Solo plazo terminado o que requiere revisión" />
@@ -57,16 +58,26 @@
         </template>
         <p v-else class="my-3">No se pueden registrar nuevas transferencias con este estado o saldo.</p>
       </template><p v-else>Sin obligación conciliada.</p>
-      <h2 class="text-subtitle-1 mt-6">Historial de decisiones</h2><p v-for="entry in selectedAudit" :key="entry.id">{{ adminDate(entry.createdAt) }} · {{ entry.actorUid }} · {{ entry.status }} · {{ entry.providerReference || 'Sin comprobante asociado' }} · {{ entry.note }}</p>
+      <template v-if="obligation?.status === 'recovery_review'">
+        <h2 class="text-h6 mt-4">Recuperación de fondos transferidos</h2>
+        <p>Por recuperar: {{ money(obligation.recoveryReviewMinor, obligation.currency) }}. Registra solo fondos ya recuperados y verificados.</p>
+        <v-text-field v-model="transferAmount" label="Importe recuperado" inputmode="decimal" />
+        <v-text-field v-model="transferReference" label="Referencia verificable de la recuperación" maxlength="180" />
+        <v-checkbox v-model="transferConfirmed" label="Verifiqué el ingreso de estos fondos" />
+        <v-btn :loading="saving" :disabled="!transferConfirmed || !transferAmount || !transferReference.trim()" @click="recordRecovery">Registrar recuperación</v-btn>
+      </template>
+      <CollectionPager :names="['professional_obligations','professional_transfers','support_requests','payment_audit']" /><h2 class="text-subtitle-1 mt-6">Historial de decisiones</h2><p v-for="entry in selectedAudit" :key="entry.id">{{ adminDate(entry.createdAt) }} · {{ entry.actorUid }} · {{ entry.status }} · {{ entry.providerReference || 'Sin comprobante asociado' }} · {{ entry.note }}</p>
     </template>
   </v-card-text><v-card-actions><v-btn :disabled="saving" @click="dialog=false">Cerrar</v-btn></v-card-actions></v-card></v-dialog>
 </v-container></LayoutDefault></template>
 <script setup>
+import CollectionPager from "@/components/admin/CollectionPager.vue";
 import { computed, onBeforeUnmount, ref, watch } from "vue";
 import { useRoute } from "vue-router";
 import LayoutDefault from "@/components/Layout/Layoutmain.vue";
 import { useAdminWorkspace } from "@/composables/useAdminWorkspace";
 import { adminCall, adminDate, watchAdminCollection } from "@/services/adminService";
+import { documentId, where } from "firebase/firestore";
 import { paymentWindow } from "@/utils/paymentDeadline";
 import { parseAmountMinor } from "@/utils/paymentRates";
 const route=useRoute();
@@ -92,10 +103,20 @@ const actions=computed(()=>{
 });
 function clearForm(){action.value='';reference.value='';note.value='';confirmed.value=false;transferAmount.value='';transferReference.value='';transferConfirmed.value=false;formError.value='';}
 const workspace=useAdminWorkspace(()=>{contextVersion++;appointmentContext.value=null;contextError.value='';contextLoading.value=false;operations.value=[];obligations.value=[];transfers.value=[];support.value=[];audit.value=[];dialog.value=false;selectedId.value='';saving.value=false;error.value='';clearForm();search.value=typeof route.query.operation==='string'?route.query.operation:'';},current=>{
- loading.value=true;let remaining=5;const failed=e=>{if(current()){error.value=e.message;operations.value=[];obligations.value=[];transfers.value=[];support.value=[];audit.value=[];loading.value=false;}};
- const stops=[['payment_operations',operations],['professional_obligations',obligations],['professional_transfers',transfers],['support_requests',support],['payment_audit',audit]].map(([name,target])=>watchAdminCollection(name,data=>{if(current()){target.value=data;if(--remaining<=0)loading.value=false;}},failed));
+ loading.value=true;let remaining=1;const failed=e=>{if(current()){error.value=e.message;operations.value=[];obligations.value=[];transfers.value=[];support.value=[];audit.value=[];loading.value=false;}};
+ const stops=[['payment_operations',operations]].map(([name,target])=>watchAdminCollection(name,data=>{if(current()){target.value=data;if(--remaining<=0)loading.value=false;if(typeof route.query.operation === "string" && data.some(item=>item.id===route.query.operation) && !selectedId.value)open(data.find(item=>item.id===route.query.operation));}},failed,{constraints:typeof route.query.operation === "string" ? [where(documentId(), "==", route.query.operation)] : []}));
  return ()=>stops.forEach(stop=>stop());
 });
+let stopDetails = () => {};
+watch(() => [dialog.value, selectedId.value, workspace.active.value], ([open, id, active]) => {
+ stopDetails(); obligations.value=[]; transfers.value=[]; support.value=[]; audit.value=[];
+ if (!open || !id || !active) return;
+ const current=workspace.capture();
+ const stops=[['professional_obligations',obligations,'operationId'],['professional_transfers',transfers,'operationId'],['support_requests',support,'paymentOperationId'],['payment_audit',audit,'operationId']].map(([name,target,field]) =>
+   watchAdminCollection(name, data=>{if(current() && selectedId.value===id)target.value=data;}, e=>{if(current())formError.value=e.message;}, {constraints:[where(field,'==',id)]}));
+ stopDetails=()=>stops.forEach(stop=>stop());
+});
+onBeforeUnmount(()=>stopDetails());
 async function loadContext(){
  const current=workspace.capture();const version=++contextVersion;
  appointmentContext.value=null;contextError.value='';contextLoading.value=false;
@@ -113,5 +134,6 @@ function open(item){selectedId.value=item.id;clearForm();dialog.value=true;}
 async function perform(name,data){if(saving.value)return;const current=workspace.capture();saving.value=true;formError.value='';try{await adminCall(name,data);if(current())clearForm();}catch(e){if(current())formError.value=e.message;}finally{if(current())saving.value=false;}}
 function review(){if(!confirmed.value)return;perform(action.value==='expired'?'expirePaymentReservation':'reviewPaymentOperation',{operationId:selectedId.value,status:action.value,providerReference:reference.value.trim(),note:note.value.trim()});}
 function recordTransfer(){if(!transferConfirmed.value)return;const amountMinor=parseAmountMinor(transferAmount.value);if(!amountMinor){formError.value='Ingresa un importe válido con hasta dos decimales.';return;}perform('recordProfessionalTransfer',{operationId:selectedId.value,transferReference:transferReference.value.trim(),amountMinor,currency:obligation.value.currency});}
+function recordRecovery(){if(!transferConfirmed.value)return;const amountMinor=parseAmountMinor(transferAmount.value);if(!amountMinor){formError.value='Ingresa un importe válido con hasta dos decimales.';return;}perform('recordProfessionalRecovery',{operationId:selectedId.value,transferReference:transferReference.value.trim(),amountMinor,currency:obligation.value.currency});}
 </script>
 <style scoped>p{overflow-wrap:anywhere}.v-btn{max-width:100%;height:auto;min-height:36px;padding-block:8px}:deep(.v-btn__content){white-space:normal}.v-card-title{white-space:normal}</style>

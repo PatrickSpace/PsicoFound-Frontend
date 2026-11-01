@@ -22,7 +22,16 @@ export async function seedFollowup({ therapySelectionCases = false } = {}) {
   assert.match(process.env.FIREBASE_AUTH_EMULATOR_HOST || "", /^(127\.0\.0\.1|localhost):\d+$/);
   const app = emulatorAdmin();
   const db = adminFirestore.getFirestore(app);
-  const reset = await fetch(`http://${process.env.FIRESTORE_EMULATOR_HOST}/emulator/v1/projects/${projectId}/databases/(default)/documents`, { method: "DELETE" });
+  let reset;
+  for (let attempt = 0; attempt < 3; attempt++) {
+    reset = await fetch(`http://${process.env.FIRESTORE_EMULATOR_HOST}/emulator/v1/projects/${projectId}/databases/(default)/documents`, { method: "DELETE" });
+    if (reset.ok) break;
+    const failure = await reset.text();
+    // Firestore triggers can still hold locks after the preceding assertion completed.
+    // Retry only the demo emulator's documented transient lock failure, never a failed application assertion.
+    if (!/Transaction lock timeout|ABORTED/.test(failure)) break;
+    await new Promise(resolve => setTimeout(resolve, 500 * (attempt + 1)));
+  }
   assert.equal(reset.ok, true, "Reset is restricted to the demo emulator database");
   for (const user of Object.values(accounts)) {
     const email = `${user.uid}@example.test`;

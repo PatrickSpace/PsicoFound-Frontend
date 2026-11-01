@@ -1,6 +1,7 @@
 <template><LayoutDefault layout><v-container v-if="workspace.active.value" class="pa-0">
   <div class="page-header"><h1 class="text-h4 font-weight-bold">Solicitudes de soporte</h1><p>Respuestas visibles para el titular. Este módulo no es una conversación terapéutica.</p></div>
-  <v-alert v-if="error" type="error" class="mb-4">{{ error }}</v-alert><v-btn class="mb-4" :loading="loading" @click="workspace.reload">Actualizar</v-btn>
+  <CollectionPager :names="['support_requests']" />
+<v-alert v-if="error" type="error" class="mb-4">{{ error }}</v-alert><v-btn class="mb-4" :loading="loading" @click="workspace.reload">Actualizar</v-btn>
   <v-text-field v-model="search" label="Buscar usuario, mensaje o referencia de pago" clearable />
   <v-select v-model="filter" label="Estado de soporte" :items="['Todas','open','in_progress','resolved']" />
   <v-data-table :headers="headers" :items="filtered" :loading="loading" :items-per-page="10">
@@ -28,7 +29,9 @@
   </v-card-text><v-card-actions><v-btn :disabled="saving" @click="dialog=false">Cancelar</v-btn><v-btn :loading="saving" :disabled="!confirmed || !response.trim()" @click="save">Guardar y avisar</v-btn></v-card-actions></v-card></v-dialog>
 </v-container></LayoutDefault></template>
 <script setup>
+import CollectionPager from "@/components/admin/CollectionPager.vue";
 import { computed, ref } from "vue";
+import { documentId, where } from "firebase/firestore";
 import { useRoute } from "vue-router";
 import LayoutDefault from "@/components/Layout/Layoutmain.vue";
 import { useAdminWorkspace } from "@/composables/useAdminWorkspace";
@@ -42,7 +45,7 @@ const filtered=computed(()=>items.value.filter(i=>(filter.value==='Todas'||i.sta
 const workspace=useAdminWorkspace(()=>{items.value=[];accountRequests.value=[];dialog.value=false;selected.value=null;response.value='';saving.value=false;error.value='';accountError.value='';search.value=typeof route.query.operation==='string'?route.query.operation:'';},current=>{
  loading.value=true;accountLoading.value=true;
  adminCall('getAdministrativeAccountRequests').then(data=>{if(current())accountRequests.value=data.items;}).catch(e=>{if(current())accountError.value=e.message;}).finally(()=>{if(current())accountLoading.value=false;});
- return watchAdminCollection('support_requests',data=>{if(current()){items.value=data;loading.value=false;}},e=>{if(current()){items.value=[];loading.value=false;error.value=e.message;}});
+ return watchAdminCollection('support_requests',data=>{if(current()){items.value=data;loading.value=false;if(typeof route.query.case === "string" && !selected.value && data[0])open(data[0]);}},e=>{if(current()){items.value=[];loading.value=false;error.value=e.message;}},{constraints:typeof route.query.case === 'string' ? [where(documentId(),'==',route.query.case)] : typeof route.query.operation === 'string' ? [where('paymentOperationId','==',route.query.operation)] : []});
 });
 function open(item){selected.value=item;response.value='';status.value='in_progress';formError.value='';confirmed.value=false;requestId.value=adminRequestId();dialog.value=true;}
 async function save(){if(saving.value||!confirmed.value)return;const current=workspace.capture();saving.value=true;formError.value='';try{await adminCall('respondSupportRequest',{supportRequestId:selected.value.id,status:status.value,response:response.value,expectedVersion:selected.value.version||0,requestId:requestId.value});if(current())dialog.value=false;}catch(e){if(current())formError.value=e.message;}finally{if(current())saving.value=false;}}

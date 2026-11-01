@@ -99,6 +99,7 @@ const navigationByMode = {
     { name: "Herram.", icon: "mdi-tools", link: "/herramientas" },
   ],
   admin: [
+    { name: "Operaciones", icon: "mdi-view-dashboard-outline", link: "/admin/operaciones" },
     adminRequestsItem,
     adminUsersItem,
     { name: "Documentos legales", icon: "mdi-file-document-edit-outline", link: "/admin/documentos-legales" },

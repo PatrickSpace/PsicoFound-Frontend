@@ -2,6 +2,12 @@
 
 Fecha: 21 de octubre de 2026 · Zona operativa: America/Lima.
 
+Actualización **31/10/2026**: el [plan de salida](../salida-a-produccion.md) y la
+[revisión actual](../operations/revision-produccion-2026-10-31.md) distinguen
+acciones ejecutadas, propuestas y exclusiones. La encuesta vigente es híbrida con
+OpenAI; esta estrategia no reactiva pruebas aplazadas ni acredita presupuesto,
+respaldos, guardia o Quality del candidato actual por estar redactados aquí.
+
 Documento complementario del [Plan operativo](plan-operativo-mvp.md). Define trabajo futuro, orden, evidencias y aceptación. No implementa código, workflows, despliegues ni recursos de consola. Ninguna casilla se considera completada por existir este documento.
 
 ## 1. Cómo ejecutar la estrategia
@@ -80,7 +86,7 @@ El propietario puede asumir la responsabilidad técnica inicial. Debe quedar ide
 **Responsable:** operador técnico. **Prioridad:** P0.
 
 1. Revisar nombres y presencia de variables por alcance Vercel y en el build de Hosting, sin imprimir valores sensibles. Preparar una matriz de configuración pública funcional: proyecto, región, App Check y documentos vigentes. No copiar automáticamente el `.env` local.
-2. Confirmar ausencia de modo emulador, debug tokens y secretos backend en bundles remotos. Mantener modo guiado en Functions y no vincular otra vez Gemini por recuperar una versión vieja.
+2. Confirmar ausencia de modo emulador, debug tokens y secretos backend en bundles remotos. Mantener la política aprobada de encuesta híbrida en Functions y no vincular Gemini por recuperar una versión vieja.
 3. Comparar dominios en Auth, retornos de email/OAuth y reCAPTCHA/App Check. Probar el dominio estable; no autorizar todos los previews para evitar administrar una lista ilimitada.
 4. Revisar Deployment Protection por plan y alcance. Una URL marcada «Production» en Vercel puede quedar pública aunque los previews estén protegidos; no considerar la protección un control que ya existe. Si proteger el dominio estable exige otro plan, decidir el costo o documentar su exposición y mantener permisos Firebase estrictos. No crear un login casero para el sitio de pruebas.
 5. Confirmar Vercel desde `main` y su relación con CI: Ready no equivale a Quality aprobado. Registrar la regla de no promover Firebase si el SHA correspondiente no tiene las comprobaciones requeridas.
@@ -108,7 +114,7 @@ El propietario puede asumir la responsabilidad técnica inicial. Debe quedar ide
 
 **Responsable:** operador técnico. **Prioridad:** P0 para revisión manual; adaptación automática P2.
 
-Usar como guía la lista de `config/pilot-staging.example.json`, pero revisar manualmente solo comprobaciones aplicables al backend productivo compartido y modo guiado. `scripts/verify-pilot-config.mjs` exige actualmente staging y aprobación del proveedor: no utilizarlo como certificación del entorno actual, no sustituir datos reales por fixtures y no declarar verificado lo que no consulta.
+Usar como guía la lista de `config/pilot-staging.example.json`, pero revisar manualmente solo comprobaciones aplicables al backend productivo compartido y encuesta híbrida. `scripts/verify-pilot-config.mjs` exige actualmente staging y aprobación del proveedor: no utilizarlo como certificación del entorno actual, no sustituir datos reales por fixtures y no declarar verificado lo que no consulta.
 
 La publicación legal administrada en Firestore se comprueba además de cualquier variable antigua. Las Functions aplicables deben conservar políticas de acceso y comerciales vigentes; las rutas no habilitadas permanecen cerradas.
 
@@ -126,7 +132,7 @@ La publicación legal administrada en Firestore se comprueba además de cualquie
 2. Configurar retención suficiente del historial Hosting: propuesta de al menos tres releases, siempre conservando la última estable. Mantener fuentes de al menos dos releases backend compatibles mediante Git.
 3. Para cada candidato, conservar el `dist` que se va a publicar, hash y variables públicas de build; usar lockfiles y Node consistente. No reconstruir desde una copia de trabajo sucia para hacer rollback.
 4. Registrar el acceso de consola que permite volver a la versión Hosting; comprobar límites del mecanismo Vercel disponible en el plan. Como alternativa Vercel, prever revert del commit y reconstrucción, con su mayor tiempo de recuperación.
-5. Revisar el redeploy backend como recuperación de fuentes, no como efecto del rollback Hosting. Confirmar que restaurarlo no cambia modo guiado, controles legales, cuotas, App Check ni secretos seguros vigentes.
+5. Revisar el redeploy backend como recuperación de fuentes, no como efecto del rollback Hosting. Confirmar que restaurarlo no cambia políticas de encuesta híbrida, controles legales, cuotas, App Check ni secretos seguros vigentes.
 6. Especificar el documento de mantenimiento: proyecto correcto, `runtime_controls/maintenance`, `enabled: true` y `startedAt` Timestamp servidor al activarlo; retiro con `enabled: false` tras la decisión de reapertura. Usar acceso privilegiado existente, registrar antes/después y no abrir reglas para editarlo desde un cliente ordinario.
 
 **Evidencia:** release recuperable, matriz de compatibilidad, artefacto/hash, acceso probado y pasos de activación/retiro de mantenimiento.
@@ -270,7 +276,7 @@ Al final de la semana, confirmar presupuesto elegido, límites de encuesta/reCAP
 | Mejora | Disparador | Implementación mínima futura | Criterio de aceptación |
 | --- | --- | --- | --- |
 | Deploy manual desde GitHub Actions | Errores de checkout, variables o trazabilidad en entregas repetidas | Workflow manual, SHA elegido, artefacto de build con configuración productiva, entorno protegido, identidad federada GCP y exclusión mutua por destino; conservar Vercel actual | No hay secretos duraderos en PR ni deploy de un SHA sin Quality; rollback usa release identificado. |
-| Adaptar verificador offline | Revisión manual repetitiva o configuración divergente | Distinguir producción compartida, modo guiado y publicación legal administrada; mantener verificaciones de consola independientes | No exige habilitar IA ni cambiar `APP_ENV` para certificar el flujo actual. |
+| Adaptar verificador offline | Revisión manual repetitiva o configuración divergente | Distinguir producción compartida, encuesta híbrida, suspensión/conservación y publicación legal administrada; mantener verificaciones de consola independientes | No habilita borrados ni cambia `APP_ENV` para certificar el flujo actual. |
 | Errores automáticos de navegador | Fallos de JS repetidos que smoke/soporte no explican | Instrumentación mínima, revisión de datos enviados y contexto limitado de release/ruta sin información clínica | Diagnóstico útil sin mensajes, notas, tokens ni identificadores personales en telemetría. |
 | Smoke automatizado remoto | Frecuencia de releases que hace poco fiable la revisión manual | Flujo acotado con cuentas dedicadas, escritura reversible, credenciales protegidas y sin pruebas de carga/borrado | No toca pacientes, slots ni políticas reales; falla con evidencia y no repite efectos financieros. |
 | PITR u otra protección de datos | RPO diario insuficiente o impacto creciente de reservas/pagos | Evaluar costo/alcance en Firestore y ensayar recuperación/reconciliación | RPO menor demostrado y camino a `(default)` conocido. |

@@ -9,6 +9,8 @@ export type GenerateTextInput = {
   messages: AIMessage[];
   temperature?: number;
   maxTokens?: number;
+  timeoutMs?: number;
+  allowFallback?: boolean;
   model?: string;
   metadata?: Record<string, unknown>;
 };
@@ -22,6 +24,9 @@ export type GenerateTextResult = {
     inputTokens?: number;
     outputTokens?: number;
     totalTokens?: number;
+    cachedInputTokens?: number;
+    cacheWriteTokens?: number;
+    reasoningTokens?: number;
   };
 };
 
@@ -30,6 +35,8 @@ export type StructuredOutputInput = {
   schema?: unknown;
   temperature?: number;
   maxTokens?: number;
+  timeoutMs?: number;
+  allowFallback?: boolean;
   model?: string;
   metadata?: Record<string, unknown>;
 };
@@ -43,6 +50,9 @@ export type StructuredOutputResult<T = unknown> = {
     inputTokens?: number;
     outputTokens?: number;
     totalTokens?: number;
+    cachedInputTokens?: number;
+    cacheWriteTokens?: number;
+    reasoningTokens?: number;
   };
 };
 

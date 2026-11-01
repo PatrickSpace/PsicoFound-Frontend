@@ -66,7 +66,7 @@ export function useTherapyWorkspace(loadItems = async () => []) {
         throw new Error("Selecciona la vista de paciente o psicólogo.");
       }
       if (!gate.isCurrent(ticket)) return;
-      const loadedItems = await loadItems(loadedTherapies, { mode: selectedMode, uid: selectedUid });
+      const loadedItems = await loadItems(loadedTherapies, { mode: selectedMode, uid: selectedUid, isCurrent: () => gate.isCurrent(ticket) });
       if (!gate.isCurrent(ticket)) return;
       therapies.value = loadedTherapies;
       items.value = itemsForContext(loadedItems, loadedTherapies, selectedMode, selectedUid);

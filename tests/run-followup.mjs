@@ -26,6 +26,12 @@ try {
     probe.once("error", () => reject(new Error("Port 5178 must be free: validation must launch its own isolated frontend")));
     probe.listen(5178, "127.0.0.1", () => probe.close(resolve));
   });
+  if (process.env.OPERATIONS_REVIEW) {
+    assert.equal(env.GCLOUD_PROJECT, "demo-lurems-followup");
+    process.env.FUNCTIONS_EMULATOR = "true";
+    const {seedOperationsReview} = await import("./helpers/operations-review.mjs");
+    await seedOperationsReview();
+  }
   if (process.env.CARE_GUIDE_VALIDATION) {
     await run(["--test", "tests/patient-care-guide.integration.test.mjs"]);
     await run(["--test", "tests/professional-setup.integration.test.mjs"]);
@@ -34,6 +40,11 @@ try {
   if (process.env.CARE_GUIDE_REVIEW) {
     const { seedPatientCare } = await import('./helpers/patient-care-fixture.mjs');
     await seedPatientCare();
+  }
+  if (process.env.PAYMENT_AUTOMATION_VALIDATION) {
+    await run(["--test", "tests/payment-automation.integration.test.mjs"]);
+    await run(["--test", "tests/pilot-payments.integration.test.mjs"]);
+    if (!process.env.PILOT_BROWSER_ONLY) process.exit(0);
   }
   if (process.env.ADMIN_ONLY) {
     await run(["--test", "tests/admin-pilot.integration.test.mjs"]);
@@ -59,23 +70,34 @@ try {
     await run(["--test", "tests/pilot-survey.integration.test.mjs"]);
     process.exit(0);
   }
+  if (process.env.BACKEND_COST_ONLY) {
+    await run(["--test", "tests/matching-cost.integration.test.mjs"]);
+    await run(["--test", "tests/professional-setup.integration.test.mjs"]);
+    await run(["--test", "tests/account-inactivity.integration.test.mjs"]);
+    await run(["--test", "tests/paymentRates.integration.test.mjs"]);
+    await run(["--test", "tests/appointments.integration.test.mjs"]);
+    await run(["--test", "tests/patient.integration.test.mjs"]);
+    process.exit(0);
+  }
   if (process.env.PILOT_ACCOUNTS_ONLY) {
     await run(["--test", "tests/pilot-accounts.integration.test.mjs"]);
     await run(["--test", "tests/account-inactivity.integration.test.mjs"]);
     process.exit(0);
   }
   if (process.env.LEGAL_VALIDATION) await run(["--test", "tests/legal-documents.integration.test.mjs"]);
-  if (!process.env.CARE_GUIDE_REVIEW && !process.env.LEGAL_VALIDATION && !process.env.PILOT_BROWSER_ONLY && !process.env.PAYMENT_DEADLINE_ONLY && !process.env.ADMIN_BROWSER_ONLY) {
+  if (!process.env.OPERATIONS_REVIEW && !process.env.CARE_GUIDE_REVIEW && !process.env.LEGAL_VALIDATION && !process.env.PILOT_BROWSER_ONLY && !process.env.PAYMENT_DEADLINE_ONLY && !process.env.ADMIN_BROWSER_ONLY) {
   await run(["--test", "tests/followup.integration.test.mjs"]);
   await run(["--test", "tests/appointments.integration.test.mjs"]);
   await run(["--test", "tests/professional-setup.integration.test.mjs"]);
   await run(["--test", "tests/patient-care-guide.integration.test.mjs"]);
   if (process.env.PILOT_VALIDATION) {
+    await run(["--test", "tests/matching-cost.integration.test.mjs"]);
     await run(["--test", "tests/admin-pilot.integration.test.mjs"]);
     await run(["--test", "tests/legal-documents.integration.test.mjs"]);
     await run(["--test", "tests/pilot-operations.integration.test.mjs"]);
     await run(["--test", "tests/paymentRates.integration.test.mjs"]);
     await run(["--test", "tests/pilot-payments.integration.test.mjs"]);
+    await run(["--test", "tests/payment-automation.integration.test.mjs"]);
     await run(["--test", "tests/pilot-accounts.integration.test.mjs"]);
     await run(["--test", "tests/account-inactivity.integration.test.mjs"]);
     await run(["--test", "tests/pilot-survey.integration.test.mjs"]);
@@ -92,12 +114,17 @@ try {
     await new Promise((resolve) => setTimeout(resolve, 250));
   }
   if (!ready) throw new Error("The isolated frontend did not become ready");
+  if (process.env.OPERATIONS_REVIEW) {
+    console.log("OPERATIONS DEMO ready on http://127.0.0.1:5178; synthetic data only. Ctrl-C to stop.");
+    await new Promise(resolve => process.once("SIGTERM", resolve));
+    process.exit(0);
+  }
   if (process.env.CARE_GUIDE_REVIEW) {
     console.log('CARE GUIDE DEMO ready on http://127.0.0.1:5178; synthetic data only. Ctrl-C to stop.');
     await new Promise(resolve => process.once('SIGTERM', resolve));
     process.exit(0);
   }
-  if (process.env.AGENDA_VALIDATION && !process.env.PAYMENT_DEADLINE_ONLY && !process.env.ADMIN_BROWSER_ONLY) await run(["node_modules/@playwright/test/cli.js", "test", "--config", "playwright.lima.config.js"]);
+  if (process.env.AGENDA_VALIDATION && !process.env.PAYMENT_DEADLINE_ONLY && !process.env.ADMIN_BROWSER_ONLY) await run(["node_modules/@playwright/test/cli.js", "test", "--config", "playwright.lima.config.js", ...(process.env.LIMA_RETRY_FAILED ? ["--last-failed"] : [])]);
   await run(["node_modules/@playwright/test/cli.js", "test", ...(process.env.VALIDATION_GREP ? ["--grep", process.env.VALIDATION_GREP] : []), ...(process.env.LEGAL_VALIDATION ? ["tests/browser/legal-documents.spec.mjs"] : process.env.ADMIN_BROWSER_ONLY ? ["tests/browser/admin-pilot.spec.mjs"] : process.env.PAYMENT_DEADLINE_ONLY ? ["tests/browser/payment-deadline.spec.mjs"] : [])]);
 } finally {
   server?.kill("SIGTERM");

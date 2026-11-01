@@ -1,3 +1,6 @@
+/* eslint-disable max-len */
+const {PROVIDER_TIMEOUT_MS} = require("../admissionPolicy");
+const {sanitizeUsage} = require("../usage");
 const {
   AIProviderConfigurationError,
   AIProviderInvalidResponseError,
@@ -19,12 +22,13 @@ class OpenAIProvider {
     const data = await this.createResponse(input);
     const text = extractResponseText(data);
 
-    if (!text) {
+    if (!text || data.status === "incomplete" || data.status === "failed") {
       throw new AIProviderInvalidResponseError(
           "OpenAI devolvio una respuesta sin texto.",
           {
             provider: this.name,
-            model: input.model || this.defaultModel,
+            model: data.model || input.model || this.defaultModel,
+            usage: normalizeOpenAIUsage(data.usage),
           },
       );
     }
@@ -50,7 +54,7 @@ class OpenAIProvider {
 
     try {
       return {
-        data: JSON.parse(result.text),
+        data: parseStructuredObject(result.text),
         provider: result.provider,
         model: result.model,
         usage: result.usage,
@@ -61,7 +65,7 @@ class OpenAIProvider {
           {
             provider: this.name,
             model: result.model,
-            cause: error,
+            usage: result.usage,
           },
       );
     }
@@ -74,49 +78,80 @@ class OpenAIProvider {
           {
             provider: this.name,
             model: input.model || this.defaultModel,
+            usage: {inputTokens: 0, outputTokens: 0, totalTokens: 0},
           },
       );
     }
 
-    const response = await fetch(`${this.baseUrl}/responses`, {
-      method: "POST",
-      headers: {
-        "Authorization": `Bearer ${this.apiKey}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: input.model || this.defaultModel,
-        input: normalizeMessages(input.messages),
-        temperature: getTemperature(input.temperature),
-        max_output_tokens: input.maxTokens || 600,
-        reasoning: {effort: "none"},
-        store: false,
-        text: input.responseFormat ? {
-          format: input.responseFormat,
-          verbosity: "low",
-        } : undefined,
-      }),
+    const controller = new AbortController();
+    const timeoutMs = Number.isInteger(input.timeoutMs) && input.timeoutMs > 0 ?
+      Math.min(input.timeoutMs, PROVIDER_TIMEOUT_MS) : PROVIDER_TIMEOUT_MS;
+    let timer;
+    const deadline = new Promise((resolve, reject) => {
+      timer = setTimeout(() => {
+        controller.abort();
+        reject(new AIProviderUnavailableError("OpenAI agoto el tiempo de espera.", {
+          provider: this.name, model: input.model || this.defaultModel,
+          retryable: false,
+        }));
+      }, timeoutMs);
     });
+    try {
+      return await Promise.race([(async () => {
+        const response = await fetch(`${this.baseUrl}/responses`, {
+          method: "POST",
+          signal: controller.signal,
+          headers: {
+            "Authorization": `Bearer ${this.apiKey}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            model: input.model || this.defaultModel,
+            input: normalizeMessages(input.messages),
+            temperature: getTemperature(input.temperature),
+            max_output_tokens: input.maxTokens || 600,
+            reasoning: {effort: "none"},
+            service_tier: "default",
+            store: false,
+            text: input.responseFormat ? {
+              format: input.responseFormat,
+              verbosity: "low",
+            } : undefined,
+          }),
+        });
 
-    const data = await response.json().catch(() => ({}));
+        const data = await response.json().catch(() => ({}));
 
-    if (response.status === 429) {
-      throw new AIProviderRateLimitError("OpenAI excedio cuota o limite.", {
-        provider: this.name,
-        model: input.model || this.defaultModel,
-      });
+        if (response.status === 429) {
+          throw new AIProviderRateLimitError("OpenAI excedio cuota o limite.", {
+            provider: this.name,
+            model: input.model || this.defaultModel,
+            usage: normalizeOpenAIUsage(data.usage),
+          });
+        }
+
+        if (!response.ok) {
+          throw new AIProviderUnavailableError("OpenAI no esta disponible.", {
+            provider: this.name,
+            model: input.model || this.defaultModel,
+            usage: normalizeOpenAIUsage(data.usage),
+          });
+        }
+
+        return data;
+      })(), deadline]);
+    } finally {
+      clearTimeout(timer);
     }
-
-    if (!response.ok) {
-      throw new AIProviderUnavailableError("OpenAI no esta disponible.", {
-        provider: this.name,
-        model: input.model || this.defaultModel,
-        cause: data.error,
-      });
-    }
-
-    return data;
   }
+}
+
+function parseStructuredObject(text) {
+  const value = JSON.parse(text);
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    throw new Error("Expected a structured object");
+  }
+  return value;
 }
 
 function getTemperature(value) {
@@ -128,11 +163,14 @@ function normalizeOpenAIUsage(usage = {}) {
     return undefined;
   }
 
-  return {
+  return sanitizeUsage({
     inputTokens: usage.input_tokens,
     outputTokens: usage.output_tokens,
     totalTokens: usage.total_tokens,
-  };
+    cachedInputTokens: usage.input_tokens_details?.cached_tokens,
+    cacheWriteTokens: usage.input_tokens_details?.cache_write_tokens,
+    reasoningTokens: usage.output_tokens_details?.reasoning_tokens,
+  });
 }
 
 function extractResponseText(data = {}) {

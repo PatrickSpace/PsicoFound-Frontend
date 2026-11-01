@@ -28,7 +28,7 @@
 
               <v-col cols="12" class="">
                 <img
-                  src="/brand/lurems-logo-principal-transparent.png"
+                  src="@/assets/img/lurems-logo-principal-transparent.webp"
                   alt="Lurems"
                   class="home-logo mb-5"
                 />
@@ -74,7 +74,6 @@
 </template>
 <style scoped>
 .bg-image {
-  background-image: url("@/assets/img/bg-home.jpg");
   background-size: cover;
   background-repeat: no-repeat;
   background-position-y: bottom;

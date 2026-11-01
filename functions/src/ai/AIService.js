@@ -1,3 +1,5 @@
+/* eslint-disable max-len */
+const {sanitizeUsage, estimateCostNanoUsd, LUNA_PRICING} = require("./usage");
 const {correlation} = require("../operations/telemetry");
 const logger = require("firebase-functions/logger");
 const {AIProviderFactory} = require("./AIProviderFactory");
@@ -94,6 +96,7 @@ class AIService {
       fallback: Boolean(entry.fallback),
       operation: entry.operation,
       usage: sanitizeUsage(entry.usage),
+      ...costTelemetry(entry.provider, entry.model, entry.usage),
     });
   }
 
@@ -101,26 +104,24 @@ class AIService {
     this.logger.warn("ai provider failure", {
       ...(correlation() ? {correlationId: correlation()} : {}),
       provider: entry.provider,
-      model: entry.model,
+      model: entry.error?.model || entry.model,
       elapsedMs: entry.elapsedMs,
       fallback: Boolean(entry.fallback),
       operation: entry.operation,
       errorType: entry.error && entry.error.name,
       retryable: Boolean(entry.error && entry.error.retryable),
+      usage: sanitizeUsage(entry.error?.usage),
+      ...costTelemetry(entry.provider, entry.error?.model || entry.model, entry.error?.usage),
     });
   }
 }
 
-function sanitizeUsage(usage = {}) {
-  if (!usage || typeof usage !== "object") {
-    return undefined;
-  }
-
-  return Object.fromEntries(
-      ["inputTokens", "outputTokens", "totalTokens"]
-          .filter((key) => Number.isSafeInteger(usage[key]) && usage[key] >= 0)
-          .map((key) => [key, usage[key]]),
-  );
+function costTelemetry(provider, model, usage) {
+  if (provider !== "openai" || !(model === LUNA_PRICING.model || model?.startsWith(`${LUNA_PRICING.model}-`))) return {};
+  const cost = estimateCostNanoUsd(usage);
+  return cost === null ? {costStatus: "unknown"} : {
+    estimatedCostNanoUsd: cost, pricingVersion: LUNA_PRICING.version,
+  };
 }
 
 const aiService = new AIService();

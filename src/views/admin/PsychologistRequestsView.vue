@@ -1,6 +1,7 @@
 <template><LayoutDefault layout><v-container v-if="workspace.active.value" class="pa-0">
   <div class="page-header"><h1 class="text-h4 font-weight-bold">Solicitudes de psicólogos</h1><p>Revisa la información declarada antes de habilitar el acceso. Esta decisión no certifica acreditaciones externas.</p></div>
-  <v-alert v-if="error" type="error" class="mb-4">{{ error }}</v-alert><v-btn class="mb-4" :loading="loading" @click="workspace.reload">Actualizar</v-btn>
+  <CollectionPager :names="['psychologist_requests']" />
+<v-alert v-if="error" type="error" class="mb-4">{{ error }}</v-alert><v-btn class="mb-4" :loading="loading" @click="workspace.reload">Actualizar</v-btn>
   <v-text-field v-model="search" clearable label="Buscar solicitante, correo o colegiatura" />
   <v-select v-model="filter" label="Estado de solicitud" :items="['Todas','pending','approved','rejected']" />
   <v-data-table :headers="headers" :items="filtered" :loading="loading" :items-per-page="10">
@@ -19,15 +20,19 @@
   </v-card-text><v-card-actions><v-btn :disabled="saving" @click="dialog=false">Cerrar</v-btn><v-btn v-if="selected?.status==='pending'" :disabled="!confirmed || !action || action==='reject' && !reason.trim()" :loading="saving" @click="save">Guardar decisión</v-btn></v-card-actions></v-card></v-dialog>
 </v-container></LayoutDefault></template>
 <script setup>
+import CollectionPager from "@/components/admin/CollectionPager.vue";
+import { documentId, where } from "firebase/firestore";
+import { useRoute } from "vue-router";
 import { computed, ref } from "vue";
 import LayoutDefault from "@/components/Layout/Layoutmain.vue";
 import { useAdminWorkspace } from "@/composables/useAdminWorkspace";
 import { adminCall, adminDate, watchAdminCollection } from "@/services/adminService";
+const route=useRoute();
 const items=ref([]),loading=ref(false),error=ref(""),search=ref(""),filter=ref("Todas"),dialog=ref(false),selected=ref(null),saving=ref(false),formError=ref(""),action=ref(""),reason=ref(""),confirmed=ref(false);
 const headers=[{title:"Estado",key:"status"},{title:"Nombre",key:"professionalName"},{title:"Correo",key:"userEmail"},{title:"Recibida · Lima",key:"createdAt"},{title:"Acciones",key:"actions",sortable:false}];
 const fields=[['professionalName','Nombre'],['userEmail','Correo'],['licenseNumber','Colegiatura declarada'],['country','País'],['phone','Teléfono'],['yearsExperience','Años de experiencia declarados'],['specialties','Especialidades'],['approaches','Enfoques'],['modalities','Modalidades'],['practiceLocation','Consulta'],['professionalSummary','Resumen'],['motivation','Motivación']].map(([key,label])=>({key,label}));
 const filtered=computed(()=>items.value.filter(i=>(filter.value==='Todas'||i.status===filter.value)&&[i.professionalName,i.userEmail,i.licenseNumber].join(' ').toLowerCase().includes((search.value||'').toLowerCase())));
-const workspace=useAdminWorkspace(()=>{items.value=[];dialog.value=false;selected.value=null;saving.value=false;error.value='';reason.value='';action.value='';search.value='';},current=>{loading.value=true;return watchAdminCollection('psychologist_requests',data=>{if(current()){items.value=data.sort((a,b)=>(b.createdAt?.toMillis?.()||0)-(a.createdAt?.toMillis?.()||0));loading.value=false;}},e=>{if(current()){items.value=[];loading.value=false;error.value=e.message;}});});
+const workspace=useAdminWorkspace(()=>{items.value=[];dialog.value=false;selected.value=null;saving.value=false;error.value='';reason.value='';action.value='';search.value='';},current=>{loading.value=true;return watchAdminCollection('psychologist_requests',data=>{if(current()){items.value=data.sort((a,b)=>(b.createdAt?.toMillis?.()||0)-(a.createdAt?.toMillis?.()||0));loading.value=false;if(typeof route.query.case === "string" && !selected.value && data[0])open(data[0]);}},e=>{if(current()){items.value=[];loading.value=false;error.value=e.message;}},{constraints:typeof route.query.case === "string" ? [where(documentId(),"==",route.query.case)] : []});});
 function open(item){selected.value=item;reason.value='';action.value='';confirmed.value=false;formError.value='';dialog.value=true;}
 async function save(){if(saving.value||!confirmed.value)return;const current=workspace.capture();saving.value=true;try{await adminCall('reviewPsychologistApplication',{requestId:selected.value.id,action:action.value,rejectionReason:reason.value});if(current())dialog.value=false;}catch(e){if(current())formError.value=e.message;}finally{if(current())saving.value=false;}}
 </script>

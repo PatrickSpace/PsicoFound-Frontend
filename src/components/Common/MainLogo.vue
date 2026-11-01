@@ -10,8 +10,8 @@
     <img
       :src="
         compact
-          ? '/brand/lurems-isotipo-transparent.png'
-          : '/brand/lurems-logo-principal-transparent.png'
+          ? brandIcon
+          : brandLogo
       "
       alt="Lurems"
       class="main-logo__image"
@@ -20,6 +20,8 @@
 </template>
 
 <script setup>
+import brandIcon from "@/assets/img/lurems-isotipo-transparent.webp";
+import brandLogo from "@/assets/img/lurems-logo-principal-transparent.webp";
 defineProps({
   compact: {
     type: Boolean,

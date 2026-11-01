@@ -1,7 +1,5 @@
 import { createRouter, createWebHistory } from "vue-router";
-import { onAuthStateChanged } from "firebase/auth";
-import { getAccountAccessStatus } from "@/services/accountService";
-import { getUserById } from "@/services/userService";
+import { useAuthStore } from "@/store/auth";
 import { safeReturnPath } from "@/utils/returnPath";
 import { installChunkRecovery } from "@/utils/chunkRecovery";
 const InicioencuestaView = () => import("@/views/encuesta/InicioEncuestaView.vue");
@@ -32,22 +30,7 @@ const OnboardingEntryView = () => import("@/views/onboarding/OnboardingEntryView
 const PatientOnboardingView = () => import("@/views/onboarding/PatientOnboardingView.vue");
 const PsychologistOnboardingView = () => import("@/views/onboarding/PsychologistOnboardingView.vue");
 const PsychologistPendingView = () => import("@/views/onboarding/PsychologistPendingView.vue");
-import { auth } from "@/plugins/Firebase/firebase";
 import { useAppContextStore } from "@/store/appContext";
-import { getBlockingOnboardingRoute } from "@/services/onboardingService";
-
-function getCurrentAuthUser() {
-  if (auth.currentUser) {
-    return Promise.resolve(auth.currentUser);
-  }
-
-  return new Promise((resolve) => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      unsubscribe();
-      resolve(user);
-    });
-  });
-}
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -206,6 +189,12 @@ const router = createRouter({
       meta: { modes: ["psychologist"] },
     },
     {
+      path: "/admin/operaciones",
+      name: "admin-operations-center",
+      component: () => import("@/views/admin/OperationsCenterView.vue"),
+      meta: { modes: ["admin"] },
+    },
+    {
       path: "/admin/solicitudes-psicologos",
       name: "admin-psychologist-requests",
       component: PsychologistRequestsView,
@@ -247,7 +236,11 @@ const router = createRouter({
 router.beforeEach(async (to) => {
   // Legal documents must remain readable before login or email verification.
   if (to.meta.legalDocument) return;
-  const user = await getCurrentAuthUser();
+  // The landing page needs neither identity nor protected resources.
+  if (to.name === "home") return;
+  const authStore = useAuthStore();
+  await authStore.initAuth();
+  const user = authStore.currentUser;
   const isPublicRoute = Boolean(to.meta.public);
   const isGuestOnlyRoute = Boolean(to.meta.guestOnly);
 
@@ -259,7 +252,9 @@ router.beforeEach(async (to) => {
   }
 
   if (user) {
-    const profile = await getUserById(user.uid);
+    const context = useAppContextStore();
+    await context.loadForUser(user.uid);
+    const profile = context.userProfile;
     if (profile?.accountStatus === "suspended") {
       if (to.name === "suspended-account") return;
       return "/cuenta-suspendida";
@@ -299,7 +294,10 @@ router.beforeEach(async (to) => {
 
   if (user && !isPublicRoute) {
     const appContext = useAppContextStore();
-    await appContext.loadForUser(user.uid, { force: true });
+    await appContext.loadForUser(user.uid);
+    const [{ getAccountAccessStatus }, { getBlockingOnboardingRoute }] = await Promise.all([
+      import("@/services/accountService"), import("@/services/onboardingService"),
+    ]);
     if (appContext.userProfile) {
       const access = await getAccountAccessStatus();
       if (access.reason === "consent_required") {
@@ -348,7 +346,7 @@ function defaultRouteForMode(mode) {
   }
 
   if (mode === "admin") {
-    return "/admin/solicitudes-psicologos";
+    return "/admin/operaciones";
   }
 
   return "/dashboard";

@@ -312,7 +312,7 @@
                 <v-btn
                   color="error"
                   variant="text"
-                  prepend-icon="mdi-account-pause-outline"
+                  prepend-icon="mdi-account-clock-outline"
                   @click="openSuspension"
                   class="pf-btn-destructive"
                 >

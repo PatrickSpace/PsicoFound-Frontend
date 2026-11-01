@@ -32,6 +32,9 @@
         </v-card>
         <v-card class="pa-4 card-backgoundcustom">
           <h2 class="text-h6 mb-4">Línea de tiempo</h2>
+          <p class="text-caption mb-3">Los filtros se aplican a los eventos cargados. Carga más eventos para ampliar el histórico disponible.</p>
+          <v-alert v-if="moreError" type="error">{{ moreError }}</v-alert>
+          <v-btn v-if="hasMore" :loading="moreLoading" class="mb-4" @click="loadMoreEvents">Cargar más eventos</v-btn>
           <p v-if="!events.length">No hay eventos registrados para estos filtros. Esto no confirma ausencia de actividad anterior.</p>
           <v-timeline v-else side="end" density="compact">
             <v-timeline-item v-for="event in events" :key="event.id" dot-color="secondary" size="small">
@@ -60,18 +63,39 @@ import TherapyContextFilters from "@/components/Terapias/TherapyContextFilters.v
 import CitasDatatable from "@/components/Terapias/CitasDatatable.vue";
 import TerapiasDatatable from "@/components/Terapias/TerapiasDatatable.vue";
 import { useTherapyWorkspace } from "@/composables/useTherapyWorkspace";
-import { getLongitudinalHistoryByTherapy } from "@/services/longitudinalHistoryService";
+import { getLongitudinalHistoryPage } from "@/services/longitudinalHistoryService";
 import { formatTherapyDate } from "@/utils/therapyContext";
 
-const workspace = useTherapyWorkspace(async (therapies) => (await Promise.all(therapies.map(async (therapy) =>
-  (await getLongitudinalHistoryByTherapy(therapy.id)).map((event) => ({
-    ...event, terapeutaId: therapy.terapeutaId, pacienteNombre: therapy.pacienteNombre,
-  }))))).flat());
+let historyPages = new Map();
+const moreLoading = ref(false), moreError = ref("");
+const workspace = useTherapyWorkspace(async (therapies, {isCurrent}) => {
+  const pages = await Promise.all(therapies.map(async therapy => [therapy.id, await getLongitudinalHistoryPage(therapy.id)]));
+  if (!isCurrent()) return [];
+  historyPages = new Map(pages);
+  return pages.flatMap(([id, page]) => page.items.map(event => ({...event, terapeutaId: therapies.find(t => t.id === id).terapeutaId, pacienteNombre: therapies.find(t => t.id === id).pacienteNombre})));
+});
+const hasMore = computed(() => { workspace.items.value; return filteredTherapies.value.some(t => historyPages.get(t.id)?.hasMore); });
+async function loadMoreEvents() {
+  if (moreLoading.value) return;
+  const ticket = workspace.capture();
+  moreLoading.value = true; moreError.value = "";
+  try {
+    const pages = await Promise.all(filteredTherapies.value.filter(t => historyPages.get(t.id)?.hasMore).map(async therapy =>
+      [therapy, await getLongitudinalHistoryPage(therapy.id, historyPages.get(therapy.id))]));
+    if (!workspace.isCurrent(ticket)) return;
+    const additions = pages.flatMap(([therapy, page]) => {
+      historyPages.set(therapy.id, page);
+      return page.items.map(event => ({...event, terapeutaId: therapy.terapeutaId, pacienteNombre: therapy.pacienteNombre}));
+    });
+    workspace.items.value = [...new Map([...workspace.items.value, ...additions].map(item => [item.id, item])).values()];
+  } catch { if(workspace.isCurrent(ticket)) moreError.value = "No pudimos cargar más eventos. Intenta nuevamente."; }
+  finally { moreLoading.value = false; }
+}
 const { therapies, professional, loading, patientFilter, therapyFilter, filteredTherapies, visibleItems, revision } = workspace;
 const from = ref("");
 const until = ref("");
 const eventType = ref("");
-watch(revision, () => { from.value = ""; until.value = ""; eventType.value = ""; }, { flush: "sync" });
+watch(revision, () => { moreError.value = ""; from.value = ""; until.value = ""; eventType.value = ""; }, { flush: "sync" });
 const labels = {
   appointment_created: "Cita agendada", appointment_rescheduled: "Cita reprogramada",
   appointment_meeting_link_updated: "Enlace actualizado", appointment_updated: "Cita actualizada",

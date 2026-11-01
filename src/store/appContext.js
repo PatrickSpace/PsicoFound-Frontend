@@ -1,9 +1,5 @@
-import { doc, collection, query, where, onSnapshot } from "firebase/firestore";
-import { db } from "@/plugins/Firebase/firestore";
 import { computed, ref } from "vue";
 import { defineStore } from "pinia";
-import { getUserById } from "@/services/userService";
-import { getTherapistByUserUid } from "@/services/psicologoService";
 import { APP_ROLES, getUserRoles } from "@/utils/roles";
 
 const MODE_STORAGE_KEY = "psicofound-active-mode";
@@ -18,20 +14,22 @@ export const useAppContextStore = defineStore("appContext", () => {
   let stopIdentity;
   let stopProfessional;
   let watchingUid = "";
-  function watchIdentity(uid) {
+  async function watchIdentity(uid, version) {
+    const { watchUserIdentity, watchProfessionalIdentity } = await import("@/services/identityService");
+    if (loadedForUid.value !== uid || version !== loadVersion) return;
     stopIdentity?.(); stopProfessional?.(); watchingUid = uid;
-    stopIdentity = onSnapshot(doc(db, "users", uid), snapshot => {
-      if (watchingUid !== uid || loadedForUid.value !== uid) return;
+    stopIdentity = watchUserIdentity(uid, snapshot => {
+      if (watchingUid !== uid || loadedForUid.value !== uid || version !== loadVersion) return;
       userProfile.value = snapshot.exists() ? { ...snapshot.data(), id: uid } : null;
       ensureValidMode();
-    }, () => { if (watchingUid === uid) { userProfile.value = null; ensureValidMode(); } });
+    }, () => { if (watchingUid === uid && version === loadVersion) { userProfile.value = null; ensureValidMode(); } });
     if (userProfile.value?.accountStatus === "suspended") return;
-    stopProfessional = onSnapshot(query(collection(db, "therapists"), where("uid", "==", uid)), snapshot => {
-      if (watchingUid !== uid || loadedForUid.value !== uid) return;
+    stopProfessional = watchProfessionalIdentity(uid, snapshot => {
+      if (watchingUid !== uid || loadedForUid.value !== uid || version !== loadVersion) return;
       const item = snapshot.docs[0];
       therapistProfile.value = item ? { ...item.data(), id: item.id } : null;
       ensureValidMode();
-    }, () => { if (watchingUid === uid) { therapistProfile.value = null; ensureValidMode(); } });
+    }, () => { if (watchingUid === uid && version === loadVersion) { therapistProfile.value = null; ensureValidMode(); } });
   }
 
   const userRoles = computed(() =>
@@ -83,7 +81,19 @@ export const useAppContextStore = defineStore("appContext", () => {
 
   const canSwitchModes = computed(() => availableModes.value.length > 1);
 
-  async function loadForUser(uid, options = {}) {
+  let pendingLoad;
+  let pendingUid = "";
+  function loadForUser(uid, options = {}) {
+    if (pendingLoad && pendingUid === uid && !options.force) return pendingLoad;
+    pendingUid = uid;
+    const operation = performLoad(uid, options);
+    pendingLoad = operation;
+    const clearPending = () => { if (pendingLoad === operation) pendingLoad = null; };
+    operation.then(clearPending, clearPending);
+    return operation;
+  }
+
+  async function performLoad(uid, options = {}) {
     if (!uid) {
       reset();
       return;
@@ -96,6 +106,7 @@ export const useAppContextStore = defineStore("appContext", () => {
 
     const version = ++loadVersion;
     if (loadedForUid.value !== uid) {
+      watchingUid = ""; stopIdentity?.(); stopProfessional?.();
       userProfile.value = null;
       therapistProfile.value = null;
       loadedForUid.value = "";
@@ -103,6 +114,7 @@ export const useAppContextStore = defineStore("appContext", () => {
     loading.value = true;
 
     try {
+      const { getUserById, getTherapistByUserUid } = await import("@/services/identityService");
       const user = await getUserById(uid);
       const therapist = user?.accountStatus === "suspended" ? null : await getTherapistByUserUid(uid);
       if (version !== loadVersion) return;
@@ -114,7 +126,7 @@ export const useAppContextStore = defineStore("appContext", () => {
       };
       therapistProfile.value = therapist;
       loadedForUid.value = uid;
-      watchIdentity(uid);
+      await watchIdentity(uid, version);
       ensureValidMode();
     } catch (error) {
       if (version !== loadVersion) return;
@@ -126,7 +138,7 @@ export const useAppContextStore = defineStore("appContext", () => {
       };
       therapistProfile.value = null;
       loadedForUid.value = uid;
-      watchIdentity(uid);
+      await watchIdentity(uid, version);
       ensureValidMode();
     } finally {
       if (version === loadVersion) loading.value = false;
@@ -158,6 +170,7 @@ export const useAppContextStore = defineStore("appContext", () => {
 
   function reset() {
     loadVersion += 1;
+    pendingLoad = null; pendingUid = "";
     watchingUid = ""; stopIdentity?.(); stopProfessional?.();
     loading.value = false;
     userProfile.value = null;

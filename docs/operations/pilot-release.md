@@ -1,11 +1,50 @@
-# Operación y aceptación de staging
+# Release y operación del backend compartido
+
+Actualización: **31/10/2026, America/Lima**. Estado actual en el
+[plan de salida](../salida-a-produccion.md) y la [revisión del 31/10](revision-produccion-2026-10-31.md).
+
+## Procedimiento vigente
+
+Firebase Hosting es el sitio de usuarios y Vercel valida candidatos, pero ambos
+usan `psicosaas-3c819`. **Vercel no es staging aislado.** Regresión general,
+pruebas destructivas y carga usan emuladores/proyectos aislados. No cambiar
+`APP_ENV` a staging ni App Check a observe sobre el backend productivo compartido.
+
+1. Integrar y congelar SHA. Exigir Quality completo: `4896783` falló en auditoría
+   de Functions y omitió integración/navegador. Vercel exitoso no lo aprueba.
+2. Identificar versiones recuperables, contratos y configuración pública; registrar
+   la situación del respaldo. El ensayo real sigue aplazado por el titular.
+3. Para APIs nuevas, publicar primero índices/reglas/backend compatibles y esperar
+   READY antes de habilitar un frontend que las invoque: push a `main` activa Vercel.
+   Para frontend compatible no hace falta modificar backend o activar mantenimiento.
+4. Si un cambio incompatible no puede dividirse, planificar mantenimiento y drenaje
+   de al menos 180 s, con control de otros escritores. El flag no bloquea Admin SDK
+   ni Authentication. No relajar reglas para admitir un cliente viejo.
+5. Construir con variables revisadas y publicar solo componentes necesarios.
+   Registrar SHA frontend, versión Hosting, deployment Vercel y backend compatible;
+   no exigir un mismo SHA a componentes sin cambios. Hosting y Vercel hoy divergen.
+6. Smoke con cuentas QA y alcance acotado: rutas, sesión, legal, App Check, roles,
+   encuesta/preparación y acceso esperado. Publicar una interfaz no autoriza cobros,
+   eliminaciones, suspensiones de usuarios ni ensayos financieros sobre datos reales.
+7. Revisar errores, cuotas, alertas y colas manuales. Registrar el resultado y,
+   si se usó mantenimiento, comprobar recuperación antes de cerrar la entrega.
+
+`verify:pilot-config` exige staging, eliminación y paridad legal por variables.
+No cubre completamente suspensión/conservación ni textos legales administrados.
+No habilitar borrados o cambiar el entorno para hacerlo pasar; revisar los puntos
+aplicables con evidencia real. Entrega de alertas al buzón acreditada el 25/10;
+guardia, respuesta y presupuesto siguen pendientes de documentar/verificar.
+
+Las secciones siguientes conservan procedimientos y resultados fechados. Donde
+presuponen staging separado, activaciones pendientes o mantenimiento para cualquier
+deploy, prevalece el procedimiento vigente anterior. No son una ejecución nueva.
 
 2026-10-10. Preparación local; sin despliegue, cambios de consola o autorización de
 lanzamiento. La revisión administrativa adicional se documenta en
 [referencia por rol](../functional/revision-funcional-por-rol.md) y
 [matriz de aceptación](../functional/matriz-cierre-piloto.md).
 
-## Configuración revisable
+## Manifiesto de staging del corte original
 
 Copiar `config/pilot-staging.example.json` a un archivo local ignorado (`*.local.json`).
 Completar referencias de aprobación sin secretos; nunca copiar API keys de proveedor,
@@ -15,7 +54,8 @@ credenciales de servicio, tokens ni contenido clínico. Ejecutar:
 node scripts/verify-pilot-config.mjs /ruta/manifest.local.json
 ```
 
-El ejemplo debe salir con código 1: todos los campos reales siguen pendientes.
+El ejemplo debe salir con código 1 por sus campos incompletos. Esto no demuestra
+que todos los recursos productivos sigan pendientes.
 `configured` significa estructura declarada válida; el validador NO consulta consola,
 NO verifica que una referencia exista y NO autoriza publicar. Registrar evidencia con
 `environment`, `reference`, `verifiedAt` y `verifiedBy`. Adjuntar hashes del código,
@@ -73,7 +113,7 @@ Referencias: [App Check web](https://firebase.google.com/docs/app-check/web/reca
 [facturación](https://docs.cloud.google.com/recaptcha/docs/billing-information),
 [cuotas](https://docs.cloud.google.com/recaptcha/quotas).
 
-## Despliegue coordinado (solo después de autorización)
+## Antecedente de despliegue del 11–15/10
 
 Comprobación local 2026-10-11: `firebase.json` fija `hosting.site: luremsapp`.
 Cambiar solo `--project` no selecciona otro sitio de Hosting. Antes de cualquier
@@ -136,7 +176,9 @@ previa de Chromium dentro de sandbox-exec: el intento de anidar el sandbox de Ch
 fue rechazado por el sistema (sandbox initialization failed: Operation not permitted).
 No desactivar el sandbox de Chromium en Linux ni usar puertos de otro chat, proyectos reales, mocks de fetch como
 sustituto del bloqueo de red, ni excepciones de egress para lograr verde.
-La ejecución Linux en GitHub sigue pendiente hasta tener resultado del workflow remoto.
+Existen ejecuciones Linux verdes posteriores, incluida `1cc2564`. La de `4896783`
+falla en dependencias. Consultar el expediente del 31/10 antes de aplicar el estado
+histórico del corte original a otra entrega.
 
 `config/pilot-alerts.example.json` separa filtros y etiquetas permitidas de los
 umbrales, ventanas, canales y presupuesto pendientes. Es un contrato de revisión,

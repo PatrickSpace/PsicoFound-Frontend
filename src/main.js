@@ -1,4 +1,5 @@
 import "./assets/main.css";
+import "./assets/cover.css";
 import "./assets/forms.css";
 import "./assets/cards.css";
 import "./assets/buttons.css";
@@ -9,8 +10,6 @@ import App from "./App.vue";
 import router from "./router";
 import vuetify, { applyDesignTokenCssVars } from "./plugins/vuetify";
 import { createPinia } from "pinia";
-import "./plugins/Firebase/firebase";
-import { useAuthStore } from "@/store/auth";
 
 const app = createApp(App);
 const pinia = createPinia();
@@ -20,8 +19,5 @@ applyDesignTokenCssVars();
 app.use(pinia);
 app.use(router);
 app.use(vuetify);
-
-const authStore = useAuthStore(pinia);
-authStore.initAuth();
 
 app.mount("#app");

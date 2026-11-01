@@ -37,12 +37,15 @@ test('B-02/F-01: guided options, reload and reset preserve authoritative session
   await expect(page.getByText('No sé',{exact:true})).toHaveCount(0);
   await expect(page.getByRole('button',{name:'Solo conversar',exact:true})).toBeVisible();
 });
-test('B-03/C-01: quota error keeps independent help accessible',async ({page})=>{
+test('B-03/C-01: exhausted free text continues guided and keeps independent help accessible',async ({page})=>{
   await httpCall('B','resetProfileChatConversation',{requestId:'browser-quota-reset'});
   await db.doc('profile_chat_quotas/patient-b').set({day:new Date().toISOString().slice(0,10),count:40,leaseUntil:0});
   await login(page);
-  expect((await send(page,'hola')).status()).toBe(429);
-  await expect(page.getByRole('button',{name:'Reintentar sin duplicar'})).toBeVisible();
+  const response = await send(page,'hola');
+  expect(response.status()).toBe(200);
+  const result = (await response.json()).result;
+  expect(result.aiAvailability).toEqual({mode:'guided',reason:'total_turns_exhausted'});
+  await expect(page.getByRole('button',{name:'Solo conversar',exact:true})).toBeVisible();
   await page.getByRole('link',{name:'Consultar recursos de ayuda'}).click();
   await expect(page.getByRole('link',{name:'Llamar al 113'})).toBeVisible();
   await expect(page).toHaveURL(/crisis=1/);

@@ -26,11 +26,11 @@ async function noPaymentInvitation(page) {
   await expect(card(page).getByRole('button',{name:'Ya realicé el pago',exact:true})).toHaveCount(0);
 }
 
-test('REV-PIL-01: expired pending payment offers linked support and preserves financial records',async({page},info)=>{
+test('REV-PIL-01: expired payment releases the hold, offers linked support and preserves financial records',async({page},info)=>{
   await ref.update({expiresAt:adminFirestore.Timestamp.fromMillis(Date.now()-60000)});
   await expect(httpCall('B','markPaymentSubmitted',{operationId:id})).rejects.toMatchObject({code:'failed-precondition'});
   await login(page);
-  await expect(card(page)).toContainText('Plazo de pago terminado');
+  await expect(card(page)).toContainText('Venció tu tiempo para pagar');
   await expect(card(page)).toContainText('hora de Lima, Perú');
   await noPaymentInvitation(page);
   const reviewButton = card(page).getByRole('button',{name:'Ya pagué: solicitar revisión'});
@@ -45,7 +45,10 @@ test('REV-PIL-01: expired pending payment offers linked support and preserves fi
   expect(requests.size).toBe(1);
   expect(requests.docs[0].data().paymentOperationId).toBe(id);
   expect(requests.docs[0].data().paymentReference).toBe(original.reference);
-  expect((await ref.get()).data().status).toBe('pending');
+  await expect.poll(async () => (await ref.get()).data().status).toBe('expired');
+  expect((await db.doc(`citas/${id}`).get()).data().estado).toBe('cancelada');
+  expect((await db.doc('therapist_availability/review-ten').get()).data().status).toBe('available');
+  await expect(card(page).getByRole('link',{name:'Seleccionar otro horario'})).toBeVisible();
   expect((await ref.get()).data().rateSnapshot).toEqual(original.rateSnapshot);
   await dialog.getByRole('button',{name:'Cerrar',exact:true}).click();
   await expect(dialog).toHaveCount(0);

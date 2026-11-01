@@ -1,0 +1,92 @@
+{
+  "baselineCommit": "48967838c3762be13e0dbdaa92d8d2ab0fc2fd9c",
+  "scenarios": [
+    {
+      "completedExchanges": 0,
+      "beforeDocuments": 0,
+      "afterDocuments": 0,
+      "beforeHistoryCharacters": 0,
+      "afterHistoryCharacters": 0,
+      "contentTokenProxies": {
+        "o200k_base": {
+          "before": 564,
+          "after": 608
+        },
+        "cl100k_base": {
+          "before": 678,
+          "after": 729
+        }
+      }
+    },
+    {
+      "completedExchanges": 2,
+      "beforeDocuments": 4,
+      "afterDocuments": 4,
+      "beforeHistoryCharacters": 1071,
+      "afterHistoryCharacters": 1028,
+      "contentTokenProxies": {
+        "o200k_base": {
+          "before": 776,
+          "after": 814
+        },
+        "cl100k_base": {
+          "before": 938,
+          "after": 983
+        }
+      }
+    },
+    {
+      "completedExchanges": 4,
+      "beforeDocuments": 8,
+      "afterDocuments": 8,
+      "beforeHistoryCharacters": 2143,
+      "afterHistoryCharacters": 2056,
+      "contentTokenProxies": {
+        "o200k_base": {
+          "before": 992,
+          "after": 1020
+        },
+        "cl100k_base": {
+          "before": 1204,
+          "after": 1237
+        }
+      }
+    },
+    {
+      "completedExchanges": 15,
+      "beforeDocuments": 30,
+      "afterDocuments": 8,
+      "beforeHistoryCharacters": 8044,
+      "afterHistoryCharacters": 2060,
+      "contentTokenProxies": {
+        "o200k_base": {
+          "before": 2180,
+          "after": 1020
+        },
+        "cl100k_base": {
+          "before": 2667,
+          "after": 1237
+        }
+      }
+    },
+    {
+      "completedExchanges": 30,
+      "beforeDocuments": 60,
+      "afterDocuments": 8,
+      "beforeHistoryCharacters": 8054,
+      "afterHistoryCharacters": 2060,
+      "contentTokenProxies": {
+        "o200k_base": {
+          "before": 2180,
+          "after": 1020
+        },
+        "cl100k_base": {
+          "before": 2667,
+          "after": 1237
+        }
+      }
+    }
+  ],
+  "tokenizerVersion": "0.14.0",
+  "tokenCountsAreProxies": true
+}

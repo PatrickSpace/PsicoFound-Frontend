@@ -1,5 +1,6 @@
+import { watchPagedQuery } from "./pagedQuery";
 import {
-  collection, doc, getDocs, limit, onSnapshot, orderBy, query, where,
+  collection, doc, getDocs, limit, onSnapshot, orderBy, query, where, startAfter,
 } from "firebase/firestore";
 import { getFunctions, httpsCallable } from "firebase/functions";
 import { app } from "@/plugins/Firebase/firebase";
@@ -41,13 +42,14 @@ export async function setPsychologistPaymentRate(data) {
   return result.data;
 }
 
-export async function getPaymentRateHistory(rateId) {
+export async function getPaymentRateHistory(rateId, cursor = null) {
   const snapshot = await getDocs(query(
     collection(db, "payment_rates", rateId, "versions"),
     orderBy("version", "desc"),
+    ...(cursor ? [startAfter(cursor)] : []),
     limit(20)
   ));
-  return snapshot.docs.map((item) => ({ id: item.id, ...item.data() }));
+  return {items: snapshot.docs.map((item) => ({ id: item.id, ...item.data() })), cursor: snapshot.docs.at(-1), hasMore: snapshot.size === 20};
 }
 
 export async function getBookingQuote(therapistId, availabilitySlotId = "") {
@@ -72,7 +74,14 @@ export function watchPatientPaymentOperations(uid, onData, onError) {
     where("patientUid", "==", uid),
     orderBy("createdAt", "desc")
   );
-  return onSnapshot(paymentQuery, (snapshot) => {
-    onData(snapshot.docs.map((item) => ({ id: item.id, ...item.data() })));
-  }, onError);
+  return watchPagedQuery(paymentQuery, onData, onError);
+}
+
+export async function createPaymentCheckout(operationId) {
+  const response = await httpsCallable(functions, "createPaymentCheckout")({ operationId });
+  return response.data;
+}
+
+export async function refreshOwnPaymentReservation(operationId) {
+  return (await httpsCallable(functions, "refreshOwnPaymentReservation")({operationId})).data;
 }

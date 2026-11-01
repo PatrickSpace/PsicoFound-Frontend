@@ -1,3 +1,4 @@
+/* eslint-disable max-len */
 const {
   getPatientCareGuide, savePatientCareGuide,
 } = require("./src/onboarding/patientCareHandlers");
@@ -279,3 +280,33 @@ exports.publishLegalDraft = onCall(
 
 exports.getPatientCareGuide = onCall({minInstances: 0}, getPatientCareGuide);
 exports.savePatientCareGuide = onCall({minInstances: 0}, savePatientCareGuide);
+
+// Production operates without a payment-provider connection. Expiry and admin tasks are autonomous.
+const {getFirestore: operationalDb} = require("firebase-admin/firestore");
+const {onDocumentWritten} = require("firebase-functions/v2/firestore");
+const {runPaymentMaintenance} = require("./src/payments/paymentAutomation");
+const {getAdminOperationsOverview, updateAdminTask, getAdminTaskHistory, getAdminAffectedAppointments, syncSource} = require("./src/operations/adminTasks");
+exports.maintainPaymentReservations = onSchedule({schedule: "every 1 minutes", timeZone: "America/Lima", minInstances: 0, maxInstances: 1, concurrency: 1, timeoutSeconds: 540}, async () => runPaymentMaintenance(operationalDb(), null, null));
+exports.getAdminOperationsOverview = onCall({minInstances: 0, timeoutSeconds: 30}, getAdminOperationsOverview);
+exports.updateAdminTask = onCall({minInstances: 0, timeoutSeconds: 20}, updateAdminTask);
+exports.getAdminTaskHistory = onCall({minInstances: 0, timeoutSeconds: 20}, getAdminTaskHistory);
+exports.getAdminAffectedAppointments = onCall({minInstances: 0, timeoutSeconds: 20}, getAdminAffectedAppointments);
+for (const collection of ["payment_operations", "professional_obligations", "support_requests", "operational_alerts", "therapists", "account_requests", "psychologist_requests"]) {
+  const name = `syncTasks_${collection}`;
+  exports[name] = onDocumentWritten({document: `${collection}/{id}`, minInstances: 0, maxInstances: 3, concurrency: 5, retry: true}, (event) => syncSource(operationalDb(), collection, event.params.id));
+}
+exports.syncTasks_professionalAccount = onDocumentWritten({document: "users/{uid}", minInstances: 0, maxInstances: 3, concurrency: 5, retry: true}, async (event) => {
+  const before = event.data.before.data() || {}; const after = event.data.after.data() || {};
+  if (before.accountStatus === after.accountStatus && event.data.before.exists === event.data.after.exists) return;
+  const profiles = await operationalDb().collection("therapists").where("uid", "==", event.params.uid).get();
+  for (const doc of profiles.docs) await syncSource(operationalDb(), "therapists", doc.id);
+});
+exports.syncTasks_appointment = onDocumentWritten({document: "citas/{id}", minInstances: 0, maxInstances: 3, concurrency: 5, retry: true}, async (event) => {
+  const ids = new Set([event.data.before.data()?.terapeutaId, event.data.after.data()?.terapeutaId].filter(Boolean));
+  for (const id of ids) await syncSource(operationalDb(), "therapists", id);
+});
+exports.recordProfessionalRecovery = onCall({minInstances: 0, timeoutSeconds: 20}, require("./src/payments/paymentOperationHandlers").recordProfessionalRecovery);
+
+exports.cancelAdminReservation = onCall({minInstances: 0, timeoutSeconds: 30}, require("./src/appointments/appointmentHandlers").cancelAdminReservation);
+
+exports.refreshOwnPaymentReservation = onCall({minInstances: 0, timeoutSeconds: 20}, require("./src/payments/paymentAutomation").refreshOwnPaymentReservation);

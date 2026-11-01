@@ -59,6 +59,7 @@
         <v-progress-linear v-if="loadingRevisions" indeterminate />
         <v-alert v-if="revisionError" type="error">{{ revisionError }}<v-btn @click="loadRevisions">Reintentar</v-btn></v-alert>
         <p v-if="!loadingRevisions && !revisionError && !revisions.length">No hay registros de corrección disponibles para esta cita.</p>
+        <v-btn v-if="hasMoreRevisions" :loading="loadingRevisions" @click="loadRevisions(true)">Ver registros anteriores</v-btn>
         <article v-for="revision in revisions" :key="revision.id" class="mt-4 pa-3 border rounded">
           <p class="font-weight-bold">{{ revision.title }}</p>
           <p>{{ formatAgendaInstant(revision.change.recordedAt) }} · Autor: {{ revision.authorName }}</p>
@@ -80,8 +81,8 @@
 
 <script setup>
 import { AGENDA_NOTICE, agendaPresentation, formatAgendaInstant } from "@/utils/dateTime";
-import { computed, ref, watch } from "vue";
-import { getLongitudinalHistoryByTherapy } from "@/services/longitudinalHistoryService";
+import { computed, ref, watch, onBeforeUnmount } from "vue";
+import { getLongitudinalHistoryPage } from "@/services/longitudinalHistoryService";
 import { useAuthStore } from "@/store/auth";
 import { useAppContextStore } from "@/store/appContext";
 
@@ -93,19 +94,25 @@ const loadingRevisions = ref(false);
 const revisionError = ref("");
 const recordingAuthor = computed(() => revisions.value.find(item => item.change.action === "complete")?.authorName || selected.value?.completedBy || "");
 let revisionGeneration = 0;
+onBeforeUnmount(() => revisionGeneration++);
+let revisionPage = {};
+const hasMoreRevisions = ref(false);
 function openAttendance(item) { selected.value = item; loadRevisions(); }
-async function loadRevisions() {
+async function loadRevisions(append = false) {
+  append = append === true;
   const ticket = ++revisionGeneration;
   const item = selected.value;
-  revisions.value = [];
+  if (!append) { revisions.value = []; revisionPage = {}; hasMoreRevisions.value = false; }
   revisionError.value = "";
   if (!item?.terapiaId) { loadingRevisions.value = false; return; }
   loadingRevisions.value = true;
   try {
-    const history = await getLongitudinalHistoryByTherapy(item.terapiaId);
+    const page = await getLongitudinalHistoryPage(item.terapiaId, append ? revisionPage : {}, item.citaId);
+    const history = page.items;
     if (ticket !== revisionGeneration) return;
-    revisions.value = history.filter(event => event.sourceId === item.citaId && event.metadata?.attendanceChange)
-      .map(event => ({id: event.id, title: event.title, authorName: event.terapeutaNombre || event.metadata.attendanceChange.actorUid, change: event.metadata.attendanceChange}));
+    revisionPage = page; hasMoreRevisions.value = page.hasMore;
+    revisions.value = [...(append ? revisions.value : []), ...history.filter(event => event.sourceId === item.citaId && event.metadata?.attendanceChange)
+      .map(event => ({id: event.id, title: event.title, authorName: event.terapeutaNombre || event.metadata.attendanceChange.actorUid, change: event.metadata.attendanceChange}))];
   } catch {
     if (ticket === revisionGeneration) revisionError.value = "No se pudo cargar el historial de atención.";
   } finally {

@@ -1,0 +1,12 @@
+/* Shared URLs let navigation reuse the cover from the browser cache. */
+.bg-image, .auth-image, .onboarding-page__image {
+  background-image: image-set(url("./img/bg-home-720.avif") type("image/avif"), url("./img/bg-home-720.webp") type("image/webp"));
+  background-size: cover;
+  background-repeat: no-repeat;
+  background-position: center bottom;
+}
+@media (min-width: 1600px), (min-width: 960px) and (min-resolution: 1.5dppx) {
+  .bg-image, .auth-image, .onboarding-page__image {
+    background-image: image-set(url("./img/bg-home-1440.avif") type("image/avif"), url("./img/bg-home-1440.webp") type("image/webp"));
+  }
+}

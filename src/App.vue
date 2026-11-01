@@ -44,17 +44,36 @@ import { ref, watch, onMounted, onBeforeUnmount } from "vue";
 import { RouterView, useRouter, useRoute } from "vue-router";
 import { Analytics } from "@vercel/analytics/vue";
 import { useAppTheme } from "@/composables/useAppTheme";
-import { auth } from "@/plugins/Firebase/firebase";
-import { getAccountAccessStatus } from "@/services/accountService";
 import { useAppContextStore } from "@/store/appContext";
 
-import { watchPublishedLegalDocuments } from "@/config/legal";
+import { legalConfig, hasPublishedLegalDocuments, watchPublishedLegalDocuments } from "@/config/legal";
+import { useAuthStore } from "@/store/auth";
 let stopLegalDocuments;
+
 
 const { initializeAppTheme } = useAppTheme();
 const appContext = useAppContextStore();
 const router = useRouter();
 const route = useRoute();
+const authStore = useAuthStore();
+watch(() => Boolean(authStore.currentUser) || ["/registro", "/onboarding", "/configuracion", "/admin/documentos-legales", "/terminos", "/privacidad"].includes(route.path), needed => {
+  stopLegalDocuments?.();
+  stopLegalDocuments = needed ? watchPublishedLegalDocuments() : null;
+}, { immediate: true });
+// Keep an open protected screen in sync with a newly published consent version.
+// The subscription still starts lazily, after authentication or on legal pages.
+watch(() => [legalConfig.version, legalConfig.termsUrl, legalConfig.privacyUrl], (current, previous) => {
+  // Navigation has its own server gate. React only to a live publication;
+  // reacting to profile/navigation changes can race consent acceptance.
+  if (!previous?.[0] || current.every((value, index) => value === previous[index])) return;
+  if (!authStore.currentUser || !hasPublishedLegalDocuments.value ||
+      !appContext.userProfile || route.meta.public || route.meta.emailVerification ||
+      route.path.startsWith("/admin") || appContext.userProfile.accountStatus === "suspended") return;
+  const accepted = appContext.userProfile.legalAcceptance;
+  if (!accepted?.acceptedAt || ["version", "termsUrl", "privacyUrl"].some(key => accepted[key] !== legalConfig[key])) {
+    router.replace({path: "/registro", query: {redirect: route.fullPath}});
+  }
+});
 watch(() => appContext.userProfile?.accountStatus, (status) => {
   if (status === "suspended" && !route.meta.legalDocument && route.name !== "suspended-account") {
     router.replace("/cuenta-suspendida");
@@ -95,13 +114,14 @@ const onUiSuccess = (e) => {
   snackOk.value.open = true;
 };
 
-function recordVisibleVisit() {
-  if (document.visibilityState === "visible" && auth.currentUser) {
-    getAccountAccessStatus().catch(() => {});
-  }
+let lastVisibleVisit = 0;
+async function recordVisibleVisit() {
+  if (document.visibilityState !== "visible" || !useAuthStore().currentUser || Date.now() - lastVisibleVisit < 60_000) return;
+  lastVisibleVisit = Date.now();
+  const { getAccountAccessStatus } = await import("@/services/accountService");
+  getAccountAccessStatus().catch(() => {});
 }
 onMounted(() => {
-  stopLegalDocuments = watchPublishedLegalDocuments();
   document.addEventListener("visibilitychange", recordVisibleVisit);
   window.addEventListener("api-error", onApiError);
   window.addEventListener("ui-success", onUiSuccess);

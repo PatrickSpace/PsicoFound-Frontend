@@ -47,12 +47,15 @@
                 versión {{ operation.rateSnapshot?.rateVersion || "-" }}
               </div>
               <div class="mt-2">{{ deadlineLabel(operation) }}</div>
-              <p v-if="operation.status === 'pending' && !canPay(operation)" role="status" class="mt-2 payment-notice">
+              <p v-if="operation.status === 'pending' && paymentWindow(operation, now) !== 'open'" role="status" class="mt-2 payment-notice">
                 {{ paymentWindow(operation, now) === 'elapsed'
-                  ? 'El plazo de pago terminó. No realices un nuevo pago. El cierre de la reserva requiere revisión administrativa.'
+                  ? 'Venció tu tiempo para pagar. Debes volver a seleccionar un horario. Estamos liberando esta reserva automáticamente.'
                   : 'No podemos verificar el plazo de esta operación. No realices un pago hasta que soporte la revise.' }}
                 Si ya pagaste, solicita revisión con la referencia de esta operación.
               </p>
+              <p v-if="processingPayment(operation) && paymentWindow(operation, now) === 'open'" role="status" class="mt-2 payment-notice">Mercado Pago está procesando tu pago. No vuelvas a pagar; aquí verás la confirmación automática.</p>
+              <p v-if="operation.status === 'expired'" role="status" class="mt-2 payment-notice">Venció tu tiempo para pagar. Esta reserva se cerró y debes volver a seleccionar un horario.</p>
+              <p v-if="operation.status === 'refund_review'" role="status" class="mt-2 payment-notice">Administración tiene una tarea pendiente para resolver tu devolución. Aquí verás el resultado de la revisión.</p>
               <p v-if="operation.status === 'submitted'" class="mt-2 payment-notice">
                 Tu aviso está en verificación. No vuelvas a pagar.
                 {{ operation.rateSnapshot?.commercialPolicy?.submittedExpiration === 'preserve_for_review'
@@ -62,25 +65,27 @@
                     : 'La política de esta reserva requiere revisión administrativa.' }}
               </p>
               <div class="text-caption mt-1">
-                La confirmación es administrativa. El comprobante del proveedor
+                {{ operation.reconciliation === 'automatic' ? 'Tu pago se confirma automáticamente desde Mercado Pago. No necesitas avisar que pagaste.' : 'Esta reserva anterior requiere verificación administrativa.' }} El comprobante del proveedor
                 no es un documento fiscal emitido por Lurems.
               </div>
               <div class="d-flex flex-wrap ga-2 mt-3">
                 <v-btn
                   v-if="canPay(operation)"
-                  :href="operation.paymentUrl"
+                  :href="operation.reconciliation === 'automatic' ? undefined : operation.paymentUrl"
                   target="_blank"
                   rel="noopener noreferrer"
                   color="secondary"
                   variant="tonal"
                   size="small"
                   append-icon="mdi-open-in-new"
-                  @click="guardPaymentLink($event, operation)"
+                  @click="pay($event, operation)"
+                  :loading="busyId === operation.id"
+                  :disabled="Boolean(busyId)"
                 >
-                  Abrir Mercado Pago
+                  {{ operation.reconciliation === 'automatic' ? 'Pagar con Mercado Pago' : 'Abrir Mercado Pago' }}
                 </v-btn>
                 <v-btn
-                  v-if="canPay(operation)"
+                  v-if="canPay(operation) && operation.reconciliation !== 'automatic'"
                   color="secondary"
                   variant="text"
                   size="small"
@@ -89,8 +94,9 @@
                 >
                   Ya realicé el pago
                 </v-btn>
+                <v-btn v-if="operation.status === 'expired' || operation.status === 'pending' && paymentWindow(operation, now) === 'elapsed'" to="/elegirterapeuta" color="secondary" variant="tonal" size="small">Seleccionar otro horario</v-btn>
                 <v-btn
-                  v-if="(operation.status === 'pending' && !canPay(operation)) || ['expired', 'cancelled', 'rejected'].includes(operation.status)"
+                  v-if="(operation.status === 'pending' && paymentWindow(operation, now) !== 'open') || ['expired', 'cancelled', 'rejected'].includes(operation.status)"
                   color="secondary" variant="tonal" size="small"
                   @click="openPaymentSupport(operation)"
                 >
@@ -146,6 +152,8 @@
         </v-card-actions>
       </v-card>
     </v-dialog>
+    <p class="text-caption mt-3">Operaciones cargadas: {{ operations.length }}.</p>
+    <v-btn v-if="paymentPage.hasMore" :loading="paymentPage.loading" class="mt-3" @click="paymentPage.loadMore">Ver pagos anteriores</v-btn>
     <FeedbackDialog
       v-model="supportDialog"
       :payment-operation-id="supportOperation?.id || ''"
@@ -161,6 +169,8 @@ import { formatAgendaInstant } from "@/utils/dateTime";
 import { paymentDeadlineMillis, paymentWindow } from "@/utils/paymentDeadline";
 import {
   markPaymentSubmitted,
+  createPaymentCheckout,
+  refreshOwnPaymentReservation,
   requestPaymentRefundReview,
   watchPatientPaymentOperations,
 } from "@/services/paymentService";
@@ -170,6 +180,7 @@ const props = defineProps({
   patientUid: { type: String, default: "" },
 });
 const operations = ref([]);
+const paymentPage = ref({hasMore:false, loading:false});
 const loadError = ref("");
 const busyId = ref("");
 const refundDialog = ref(false);
@@ -179,6 +190,7 @@ const supportDialog = ref(false);
 const supportOperation = ref(null);
 const now = ref(Date.now());
 let deadlineTimer;
+const expirationAttempts = new Map();
 let generation = 0;
 let unsubscribe = null;
 
@@ -199,18 +211,40 @@ onBeforeUnmount(() => {
 function refreshClock() {
   clearTimeout(deadlineTimer);
   now.value = Date.now();
+  // Ask the server to close an elapsed own hold immediately; the scheduler also runs with no browser open.
+  for (const operation of operations.value.filter(item => item.status === "pending" && paymentWindow(item, now.value) === "elapsed")) {
+    if (now.value - (expirationAttempts.get(operation.id) || 0) < 60000) continue;
+    expirationAttempts.set(operation.id, now.value);
+    refreshOwnPaymentReservation(operation.id).catch(() => {});
+  }
   const deadlines = operations.value.filter(item => item.status === "pending")
     .map(paymentDeadlineMillis).filter(value => value !== null && value > now.value);
   if (deadlines.length) deadlineTimer = setTimeout(refreshClock, Math.min(Math.min(...deadlines) - now.value, 2147483647));
 }
 
+function processingPayment(operation) {
+  return operation.status === "pending" && operation.reconciliation === "automatic" && ["pending", "in_process", "authorized"].includes(operation.providerStatus);
+}
 function canPay(operation) {
-  return operation.status === "pending" && paymentWindow(operation, now.value) === "open";
+  return operation.status === "pending" && paymentWindow(operation, now.value) === "open" && !processingPayment(operation);
 }
 
-function guardPaymentLink(event, operation) {
+async function pay(event, operation) {
   refreshClock();
-  if (!canPay(operation)) event.preventDefault();
+  if (!canPay(operation)) { event.preventDefault(); return; }
+  if (operation.reconciliation !== "automatic") return;
+  event.preventDefault();
+  if (busyId.value) return;
+  const current = generation;
+  busyId.value = operation.id;
+  try {
+    const { url } = await createPaymentCheckout(operation.id);
+    if (current !== generation) return;
+    refreshClock();
+    if (canPay(operation)) window.location.assign(url);
+  } catch (error) {
+    if (current === generation) notifyError(error?.message || "No pudimos preparar el pago.");
+  } finally { if (current === generation) busyId.value = ""; }
 }
 
 function deadlineLabel(operation) {
@@ -220,6 +254,7 @@ function deadlineLabel(operation) {
 }
 
 function paymentStatusLabel(operation) {
+  if (processingPayment(operation) && paymentWindow(operation, now.value) === "open") return "Procesando pago";
   if (operation.status === "pending" && !canPay(operation)) {
     return paymentWindow(operation, now.value) === "elapsed" ? "Plazo de pago terminado" : "Plazo por revisar";
   }
@@ -233,9 +268,11 @@ function openPaymentSupport(operation) {
 
 function startWatching() {
   const current = ++generation;
+  expirationAttempts.clear();
   unsubscribe?.();
   unsubscribe = null;
   operations.value = [];
+  paymentPage.value = {hasMore:false, loading:false};
   refundDialog.value = false;
   supportDialog.value = false;
   selectedOperation.value = null;
@@ -249,9 +286,10 @@ function startWatching() {
   }
   unsubscribe = watchPatientPaymentOperations(
     uid,
-    (items) => {
+    (items, page) => {
       if (current !== generation || props.patientUid !== uid) return;
       operations.value = items;
+      paymentPage.value = page;
       loadError.value = "";
     },
     () => {

@@ -12,7 +12,6 @@ const {
 const {
   getCurrentProfile, finalizeProfileForMatching,
 } = require("../profiles/profile");
-const {modalityMatches} = require("./modality");
 const {assertFutureSlot} = require("../appointments/appointmentDomain");
 
 async function getRecommendedTherapists(request) {
@@ -35,23 +34,17 @@ async function getRecommendedTherapists(request) {
   }
   const criteria = buildSearchCriteriaFromProfile(profile);
   const requiredCriteria = [];
-  const therapists = await getActiveTherapists(db);
+  const therapists = await getReceptionTherapists(db);
   const matches = findMatchingTherapists(
       therapists,
       criteria,
       requiredCriteria,
       therapists.length,
   );
-  const availability = await getFutureAvailabilityByTherapist(
-      db,
-      "",
-      therapists,
-  );
-  const recommendations = matches.filter((therapist) =>
-    availability.has(therapist.id),
-  ).slice(0, 5);
+  const {recommendations, availability, hasEligible} =
+    await selectAvailableRecommendations(db, matches);
   const outcome = recommendations.length ? "ok" :
-    therapists.length ? "no_availability" : "no_matches";
+    hasEligible ? "no_availability" : "no_matches";
 
   return {
     profile,
@@ -71,62 +64,73 @@ async function getRecommendedTherapists(request) {
   };
 }
 
-async function getActiveTherapists(db) {
+async function getReceptionTherapists(db) {
+  // All profiles participate in the exact same stable ranking. In particular,
+  // legacy profiles with missing activo/acceptingBookings remain supported.
   const snapshot = await db.collection("therapists").orderBy("nombre").get();
-
-  const profiles = snapshot.docs
-      .map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      }))
-      .filter((therapist) => receptionAllowed(therapist));
-  const eligible = await Promise.all(profiles.map(async (profile) => {
-    if (profile.setupVersion !== 1) return profile;
-    if (!profile.paymentRateId || !profile.uid) return null;
-    const [rate, owner] = await Promise.all([
-      db.doc(`payment_rates/${profile.paymentRateId}`).get(),
-      db.doc(`users/${profile.uid}`).get(),
-    ]);
-    const activeOwner = owner.exists &&
-      owner.data().accountStatus !== "suspended";
-    return commercialRateReady(rate.data()) && activeOwner ?
-      profile : null;
-  }));
-  return eligible.filter(Boolean);
+  return snapshot.docs.map((doc) => ({id: doc.id, ...doc.data()}))
+      .filter(receptionAllowed);
 }
 
-async function getFutureAvailabilityByTherapist(
-    db, requiredModality = "", therapists = null,
-) {
-  const profiles = new Map((therapists || []).map((item) => [item.id, item]));
-  const snapshot = await db
-      .collection("therapist_availability")
-      .where("status", "==", "available")
-      .get();
-  const slotsByTherapist = new Map();
+async function selectAvailableRecommendations(db, rankedTherapists) {
+  const documents = new Map();
+  const read = (path) => {
+    if (!documents.has(path)) documents.set(path, db.doc(path).get());
+    return documents.get(path);
+  };
+  const recommendations = [];
+  const availability = new Map();
+  let hasEligible = false;
+  const evaluate = async (therapist) => {
+    if (therapist.setupVersion === 1) {
+      if (!therapist.paymentRateId || !therapist.uid) return null;
+      const [rate, owner] = await Promise.all([
+        read(`payment_rates/${therapist.paymentRateId}`),
+        read(`users/${therapist.uid}`),
+      ]);
+      if (!commercialRateReady(rate.data()) || !owner.exists ||
+          owner.data().accountStatus === "suspended") return null;
+    }
+    hasEligible = true;
+    return {therapist, slots: await getFutureAvailability(db, therapist)};
+  };
+  // Rank everything first, then evaluate bounded parallel batches. Each batch
+  // is no larger than the remaining result count: no speculative reads beyond
+  // the fifth valid recommendation, and no arbitrary candidate cap.
+  let offset = 0;
+  while (offset < rankedTherapists.length && recommendations.length < 5) {
+    const batch = rankedTherapists.slice(
+        offset, offset + 5 - recommendations.length,
+    );
+    const evaluated = await Promise.all(batch.map(evaluate));
+    offset += batch.length;
+    for (const result of evaluated) {
+      if (!result || !result.slots.length) continue;
+      availability.set(result.therapist.id, result.slots);
+      recommendations.push(result.therapist);
+    }
+  }
+  return {recommendations, availability, hasEligible};
+}
 
-  snapshot.docs.forEach((doc) => {
+async function getFutureAvailability(db, therapist) {
+  // Scope reads to a ranked, eligible professional, never the global schedule.
+  // Do not filter on startAt yet: historical slots may have only wall fields.
+  // The exact count remains part of the public response (availableSlots).
+  const snapshot = await db.collection("therapist_availability")
+      .where("therapistId", "==", therapist.id)
+      .where("status", "==", "available").get();
+  return snapshot.docs.filter((doc) => {
     const slot = doc.data();
-    const therapistId = (slot.therapistId || "").toString().trim();
-    if (!therapistId || !modalityMatches(slot.modality, requiredModality)) {
-      return;
-    }
-    if (therapists) {
-      const profile = profiles.get(therapistId);
-      if (!profile || profile.setupVersion === 1 &&
-          !usableSlots(profile, [slot]).length) return;
-    }
+    if (therapist.setupVersion === 1 &&
+        !usableSlots(therapist, [slot]).length) return false;
     try {
       assertFutureSlot(slot);
-      const slots = slotsByTherapist.get(therapistId) || [];
-      slots.push(doc.id);
-      slotsByTherapist.set(therapistId, slots);
-    } catch (error) {
-      // Past or malformed availability is not offered to patients.
+      return true;
+    } catch (_) {
+      return false;
     }
-  });
-
-  return slotsByTherapist;
+  }).map((doc) => doc.id);
 }
 
 function normalizeRequiredCriteria() {
@@ -159,4 +163,6 @@ function sanitizeTherapistForClient(therapist = {}) {
 module.exports = {
   getRecommendedTherapists,
   normalizeRequiredCriteria,
+  getReceptionTherapists,
+  selectAvailableRecommendations,
 };

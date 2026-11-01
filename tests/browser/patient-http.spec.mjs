@@ -18,6 +18,12 @@ test.beforeEach(async ({ context }) => {
 async function slots() {
   return seedSlots(db);
 }
+async function offeredPeriod(dialog) {
+  const slot = (await db.doc("therapist_availability/review-ten").get()).data();
+  const parts = new Intl.DateTimeFormat("en-CA", {timeZone: "America/Lima", year: "numeric", month: "2-digit"}).formatToParts(new Date());
+  const current = `${parts.find(p => p.type === "year").value}-${parts.find(p => p.type === "month").value}`;
+  await dialog.getByRole("button", {name: slot.date.slice(0, 7) === current ? "Este mes" : "Próximo mes", exact: true}).click();
+}
 async function modeInPlace(page, mode) {
   await expect.poll(() => page.evaluate(async (value) => {
     const path = "/src/store/appContext.js";
@@ -50,6 +56,7 @@ for (const status of ["pendiente", "confirmada"]) {
     const dialog = page.getByRole("dialog");
     if (status === "confirmada") {
       await pending.getByRole("button", { name: "Reprogramar", exact: true }).click();
+      await offeredPeriod(dialog);
       await dialog.getByRole("button", { name: "14:00 · hora de Lima", exact: true }).click();
       await expect(dialog).toContainText("hora de Lima");
       await dialog.getByRole("button", { name: "Guardar cambios", exact: true }).click();
@@ -65,6 +72,7 @@ for (const status of ["pendiente", "confirmada"]) {
     await expect(pending).toHaveCount(0);
     expect((await db.doc("payment_operations/past-open").get()).data().status).toBe("cancelled");
     await page.getByRole("button", { name: "Agendar", exact: true }).click();
+    await offeredPeriod(dialog);
     await dialog.getByRole("button", { name: "10:00 · hora de Lima", exact: true }).click();
     await dialog.getByRole("button", { name: "Revisar cotización", exact: true }).click();
     await dialog.getByRole("button", { name: "Confirmar reserva", exact: true }).click();
@@ -317,6 +325,7 @@ test("patient: book with quote, live confirmation/link, payment, reschedule and 
   await login(page);
   await page.getByRole("button", { name:"Agendar", exact:true }).click();
   const dialog = page.getByRole("dialog");
+  await offeredPeriod(dialog);
   await dialog.getByRole("button", { name:"10:00 · hora de Lima", exact:true }).click();
   await dialog.getByRole("button", { name:"Revisar cotización", exact:true }).click();
   await expect(dialog).toContainText("Cotización para esta reserva");
@@ -335,6 +344,7 @@ test("patient: book with quote, live confirmation/link, payment, reschedule and 
   await httpCall("review-admin", "reviewPaymentOperation", { operationId:id, status:"confirmed", providerReference:"LOCAL-SYNTHETIC-REF" });
   await expect(page.getByText("Pago confirmado", { exact:true })).toBeVisible();
   await page.getByRole("button", { name:"Reprogramar", exact:true }).click();
+  await offeredPeriod(dialog);
   await dialog.getByRole("button", { name:"14:00 · hora de Lima", exact:true }).click();
   await dialog.getByRole("button", { name:"Guardar cambios", exact:true }).click();
   await expect(dialog).toHaveCount(0);
@@ -355,6 +365,7 @@ test("requirement: booking identifies the timezone of the offered slot", async({
   await login(page);
   await page.getByRole("button", { name:"Agendar", exact:true }).click();
   const dialog = page.getByRole("dialog");
+  await offeredPeriod(dialog);
   await dialog.getByRole("button", { name:"08:00 · hora de Lima", exact:true }).click();
   await dialog.getByRole("button", { name:"Revisar cotización", exact:true }).click();
   await expect(dialog).toContainText("Cotización para esta reserva");
@@ -423,6 +434,7 @@ test("professional rejects a confirmed appointment and patient sees the reason a
   await page.getByRole("button", {name: "Notificaciones", exact: true}).click();
   await shot(page, info, "professional-rejection-patient-notice");
   await page.getByRole("button", {name: "Agendar", exact: true}).click();
+  await offeredPeriod(page.getByRole("dialog"));
   await expect(page.getByRole("dialog").getByRole("button", {name: "10:00 · hora de Lima", exact: true})).toHaveCount(0);
   await expect(page.getByRole("dialog").getByRole("button", {name: "14:00 · hora de Lima", exact: true})).toBeVisible();
 });

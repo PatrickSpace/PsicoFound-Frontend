@@ -3,7 +3,7 @@
     <div class="app-top-nav__content">
       <v-spacer />
       <div class="nav-actions">
-        <v-menu location="bottom end" width="360">
+        <v-menu v-model="notificationsOpen" location="bottom end" width="360" :close-on-content-click="false">
           <template #activator="{ props }">
             <v-badge
               :content="unreadNotificationsCount"
@@ -37,7 +37,7 @@
               density="compact"
             >
               No pudimos actualizar los avisos.
-              <v-btn size="x-small" variant="text" @click="loadNotifications">
+              <v-btn size="x-small" variant="text" @click.stop="loadNotifications">
                 Reintentar
               </v-btn>
             </v-alert>
@@ -66,8 +66,10 @@
                 </template>
               </v-list-item>
             </v-list>
+            <v-btn v-if="notificationPage.hasMore" :loading="notificationPage.loading" class="ma-3" @click="notificationPage.loadMore">Ver avisos anteriores</v-btn>
+            <p class="text-caption ma-3">Avisos cargados: {{ notifications.length }}. El contador corresponde a estos avisos.</p>
             <v-empty-state
-              v-else
+              v-if="!notifications.length"
               class="py-6"
               headline="Sin notificaciones"
               text="Los avisos de citas aparecerán aquí."
@@ -127,6 +129,8 @@ const { currentUser } = storeToRefs(authStore);
 const isFeedbackDialogOpen = ref(false);
 const showFeedbackSaved = ref(false);
 const notifications = ref([]);
+const notificationsOpen = ref(false);
+const notificationPage = ref({hasMore:false, loading:false});
 const notificationError = ref("");
 const openingNotificationId = ref("");
 let unsubscribeNotifications = null;
@@ -162,6 +166,7 @@ onBeforeUnmount(() => {
 function loadNotifications() {
   const generation = ++notificationGeneration;
   notifications.value = [];
+  notificationPage.value = {hasMore:false, loading:false};
   openingNotificationId.value = "";
   const uid = currentUser.value?.uid;
   unsubscribeNotifications?.();
@@ -173,9 +178,10 @@ function loadNotifications() {
   }
   unsubscribeNotifications = watchNotifications(
     uid,
-    (items) => {
+    (items, page) => {
       if (generation !== notificationGeneration) return;
       notifications.value = items;
+      notificationPage.value = page;
       notificationError.value = "";
     },
     (error) => {
@@ -197,12 +203,14 @@ async function openNotification(notification) {
   try {
     if (!notification.readAt) {
       await markNotificationAsRead(notification.id);
+      if (generation === notificationGeneration) notification.readAt = new Date();
     }
     if (generation !== notificationGeneration) return;
     if (notification.route) {
       const target = router.resolve(notification.route);
       await router.push({ path: target.path, query: {...target.query, notification: notification.id, openedAt: String(Date.now())} });
     }
+    notificationsOpen.value = false;
   } catch (error) {
     if (generation !== notificationGeneration) return;
     console.error("Error marking notification as read:", error);

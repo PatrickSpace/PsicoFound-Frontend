@@ -15,7 +15,8 @@
         <v-divider class="page-header-divider" />
       </div>
 
-      <v-alert color="info" variant="tonal" class="mb-5">
+      <CollectionPager :names="['operational_alerts']" />
+<v-alert color="info" variant="tonal" class="mb-5">
         Los avisos por correo se dirigen a <strong>jplosta01@gmail.com</strong> mediante el canal operativo configurado.
       </v-alert>
       <v-alert v-if="error" type="error" variant="tonal" class="mb-4">{{ error }}</v-alert>
@@ -69,11 +70,15 @@
 </template>
 
 <script setup>
+import CollectionPager from "@/components/admin/CollectionPager.vue";
+import { documentId, where } from "firebase/firestore";
+import { useRoute } from "vue-router";
 import { computed, ref } from "vue";
 import LayoutDefault from "@/components/Layout/Layoutmain.vue";
 import { useAdminWorkspace } from "@/composables/useAdminWorkspace";
 import { adminCall, adminDate, watchAdminCollection } from "@/services/adminService";
 
+const route = useRoute();
 const alerts = ref([]);
 const loading = ref(true);
 const error = ref("");
@@ -102,13 +107,14 @@ const workspace = useAdminWorkspace(() => {
   if (current()) {
     alerts.value = values;
     loading.value = false;
+    if (typeof route.query.case === "string" && !selected.value && values[0]) openAcknowledge(values[0]);
   }
 }, () => {
   if (current()) {
     error.value = "No pudimos cargar las alertas operativas.";
     loading.value = false;
   }
-}));
+}, {constraints: typeof route.query.case === "string" ? [where(documentId(), "==", route.query.case)] : []}));
 
 function statusLabel(status) {
   if (status === "acknowledged") return "Revisada";

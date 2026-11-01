@@ -80,9 +80,7 @@ defineProps({
 
 .onboarding-page__image {
   min-height: 100dvh;
-  background:
-    linear-gradient(rgba(26, 58, 56, 0.12), rgba(26, 58, 56, 0.3)),
-    url("@/assets/img/bg-home.jpg") center / cover no-repeat;
+  box-shadow: inset 0 0 0 100vmax rgba(26, 58, 56, 0.15);
 }
 
 .onboarding-page__main {

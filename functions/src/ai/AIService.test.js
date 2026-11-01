@@ -1,3 +1,4 @@
+/* eslint-disable max-len */
 const assert = require("node:assert/strict");
 const {test} = require("node:test");
 const {AIService} = require("./AIService");
@@ -211,4 +212,22 @@ test("single-attempt mode never calls fallback", async () => {
   await assert.rejects(
       service.generateText({allowFallback: false}), /uncertain/);
   assert.equal(attempts, 1);
+});
+
+test("failure telemetry retains usage and estimated cost without provider text", async () => {
+  const {AIProviderInvalidResponseError} = require("./errors");
+  const entries = [];
+  const service = new AIService({
+    providerFactory: {
+      createPrimaryProvider: () => ({name: "openai", defaultModel: "gpt-6-luna",
+        generateStructuredOutput: async () => {
+          throw new AIProviderInvalidResponseError("PRIVATE BODY", {model: "gpt-6-luna", usage: {inputTokens: 1000, cachedInputTokens: 400, cacheWriteTokens: 200, outputTokens: 100, secret: "PRIVATE"}});
+        }}),
+    },
+    logger: {info() {}, warn: (name, entry) => entries.push(entry)},
+  });
+  await assert.rejects(service.generateStructuredOutput({allowFallback: false}));
+  assert.equal(entries[0].estimatedCostNanoUsd, 119000);
+  assert.equal(entries[0].usage.cachedInputTokens, 400);
+  assert.doesNotMatch(JSON.stringify(entries), /PRIVATE|secret/);
 });

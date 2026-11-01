@@ -5,11 +5,11 @@ const {randomUUID} = require("node:crypto");
 const {HttpsError} = require("firebase-functions/v2/https");
 const {requirePatientAccess} = require("../accounts/accessPolicy");
 const {aiService} = require("../ai/AIService");
-const {buildProfileChatMessages} = require("../ai/profilePrompt");
-const {buildProfileChatResponseSchema} = require("../ai/responseSchemas");
 const {PROFILE_DEFAULTS, finalizeProfileForMatching, sanitizeModelProfileData} = require("../profiles/profile");
 const {createSurveyService} = require("./surveyService");
 const {makeTurn, validateTurn} = require("./surveyTurn");
+const {surveyAttemptCount} = require("./surveyAttempts");
+const {MAX_OUTPUT_TOKENS, PROVIDER_TIMEOUT_MS} = require("../ai/admissionPolicy");
 const {assertProviderApproved} = require("../ai/providerPolicy");
 
 async function startProfileChatConversation(request) {
@@ -22,6 +22,7 @@ async function startProfileChatConversation(request) {
     const conversation = (await tx.get(conversationRef)).data() || {};
     const saved = (await tx.get(profileRef)).data() || {};
     const sessionId = conversation.activeSessionId || randomUUID();
+    const attemptCount = surveyAttemptCount(conversation, !conversation.activeSessionId);
     const profile = finalizeProfileForMatching({...PROFILE_DEFAULTS,
       ...sanitizeModelProfileData(saved), riesgoSuicida: false,
       summaryConfirmed: Boolean(saved.summaryConfirmed), sessionId});
@@ -34,7 +35,7 @@ async function startProfileChatConversation(request) {
       previousTurn.status === "active" ?
       previousTurn : nextTurn;
     tx.set(profileRef, {...profile, uid, updatedAt: FieldValue.serverTimestamp()}, {merge: true});
-    tx.set(conversationRef, {uid, activeSessionId: sessionId, activeTurn,
+    tx.set(conversationRef, {uid, activeSessionId: sessionId, activeTurn, surveyAttemptCount: attemptCount,
       ...(!conversation.activeSessionId ? {sessionStartedAt: Timestamp.now()} : {}),
       updatedAt: FieldValue.serverTimestamp()}, {merge: true});
     if (!conversation.activeSessionId) {
@@ -52,16 +53,15 @@ async function startProfileChatConversation(request) {
 
 async function sendProfileChatMessage(request) {
   await requirePatientAccess(request);
-  return createSurveyService({db: firestoreAdmin.getFirestore(), generate: getProfileChatAIResult})
+  return createSurveyService({db: firestoreAdmin.getFirestore(), generate: getProfileChatAIResult, authorize: assertProviderApproved})
       .send(request.auth.uid, request.data || {});
 }
 async function getProfileChatAIResult(input) {
-  assertProviderApproved();
   const result = await aiService.generateStructuredOutput({
-    messages: buildProfileChatMessages(input), schema: buildProfileChatResponseSchema(),
-    allowFallback: false, temperature: 0.2, maxTokens: 700, metadata: {task: "profile-chat"},
+    messages: input.messages, schema: input.schema,
+    allowFallback: false, temperature: 0.2, maxTokens: MAX_OUTPUT_TOKENS, timeoutMs: Math.min(input.timeoutMs || PROVIDER_TIMEOUT_MS, PROVIDER_TIMEOUT_MS), metadata: {task: "profile-chat"},
   });
-  return result.data || {};
+  return {...result.data || {}, usage: result.usage, model: result.model};
 }
 async function updateProfilePreferences(request) {
   await requirePatientAccess(request);
@@ -77,12 +77,13 @@ async function updateProfilePreferences(request) {
     const saved = (await tx.get(profileRef)).data() || {};
     validateTurn(request.data, conversation);
     const sessionId = conversation.activeSessionId || randomUUID();
+    const attemptCount = surveyAttemptCount(conversation, !conversation.activeSessionId);
     const profile = finalizeProfileForMatching({...PROFILE_DEFAULTS, ...saved,
       ...sanitizeModelProfileData(requested), riesgoSuicida: false,
       summaryConfirmed: false, sessionId});
     const activeTurn = makeTurn(profile, sessionId);
     tx.set(profileRef, {...profile, uid, updatedAt: FieldValue.serverTimestamp()});
-    tx.set(conversationRef, {uid, activeSessionId: sessionId, activeTurn, updatedAt: FieldValue.serverTimestamp()}, {merge: true});
+    tx.set(conversationRef, {uid, activeSessionId: sessionId, activeTurn, surveyAttemptCount: attemptCount, updatedAt: FieldValue.serverTimestamp()}, {merge: true});
     tx.set(db.doc(`survey_summaries/${uid}`), {uid, sessionId,
       confirmed: false, updatedAt: FieldValue.serverTimestamp()}, {merge: true});
     tx.create(db.collection("longitudinal_history").doc(), {pacienteUid: uid,
@@ -151,9 +152,10 @@ async function resetProfileChatConversation(request) {
       if (previous.result.activeSessionId !== conversation.activeSessionId) throw new HttpsError("aborted", "El reinicio pertenece a una sesión anterior.");
       return previous.result;
     }
+    const attemptCount = surveyAttemptCount(conversation, true);
     const sessionId = randomUUID(); const profile = {...PROFILE_DEFAULTS, sessionId};
     const activeTurn = makeTurn(profile, sessionId); const now = FieldValue.serverTimestamp();
-    tx.set(conversationRef, {uid, type: "profile-survey", activeSessionId: sessionId,
+    tx.set(conversationRef, {uid, type: "profile-survey", activeSessionId: sessionId, surveyAttemptCount: attemptCount,
       sessionStartedAt: Timestamp.now(), activeTurn, lastMessage: "", updatedAt: now});
     tx.set(db.doc(`profiles/${uid}`), {...profile, uid, updatedAt: now});
     tx.set(db.doc(`survey_summaries/${uid}`), {uid, sessionId,

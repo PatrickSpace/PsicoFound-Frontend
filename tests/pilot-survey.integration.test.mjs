@@ -5,8 +5,27 @@ import { seedPatient, httpCall } from "./helpers/patient-http.mjs";
 import { adminApps, adminFirestore } from "./helpers/admin-sdk.mjs";
 const require = createRequire(import.meta.url);
 const { createSurveyService } = require("../functions/src/chat/surveyService.js");
+const {createAdmissionControl} = require("../functions/src/ai/admissionControl.js");
+const {admissionPolicy} = require("../functions/src/ai/admissionPolicy.js");
+const {normalizeModality} = require("../functions/src/matching/modality.js");
+function createTestSurveyService(options) {
+  const now = options.now || Date.now;
+  const policy = () => admissionPolicy({AI_ADMISSION_LIMITS_JSON: JSON.stringify({
+    version: "synthetic", periodId: "synthetic-integration",
+    startsAt: "2020-01-01T00:00:00Z", endsAt: "2100-01-01T00:00:00Z",
+    accountInferenceLimit: 200, sessionInferenceLimit: 20,
+    budgetNanoUsd: 1000000000, pricingVersion: "openai-standard-2026-10-31",
+  })});
+  return createSurveyService({...options, admission: createAdmissionControl({db: options.db, now, policy})});
+}
 let app, db;
-beforeEach(async () => { app = await seedPatient(); db = adminFirestore.getFirestore(app); });
+beforeEach(async () => {
+  app = await seedPatient(); db = adminFirestore.getFirestore(app);
+  // Provider-path fixtures must be incomplete: complete profiles now correctly
+  // continue to the summary without dispatching another inference.
+  await db.doc("profiles/patient-b").update({modalidad: "", preferenciaGenero: "",
+    preferenciaEdad: "", enfoque: "", summaryConfirmed: false});
+});
 after(async () => { await adminApps.deleteApp(app); });
 const uid = "patient-b";
 const limits = () => ({version: "synthetic", requestsPerDay: 3, globalConcurrency: 1});
@@ -14,23 +33,25 @@ function deferred() { let resolve; const promise = new Promise(r => { resolve = 
 
 test("B-02/C-01/02: concurrent retries invoke one provider and commit profile, turn and message pair once", async () => {
   const started = deferred(), answer = deferred(); let calls = 0;
-  const service = createSurveyService({db, limits, generate: async () => { calls++; started.resolve(); return answer.promise; }});
+  const service = createTestSurveyService({db, limits, generate: async () => { calls++; started.resolve(); return answer.promise; }});
   const data = {message: "Necesito hablar de trabajo", requestId: "idempotency-one"};
   const pending = service.send(uid, data); await started.promise;
   await assert.rejects(service.send(uid, data), {code: "aborted"});
   await assert.rejects(service.send(uid, {...data, requestId: "different-operation"}), {code: "aborted"});
-  await assert.rejects(service.send("patient-c", {...data, requestId: "global-limit"}), {code: "resource-exhausted"});
+  const busy = await service.send("patient-c", {...data, requestId: "global-limit"});
+  assert.equal(busy.aiAvailability.mode, "guided");
+  assert.equal(busy.aiAvailability.reason, "ai_busy");
   answer.resolve({data: {temas: ["Problemas laborales"], modalidad: "online"}});
   const result = await pending;
   assert.deepEqual(await service.send(uid, data), result); assert.equal(calls, 1);
   assert.equal((await db.collection(`conversations/${uid}/messages`).get()).size, 2);
-  assert.equal((await db.doc(`profiles/${uid}`).get()).data().modalidad, "remoto");
+  assert.equal(normalizeModality((await db.doc(`profiles/${uid}`).get()).data().modalidad), "remoto");
   await assert.rejects(service.send(uid, {...data, message: "Changed"}), {code: "already-exists"});
   assert.deepEqual((await db.doc("runtime_controls/chat_concurrency").get()).data().leases, {});
 });
 test("B-02/C-02: reset while provider runs discards late response and old operation replay", async () => {
   const started = deferred(), answer = deferred();
-  const service = createSurveyService({db, limits, generate: async () => { started.resolve(); return answer.promise; }});
+  const service = createTestSurveyService({db, limits, generate: async () => { started.resolve(); return answer.promise; }});
   const data = {message: "Una respuesta demorada", requestId: "late-response-one"};
   const pending = service.send(uid, data); await started.promise;
   const reset = await httpCall("B", "resetProfileChatConversation", {requestId: "reset-while-pending"});
@@ -47,24 +68,26 @@ test("B-02/C-02: reset while provider runs discards late response and old operat
 });
 test("C-01/02: failed provider not repeated, expired lease recoverable, daily quota remains distributed", async () => {
   let calls = 0, clock = Date.now();
-  const service = createSurveyService({db, limits, now: () => clock, generate: async () => { calls++; throw new Error("sensitive-provider-payload"); }});
+  const service = createTestSurveyService({db, limits, now: () => clock, generate: async () => { calls++; throw new Error("sensitive-provider-payload"); }});
   const data = {message: "Texto sintético para fallo", requestId: "failed-provider-one"};
   await assert.rejects(service.send(uid, data), {code: "unavailable"});
   await assert.rejects(service.send(uid, data), {code: "failed-precondition"}); assert.equal(calls, 1);
   await db.doc(`profile_chat_quotas/${uid}`).update({leaseUntil: clock + 1000});
   await assert.rejects(service.send(uid, {message: "hola", requestId: "recover-lease-one"}), {code: "aborted"});
   clock += 2000;
-  const recoveryService = createSurveyService({db, limits, now: () => clock,
+  const recoveryService = createTestSurveyService({db, limits, now: () => clock,
     generate: async () => ({reply: "Gracias por compartirlo.", data: {}, riskSignal: "none"})});
   await recoveryService.send(uid, {message: "hola", requestId: "recover-lease-one"});
   await recoveryService.send(uid, {message: "hola", requestId: "third-operation"});
-  await assert.rejects(recoveryService.send(uid, {message: "hola", requestId: "fourth-operation"}), {code: "resource-exhausted"});
+  const exhausted = await recoveryService.send(uid, {message: "hola", requestId: "fourth-operation"});
+  assert.equal(exhausted.aiAvailability.mode, "guided");
+  assert.equal(exhausted.aiAvailability.reason, "total_turns_exhausted");
   assert.equal(calls, 1);
   assert.equal(JSON.stringify((await db.doc(`profile_chat_operations/${uid}_failed-provider-one`).get()).data()).includes("sensitive-provider-payload"), false);
 });
 test("B-02: correction preserves fields and invalidates an in-flight result; no partial messages after failure", async () => {
   const started = deferred(), answer = deferred();
-  const service = createSurveyService({db, limits, generate: async () => { started.resolve(); return answer.promise; }});
+  const service = createTestSurveyService({db, limits, generate: async () => { started.resolve(); return answer.promise; }});
   const pending = service.send(uid, {message: "Extraer varios campos", requestId: "correction-race"}); await started.promise;
   await httpCall("B", "updateProfilePreferences", {profile: {modalidad: "presencial"}});
   answer.resolve({data: {modalidad: "online"}});
@@ -101,7 +124,7 @@ test("B-04: guided answers complete without AI and require summary confirmation"
   assert.equal(first.sessionId, again.sessionId);
   assert.equal(first.activeTurn.id, again.activeTurn.id);
   let providerCalls = 0;
-  const service = createSurveyService({db,
+  const service = createTestSurveyService({db,
     limits: () => ({version: "guided-test", requestsPerDay: 10, globalConcurrency: 1}),
     inputMode: () => "guided",
     generate: async () => { providerCalls++; throw new Error("must not call AI"); }});
@@ -156,4 +179,17 @@ test("B-04: preferences rank closest available profiles without mandatory filter
   assert.deepEqual(hybrid.therapists.map(t=>t.id),["survey-professional-5","survey-professional-6"]);
   await db.doc(`profiles/${uid}`).update({modalidad:""});
   await assert.rejects(httpCall("B","getRecommendedTherapists",{}),{code:"failed-precondition"});
+});
+
+test("ten survey attempts are enforced transactionally while replay and resume remain available", async () => {
+  await db.doc(`conversations/${uid}`).set({activeSessionId: "ninth-attempt", surveyAttemptCount: 9});
+  const requests = ["tenth-attempt-one", "tenth-attempt-two"];
+  const results = await Promise.allSettled(requests.map(requestId => httpCall("B", "resetProfileChatConversation", {requestId})));
+  const winner = results.findIndex(r => r.status === "fulfilled");
+  assert.equal(results.filter(r => r.status === "fulfilled").length, 1);
+  assert.equal(results.find(r => r.status === "rejected").reason.code, "resource-exhausted");
+  assert.deepEqual(await httpCall("B", "resetProfileChatConversation", {requestId: requests[winner]}), results[winner].value);
+  const resumed = await httpCall("B", "startProfileChatConversation", {});
+  assert.equal(resumed.sessionId, results[winner].value.activeSessionId);
+  assert.equal((await db.doc(`conversations/${uid}`).get()).data().surveyAttemptCount, 10);
 });

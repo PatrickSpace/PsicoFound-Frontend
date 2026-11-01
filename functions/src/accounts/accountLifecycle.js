@@ -1,6 +1,9 @@
 /* eslint-disable max-len */
 const firestoreAdmin = require("firebase-admin/firestore");
-const {FieldValue, FieldPath} = firestoreAdmin;
+const {FieldValue, FieldPath, Timestamp} = firestoreAdmin;
+
+const ACTIVITY_WINDOW_MS = 15 * 60 * 1000;
+const INACTIVITY_PAGE_SIZE = 200;
 const authAdmin = require("firebase-admin/auth");
 const {HttpsError} = require("firebase-functions/v2/https");
 const logger = require("firebase-functions/logger");
@@ -24,6 +27,7 @@ function inactivityCutoff(now = new Date()) {
 
 function latestActivity(user, authUser = {}) {
   return Math.max(millis(user.lastActivityAt), millis(user.createdAt),
+      millis(user.activityWindowUntil),
       millis(authUser.metadata?.lastSignInTime),
       millis(authUser.metadata?.creationTime));
 }
@@ -34,7 +38,17 @@ async function recordAccountActivity(uid) {
     const ref = db.doc(`users/${uid}`);
     const user = (await tx.get(ref)).data();
     if (user && (!user.accountStatus || user.accountStatus === "active")) {
-      tx.update(ref, {lastActivityAt: FieldValue.serverTimestamp(), inactivityReviewRequired: FieldValue.delete()});
+      const now = Date.now();
+      const last = millis(user.lastActivityAt);
+      const until = millis(user.activityWindowUntil);
+      // Every invocation still reads the current account inside a transaction.
+      // Contenders retry against the committed timestamp rather than each write.
+      if (!last || !until || now >= until || last >= until) {
+        tx.update(ref, {lastActivityAt: FieldValue.serverTimestamp(),
+          activityWindowUntil: Timestamp.fromMillis(now + ACTIVITY_WINDOW_MS),
+          inactivityReviewRequired: FieldValue.delete(),
+          ...(!user.accountStatus ? {accountStatus: "active"} : {})});
+      }
     }
     return user;
   });
@@ -91,7 +105,8 @@ async function reactivateOwnAccount(request) {
     const professionals = await tx.get(db.collection("therapists").where("uid", "==", uid));
     const now = FieldValue.serverTimestamp();
     tx.update(ref, {accountStatus: "active", suspensionType: FieldValue.delete(),
-      suspendedAt: FieldValue.delete(), inactivityReviewRequired: FieldValue.delete(), lastActivityAt: now, accountStatusUpdatedAt: now,
+      suspendedAt: FieldValue.delete(), inactivityReviewRequired: FieldValue.delete(), lastActivityAt: now,
+      activityWindowUntil: FieldValue.delete(), accountStatusUpdatedAt: now,
       accountStatusUpdatedBy: uid, updatedAt: now});
     for (const profile of professionals.docs) {
       const data = profile.data();
@@ -127,15 +142,53 @@ async function recentMovements(db, uid, professionals, transaction) {
   return latest;
 }
 
+// Canonicalize only index fields, never invent a new activity time. This also
+// supports old clients creating users without accountStatus or lastActivityAt.
+function activityIndexPatch(user) {
+  if (user.accountStatus && user.accountStatus !== "active") return {};
+  const patch = {};
+  if (!user.accountStatus) patch.accountStatus = "active";
+  if (!(user.lastActivityAt instanceof Timestamp)) {
+    patch.lastActivityAt = Timestamp.fromMillis(Math.max(
+        millis(user.lastActivityAt), millis(user.createdAt),
+    ));
+  }
+  return patch;
+}
+
+async function normalizeActivityIndex(db, ref) {
+  return db.runTransaction(async (tx) => {
+    const user = (await tx.get(ref)).data();
+    if (!user) return;
+    const patch = activityIndexPatch(user);
+    if (Object.keys(patch).length) tx.update(ref, patch);
+  });
+}
+
 async function suspendInactiveAccounts() {
   const db = firestoreAdmin.getFirestore();
   const cutoff = inactivityCutoff();
   const counts = {suspended: 0, skipped: 0, review: 0, errors: 0};
+  const indexed = db.collection("users")
+      .where("accountStatus", "==", "active")
+      .where("lastActivityAt", "<=", Timestamp.fromMillis(cutoff))
+      .orderBy("lastActivityAt").limit(INACTIVITY_PAGE_SIZE);
+  const checkpoint = db.doc("runtime_controls/inactivity_legacy_scan");
+  const previousCursor = (await checkpoint.get()).data()?.cursor;
+  let legacy = db.collection("users").orderBy(FieldPath.documentId())
+      .limit(INACTIVITY_PAGE_SIZE);
+  if (previousCursor) legacy = legacy.startAfter(previousCursor);
+  // One bounded compatibility page per day; the canonical candidate query
+  // handles all prepared accounts daily, regardless of catalogue size.
+  const legacyPage = await legacy.get();
+  for (const snapshot of legacyPage.docs) {
+    if (Object.keys(activityIndexPatch(snapshot.data())).length) {
+      await normalizeActivityIndex(db, snapshot.ref);
+    }
+  }
   let cursor;
   do {
-    let query = db.collection("users").orderBy(FieldPath.documentId()).limit(200);
-    if (cursor) query = query.startAfter(cursor);
-    const page = await query.get();
+    const page = await (cursor ? indexed.startAfter(cursor) : indexed).get();
     for (const snapshot of page.docs) {
       const uid = snapshot.id;
       const user = snapshot.data();
@@ -146,7 +199,14 @@ async function suspendInactiveAccounts() {
         const authUser = await authAdmin.getAuth().getUser(uid);
         const activity = latestActivity(user, authUser);
         if (!activity) {
-          await snapshot.ref.update({inactivityReviewRequired: true});
+          if (!user.inactivityReviewRequired) {
+            await db.runTransaction(async (tx) => {
+              const current = (await tx.get(snapshot.ref)).data();
+              if (current && !latestActivity(current) && !current.inactivityReviewRequired) {
+                tx.update(snapshot.ref, {inactivityReviewRequired: true});
+              }
+            });
+          }
           counts.review++; continue;
         }
         if (activity > cutoff) {
@@ -173,11 +233,16 @@ async function suspendInactiveAccounts() {
         logger.warn("inactivity account review failed", {code: typeof error.code === "string" ? error.code : "internal"});
       }
     }
-    cursor = page.size === 200 ? page.docs.at(-1) : null;
+    cursor = page.size === INACTIVITY_PAGE_SIZE ? page.docs.at(-1) : null;
   } while (cursor);
+  // Normalization failures throw before advancing this cursor. Review failures
+  // remain indexed candidates for tomorrow and must not starve legacy accounts.
+  await checkpoint.set({cursor: legacyPage.size === INACTIVITY_PAGE_SIZE ?
+    legacyPage.docs.at(-1).id : null});
   logger.info("inactivity review completed", counts);
   return counts;
 }
 
 module.exports = {inactivityCutoff, latestActivity, recordAccountActivity,
+  ACTIVITY_WINDOW_MS, activityIndexPatch, normalizeActivityIndex,
   suspendOwnAccount, reactivateOwnAccount, suspendInactiveAccounts};

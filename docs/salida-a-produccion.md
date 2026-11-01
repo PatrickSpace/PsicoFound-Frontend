@@ -1,183 +1,128 @@
-# Plan consolidado de salida a producción de Lurems
+# Plan de salida a producción de Lurems
 
-Fecha de consolidación: **25 de octubre de 2026**, America/Lima.
-Actualización de alcance: **26 de octubre de 2026**.
-Base local revisada: commit `d8ad39c` de `main`.
+Última revisión: **31 de octubre de 2026, America/Lima**.
+Base observada: `48967838c3762be13e0dbdaa92d8d2ab0fc2fd9c` (`main`), con optimizaciones posteriores en trabajo en el workspace compartido.
 
-Evidencia de la publicación del 27/10:
-[informe de validación integrada](operations/validacion-produccion-2026-10-27.md).
+Este documento concentra los pendientes vigentes. La evidencia nueva está en la [revisión del 31/10](operations/revision-produccion-2026-10-31.md). Los expedientes fechados conservan el alcance de sus propias entregas.
 
-Entrega de preparación profesional y guía de uso del 29/10:
-[onboarding guiado](functional/onboarding-guiado.md) y
-[registro de validación/publicación](operations/onboarding-2026-10-29.md).
+## Automatización operativa en el workspace
 
-Ejecución y propuestas posteriores:
-[expediente de cierre operativo](operations/cierre-operativo-2026-10-25.md).
-Recepción de alertas comprobada; perfil actual configurado con tarifa de prueba.
-La tarifa real de apertura y el cambio final de contraseña continúan pendientes.
-
-Este documento es el punto de seguimiento para decidir la apertura operativa del
-MVP. Consolida documentación del repositorio; su creación no incluye nuevas pruebas,
-consulta de consolas ni despliegues. «Documentado como completado» conserva la
-evidencia de la entrega anterior y no significa revalidado hoy.
+El alcance final autorizado incorpora vencimiento automático, UI de plazo terminado y `/admin/operaciones` con tareas, responsables e historial. Los cobros conservan conciliación administrativa: no se publica API ni webhook de Mercado Pago. Véanse [operación](operations/automatizacion-operativa-2026-10-31.md) y [publicación a main](operations/publicacion-main-2026-10-31.md). Las acciones comerciales y humanas pasan a tareas del administrador; el cobro controlado sigue pendiente.
 
 ## 1. Decisión actual
 
-**La aplicación está publicada y el cierre técnico está documentado. La apertura
-operativa a pacientes con cobros conserva acciones pendientes.** Publicación técnica
-y aceptación para operar son decisiones separadas.
+**La app está publicada técnicamente. Falta aprobar el candidato actual y cerrar la preparación comercial y operativa antes de abrir con cobros.**
 
-El siguiente paso es cerrar las acciones de la sección 3, resolver las verificaciones
-documentales de la sección 4 y registrar la decisión de apertura en la sección 8.
-Las exclusiones de la sección 5 se mantienen: este plan no autoriza ejecutarlas.
+Quality de `4896783` falló por dependencias del backend; integración y navegador no llegaron a ejecutarse en ese run. Vercel publicó ese SHA, pero Firebase Hosting sirve una entrada distinta. Vercel en verde no equivale a aceptación del lanzamiento.
 
-| Componente | Referencia |
+| Componente | Estado y evidencia |
 | --- | --- |
-| Sitio de usuarios | `https://app.lurems.lat` |
-| Frontend Vercel | `https://psico-found-frontend.vercel.app` |
-| Firebase | Proyecto `psicosaas-3c819`, región de Functions `southamerica-east1` |
-| Hosting | Sitio `luremsapp` |
-| Rama de entrega | `main`; Vercel publica al recibir un push según la configuración documentada |
-| Versión legal vigente documentada | `2026-10-v2` |
+| Firebase | `psicosaas-3c819`, Firestore `(default)` y Functions en `southamerica-east1`. Ambos frontends comparten backend. |
+| Sitio de usuarios | `https://app.lurems.lat`, Hosting `luremsapp`; HTML/JS disponibles, entrada distinta del build local revisado. |
+| Vercel | `https://psico-found-frontend.vercel.app`; HTML y seis assets iniciales coinciden con el build local. No es staging aislado. |
+| Candidato | `4896783`; [Quality 41159307043](https://github.com/PatrickSpace/PsicoFound-Frontend/actions/runs/41159307043) fallido. Cambios posteriores de optimización sin aceptación consolidada. |
+| Quality verde anterior | [41059306300](https://github.com/PatrickSpace/PsicoFound-Frontend/actions/runs/41059306300), commit `1cc2564`; no cubre las entregas posteriores. |
+| Legal publicado documentado | `2026-10-v2`; no se consultó de nuevo el documento Firestore vigente en esta revisión. |
+| Exclusiones | Backup/restore real, dispositivos físicos y caída real de OpenAI siguen aplazados por el titular. |
 
-Vercel y Hosting utilizan el mismo backend según el plan de infraestructura.
-Una prueba en Vercel puede modificar datos de producción; no es un staging aislado.
+## 2. Implementación y validación que se conservan
 
-## 2. Completado según la entrega vigente
-
-| Área | Resultado documentado |
+| Área | Resultado y alcance |
 | --- | --- |
-| Encuesta | Modo híbrido: opciones guiadas y texto libre con OpenAI `gpt-6-luna`; smoke autenticado con respuesta, resumen y matching coherentes. |
-| Continuidad | Historial recuperable tras recarga, indiferencia válida, resumen editable y confirmado; borrador y opciones guiadas ante fallo de IA. La caída real del proveedor no se ensayó. |
-| Acceso | Elegibilidad 18+, consentimiento versionado en registro con retorno al destino y recuperación de cuentas incompletas. |
-| Correo | Verificación de Firebase entregada y completada en buzón de prueba; recuperación de contraseña enviada, con cambio final pendiente. |
-| Seguridad | App Check exigido y observado válido; llamada directa sin credenciales rechazada. Secreto OpenAI en Functions; cuotas, concurrencia e idempotencia. |
-| Privacidad de la encuesta | Enmascarado de contactos detectables, `store: false` y hasta 15 intercambios completos enviados al proveedor; historial completo conservado en Firestore. |
-| Acceso profesional | Resumen y transcript sujetos a consentimiento, vínculo y aprobación del pago de la primera cita. Su cancelación retira el acceso; una cita posterior no lo reactiva por sí sola. |
-| Agenda | Rechazo profesional con motivo y solicitud de otro horario; registro de fecha real de atención, correcciones e historial. |
-| Administración | Gestión legal, tarifas, conciliación manual y panel de alertas protegidos por rol. |
-| Legal | Versión `2026-10-v2` publicada e inmutable; renovación de aceptación comprobada. Publicar textos no acredita por sí solo todas las decisiones de retención. |
-| Alertas | Canal de correo, métrica y política de Cloud Monitoring habilitados; recepción humana pendiente. |
-| Calidad | Seguimiento reciente: 44 pruebas frontend, 96 backend, lint y build aprobados. La matriz registra 102 pruebas de navegador aprobadas para el release `481f60b`; no se atribuyen automáticamente al commit actual. |
-| Publicación | Frontend, Functions, reglas e índices publicados según el seguimiento; rutas públicas y navegación comprobadas. El identificador exacto del despliegue debe constar en el acta final. |
+| Encuesta | Híbrida con OpenAI `gpt-6-luna`, opciones guiadas sin inferencia, resumen editable/confirmado y matching determinístico. Smoke autenticado documentado en el cierre del 25/10. |
+| Acceso y seguridad | Elegibilidad 18+, verificación de correo, consentimiento versionado, App Check, cuotas, concurrencia e idempotencia. Configuración real comprobada en entregas anteriores; no inventariada de nuevo hoy. |
+| Acceso profesional a encuesta | Sujeto a vínculo, consentimiento y aprobación del pago de la primera cita. Cancelarla retira el acceso; una cita posterior no lo restablece automáticamente. |
+| Cuentas | Suspensión/reactivación, conservación e inactividad a los tres meses: integración y publicación verificadas el [27/10](operations/validacion-produccion-2026-10-27.md). No falta implementar nuevamente suspensión. |
+| Agenda y pagos | Reserva, reprogramación, rechazo con motivo, registro/corrección de atención, snapshots y conciliación manual implementados. Se añadieron confirmación automática, scheduler y tareas locales; activación pendiente. |
+| Preparación profesional | Perfil revisado, tarifa, disponibilidad y activación/pausa explícitas; backend y Hosting publicados el [30/10](operations/onboarding-2026-10-29.md). Perfiles heredados conservan compatibilidad hasta adoptar la nueva preparación. |
+| Acompañamiento del paciente | Guías posteriores a cita/pago y Functions `getPatientCareGuide`/`savePatientCareGuide`: publicación de Functions documentada en la entrega del [30/10](operations/onboarding-spotlight-2026-10-30.md). |
+| Guías visuales unificadas | Frontend `4896783`; 50 unitarias frontend, 117 backend y 11 casos integrados específicos documentados el [30/10](operations/onboarding-unificado-2026-10-30.md). Falta aceptación completa en Quality y conciliación de Hosting. |
+| Alertas | Entrega y recuperación al buzón comprobadas el 25/10 en el [expediente operativo](operations/cierre-operativo-2026-10-25.md). Guardia/respuesta humana pendientes. |
 
-La fuente principal de estos resultados es
-[preparación para producción](production-readiness.md). Los informes anteriores
-conservan su fecha y alcance; un pendiente antiguo no reabre una comprobación
-posterior explícitamente cerrada.
+Una prueba en emuladores no acredita producción. Un 401 sin credenciales no acredita un recorrido autenticado. Publicar textos legales no completa por sí solo las decisiones de conservación o la revisión profesional del apoyo.
 
-## 3. Acciones para completar la operación
+## 3. Bloqueos técnicos del próximo candidato
 
-Responsables propuestos por función; los nombres y fechas quedan por asignar.
-Ninguna casilla pendiente equivale a autorización de un cobro o una operación sensible.
+P0 significa cerrar antes de promover el candidato para apertura con cobros. No implica que el sitio esté caído. Integrar primero los trabajos paralelos y validar un estado estable.
 
-| ID | Acción pendiente | Responsable | Evidencia necesaria para cerrar |
+| ID | Prioridad / estado | Qué falta | Criterio de cierre |
 | --- | --- | --- | --- |
-| OP-01 | Entrega al buzón comprobada mediante conector autorizado; definir respuesta humana operativa. | Titular del buzón | Avisos de activación y recuperación del 25/10/2026, 01:38 y 01:42 de Lima; incidente `0.oe8bafj112jg`. Ver expediente. |
-| OP-02 | Completar recuperación de contraseña con una cuenta de prueba y buzón controlado. | Titular de la cuenta QA | Nueva contraseña establecida e inicio de sesión posterior correcto; no registrar contraseña ni enlace de acción. |
-| OP-03 | Perfil actual configurado con tarifa de prueba S/1.10 por instrucción del titular. Sigue pendiente seleccionar tarifa real para apertura. | Responsable comercial y cada profesional | Guardado verificado en Configuración. Las tarifas de prueba no habilitan cobros con política real. |
-| OP-04 | Ejecutar una transacción controlada y conciliarla cuando exista autorización financiera. | Titular y conciliador | Importe y referencia externa verificados; operación, cita y obligación consistentes; resolución documentada de los fondos de prueba. |
-| OP-05 | Nombrar conciliador, suplente y frecuencia de revisión de pagos, vencimientos y solicitudes. | Responsable operativo | Acuerdo escrito con responsables, frecuencia y tiempos de respuesta. No hay scheduler de vencimientos. |
-| OP-06 | Definir el tratamiento de citas existentes cuando un profesional se desactiva o no puede atender. | Operación y responsable clínico | Procedimiento para contactar, revisar cada cita y resolver horario/pago; no existe reasignación automática. |
+| TEC-01 | P0, fallo confirmado en CI | Resolver dependencias de Functions: 11 entradas moderadas en auditoría completa; cuatro permanecen sin devDependencies. | Árbol compatible revisado, auditoría al umbral actual aprobada y regresión afectada verde. No bajar el umbral ni forzar cambios mayores sin validar. |
+| TEC-02 | P0, sin regresión completa del candidato | Obtener Quality verde del SHA final; el run actual omitió integración/navegador. El lint local encontró un import sin uso durante cambios ajenos; el lint del SHA remoto sí pasó. | Unitarias, lint, Knip, build, auditorías e integración/navegador del candidato final aprobados. No reutilizar conteos de otro SHA. |
+| TEC-03 | P0, artefactos distintos comprobados | Conciliar Hosting, Vercel y backend y decidir qué entrega se promueve. | SHA frontend, versión Hosting, deployment Vercel y Functions/reglas/índices compatibles identificados; publicación y smoke cuando corresponda. |
+| TEC-04 | P0, comprobación remota pendiente | Verificar el candidato final y su configuración: Auth/OAuth si se ofrece, App Check, legal, índices READY, IAM/secretos y mantenimiento. | Recorridos QA de paciente/profesional/admin y denegaciones esperadas, sin relajar controles ni usar expedientes reales. |
+| TEC-05 | P0, control económico no acreditado | Definir presupuesto, destinatarios y respuesta; verificar cuotas y separar Firebase backend, Hosting, Vercel e IA. | Configuración y evidencia reales, consumo observado y límites acordados. La simulación financiera no es un presupuesto configurado. |
 
-OP-01 a OP-04 proceden del seguimiento más reciente. OP-05 y OP-06 consolidan
-obligaciones abiertas en la guía de pagos y en la matriz del piloto. No son nuevas
-funcionalidades asumidas como implementadas.
+La [auditoría financiera](finance/auditoria-costos-2026-10-30.md) contiene objetivos de ahorro. Los tres prompts de backend, frontend e IA no acreditan implementación ni aceptación. Registrar sus resultados y repetir regresión al integrarlos, especialmente si cambian matching, contexto, cuotas o caché.
 
-## 4. Verificaciones documentales antes de declarar el cierre
+## 4. Acciones comerciales y de operación
 
-Hay referencias antiguas que no coinciden con el cierre reciente. Antes de abrir
-el servicio se debe localizar evidencia vigente o registrar expresamente qué falta;
-no basta con cambiar una casilla a completada.
+Se conservan los IDs anteriores. Nombres y cobertura quedan por registrar. No incluir credenciales, recibos ni información clínica en estos documentos.
 
-| ID | Comprobación | Criterio de cierre |
+| ID | Pendiente vigente | Responsable | Cierre verificable |
+| --- | --- | --- | --- |
+| OP-01 | Definir quién recibe, acusa y resuelve alertas. La entrega al buzón ya está acreditada. | Responsable técnico y suplente | Cobertura, frecuencia y respuesta acordadas; acceso utilizable a diagnóstico y recuperación. |
+| OP-02 | Completar cambio de contraseña y login posterior de la cuenta QA. | Titular de la cuenta QA | Recuperación de extremo a extremo; no basta con que Firebase acepte enviar un correo. |
+| OP-03 | Preparar profesionales reales de apertura. La tarifa QA S/1,10 no habilita cobros reales. | Responsable comercial y cada profesional | Perfil/datos revisados, tarifa real válida, reparto/enlace correctos, horarios futuros y recepción activada expresamente. No activar perfiles ficticios o heredados en masa. |
+| OP-04 | Pago controlado y conciliación, reservados para la fase financiera final. | Titular y conciliador | Importe, cuenta/destino y autorización concretos; pago/cita/obligación coherentes y resolución de fondos de prueba. No se ejecuta desde esta revisión. |
+| OP-05 | Activar la automatización y asignar responsables de la bandeja administrativa. | Administrador y suplente | Functions e índices publicados, scheduler activo, conciliación administrativa y tareas atendidas. No se requiere conexión al proveedor. Los avisos anteriores preservados siguen en revisión. |
+| OP-06 | Resolver desde Operaciones las reservas afectadas por profesionales que dejan de atender. | Administrador | Agenda afectada revisada, coordinación y cancelación por caso; pagos confirmados enviados a devolución. La pausa de nuevas reservas no cancela citas existentes. |
+
+La nueva implementación automatiza confirmación y vencimiento y concentra excepciones y revisiones en administración. Falta activar y verificarla en el entorno final. El scheduler de inactividad conserva su evidencia anterior; no acredita publicación del nuevo scheduler de pagos.
+
+## 5. Revisión humana, conservación y trazabilidad
+
+| ID | Estado actual | Qué queda |
 | --- | --- | --- |
-| VD-01 | Acción humana pendiente: el titular contactará a psicólogos reales para revisar casos y sistema de apoyo. Por decisión del 26/10 se mantiene el comportamiento actual. | Registrar la revisión real cuando se realice; sin botón de aprobación ni cierre clínico automático. |
-| VD-02 | Decisión del 26/10: suspensión con reactivación por el titular, tipo voluntario/involuntario, revisión tras tres meses sin actividad y conservación de datos sin eliminación productiva. Implementación validada y publicada el 27/10; ver informe de entrega. | Validar y publicar el [contrato de suspensión](functional/suspension-cuentas.md). La política ejecutable de eliminación deja de ser requisito de esta entrega; no equivale a aprobar conservación perpetua. |
-| VD-03 | Trazabilidad del candidato desplegado y comprobaciones de calidad. | Relacionar commit exacto, ejecución de Quality, despliegue Vercel, versión Hosting y componentes backend. Registrar cualquier diferencia con `d8ad39c`. |
-| VD-04 | Resolver referencias contradictorias de la matriz. | Mantener el cierre de registro/consentimiento REV-SEG-01/02; actualizar las filas antiguas de alertas, correo y smoke autenticado con referencias al cierre posterior. |
+| VD-01 | Revisión profesional independiente de apoyo pendiente; el titular decidió el 26/10 mantener el sistema y contactar psicólogos reales. | Registrar profesional, versión, casos y dictamen cuando se realice; delimitar el alcance de apertura mientras siga pendiente. Sin botón de aprobación ni certificación clínica de tests técnicos. |
+| VD-02 | Suspensión y conservación implementadas y publicadas el 27/10. Habilitar eliminación productiva deja de ser requisito de esta fase. | Aclarar finalidad/conservación por categoría y tratamiento de respaldos. Suspender no aprueba conservar indefinidamente. |
+| VD-03 | Trazabilidad parcial; divergencia pública observada el 31/10. | Cerrar TEC-02/03 y relacionar artefacto final con calidad y publicación. |
+| VD-04 | Referencias activas reconciliadas en esta revisión; los históricos conservan sus fechas. | Mantener matriz al cambiar candidato. REV-SEG-01/02 del 21/10 siguen cerrados; alertas y verificación de correo tienen evidencia posterior. |
 
-La consolidación no afirma que falten implementaciones para VD-01/02: falta aclarar
-su aprobación y alcance con evidencia coherente. Los procedimientos y controles
-técnicos existentes no sustituyen esa decisión.
+## 6. Recuperación y pruebas aplazadas
 
-## 5. Exclusiones que se conservan
-
-| Prueba aplazada por el titular | Estado y condición para retomarla |
+| Comprobación | Estado y tratamiento |
 | --- | --- |
-| Caída real de OpenAI | No ejecutada. Requiere ventana controlada futura; comprobar borrador y continuidad guiada. |
-| Dispositivos físicos | No ejecutada. La prueba en viewport móvil no acredita Safari/iOS ni equipos físicos. |
-| Backup y restauración | Ensayo real no ejecutado. Requiere proyecto aislado y verificación de datos y accesos. No se presume recuperación productiva demostrada. |
+| Backup/restauración real | Aplazada por el titular; una copia entre proyectos demo no demuestra recuperación productiva. Existencia/antigüedad de copia administrada no consultadas hoy. Registrar la brecha en el acta; no ejecutar un restore por la existencia del plan. |
+| Rollback de aplicación | Identificar versión recuperable, operador y compatibilidad. Revertir HTML no restaura Firestore, Auth o pagos. El ensayo remoto actual no se acredita en esta revisión. |
+| Caída real de OpenAI | Aplazada. Conservar pruebas sintéticas, continuidad guiada y ayuda; no presentarlas como ensayo real del proveedor. |
+| Dispositivos físicos y Safari/iOS | Aplazados. Viewports de Chromium no certifican otros navegadores/equipos. |
 
-El acta de apertura debe reconocer estas limitaciones. No se registran como
-aprobadas ni se ejecutan por la sola existencia de este plan.
+Las decisiones previas persisten. Registrar impacto, mitigación y responsable de las brechas al decidir el alcance. Esta actualización no levanta exclusiones.
 
-## 6. Trabajo posterior y decisiones de alcance
+## 7. Orden práctico para cerrar
 
-Estos puntos no deben confundirse con fallos confirmados del release:
+1. Integrar los trabajos en curso, corregir TEC-01 y congelar candidato.
+2. Aprobar Quality completo de ese SHA y conciliar contratos/backend.
+3. Confirmar presupuesto/cuotas y preparar profesionales, cobertura, soporte y gestión de citas pendientes. Completar recuperación de contraseña.
+4. Registrar decisiones humanas, alcance de pruebas aplazadas y recuperación/versiones compatibles.
+5. Publicar solo componentes necesarios conforme al [procedimiento de release](operations/pilot-release.md), si corresponde; registrar versión y smoke autorizado. Vercel comparte producción.
+6. Ejecutar el pago controlado cuando se retome la fase financiera autorizada y cerrar conciliación. Registrar la decisión de apertura.
 
-- Definir alta/finalización terapéutica, inasistencia y facultades del profesional
-  para cambiar el estado de una terapia. Requieren acuerdo funcional antes de código.
-- Validar con usuarios la alternancia paciente/psicólogo, estados vacíos y tabla
-  de pacientes. La validación en dispositivos físicos sigue excluida por ahora.
-- Medir rendimiento real y decidir si compensa optimizar fuente MDI e importaciones.
-- Reducir complejidad de componentes de encuesta/cita con regresión visual.
-- Medir volumen administrativo antes de introducir paginación y búsqueda remotas.
-- Definir canal externo de recordatorios si forma parte de la oferta del servicio.
+Revalidar si cambian SHA, políticas o artefacto. `verify:pilot-config` es una herramienta offline histórica para staging: exige eliminación/variables legales que no describen completamente el modelo actual. No cambiar `APP_ENV` ni habilitar borrados para hacerlo pasar; revisar las comprobaciones aplicables y las consolas.
 
-Priorizar según uso observado, sin ampliar automáticamente el alcance de la apertura.
+## 8. Acta de apertura
 
-## 7. Comprobación final de publicación
-
-Si se modifica código o configuración antes de abrir, validar el nuevo candidato;
-no reutilizar resultados de otro commit como aprobación de la nueva entrega.
-
-- [ ] Registrar commit y estado de Quality de ese candidato.
-- [ ] Confirmar configuración pública de frontend antes del build y mantener los
-      secretos fuera de Git y del navegador. El incidente previo de página en blanco
-      por ausencia de `VITE_FIREBASE_*` exige comprobación visual posterior.
-- [ ] Publicar únicamente los componentes cambiados y registrar sus versiones.
-      Si afecta índices/reglas/Functions/frontend, usar el orden y compatibilidad
-      definidos en el procedimiento de despliegue.
-- [ ] Comprobar inicio, login, registro, términos, privacidad y entrada de encuesta.
-- [ ] Verificar con cuentas QA autorizadas consentimiento, encuesta, resumen,
-      recomendaciones y acceso profesional; no introducir información clínica real.
-- [ ] Revisar consola, logs, App Check y alertas sin exponer mensajes, tokens ni datos personales.
-- [ ] Identificar versión recuperable y operador responsable; no ejecutar el ensayo
-      de restauración excluido. Registrar un plan de reversión compatible con los datos.
-
-Estas casillas son la lista de la próxima decisión de apertura, no una declaración
-de que las comprobaciones documentadas anteriormente hayan fallado.
-
-## 8. Acta de decisión de apertura
-
-Completar cuando existan las evidencias; este documento no declara una nueva
-autorización de lanzamiento.
-
-| Campo | Valor |
+| Campo | Valor pendiente |
 | --- | --- |
-| Fecha y hora, America/Lima | Pendiente |
-| Titular que decide la apertura | Pendiente |
-| Responsable operativo y suplente | Pendiente |
-| Commit / Quality / versiones desplegadas | Pendiente de vincular |
-| OP-01 a OP-06 | Pendiente de cierre o decisión explícita documentada |
-| VD-01 a VD-04 | Pendiente de evidencia / resolución |
-| Exclusiones reconocidas | Pendiente de registrar en la decisión |
-| Resultado de comprobación final | Pendiente |
-| Decisión: abrir / posponer | Pendiente |
-| Alcance, usuarios admitidos y condiciones | Pendiente |
+| Fecha/hora y titular | Por registrar |
+| Candidato / Quality / Hosting / Vercel / backend | Relacionar evidencias finales |
+| TEC-01 a TEC-05 | Cierre verificable del candidato |
+| OP-01 a OP-06 | Cierre o resolución concreta que delimite la operación admitida |
+| VD-01 a VD-04 | Estado y responsables de decisiones pendientes |
+| Recuperación y exclusiones | Alcance, impacto, mitigación y responsable |
+| Operador, suplente y cobertura | Por asignar/documentar |
+| Presupuesto y capacidad admitida | Por definir con datos reales |
+| Decisión y alcance | Abrir o posponer; usuarios admitidos y condiciones |
 
-## 9. Fuentes y mantenimiento
+Esta revisión no declara una nueva decisión de apertura ni autorización de cobro.
 
-- [Seguimiento de producción, 25 de octubre](production-readiness.md): evidencia del cierre técnico y acciones humanas.
-- [Matriz del piloto](functional/matriz-cierre-piloto.md): cobertura funcional e histórico; conserva filas anteriores al cierre reciente.
-- [Encuesta y matching](functional/encuesta-matching.md): contrato funcional vigente.
-- [Pagos y conciliación](operations/pilot-payments.md): tarifas, reservas, cola manual y límites financieros.
-- [Revisión de ayuda](operations/pilot-help-review.md): alcance y revisión clínica pendiente de conciliar.
-- [Cuenta y privacidad](operations/pilot-privacy.md): conservación, eliminación y operación privilegiada.
-- [Privacidad publicada 2026-10-v2](legal/privacy-2026-10-v2-proposal.md): publicación y renovación de consentimiento.
-- [Plan de infraestructura](infarsetructura/plan-operativo-mvp.md) y [estrategia](infarsetructura/estrategia-implementacion.md): procedimientos propuestos; no acreditan por sí mismos acciones ejecutadas.
+## 9. Referencias
 
-Actualizar esta lista al cerrar un ID: fecha, responsable, referencia de evidencia
-y limitaciones. Mantener los históricos sin reescribir sus resultados; ante una
-contradicción nueva, marcarla y resolverla antes de dar el requisito por cerrado.
+- [Revisión del 31/10](operations/revision-produccion-2026-10-31.md): CI, verificaciones locales y divergencia pública.
+- [Seguimiento técnico](production-readiness.md) y [matriz](functional/matriz-cierre-piloto.md).
+- [Cierre del 25–26/10](operations/cierre-operativo-2026-10-25.md): alertas, contraseña, tarifa QA y decisiones humanas.
+- [Publicación del 27/10](operations/validacion-produccion-2026-10-27.md): suspensión/inactividad y acceso.
+- [Preparación profesional](operations/onboarding-2026-10-29.md) y [guías unificadas](operations/onboarding-unificado-2026-10-30.md).
+- [Pagos](operations/pilot-payments.md), [privacidad](operations/pilot-privacy.md) y [revisión de ayuda](operations/pilot-help-review.md).
+- [Infraestructura](infarsetructura/plan-operativo-mvp.md), [estrategia](infarsetructura/estrategia-implementacion.md) y [costos](finance/auditoria-costos-2026-10-30.md).

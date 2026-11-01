@@ -4,18 +4,54 @@ Plan consolidado para la decisión de apertura:
 [salida a producción](salida-a-produccion.md). Este seguimiento conserva la evidencia
 del cierre técnico y sus exclusiones.
 
-Última revisión: 2026-10-27, America/Lima.
+Última revisión: **2026-10-31, America/Lima**.
+
+La nueva [automatización operativa](operations/automatizacion-operativa-2026-10-31.md) está implementada localmente: pagos verificables, scheduler y tareas del administrador. Requiere activación/configuración y aceptación del candidato final; no modifica por sí sola la evidencia de producción siguiente.
+
+## Estado vigente del candidato
+
+Base observada: `4896783` (`main`). **Publicación técnica existente; candidato
+actual sin Quality completo y apertura con cobros pendiente.**
+
+- [Quality 41159307043](https://github.com/PatrickSpace/PsicoFound-Frontend/actions/runs/41159307043)
+  falló por auditoría de Functions: 11 entradas moderadas. La suite integrada y de
+  navegador se omitió; Vercel en verde no sustituye esa comprobación.
+- Auditoría local de Functions sin devDependencies: cuatro entradas moderadas.
+  El informe antiguo de cero vulnerabilidades conserva su fecha, no el estado actual.
+- Pasada local: 50 unitarias frontend, 117 backend, build y Knip aprobados. Lint
+  encontró un import sin uso durante cambios paralelos; el lint remoto de `4896783`
+  sí pasó. Congelar y validar el árbol final antes de promoverlo.
+- HTTP público: Hosting y Vercel responden, pero HTML y JS de entrada difieren.
+  Vercel coincide con el build local inspeccionado; no se acredita Hosting de la
+  entrega visual más reciente ni un nuevo smoke autenticado en esta revisión.
+- Suspensión, preparación profesional y guías están implementadas. Tarifas reales
+  por profesional, operación manual, contraseña QA, presupuesto y acta de apertura
+  conservan acciones pendientes. La entrega de alertas al buzón ya está acreditada.
+
+Detalle y alcance: [expediente del 31/10](operations/revision-produccion-2026-10-31.md).
+Criterios vigentes: TEC-01 a TEC-05, OP-01 a OP-06 y VD-01 a VD-04 del
+[plan de salida](salida-a-produccion.md). La última entrega de guías tiene su
+[validación específica](operations/onboarding-unificado-2026-10-30.md); no sustituye
+Quality completo del candidato.
+
+## Antecedente de publicación y cierre del 25–27/10
+
+El contenido siguiente conserva los resultados de esas entregas. Sus casillas y
+conteos no certifican `4896783` ni los cambios de optimización en curso. Para la
+decisión actual prevalecen el estado vigente anterior y el plan consolidado.
 
 Actualización posterior validada y publicada: [suspensión, reactivación e inactividad](operations/validacion-produccion-2026-10-27.md).
 La publicación de esta actualización se documenta allí; los resultados del cierre
 del 25/10 siguientes se conservan como antecedente fechado.
 
-Release desplegado: candidato de cierre de esta entrega; se fusionará a `main` al
-terminar las comprobaciones automáticas. Release base de la encuesta: `481f60b`.
+Release base de la encuesta: `481f60b`; publicación posterior de suspensión
+`ce5903e` y preparación profesional `d3d0d52`, con sus expedientes fechados.
+La referencia anterior a un candidato pendiente de fusionar no describe el estado
+de `main` del 31/10.
 
 Proyecto Firebase: `psicosaas-3c819`. Dominio: <https://app.lurems.lat>.
 
-## Estado ejecutivo
+## Estado ejecutivo histórico del cierre
 
 La encuesta conversacional híbrida, el acceso condicionado al transcript, las
 alertas operativas y el flujo de cobro manual están desplegados en producción. El
@@ -27,7 +63,7 @@ Los recorridos de administrador y psicólogo se comprobaron con datos sintético
 aceptación. Permanecen fuera del alcance de esta entrega, por decisión del titular,
 la caída real de OpenAI, dispositivos físicos y el ensayo de backup/restauración.
 
-## Completado
+## Completado en el cierre histórico
 
 ### Encuesta y datos
 
@@ -93,7 +129,10 @@ la caída real de OpenAI, dispositivos físicos y el ensayo de backup/restauraci
 - [x] Smoke de psicólogo con resumen/transcript pagado y posterior ocultamiento por
       cancelación sintética; smoke de administrador sobre legal, alertas y tarifas.
 
-## Pendientes y exclusiones explícitas
+## Pendientes y exclusiones del corte histórico
+
+Consultar el plan de salida para su resolución posterior y los IDs vigentes. Las
+exclusiones del titular se conservan; no se han reejecutado desde esta revisión.
 
 | Estado | Comprobación | Motivo | Criterio de cierre |
 |---|---|---|---|
@@ -134,8 +173,9 @@ el despliegue del 2026-10-24; la comprobación visual posterior es obligatoria.
 - Aplicación: <https://app.lurems.lat>
 - Hosting alternativo: <https://luremsapp.web.app>
 
-## Criterio de cierre
+## Criterio del cierre histórico
 
-La entrega puede fusionarse a `main` porque sus comprobaciones técnicas y smokes
-productivos están cerrados. Las exclusiones y acciones humanas de la tabla anterior
-no deben registrarse como ejecutadas; conservan su propia autorización y evidencia.
+La entrega de aquel corte tenía comprobaciones técnicas y smokes documentados.
+Ese cierre no aprueba una entrega posterior ni la apertura comercial actual. Las
+exclusiones y acciones humanas no se registran como ejecutadas y conservan su
+evidencia y decisión propias.

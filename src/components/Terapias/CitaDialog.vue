@@ -183,7 +183,7 @@
                   </v-list-item>
                   <v-list-item
                     title="Conciliación"
-                    subtitle="Administrativa y manual contra una operación verificable del proveedor"
+                    :subtitle="bookingQuote.reconciliation === 'automatic' ? 'Confirmación automática desde Mercado Pago' : 'Verificación administrativa para esta reserva'"
                   />
                 </v-list>
                 <v-alert
@@ -205,7 +205,7 @@
                 </v-alert>
                 <p class="text-caption text-medium-emphasis mb-0">
                   Política {{ bookingQuote.commercialPolicy.version }}.
-                  Plazo para informar el pago: {{ bookingQuote.conditions.holdMinutes }} minutos
+                  Plazo para pagar: {{ bookingQuote.conditions.holdMinutes }} minutos
                   como máximo, antes del inicio de la cita.
                   Cancelación: hasta {{ bookingQuote.conditions.patientCancellationCutoffMinutes }} minutos antes.
                   Reprogramación: hasta {{ bookingQuote.conditions.patientRescheduleCutoffMinutes }} minutos antes.
@@ -216,7 +216,7 @@
                     ? 'Una cita pasada abierta admite reprogramación si el plazo de pago sigue vigente.'
                     : 'Reprogramar una cita pasada requiere revisión de soporte.' }}
                   Las devoluciones requieren revisión; no se realizan automáticamente.
-                  {{ bookingQuote.conditions.submittedExpiration === 'preserve_for_review'
+                  {{ bookingQuote.reconciliation === 'automatic' ? 'El plazo vence automáticamente. Si termina, debes seleccionar otro horario.' : bookingQuote.conditions.submittedExpiration === 'preserve_for_review'
                     ? 'El pago informado queda pendiente de conciliación sin vencer automáticamente.'
                     : 'Informar el pago no extiende el plazo de reserva.' }}
                 </p>

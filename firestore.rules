@@ -140,6 +140,17 @@ service cloud.firestore {
       allow read: if isAdmin();
       allow write: if false;
     }
+    match /admin_tasks/{id} {
+      allow read: if isAdmin();
+      allow write: if false;
+      match /history/{entry} {
+        allow read: if isAdmin();
+        allow write: if false;
+      }
+    }
+    // Inbox, provider receipts and maintenance cursors are server-only.
+    match /payment_webhook_inbox/{id} { allow read, write: if false; }
+    match /operations_health/{id} { allow read, write: if false; }
     match /professional_obligations/{id} {
       allow read: if isAdmin();
       allow write: if false;

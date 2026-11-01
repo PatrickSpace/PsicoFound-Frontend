@@ -1,3 +1,5 @@
+> Actualización 31/10/2026: la nueva [automatización y bandeja administrativa](automatizacion-operativa-2026-10-31.md) añade preferencias por reserva, webhook firmado, vencimiento automático y tareas. Su activación productiva sigue pendiente. Este documento conserva los contratos y la operación manual de reservas anteriores; las frases que describen ausencia de scheduler/pasarela corresponden a ese alcance anterior.
+
 # Tarifas, reservas y conciliación manual del piloto
 
 Implementación técnica 2026-10-10. Activación conservadora aprobada por el titular

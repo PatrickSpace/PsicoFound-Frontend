@@ -18,8 +18,8 @@
       "ignoreBinaries": ["firebase", "ip", "setpriv"]
     },
     "functions": {
-      "entry": ["index.js!", "src/**/*.test.js"],
-      "project": ["src/**/*.js!", "!src/**/*.test.js!"],
+      "entry": ["index.js!", "src/**/*.test.js", "src/chat/testing/compareHistory.js", "scripts/prepareActivityIndex.js"],
+      "project": ["src/**/*.js!", "!src/**/*.test.js!", "!src/chat/testing/**!"],
       "ignoreBinaries": ["firebase"]
     }
   }

@@ -1,7 +1,8 @@
 <template>
   <LayoutDefault layout><v-container v-if="workspace.active.value" class="pa-0">
     <div class="page-header"><h1 class="text-h4 font-weight-bold">Usuarios y permisos</h1><p class="mt-2">Cuentas registradas. El correo y las credenciales se gestionan desde la cuenta del titular.</p></div>
-    <v-alert type="info" variant="tonal" class="mb-4">Las altas utilizan el registro de la aplicación. La suspensión conserva la información. El estado de cuenta se consulta aquí; no se borran perfiles aislados.</v-alert>
+    <CollectionPager :names="['users']" />
+<v-alert type="info" variant="tonal" class="mb-4">Las altas utilizan el registro de la aplicación. La suspensión conserva la información. El estado de cuenta se consulta aquí; no se borran perfiles aislados.</v-alert>
     <v-alert v-if="error" type="error" class="mb-4">{{ error }}</v-alert>
     <v-btn class="mb-4" @click="workspace.reload" :loading="loading">Actualizar</v-btn>
     <v-btn class="mb-4 ml-2" to="/admin/soporte">Solicitudes de cuenta</v-btn>
@@ -21,7 +22,7 @@
         <v-checkbox v-model="form.admin" label="Acceso administrador" />
         <p>La habilitación profesional se decide en Solicitudes. La activación se gestiona en Psicólogos.</p>
         <v-checkbox v-model="confirmed" label="Confirmo los datos y permisos que se guardarán" />
-        <h2 class="text-subtitle-1">Historial administrativo</h2>
+        <h2 class="text-subtitle-1">Historial administrativo</h2><CollectionPager :names="['admin_audit']" />
         <p v-for="entry in history" :key="entry.id">{{ adminDate(entry.createdAt) }} · {{ entry.actorUid }} · {{ entry.action }} · {{ entry.fields?.join(', ') }} {{ entry.roles?.join(', ') }}</p>
         <p v-if="!history.length">Sin cambios administrativos registrados.</p>
       </v-card-text><v-card-actions><v-btn :disabled="saving" @click="dialog=false">Cancelar</v-btn><v-btn :loading="saving" :disabled="!confirmed || !form.nombre.trim()" @click="save">Guardar cambios</v-btn></v-card-actions>
@@ -29,10 +30,12 @@
   </v-container></LayoutDefault>
 </template>
 <script setup>
-import { computed, reactive, ref } from "vue";
+import CollectionPager from "@/components/admin/CollectionPager.vue";
+import { computed, reactive, ref, watch, onBeforeUnmount } from "vue";
 import LayoutDefault from "@/components/Layout/Layoutmain.vue";
 import { useAdminWorkspace } from "@/composables/useAdminWorkspace";
 import { adminCall, adminDate, watchAdminCollection } from "@/services/adminService";
+import { where } from "firebase/firestore";
 import { getUserRoles } from "@/utils/roles";
 const users=ref([]), audit=ref([]), loading=ref(false), error=ref(""), search=ref(""), dialog=ref(false), selected=ref(null), saving=ref(false), formError=ref(""), confirmed=ref(false);
 const form=reactive({nombre:"",telefono:"",patient:false,admin:false});
@@ -42,8 +45,16 @@ const history=computed(()=>audit.value.filter(item=>item.targetUid===selected.va
 const workspace=useAdminWorkspace(()=>{users.value=[];audit.value=[];dialog.value=false;selected.value=null;saving.value=false;search.value="";error.value="";formError.value="";Object.assign(form,{nombre:"",telefono:"",patient:false,admin:false});}, current=>{
   loading.value=true;
   const failed=e=>{if(current()){users.value=[];audit.value=[];loading.value=false;error.value=e.message;}};
-  const stops=[watchAdminCollection("users",items=>{if(current()){users.value=items;loading.value=false;}},failed),watchAdminCollection("admin_audit",items=>{if(current())audit.value=items;},failed)];return ()=>stops.forEach(stop=>stop());
+  const stops=[watchAdminCollection("users",items=>{if(current()){users.value=items;loading.value=false;}},failed)];return ()=>stops.forEach(stop=>stop());
 });
+let stopAudit;
+watch(() => [dialog.value, selected.value?.id, workspace.active.value], ([open, uid, active]) => {
+  stopAudit?.(); audit.value = [];
+  if (!open || !uid || !active) return;
+  const current = workspace.capture();
+  stopAudit = watchAdminCollection("admin_audit", items => { if(current() && selected.value?.id === uid) audit.value = items; }, e => { if(current()) formError.value = e.message; }, {constraints:[where("targetUid", "==", uid)]});
+});
+onBeforeUnmount(() => stopAudit?.());
 function edit(item){selected.value=item;formError.value="";confirmed.value=false;Object.assign(form,{nombre:item.nombre||"",telefono:item.telefono||"",patient:getUserRoles(item).includes("patient"),admin:getUserRoles(item).includes("admin")});dialog.value=true;}
 async function save(){if(saving.value||!confirmed.value)return;const current=workspace.capture();saving.value=true;formError.value="";
   const roles=[...(form.patient?["patient"]:[]),...(form.admin?["admin"]:[]),...(getUserRoles(selected.value).includes("psychologist")?["psychologist"]:[])];

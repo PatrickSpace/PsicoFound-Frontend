@@ -403,6 +403,8 @@ async function reserveAppointment(request) {
           psychologistPercent: paymentQuote.psychologistPercent,
           reconciliation: paymentQuote.reconciliation,
           provider: paymentQuote.provider,
+          providerAccountId: paymentQuote.providerAccountId,
+          providerMode: paymentQuote.providerMode,
           conditions: paymentQuote.conditions,
           commercialPolicy: paymentQuote.commercialPolicy,
         } : null,
@@ -433,6 +435,8 @@ async function reserveAppointment(request) {
           currency: paymentQuote.currency,
           paymentUrl: paymentQuote.paymentUrl,
           provider: paymentQuote.provider,
+          providerAccountId: paymentQuote.providerAccountId,
+          providerMode: paymentQuote.providerMode,
           reconciliation: paymentQuote.reconciliation,
           rateSnapshot: appointment.paymentSnapshot,
           expirationPolicyConfigured: true,
@@ -583,7 +587,7 @@ async function rescheduleAppointment(request) {
   }
 }
 
-async function changeAppointmentStatus(request) {
+async function changeAppointmentStatus(request, internalOptions = {}) {
   const auth = requireAuth(request);
   const data = request.data || {};
   const db = firestoreAdmin.getFirestore();
@@ -606,7 +610,20 @@ async function changeAppointmentStatus(request) {
       const therapyRef = db.doc(`${COLLECTIONS.therapies}/${cleanId(current.terapiaId, "terapia")}`);
       const therapy = (await transaction.get(therapyRef)).data();
       if (!therapy) throw new HttpsError("failed-precondition", "La terapia asociada no existe.");
-      const actor = await authorizeTherapyActor(transaction, db, auth, therapy, data.mode || "patient");
+      let actor;
+      if (internalOptions.operationalCancellation === true) {
+        const {requireAdmin} = require("../accounts/adminHandlers");
+        const user = await requireAdmin(transaction, db, auth);
+        if (requestedStatus !== "cancelada" || data.sessionAction || !isOpenAppointment(current.estado) ||
+            !(resolveSchedule(current).start?.getTime() > Date.now()) || !cleanText(data.reason || "", 500)) {
+          throw new HttpsError("failed-precondition", "Solo se permite cancelar una reserva futura abierta con motivo documentado.");
+        }
+        if (data.expectedVersion !== Number(current.version || 1)) throw new HttpsError("aborted", "La reserva cambió. Actualiza y revisa de nuevo.");
+        actor = {mode: "admin", user};
+      } else {
+        actor = await authorizeTherapyActor(transaction, db, auth, therapy, data.mode || "patient");
+      }
+
       if (data.sessionAction || requestedStatus === "realizada" || current.estado === "realizada" && requestedStatus === "confirmada") {
         const serverNow = new Date();
         const attendance = attendanceChange(current, data, {...actor, uid: auth.uid}, serverNow);
@@ -954,3 +971,10 @@ module.exports = {
   rescheduleAppointment,
   updateAppointmentDetails,
 };
+
+// Narrow operational command: no access to clinical notes, attendance or reassignment.
+async function cancelAdminReservation(request) {
+  const result = await changeAppointmentStatus({...request, data: {...request.data, mode: "admin", status: "cancelada", estado: "cancelada"}}, {operationalCancellation: true});
+  return {appointmentId: result.appointmentId, status: "cancelada"};
+}
+module.exports.cancelAdminReservation = cancelAdminReservation;

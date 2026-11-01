@@ -66,6 +66,8 @@
   </v-navigation-drawer>
 </template>
 <script setup>
+import brandIcon from "@/assets/img/lurems-isotipo-transparent.webp";
+import brandLogo from "@/assets/img/lurems-logo-principal-transparent.webp";
 import { computed, ref, watch } from "vue";
 import { useDisplay } from "vuetify";
 import { RouterLink } from "vue-router";
@@ -88,8 +90,8 @@ const drawerWidth = computed(() =>
 );
 const drawerLogoSrc = computed(() =>
   isCollapsed.value
-    ? "/brand/lurems-isotipo-transparent.png"
-    : "/brand/lurems-logo-principal-transparent.png"
+    ? brandIcon
+    : brandLogo
 );
 const drawerToggleLabel = computed(() =>
   isCollapsed.value ? "Expandir navegación" : "Contraer navegación"
@@ -167,6 +169,7 @@ const navigationByMode = {
     },
   ],
   admin: [
+    { name: "Operaciones", icon: "mdi-view-dashboard-outline", link: "/admin/operaciones" },
     adminRequestsItem,
     adminUsersItem,
     { name: "Documentos legales", icon: "mdi-file-document-edit-outline", link: "/admin/documentos-legales" },

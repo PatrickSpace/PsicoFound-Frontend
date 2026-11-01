@@ -42,3 +42,8 @@ skills-lock.json
 
 # Local operational review manifests may contain private approval references.
 *.local.json
+
+# Generated local builds, browser sessions and validation evidence.
+/output/
+/.playwright-cli/
+/playwright-report/

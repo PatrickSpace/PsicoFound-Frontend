@@ -9,6 +9,7 @@ const {isOpenAppointment, replaceAppointmentSummary} = require("../appointments/
 const {FieldValue} = require("firebase-admin/firestore");
 const {HttpsError} = require("firebase-functions/v2/https");
 const {requireDocumentId} = require("./paymentRates");
+const {automationConfig} = require("./mercadoPago");
 
 function requireAuth(request) {
   if (!request.auth) throw new HttpsError("unauthenticated", "Debes iniciar sesión.");
@@ -33,11 +34,12 @@ function cleanText(value, max = 600, required = false) {
 }
 
 function quoteFromRate(therapistId, therapist, rateId, rate, policy = commercialPolicy()) {
+  const paymentAutomation = automationConfig();
   if (rate.isTest && policy.status !== "synthetic") {
     throw new HttpsError("failed-precondition", "Las tarifas de prueba no están disponibles para reservas comerciales.");
   }
   return {
-    quoteId: fingerprint({therapistId, rateId, rate, selectionVersion: therapist.paymentRateSelectionVersion || 0, policy}),
+    quoteId: fingerprint({therapistId, rateId, rate, selectionVersion: therapist.paymentRateSelectionVersion || 0, policy, paymentAutomation}),
     commercialPolicy: policy,
     therapistId,
     rateId,
@@ -50,7 +52,8 @@ function quoteFromRate(therapistId, therapist, rateId, rate, policy = commercial
     isTest: Boolean(rate.isTest),
     platformPercent: rate.platformPercent,
     psychologistPercent: rate.psychologistPercent,
-    reconciliation: "manual",
+    reconciliation: paymentAutomation ? "automatic" : "manual",
+    providerAccountId: paymentAutomation?.collectorId || "", providerMode: paymentAutomation?.mode || "",
     provider: "mercado_pago",
     conditions: {
       providerReceiptIsNotFiscalDocument: true,
@@ -175,6 +178,7 @@ async function markPaymentSubmitted(request) {
     if (!operation || operation.patientUid !== auth.uid) {
       throw new HttpsError("permission-denied", "La operación no te pertenece.");
     }
+    if (operation.reconciliation === "automatic") throw new HttpsError("failed-precondition", "El proveedor confirmará tu pago automáticamente.");
     if (operation.status === "submitted") return {operationId, status: "submitted"};
     if (operation.status !== "pending") {
       throw new HttpsError("failed-precondition", "La operación ya no admite este cambio.");
@@ -245,7 +249,7 @@ function paymentEvent(transaction, db, operationId, operation, status, actorUid,
     pacienteUid: operation.patientUid, terapeutaId: operation.therapistId,
     terapiaId: operation.therapyId, sourceId: operationId, sourceType: "payment",
     eventType: `payment_${status}`, title: "Estado de pago actualizado",
-    summary: "Actualización de conciliación manual.", visibility: "patient",
+    summary: "Actualización del estado de pago.", visibility: "patient",
     createdBy: actorUid, occurredAt: new Date().toISOString(), createdAt: now,
     metadata: {paymentOperationId: operationId, status},
   });
@@ -344,32 +348,36 @@ async function reviewPaymentOperation(request) {
   });
 }
 
-// Manual operator command: never contacts a payment provider or moves money.
 async function expirePaymentReservation(request) {
   const auth = requireAuth(request);
-  const operationId = requireDocumentId(request.data?.operationId);
   const db = firestoreAdmin.getFirestore();
+  await requireOperator(db, auth);
+  const result = await expireOperation(db, requireDocumentId(request.data?.operationId), auth.uid, cleanText(request.data?.note, 600));
+  if (result.skipped) throw new HttpsError("failed-precondition", "La operación no tiene un plazo vencido o ya no admite vencimiento.");
+  return result;
+}
+
+// Shared transaction for the scheduler and the explicit administrator command.
+async function expireOperation(db, operationId, actorUid = "system:expiry", note = "Vencimiento automático") {
   return db.runTransaction(async (transaction) => {
-    await requireOperator(db, auth, transaction);
+    if (!actorUid.startsWith("system:")) await requireOperator(db, {uid: actorUid}, transaction);
     const ref = db.doc(`payment_operations/${operationId}`);
     const operation = (await transaction.get(ref)).data();
     if (!operation) throw new HttpsError("not-found", "La operación no existe.");
     if (operation.status === "expired") return {operationId, status: "expired"};
     const policy = snapshotPolicy(operation.rateSnapshot?.commercialPolicy);
     if (!(operation.status === "pending" || operation.status === "submitted" && policy.submittedExpiration === "expire")) {
-      throw new HttpsError("failed-precondition", "La operación no admite vencimiento manual según su política.");
+      return {operationId, status: operation.status, skipped: true};
     }
-    const deadline = typeof operation.expiresAt?.toMillis === "function" ? operation.expiresAt.toMillis() : NaN;
-    if (!Number.isFinite(deadline) || deadline > Date.now()) {
-      throw new HttpsError("failed-precondition", "La reserva no tiene un plazo vencido válido.");
-    }
+    const deadline = operation.expiresAt?.toMillis?.();
+    if (!Number.isFinite(deadline) || deadline > Date.now()) return {operationId, status: operation.status, skipped: true};
     const context = await loadAppointmentContext(transaction, db, operation);
     const slot = await releaseContext(transaction, db, context);
     const now = FieldValue.serverTimestamp();
-    transaction.create(db.collection("payment_audit").doc(), {operationId, actorUid: auth.uid, previousStatus: operation.status, status: "expired", note: cleanText(request.data?.note, 600), createdAt: now});
-    transaction.update(ref, {status: "expired", expiredAt: now, expiredBy: auth.uid, updatedAt: now});
+    transaction.create(db.collection("payment_audit").doc(), {operationId, actorUid, previousStatus: operation.status, status: "expired", note, createdAt: now});
+    transaction.update(ref, {status: "expired", expiredAt: now, expiredBy: actorUid, updatedAt: now});
     releaseReservation(transaction, context, slot, "expired", now);
-    paymentEvent(transaction, db, operationId, operation, "expired", auth.uid, now);
+    paymentEvent(transaction, db, operationId, operation, "expired", actorUid, now);
     return {operationId, status: "expired"};
   });
 }
@@ -413,4 +421,38 @@ async function recordProfessionalTransfer(request) {
   });
 }
 module.exports = {assertPaymentTransition, getBookingQuote, markPaymentSubmitted, quoteFromRate,
-  requestPaymentRefundReview, reviewPaymentOperation, expirePaymentReservation, recordProfessionalTransfer};
+  requestPaymentRefundReview, reviewPaymentOperation, expirePaymentReservation, recordProfessionalTransfer,
+  expireOperation, requireOperator, loadAppointmentContext, syncAppointmentPaymentStatus, releaseContext, releaseReservation, receiptRef, paymentEvent};
+
+// Records an externally verified recovery after a refund; never initiates a transfer.
+async function recordProfessionalRecovery(request) {
+  const auth = requireAuth(request);
+  const operationId = requireDocumentId(request.data?.operationId);
+  const reference = cleanText(request.data?.transferReference, 180, true);
+  const amountMinor = request.data?.amountMinor;
+  const currency = cleanText(request.data?.currency, 3, true);
+  if (!Number.isSafeInteger(amountMinor) || amountMinor <= 0) throw new HttpsError("invalid-argument", "Importe de recuperación inválido.");
+  const db = firestoreAdmin.getFirestore();
+  return db.runTransaction(async (tx) => {
+    await requireOperator(db, auth, tx);
+    const ref = db.doc(`professional_obligations/${operationId}`);
+    const obligation = (await tx.get(ref)).data();
+    const payment = (await tx.get(db.doc(`payment_operations/${operationId}`))).data();
+    if (!obligation) throw new HttpsError("not-found", "No existe la obligación.");
+    const policy = snapshotPolicy(obligation.policy);
+    const recoveryRef = receiptRef(db, policy, "professional_recovery", reference);
+    const previous = (await tx.get(recoveryRef)).data();
+    if (previous) {
+      if (previous.operationId !== operationId || previous.amountMinor !== amountMinor || previous.currency !== currency) throw new HttpsError("already-exists", "La referencia ya se registró con otros datos.");
+      return {recorded: true};
+    }
+    if (payment?.status !== "refunded" || obligation.status !== "recovery_review" || amountMinor > obligation.recoveryReviewMinor || currency !== obligation.currency) throw new HttpsError("failed-precondition", "La obligación no admite esta recuperación.");
+    const now = FieldValue.serverTimestamp();
+    tx.create(recoveryRef, {operationId, kind: "professional_recovery", amountMinor, currency, reference, createdAt: now});
+    tx.update(ref, {recoveredMinor: (obligation.recoveredMinor || 0) + amountMinor, recoveryReviewMinor: obligation.recoveryReviewMinor - amountMinor,
+      status: obligation.recoveryReviewMinor === amountMinor ? "recovered" : "recovery_review", updatedAt: now});
+    tx.create(db.collection("payment_audit").doc(), {operationId, actorUid: auth.uid, status: "professional_recovery", providerReference: reference, note: `Recuperación externa registrada: ${amountMinor} ${currency}`, createdAt: now});
+    return {recorded: true};
+  });
+}
+module.exports.recordProfessionalRecovery = recordProfessionalRecovery;

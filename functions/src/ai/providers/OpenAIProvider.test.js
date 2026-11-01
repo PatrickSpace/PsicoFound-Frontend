@@ -1,3 +1,4 @@
+/* eslint-disable max-len */
 const assert = require("node:assert/strict");
 const {afterEach, test} = require("node:test");
 const {
@@ -60,4 +61,62 @@ test("Responses output and schema conversion support nested values", () => {
     type: "array",
     items: {type: "string"},
   });
+});
+
+test("provider timeout aborts fetch and never retries", async () => {
+  let calls = 0; let signal;
+  global.fetch = async (url, options) => {
+    calls++; signal = options.signal;
+    return new Promise(() => {});
+  };
+  const provider = new OpenAIProvider({apiKey: "synthetic-key"});
+  await assert.rejects(provider.generateStructuredOutput({timeoutMs: 5}), /tiempo de espera/);
+  assert.equal(signal.aborted, true);
+  assert.equal(calls, 1);
+});
+
+test("deadline includes reading a stalled response body", async () => {
+  let signal;
+  global.fetch = async (url, options) => {
+    signal = options.signal;
+    return {ok: true, status: 200, json: async () => new Promise(() => {})};
+  };
+  const provider = new OpenAIProvider({apiKey: "synthetic-key"});
+  await assert.rejects(provider.generateText({timeoutMs: 5}), /tiempo de espera/);
+  assert.equal(signal.aborted, true);
+});
+
+test("invalid/truncated/empty JSON preserves billed usage including cached tokens", async () => {
+  const usage = {input_tokens: 1000, output_tokens: 700, total_tokens: 1700,
+    input_tokens_details: {cached_tokens: 400, cache_write_tokens: 200},
+    output_tokens_details: {reasoning_tokens: 30}};
+  for (const response of [
+    {output_text: "{\"PRIVATE\":"},
+    {output_text: "{\"ok\":true}", status: "incomplete"},
+    {output_text: ""},
+    {output_text: "null"},
+  ]) {
+    global.fetch = async () => ({ok: true, status: 200, json: async () => ({...response, usage, model: "gpt-6-luna"})});
+    const provider = new OpenAIProvider({apiKey: "synthetic-key"});
+    await assert.rejects(provider.generateStructuredOutput({maxTokens: 700}), (error) => {
+      assert.equal(error.usage.cachedInputTokens, 400);
+      assert.equal(error.usage.cacheWriteTokens, 200);
+      assert.equal(error.usage.outputTokens, 700);
+      assert.equal(error.usage.reasoningTokens, 30);
+      assert.equal(error.cause, undefined);
+      return error.name === "AIProviderInvalidResponseError";
+    });
+  }
+});
+
+test("HTTP 429 and 500 are single calls and retain any returned usage", async () => {
+  for (const status of [429, 500]) {
+    let calls = 0;
+    global.fetch = async () => {
+      calls++;
+      return {ok: false, status, json: async () => ({usage: {input_tokens: 10, output_tokens: 1}})};
+    };
+    await assert.rejects(new OpenAIProvider({apiKey: "synthetic-key"}).generateText(), (error) => error.usage.inputTokens === 10);
+    assert.equal(calls, 1);
+  }
 });
