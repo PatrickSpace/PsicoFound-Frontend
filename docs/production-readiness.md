@@ -4,40 +4,37 @@ Plan consolidado para la decisión de apertura:
 [salida a producción](salida-a-produccion.md). Este seguimiento conserva la evidencia
 del cierre técnico y sus exclusiones.
 
-Última revisión: **2026-10-31, America/Lima**.
-
-La nueva [automatización operativa](operations/automatizacion-operativa-2026-10-31.md) está implementada localmente: pagos verificables, scheduler y tareas del administrador. Requiere activación/configuración y aceptación del candidato final; no modifica por sí sola la evidencia de producción siguiente.
+Última revisión: **2026-11-01, America/Lima**.
 
 ## Estado vigente del candidato
 
-Base observada: `4896783` (`main`). **Publicación técnica existente; candidato
-actual sin Quality completo y apertura con cobros pendiente.**
+Las optimizaciones de frontend, backend e IA y el centro de operaciones están
+integrados en `82f57a1`. El [registro de publicación](operations/publicacion-main-2026-10-31.md)
+identifica el código de producto, las versiones y las comprobaciones remotas.
+Los commits documentales posteriores conservan ese mismo código.
 
-- [Quality 41159307043](https://github.com/PatrickSpace/PsicoFound-Frontend/actions/runs/41159307043)
-  falló por auditoría de Functions: 11 entradas moderadas. La suite integrada y de
-  navegador se omitió; Vercel en verde no sustituye esa comprobación.
-- Auditoría local de Functions sin devDependencies: cuatro entradas moderadas.
-  El informe antiguo de cero vulnerabilidades conserva su fecha, no el estado actual.
-- Pasada local: 50 unitarias frontend, 117 backend, build y Knip aprobados. Lint
-  encontró un import sin uso durante cambios paralelos; el lint remoto de `4896783`
-  sí pasó. Congelar y validar el árbol final antes de promoverlo.
-- HTTP público: Hosting y Vercel responden, pero HTML y JS de entrada difieren.
-  Vercel coincide con el build local inspeccionado; no se acredita Hosting de la
-  entrega visual más reciente ni un nuevo smoke autenticado en esta revisión.
-- Suspensión, preparación profesional y guías están implementadas. Tarifas reales
-  por profesional, operación manual, contraseña QA, presupuesto y acta de apertura
-  conservan acciones pendientes. La entrega de alertas al buzón ya está acreditada.
+- Validación local: 50 unitarias frontend, 168 backend, lint, build, Knip y ambas
+  auditorías al umbral moderate aprobados. La regresión integrada y de navegador,
+  incluida la repetición dirigida de tres esperas de agenda, se detalla en el registro.
+- El fallo de dependencias de `4896783` queda como antecedente. La auditoría actual
+  tiene cero vulnerabilidades en ambos árboles. El resultado Linux aplicable se
+  consulta por SHA en [Quality de main](https://github.com/PatrickSpace/PsicoFound-Frontend/actions/workflows/quality.yml?query=branch%3Amain).
+- Vencimiento automático y tareas administrativas se publican sin API ni webhook
+  de Mercado Pago. La conciliación y el movimiento externo de fondos siguen a cargo
+  del administrador; registrar una operación no mueve dinero.
+- El registro distingue disponibilidad pública, metadatos del backend y regresión
+  aislada. No acredita un nuevo recorrido autenticado en producción.
+- Tarifas reales por profesional, cobertura operativa, contraseña QA, presupuesto
+  de Billing y acta de apertura conservan acciones humanas pendientes.
 
-Detalle y alcance: [expediente del 31/10](operations/revision-produccion-2026-10-31.md).
 Criterios vigentes: TEC-01 a TEC-05, OP-01 a OP-06 y VD-01 a VD-04 del
-[plan de salida](salida-a-produccion.md). La última entrega de guías tiene su
-[validación específica](operations/onboarding-unificado-2026-10-30.md); no sustituye
-Quality completo del candidato.
+[plan de salida](salida-a-produccion.md). Los expedientes anteriores conservan
+sus resultados y exclusiones; no sustituyen las comprobaciones del SHA final.
 
 ## Antecedente de publicación y cierre del 25–27/10
 
 El contenido siguiente conserva los resultados de esas entregas. Sus casillas y
-conteos no certifican `4896783` ni los cambios de optimización en curso. Para la
+conteos no certifican por sí solos la integración del 01/11. Para la
 decisión actual prevalecen el estado vigente anterior y el plan consolidado.
 
 Actualización posterior validada y publicada: [suspensión, reactivación e inactividad](operations/validacion-produccion-2026-10-27.md).

@@ -35,7 +35,7 @@ Nueva entrada y ruta de inicio del modo administrador: `/admin/operaciones`.
 
 Cada tarea tiene estado, prioridad, responsable, versión, nota e historial paginado. Los filtros de estado/tipo/prioridad consultan la colección completa y la lista carga páginas de 50. Los detalles de reservas afectadas contienen solo fecha, paciente, estado y pago. La cancelación operativa tiene un callable propio: no permite registrar atención, editar notas terapéuticas o reasignar tratamientos.
 
-Los casos previos pendientes se incorporan por lotes con cursor persistente, sin perder los que excedan la primera página. Las escrituras posteriores sincronizan tareas mediante triggers que releen las fuentes dentro de una transacción. Solo el servidor escribe tareas e historial; solo administradores pueden leerlos.
+Los casos previos pendientes se incorporan por lotes con cursor persistente, sin perder los que excedan la primera página. Los triggers obtienen una instantánea consistente en una transacción de solo lectura y actualizan la tarea en otra transacción, ordenada por la fecha de esa lectura. Un evento retrasado no puede sobrescribir una resolución posterior. Solo el servidor escribe tareas e historial; solo administradores pueden leerlos.
 
 ## Referencia del prototipo de proveedor — excluido de esta publicación
 

@@ -8,12 +8,13 @@ proveedor habilitado para este recorrido.
 
 ## Estado de salida a producción
 
-Revisión **31/10/2026, America/Lima**: la app tiene una publicación técnica; la
-apertura con cobros conserva pendientes. Quality de `4896783` falló por dependencias
-de Functions y no ejecutó la regresión integrada. Hosting y Vercel sirven entradas
-distintas. Ver [plan de salida](docs/salida-a-produccion.md) y
-[evidencia de la revisión](docs/operations/revision-produccion-2026-10-31.md).
-Los trabajos paralelos de optimización necesitan aceptación del candidato final.
+Revisión **01/11/2026, America/Lima**: las optimizaciones de costos y la operación
+administrativa están integradas en `82f57a1`. La apertura con cobros conserva
+acciones comerciales y humanas pendientes. Versiones publicadas y comprobaciones:
+[registro de publicación](docs/operations/publicacion-main-2026-10-31.md).
+El [plan de salida](docs/salida-a-produccion.md) concentra los pendientes;
+[Quality de main](https://github.com/PatrickSpace/PsicoFound-Frontend/actions/workflows/quality.yml?query=branch%3Amain)
+identifica la validación remota por SHA.
 
 ## Desarrollo
 
@@ -60,8 +61,8 @@ administrador y regresión Lima, con emuladores propios y red externa bloqueada.
 Todos los runners actuales de integración usan `demo-lurems-followup`, incluido
 `test:payment-rules`. Descargar dependencias, emuladores y Chromium antes de aislar.
 Requisitos, comandos dirigidos, escenarios y artefactos: [guía de validación](docs/operations/validation.md).
-La revisión del 31/10 registra una nueva pasada local parcial, las auditorías y el
-estado remoto de Quality; no acredita una suite integrada completa del candidato.
+El registro de publicación del 01/11 detalla la regresión local integrada,
+los recorridos de escritorio/móvil y las auditorías del conjunto final.
 
 ## Publicacion
 
@@ -82,12 +83,12 @@ La preparación local y el validador offline no autorizan despliegue ni lanzamie
 
 La documentación activa describe contratos y procedimientos. La matriz concentra
 el estado de aceptación y pendientes; los informes fechados permanecen como antecedentes.
-Estado consolidado actualizado: **2026-10-31**, America/Lima.
+Estado consolidado actualizado: **2026-11-01**, America/Lima.
 
 | Área | Referencia |
 | --- | --- |
 | Apertura con cobros | [Plan y pendientes vigentes](docs/salida-a-produccion.md) |
-| Evidencia más reciente | [Revisión de producción del 31/10](docs/operations/revision-produccion-2026-10-31.md) |
+| Evidencia más reciente | [Publicación integrada del 01/11](docs/operations/publicacion-main-2026-10-31.md) |
 | Funcionalidad | [Funcionamiento por rol](docs/functional/revision-funcional-por-rol.md) |
 | Aceptación y pendientes | [Matriz del piloto](docs/functional/matriz-cierre-piloto.md) |
 | Encuesta y recomendaciones | [Contrato de encuesta y matching](docs/functional/encuesta-matching.md) |
@@ -114,7 +115,8 @@ No se publica una conexión a la API ni webhook de Mercado Pago. La
 el alcance publicado del prototipo de proveedor. Registrar devoluciones,
 transferencias o recuperaciones externas no mueve dinero.
 La aceptación del administrador, atención, suspensión y preparación profesional
-conserva las evidencias de sus entregas. Existen ejecuciones Linux aprobadas de
-candidatos anteriores; la última está fallida. No se reabren errores históricos
-corregidos ni se atribuye su aceptación a cambios posteriores. Los pendientes
+conserva las evidencias de sus entregas. Las ejecuciones Linux y Vercel se consultan
+para el SHA correspondiente; el fallo de `4896783` es un antecedente anterior a
+esta integración. No se reabren errores históricos corregidos ni se atribuye su
+aceptación a cambios posteriores. Los pendientes
 comerciales, humanos y de operación se concentran en el plan de salida.

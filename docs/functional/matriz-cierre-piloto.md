@@ -1,4 +1,4 @@
-> Ampliación local 31/10/2026: [pagos automáticos, vencimiento y centro de operaciones](../operations/automatizacion-operativa-2026-10-31.md). Las evidencias históricas de conciliación manual no acreditan publicación de esta ampliación.
+> Publicación 01/11/2026: [vencimiento y centro de operaciones](../operations/automatizacion-operativa-2026-10-31.md), con conciliación manual y sin conexión de proveedor. Versiones y pruebas: [registro de publicación](../operations/publicacion-main-2026-10-31.md).
 
 # Matriz de aceptación y pendientes del piloto
 
@@ -8,7 +8,7 @@ del sistema de apoyo por psicólogos reales conserva una acción humana pendient
 La suspensión conserva datos y sustituye la eliminación productiva en esta fase.
 
 Consolidación original: 2026-10-15. Última actualización de estado:
-2026-10-31, America/Lima. Alcance: paciente, psicólogo y administrador.
+2026-11-01, America/Lima. Alcance: paciente, psicólogo y administrador.
 La revisión técnica no sustituye la aceptación operativa ni legal.
 
 «Verificado local» identifica evidencia con datos sintéticos y emuladores; no acredita
@@ -18,13 +18,14 @@ posterior. El cierre administrativo del 15, la encuesta del 20 y el consentimien
 del 21 sustituyen las observaciones anteriores sobre esos recorridos, salvo las
 regresiones expresamente identificadas en la verificación actual.
 
-**Resultado actual:** `4896783` tiene Vercel exitoso pero
-[Quality fallido](https://github.com/PatrickSpace/PsicoFound-Frontend/actions/runs/41159307043)
-por dependencias de Functions (11 entradas moderadas); integración/navegador se
-omitieron. Hosting sirve una entrada distinta. La revisión local del 31/10 aprobó
-50 unitarias frontend, 117 backend, build y Knip, con cambios paralelos y un fallo
-de lint local que no se atribuye al SHA remoto. Ver
-[evidencia del corte](../operations/revision-produccion-2026-10-31.md).
+**Resultado actual:** producto integrado `82f57a1`, con 50 unitarias frontend,
+168 backend, lint, build, Knip y auditorías sin vulnerabilidades. El registro del
+01/11 detalla integración y navegador, incluidas las tres esperas de agenda
+aprobadas al repetirlas. Hosting coincide con el build comprobado; backend,
+reglas, 21 índices READY y scheduler están publicados. El resultado remoto de
+cada commit se consulta por SHA en
+[Quality de main](https://github.com/PatrickSpace/PsicoFound-Frontend/actions/workflows/quality.yml?query=branch%3Amain).
+No se acredita un nuevo smoke autenticado en producción ni un pago real.
 Las incidencias REV-SEG-01/02 siguen cerradas. `481f60b` y las entregas integradas
 posteriores conservan sus resultados históricos, sin certificar cambios nuevos.
 Los criterios técnicos/comerciales de apertura se siguen en el
@@ -55,13 +56,13 @@ Antecedentes: [informe del 10 de octubre](../archive/functional/informe-cierre-t
 | C-03 | App Check por entorno | Enforcement y sesión real válida documentados en producción | `appCheckPolicy.test.js`, cierre técnico y guía de release | Reconfirmar cuotas/métricas/dominios reales para el candidato. Vercel comparte backend y no autoriza observe en producción |
 | C-04 | Telemetría, alertas e incidentes | Canal/política publicados; entrega al buzón acreditada el 25/10 | Incidente y recepción en [expediente operativo](../operations/cierre-operativo-2026-10-25.md) | OP-01: cobertura, suplente y respuesta. Presupuesto/avisos de Billing no acreditados por la plantilla |
 | D-01 | Políticas versionadas y tarifas de prueba | Verificado local | `pilot-payments.integration.test.mjs`: política ausente, snapshot inmutable, corte/cita pasada explícitos, tarifa test excluida; condiciones en cotización | Plazos/penalidades/condiciones aprobados |
-| D-02 | Expiración, cancelación y carreras con pago | Verificado local; política comercial productiva documentada en la guía de pagos | `pilot-payments.integration.test.mjs`: transacción y carreras | OP-04/05: activar y publicar pagos automáticos, scheduler y centro administrativo; pago controlado real pendiente |
+| D-02 | Expiración, cancelación y carreras con pago | Verificado local; política comercial productiva documentada en la guía de pagos | `pilot-payments.integration.test.mjs`: transacción y carreras | Scheduler y centro administrativo publicados; OP-04/05 conservan pago controlado real, responsables y cobertura. Sin API ni webhook del proveedor |
 | D-03 | Referencia única, devolución y obligaciones | Verificado local | `pilot-payments.integration.test.mjs`: recibo único por comercio/proveedor, importe calculado/pendiente/transferido separados, sobrepago y duplicados rechazados | Responsables y conciliación/liquidación reales; [contratos](../operations/pilot-payments.md). La interfaz administrativa ya fue aceptada localmente |
-| E-01 | Dependencias y CI Linux aislado | Bloqueo actual TEC-01/02; existen candidatos anteriores verdes | Quality `4896783` falló por auditoría de Functions; suite integrada omitida. Auditoría sin dev conserva cuatro entradas moderadas | Corregir dependencias y aprobar el SHA final en Linux; no heredar resultados de `481f60b`/`1cc2564` |
-| E-02 | Configuración, despliegue, rollback y restauración | Publicaciones anteriores acreditadas; divergencia actual de frontend comprobada | [Revisión 31/10](../operations/revision-produccion-2026-10-31.md); ensayo demo no acredita backup productivo | TEC-03/04: conciliar artefactos y configuración. Recuperación real no demostrada; respetar aplazamiento del titular |
+| E-01 | Dependencias y CI Linux aislado | Auditorías locales corregidas; resultado Linux identificado por SHA | Cero vulnerabilidades, 218 unitarias y regresión integrada/navegador detalladas en el registro del 01/11 | Exigir Quality del SHA final; no heredar resultados de candidatos anteriores |
+| E-02 | Configuración, despliegue, rollback y restauración | Publicación integrada y hashes de Hosting comprobados | [Registro del 01/11](../operations/publicacion-main-2026-10-31.md), versiones anterior/actual y backend compatibles | TEC-04: smoke autenticado final. Recuperación real no demostrada; respetar aplazamiento del titular |
 | F-01 | Paciente/profesional escritorio/móvil | Regresión de candidatos anteriores y guías específicas aprobadas; candidato final pendiente | Validaciones integradas 27/10 y onboarding 29–30/10; smoke real de correo/encuesta y profesional documentado | Quality y smoke del candidato final; Safari/dispositivos físicos aplazados. Google real no acreditado aquí |
 | G-01 | Preparación profesional y guías por rol | Implementado; backend/Hosting publicados el 30/10 y smoke profesional en Vercel | [Entrega 29–30/10](../operations/onboarding-2026-10-29.md) | OP-03: preparar profesionales reales; no activar ofertas QA |
-| G-02 | Acompañamiento y spotlight unificado | Implementado y validado localmente; Functions nuevas publicadas y frontend en Vercel | [Validación unificada](../operations/onboarding-unificado-2026-10-30.md) y [publicación de Functions](../operations/onboarding-spotlight-2026-10-30.md) | Quality y Hosting de la entrega final pendientes de conciliación |
+| G-02 | Acompañamiento y spotlight unificado | Implementado y validado localmente; Functions nuevas publicadas y frontend en Vercel | [Validación unificada](../operations/onboarding-unificado-2026-10-30.md) y [publicación de Functions](../operations/onboarding-spotlight-2026-10-30.md) | Hosting del conjunto integrado comprobado; Quality por SHA y aceptación operativa final |
 | F-02 | Avisos: conteo, lectura, misma ruta y recuperación | Verificado local | `pilot-closure.spec.mjs`: 25 avisos, leído, recarga de misma ruta y error/reintento; listeners ligados al UID | Canal externo de recordatorios por decidir |
 | F-03 | Lima y REV-PAC-04B | Revalidado local: 32/32, 2026-10-21 | `agenda-lima.spec.mjs`: 32 casos en 4 zonas y 2 tamaños; [cierre previo](../archive/functional/cierre-politica-horaria-mvp.md) preservado | Sin política horaria alternativa |
 
@@ -104,7 +105,7 @@ comprobaciones separadas.
 | OPS-01 | Perfil profesional inactivo con citas existentes | Desactivación y bloqueo de nuevas acciones/cotizaciones ya implementados. Falta procedimiento para citas existentes; no hay reasignación ni cancelación automática. |
 | PERF-01 | Chunk grande, registro global Vuetify y fuente MDI | Cierre técnico 2026-10-24: bundle dividido; entrada principal ~32 kB, vendors Firebase/Vuetify por debajo de 600 kB y build sin aviso de chunk. Falta medir carga real y evaluar fuente MDI/importación selectiva con comparación visual. |
 | DEBT-01 | Estilos globales y componentes grandes de encuesta/cita | Revalidar deuda señalada en auditoría de septiembre; priorizar extracción por responsabilidad y regresión visual, sin conservar conteos antiguos como actuales. |
-| QA-01 | Regresión y entornos reales | Linux tuvo Quality verde en candidatos posteriores al 21/10; el último falla en dependencias. Correo real y smokes tienen evidencia posterior. Safari/dispositivos físicos aplazados; Google real y candidato final requieren evidencia aplicable. |
+| QA-01 | Regresión y entornos reales | Dependencias corregidas y regresión local integrada del 01/11 documentada; Linux se consulta por SHA en Quality. Correo real y smokes tienen evidencia posterior. Safari/dispositivos físicos aplazados; Google real y candidato final requieren evidencia aplicable. |
 | QA-02 | Registro/verificación de correo en navegador | REV-SEG-01/02 cerrados en entregas posteriores. Verificación real de correo y retorno documentados; OP-02 conserva recuperación completa de contraseña pendiente. |
 | SCALE-01 | Listeners administrativos sobre conjunto del piloto | Medir volumen y decidir paginación/búsqueda remota antes de ampliar escala. |
 

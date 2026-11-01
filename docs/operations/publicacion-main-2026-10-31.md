@@ -25,6 +25,18 @@ El ajuste de tareas usa una instantánea consistente de solo lectura y una actua
 
 Los 21 índices se verificaron en READY antes de publicar el backend. Se conservan las 57 Functions anteriores y se incorporan 17 nuevas; la tarea programada se publica después de los triggers para no perder cambios durante la incorporación de casos previos.
 
-SHA de `main`, versiones de backend/Hosting y comprobación posterior se registran al cerrar la publicación. Vercel y Quality se ejecutan automáticamente con el push; sus resultados remotos se consultan para el commit final. Artefactos locales: `output/publicacion-main-2026-10-31/`.
+## Registro del despliegue
+
+- Código de producto: `82f57a190d3e1d50afa29af435dc80f11bb5c644`. El commit documental posterior conserva los mismos 259 archivos de producto comprobados por SHA-256.
+- Firebase `psicosaas-3c819`: **74 Functions ACTIVE**, incluidas las 57 anteriores y 17 nuevas, todas en `southamerica-east1`. Reglas publicadas y **21 índices READY**.
+- Los nueve triggers se crearon después de la propagación del rol de servicio de Eventarc. Se verificó que el rol ya estaba asignado y se repitió únicamente su despliegue; no se retiraron funciones.
+- Scheduler `firebase-schedule-maintainPaymentReservations-southamerica-east1`: **ENABLED**, cada minuto, `America/Lima`. Primera ejecución comprobada: `2026-11-01T17:07:03.812Z`; incorporación de casos previos completa, ocho tareas administrativas y cero reservas vencidas en esa pasada. No se ejecutó un pago real para producir evidencia.
+- Proveedor de pagos: desactivado; cero endpoints de checkout/webhook/procesador y cero secretos de Mercado Pago vinculados.
+- Hosting actual: `sites/luremsapp/versions/1fa6c4644e3bcf3c`, publicado `2026-11-01T17:06:43.106Z` (12:06, Lima). Versión previa recuperable: `sites/luremsapp/versions/57a546064e82d54a`. Recuperar HTML no revierte documentos ni operaciones de negocio.
+- `https://app.lurems.lat`: HTML y assets iniciales, centro de operaciones y fuentes coinciden por SHA-256 con el build local. Rutas públicas/SPA responden 200, assets ausentes responden 404, HTML revalida y assets versionados tienen caché inmutable.
+- Cuatro callables administrativos/de reserva sin sesión devolvieron **401 UNAUTHENTICATED**, según lo esperado. Esto comprueba la denegación pública, no un recorrido autenticado.
+- Chromium público: inicio y login renderizan; a 390 px no hay desbordamiento horizontal ni errores de consola. `/admin/operaciones` sin sesión redirige a login conservando el destino. Captura local: `output/playwright/release-login-2026-11-01.png`.
+
+Vercel y Quality se ejecutan automáticamente con el push de `main`. Sus resultados se identifican por el SHA final en [Quality de main](https://github.com/PatrickSpace/PsicoFound-Frontend/actions/workflows/quality.yml?query=branch%3Amain) y en los estados del commit de GitHub. No se atribuye un resultado anterior a este commit. Artefactos locales: `output/publicacion-main-2026-10-31/`.
 
 No se ejecutan cobros, devoluciones o transferencias reales, restauraciones, borrados ni una caída real del proveedor. La validación pública no acredita dispositivos físicos ni aceptación clínica o comercial.
