@@ -3,6 +3,7 @@
   <v-app :data-user-role="appContext.activeMode" data-theme="light">
     <!-- Contenido principal -->
     <RouterView />
+    <NavigationFeedback />
 
     <!-- Snackbar global para errores de API -->
     <v-snackbar
@@ -45,6 +46,7 @@ import { RouterView, useRouter, useRoute } from "vue-router";
 import { Analytics } from "@vercel/analytics/vue";
 import { useAppTheme } from "@/composables/useAppTheme";
 import { useAppContextStore } from "@/store/appContext";
+import NavigationFeedback from "@/components/Common/NavigationFeedback.vue";
 
 import { legalConfig, hasPublishedLegalDocuments, watchPublishedLegalDocuments } from "@/config/legal";
 import { useAuthStore } from "@/store/auth";

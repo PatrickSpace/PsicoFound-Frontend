@@ -2,6 +2,7 @@ import { createRouter, createWebHistory } from "vue-router";
 import { useAuthStore } from "@/store/auth";
 import { safeReturnPath } from "@/utils/returnPath";
 import { installChunkRecovery } from "@/utils/chunkRecovery";
+import { installNavigationFeedback } from "@/composables/useNavigationFeedback";
 const InicioencuestaView = () => import("@/views/encuesta/InicioEncuestaView.vue");
 const EncuestaView = () => import("@/views/encuesta/EncuestaView.vue");
 const PsicologosView = () => import("@/views/PsicologosView.vue");
@@ -232,6 +233,12 @@ const router = createRouter({
     },
  
 ]});
+
+installNavigationFeedback(router, {
+  onError: () => window.dispatchEvent(new CustomEvent("api-error", {
+    detail: { message: "No pudimos abrir esta pantalla. Revisa tu conexión e inténtalo de nuevo." },
+  })),
+});
 
 router.beforeEach(async (to) => {
   // Legal documents must remain readable before login or email verification.

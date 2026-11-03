@@ -20,6 +20,24 @@ registro expresa una intención, pero nunca concede el rol `psychologist`.
 8. Al aprobar, una transacción crea el perfil en `therapists`, añade el rol
    `psychologist` y actualiza la solicitud.
 
+## Respuesta visual al navegar
+
+Desde el 03/11/2026, `installNavigationFeedback` se registra antes del guard de
+cuenta. Muestra una barra de progreso y «Cargando…» mientras se recupera Auth,
+se consulta el perfil/acceso y se descarga la vista. A los ocho segundos cambia
+el texto para indicar que el acceso sigue preparándose; no impone una espera
+artificial ni omite las comprobaciones de la cuenta.
+
+El indicador permanece durante las redirecciones de un registro incompleto y
+termina al confirmar la pantalla de destino. Una cancelación o error libera los
+botones; un error de navegación muestra el aviso global para volver a intentarlo.
+Una petición anterior no puede ocultar la carga de otra navegación más reciente.
+
+Los cuatro accesos de la portada se deshabilitan mientras hay una navegación
+pendiente. «Ya cuento con un terapeuta» abre `/sesiones`; una visita sin sesión
+pasa por login conservando ese destino y una cuenta incompleta continúa por el
+onboarding correspondiente. Los enlaces legales permanecen disponibles.
+
 ## Estados
 
 El documento `users/{uid}` utiliza:

@@ -12,6 +12,7 @@
                   <v-spacer></v-spacer>
                   <v-btn
                     to="/login"
+                    :disabled="navigation.pending"
                     class="pf-btn-ghost"
                     variant="text"
                   >
@@ -19,6 +20,7 @@
                   </v-btn>
                   <v-btn
                     to="/registro"
+                    :disabled="navigation.pending"
                     class="pf-btn-primary"
                   >
                     Registrarse
@@ -47,6 +49,7 @@
                   variant="text"
                   append-icon="mdi-arrow-right"
                   to="/iniciarencuesta"
+                  :disabled="navigation.pending"
                 >
                   Encuentra a tu terapeuta
                 </v-btn>
@@ -57,6 +60,8 @@
                   class="theme-contrast-text text-body-1 d-flex pf-btn-ghost"
                   variant="text"
                   size="large"
+                  to="/sesiones"
+                  :disabled="navigation.pending"
                 >
                   Ya cuento con un terapeuta
                 </v-btn>
@@ -72,6 +77,11 @@
     </v-row>
   </div>
 </template>
+<script setup>
+import { useNavigationFeedback } from "@/composables/useNavigationFeedback";
+
+const navigation = useNavigationFeedback();
+</script>
 <style scoped>
 .bg-image {
   background-size: cover;
