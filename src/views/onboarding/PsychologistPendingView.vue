@@ -11,8 +11,10 @@
       <div>
         <h2 class="text-h5 font-weight-bold">Cuenta creada correctamente</h2>
         <p class="text-body-1 text-medium-emphasis mt-2 mb-0">
-          Te avisaremos cuando la revisión termine. Mientras tanto puedes usar
-          Lurems como paciente con la misma cuenta.
+          Te avisaremos cuando la revisión termine.
+          <template v-if="hasCompletedPatientRegistration">
+            Mientras tanto puedes usar Lurems como paciente con la misma cuenta.
+          </template>
         </p>
       </div>
     </div>
@@ -37,18 +39,27 @@
         Revisar estado
       </v-btn>
       <v-btn
+        v-if="hasCompletedPatientRegistration"
         class="pf-btn-primary"
         append-icon="mdi-arrow-right"
         @click="openPatientView"
       >
         Ir a mi vista de paciente
       </v-btn>
+      <v-btn
+        v-else
+        class="pf-btn-primary"
+        append-icon="mdi-arrow-right"
+        :to="{ name: 'home' }"
+      >
+        Ir a inicio
+      </v-btn>
     </div>
   </OnboardingShell>
 </template>
 
 <script setup>
-import { ref } from "vue";
+import { computed, ref } from "vue";
 import { useRouter } from "vue-router";
 import OnboardingShell from "@/components/onboarding/OnboardingShell.vue";
 import { auth } from "@/plugins/Firebase/firebase";
@@ -59,6 +70,10 @@ const router = useRouter();
 const appContext = useAppContextStore();
 const checking = ref(false);
 const errorMessage = ref("");
+const hasCompletedPatientRegistration = computed(() =>
+  appContext.hasPatientAccess &&
+  appContext.userProfile?.patientOnboardingStatus === "complete"
+);
 
 async function checkStatus() {
   checking.value = true;
@@ -98,7 +113,11 @@ async function checkStatus() {
 }
 
 async function openPatientView() {
-  await appContext.loadForUser(auth.currentUser.uid, { force: true });
+  const uid = auth.currentUser?.uid;
+  if (!uid || !hasCompletedPatientRegistration.value) return;
+
+  await appContext.loadForUser(uid, { force: true });
+  if (uid !== auth.currentUser?.uid || !hasCompletedPatientRegistration.value) return;
   appContext.setActiveMode("patient");
   await router.push("/dashboard");
 }
