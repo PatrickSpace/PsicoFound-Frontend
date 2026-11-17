@@ -88,6 +88,16 @@
         </v-btn>
 
         <v-btn
+          v-if="supportWhatsAppAvailable"
+          icon="mdi-whatsapp"
+          class="nav-icon-btn"
+          aria-label="Soporte por WhatsApp"
+          title="Soporte por WhatsApp"
+          variant="text"
+          @click="openWhatsAppSupport"
+        />
+
+        <v-btn
           icon
           class="nav-icon-btn nav-icon-btn--settings"
           aria-label="Configuración"
@@ -116,15 +126,23 @@ import { computed, onBeforeUnmount, ref, watch } from "vue";
 import { storeToRefs } from "pinia";
 import { useRoute, useRouter } from "vue-router";
 import FeedbackDialog from "@/components/Navigation/FeedbackDialog.vue";
+import { useAppContextStore } from "@/store/appContext";
 import { useAuthStore } from "@/store/auth";
+import { APP_ROLES } from "@/utils/roles";
 import {
   markNotificationAsRead,
   watchNotifications,
 } from "@/services/notificationService";
 
+const supportWhatsAppNumber = (import.meta.env.VITE_SUPPORT_WHATSAPP_NUMBER ?? "51994875357")
+  .trim()
+  .replace(/^\+/, "");
+const supportWhatsAppAvailable = /^[1-9]\d{7,14}$/.test(supportWhatsAppNumber);
+
 const router = useRouter();
 const route = useRoute();
 const authStore = useAuthStore();
+const appContext = useAppContextStore();
 const { currentUser } = storeToRefs(authStore);
 const isFeedbackDialogOpen = ref(false);
 const showFeedbackSaved = ref(false);
@@ -141,6 +159,19 @@ const isSettingsRoute = computed(() => route.name === "configuracion");
 const unreadNotificationsCount = computed(
   () => notifications.value.filter((notification) => !notification.readAt).length
 );
+
+function openWhatsAppSupport() {
+  const user = currentUser.value;
+  const isPsychologist = user?.uid && appContext.loadedForUid === user.uid &&
+    appContext.userRoles.includes(APP_ROLES.PSYCHOLOGIST);
+  const email = user?.email?.trim();
+  const roleText = isPsychologist ? " y soy psicólogo" : "";
+  const emailText = email ? ` Mi correo es: ${email}` : "";
+  const message = `Hola, vengo de la web de Lurems${roleText}.${emailText}`;
+
+  const href = `https://wa.me/${supportWhatsAppNumber}?text=${encodeURIComponent(message)}`;
+  window.open(href, "_blank", "noopener,noreferrer");
+}
 
 watch(
   () => currentUser.value?.uid,
