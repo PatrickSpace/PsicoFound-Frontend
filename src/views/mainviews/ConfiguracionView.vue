@@ -600,6 +600,13 @@
               icon="mdi-alert-outline"
             >
               {{ psychologistRequestError }}
+              <v-btn
+                v-if="psychologistEmailVerificationRequired"
+                variant="text"
+                :to="{ path: '/verificar-correo', query: { redirect: '/configuracion' } }"
+              >
+                Verificar correo
+              </v-btn>
             </v-alert>
             <v-row>
               <v-col cols="12" md="6">
@@ -758,6 +765,7 @@ import {
   hasPublishedLegalDocuments,
   legalConfig,
 } from "@/config/legal";
+import { isEmailVerificationRequired } from "@/services/onboardingService";
 import {
   createPsychologistRequest,
   getLatestPsychologistRequestByUser,
@@ -781,6 +789,7 @@ const savingPsychologistRequest = ref(false);
 const loadingPsychologistRequest = ref(false);
 const loggingOut = ref(false);
 const psychologistRequestError = ref("");
+const psychologistEmailVerificationRequired = ref(false);
 const psychologistRequest = ref(null);
 const sendingVerification = ref(false);
 const emailDialog = ref(false);
@@ -951,6 +960,7 @@ function switchMode(mode) {
 
 function showPsychologistRequest() {
   psychologistRequestError.value = "";
+  psychologistEmailVerificationRequired.value = false;
   resetPsychologistRequestForm();
   psychologistRequestDialog.value = true;
 }
@@ -1023,6 +1033,7 @@ async function submitPsychologistRequest() {
 
   savingPsychologistRequest.value = true;
   psychologistRequestError.value = "";
+  psychologistEmailVerificationRequired.value = false;
 
   try {
     psychologistRequest.value = await createPsychologistRequest({
@@ -1052,6 +1063,7 @@ async function submitPsychologistRequest() {
     );
   } catch (error) {
     console.error("Error creating psychologist request:", error);
+    psychologistEmailVerificationRequired.value = isEmailVerificationRequired(error);
     psychologistRequestError.value =
       error?.message || "No pudimos enviar tu solicitud.";
   } finally {

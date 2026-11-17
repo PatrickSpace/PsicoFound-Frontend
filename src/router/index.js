@@ -284,19 +284,13 @@ router.beforeEach(async (to) => {
     };
   }
 
-  if (user?.emailVerified && to.meta.emailVerification) {
-    return typeof to.query.redirect === "string"
-      ? to.query.redirect
-      : "/onboarding";
-  }
-
   if (user && isGuestOnlyRoute) {
     if (to.name === "registro") return;
     return typeof to.query.redirect === "string" ?
       {path: "/onboarding", query: {redirect: safeReturnPath(to.query.redirect)}} : "/onboarding";
   }
 
-  // Verification needs Auth only; profile queries must not delay this screen.
+  // The verification view refreshes the token even when the Auth user already reports a verified email.
   if (to.meta.emailVerification) return;
 
   if (user && !isPublicRoute) {

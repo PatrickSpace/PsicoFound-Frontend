@@ -193,8 +193,9 @@ async function choose(page, label, option) {
 async function shot(page, info, name) {
   await page.screenshot({ path:info.outputPath(name + ".png"), fullPage:true, animations:"disabled" });
 }
-async function signup(page, email) {
+async function signup(page, email, { professional = false } = {}) {
   await page.goto("/registro");
+  if (professional) await page.getByLabel("Registro como paciente", { exact: true }).check();
   await expect(page.getByRole("link", {name:"términos de uso", exact:true})).toHaveAttribute("href", "https://example.test/terms");
   await page.getByRole("checkbox", { name:/Acepto/ }).check();
   await page.getByRole("textbox", { name:"Correo", exact:true }).fill(email);
@@ -528,4 +529,125 @@ test('email verification: interrupted screen download recovers without repeating
  const user=await adminAuth.getAuth(app).getUserByEmail(email);
  expect((await db.doc(`users/${user.uid}`).get()).exists).toBe(true);
  expect((await db.collection(`users/${user.uid}/consents`).get()).size).toBe(1);
+});
+
+const professionalApplication = {
+  professionalName: "Profesional de prueba",
+  licenseNumber: "PRUEBA-123",
+  country: "Perú",
+  professionalSummary: "Descripción profesional para la revisión sintética.",
+  specialties: ["Ansiedad"],
+  approaches: ["Humanista"],
+  modalities: ["Remoto"],
+};
+const verificationRequired = {
+  code: "failed-precondition",
+  details: { reason: "email-verification-required" },
+};
+
+async function completeProfessionalForm(page) {
+  await page.getByRole("textbox", { name: "Nombre profesional" }).fill(professionalApplication.professionalName);
+  await page.getByRole("textbox", { name: "Número de colegiatura" }).fill(professionalApplication.licenseNumber);
+  await choose(page, "Especialidades", "Ansiedad");
+  await choose(page, "Enfoques", "Humanista");
+  await page.getByRole("textbox", { name: "Resumen profesional" }).fill(professionalApplication.professionalSummary);
+  await page.getByRole("checkbox", { name: /Declaro que la información/ }).check();
+}
+
+test("professional verification: recover delivery, follow the emulator link and submit for approval", async ({ page }, info) => {
+  const account = `professional-verify-${info.project.name}-${Date.now()}`;
+  const email = `${account}@example.test`;
+  const verification = page.getByRole("heading", { name: "Verifica tu correo" });
+  await page.clock.install();
+  await page.route("**/accounts:sendOobCode**", route => route.fulfill({
+    status: 400, json: { error: { message: "TOO_MANY_ATTEMPTS_TRY_LATER" } },
+  }), { times: 1 });
+
+  // Isolate the direct submission from the app’s independent account-activity calls.
+  await page.route("**/getAccountAccessStatus", route => route.abort());
+  await signup(page, email, { professional: true });
+  await expect(verification).toBeVisible();
+  await expect(page.getByText("Tu cuenta está creada, pero no pudimos enviar el enlace.", { exact: false })).toBeVisible();
+  const user = await adminAuth.getAuth(app).getUserByEmail(email);
+  const userRef = db.doc(`users/${user.uid}`);
+  const requests = db.collection("psychologist_requests").where("userUid", "==", user.uid);
+  const originalProfile = (await userRef.get()).data();
+  expect(originalProfile).toMatchObject({ registrationIntent: "psychologist", roles: ["patient"] });
+  await expect(httpCall(account, "submitPsychologistApplication", professionalApplication)).rejects.toMatchObject(verificationRequired);
+  expect((await requests.get()).empty).toBe(true);
+  expect((await userRef.get()).data()).toEqual(originalProfile);
+  await page.unroute("**/getAccountAccessStatus");
+
+  await page.getByRole("button", { name: "Usar otra cuenta" }).click();
+  await expect(page).toHaveURL(/\/login/);
+  await page.getByRole("textbox", { name: "Correo", exact: true }).fill(email);
+  await page.getByRole("textbox", { name: "Contraseña", exact: true }).fill(password);
+  await page.getByRole("button", { name: "Iniciar Sesión", exact: true }).click();
+  await expect(verification).toBeVisible();
+  await page.goto("/onboarding/psicologo");
+  await expect(verification).toBeVisible();
+
+  const resend = page.getByRole("button", { name: "Reenviar enlace" });
+  await expect(resend).toBeDisabled();
+  await page.clock.fastForward(61000);
+  await expect(resend).toBeEnabled();
+  await resend.click();
+  await expect(page.getByText("Enviamos un nuevo enlace de verificación.")).toBeVisible();
+  const code = await oob(email, "VERIFY_EMAIL");
+  const link = new URL(code.oobLink);
+  expect(link.host).toBe("127.0.0.1:9099");
+  const returnUrl = new URL(link.searchParams.get("continueUrl"));
+  expect(returnUrl.pathname).toBe("/verificar-correo");
+  expect(returnUrl.searchParams.get("redirect")).toBe("/onboarding");
+  await page.goto(link.href);
+  await expect(page).toHaveURL(/\/onboarding\/psicologo$/);
+
+  await completeProfessionalForm(page);
+  await page.getByRole("button", { name: "Enviar solicitud", exact: true }).click();
+  await expect(page).toHaveURL(/\/onboarding\/psicologo\/pendiente$/);
+  const pending = await requests.get();
+  expect(pending.size).toBe(1);
+  expect(pending.docs[0].data().status).toBe("pending");
+  expect((await userRef.get()).data().roles).toEqual(["patient"]);
+
+  await httpCall("review-admin", "reviewPsychologistApplication", { requestId: pending.docs[0].id, action: "approve" });
+  expect((await userRef.get()).data().roles).toContain("psychologist");
+  expect((await pending.docs[0].ref.get()).data().status).toBe("approved");
+});
+
+test("professional verification: a verified account proceeds directly and can recover a rejected submission", async ({ page }) => {
+  const userRef = db.doc("users/patient-c");
+  await userRef.update({ registrationIntent: "psychologist", onboardingStatus: "pending", professionalAccessStatus: "not_requested" });
+  const initial = await httpCall("C", "submitPsychologistApplication", professionalApplication);
+  await adminAuth.getAuth(app).updateUser("patient-c", { emailVerified: false });
+  await httpCall("review-admin", "reviewPsychologistApplication", {
+    requestId: initial.request.id, action: "reject", rejectionReason: "Completar información de prueba.",
+  });
+
+  const rejectedProfile = (await userRef.get()).data();
+  await expect(httpCall("C", "submitPsychologistApplication", professionalApplication)).rejects.toMatchObject(verificationRequired);
+  expect((await userRef.get()).data()).toEqual(rejectedProfile);
+  const requests = db.collection("psychologist_requests").where("userUid", "==", "patient-c");
+  expect((await requests.get()).docs.map(doc => doc.data().status)).toEqual(["rejected"]);
+
+  await adminAuth.getAuth(app).updateUser("patient-c", { emailVerified: true });
+  await login(page, "/onboarding/psicologo", "C");
+  await expect(page.getByRole("heading", { name: "Completa tu solicitud profesional" })).toBeVisible();
+  await expect(page.getByText("Completar información de prueba.", { exact: false })).toBeVisible();
+  const send = page.getByRole("button", { name: "Enviar solicitud", exact: true });
+  await page.getByRole("checkbox", { name: /Declaro que la información/ }).check();
+  await page.route("**/submitPsychologistApplication", route => route.fulfill({
+    status: 400, json: { error: { status: "FAILED_PRECONDITION", message: "Verifica tu correo antes de continuar.", details: verificationRequired.details } },
+  }), { times: 1 });
+  await send.click();
+  const retryVerification = page.getByRole("link", { name: "Verificar correo" });
+  await retryVerification.click();
+  await expect(retryVerification).toHaveCount(0);
+  await expect(page).toHaveURL(/\/onboarding\/psicologo$/);
+  await expect(page.getByText("Completar información de prueba.", { exact: false })).toBeVisible();
+  await page.getByRole("checkbox", { name: /Declaro que la información/ }).check();
+  await send.click();
+  await expect(page).toHaveURL(/\/onboarding\/psicologo\/pendiente$/);
+  expect((await requests.get()).docs.map(doc => doc.data().status).sort()).toEqual(["pending", "rejected"]);
+  expect(await oob("patient-c@example.test", "VERIFY_EMAIL")).toBeUndefined();
 });

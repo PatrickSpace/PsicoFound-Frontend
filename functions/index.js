@@ -143,6 +143,7 @@ exports.completePatientOnboarding = onCall(
 
 exports.submitPsychologistApplication = onCall(
     {
+      verifiedEmailRequired: true,
       minInstances: 0,
       timeoutSeconds: 20,
     },

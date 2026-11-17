@@ -24,7 +24,7 @@ export async function httpCall(who, name, data) {
   const payload = await response.json();
   if (!response.ok || payload.error) {
     throw Object.assign(new Error(payload.error?.message || `HTTP ${response.status}`),
-      { code: payload.error?.status?.toLowerCase().replaceAll("_", "-") });
+      { code: payload.error?.status?.toLowerCase().replaceAll("_", "-"), details: payload.error?.details });
   }
   return payload.result;
 }

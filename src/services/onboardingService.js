@@ -88,6 +88,11 @@ export function getPostAuthenticationRoute(profile = {}) {
   return "/dashboard";
 }
 
+export function isEmailVerificationRequired(error) {
+  return error?.code === "functions/failed-precondition" &&
+    error.details?.reason === "email-verification-required";
+}
+
 export function getCallableErrorMessage(
   error,
   fallback = "No pudimos completar la operación."

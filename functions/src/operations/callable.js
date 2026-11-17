@@ -5,6 +5,7 @@ const logger = require("firebase-functions/logger");
 const {appCheckOptions} = require("./appCheckPolicy");
 const firestoreAdmin = require("firebase-admin/firestore");
 const {onCall: firebaseOnCall, HttpsError} = require("firebase-functions/v2/https");
+const {requireVerifiedEmail} = require("../accounts/accessPolicy");
 const {recordAccountActivity} = require("../accounts/accountLifecycle");
 const {recordOperationalAlert} = require("./operationalAlerts");
 const PRIVACY_OPERATIONS = new Set(["diagnoseAccountDeletion", "authorizeAccountDeletion", "executeAccountDeletion"]);
@@ -12,7 +13,8 @@ function onCall(options, handler) {
   if (typeof options === "function") {
     handler = options; options = {};
   }
-  return firebaseOnCall({...options, ...appCheckOptions()}, async (request) => {
+  const {verifiedEmailRequired, ...firebaseOptions} = options;
+  return firebaseOnCall({...firebaseOptions, ...appCheckOptions()}, async (request) => {
     const correlationId = randomUUID();
     const startedAt = Date.now();
     try {
@@ -29,6 +31,7 @@ function onCall(options, handler) {
         }
       }
       if (request.auth) {
+        if (verifiedEmailRequired) requireVerifiedEmail(request.auth);
         const user = await recordAccountActivity(request.auth.uid);
         if (user?.accountStatus === "suspended" &&
             !["getAccountAccessStatus", "suspendOwnAccount", "reactivateOwnAccount", "exportOwnData"].includes(handler.name)) {

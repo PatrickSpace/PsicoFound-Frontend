@@ -92,6 +92,14 @@ function evaluateAccess(user = {}, auth = {}, policy = legalPolicy(), eligibilit
   return {allowed: reason === "ready", reason, eligibility, legal: policy};
 }
 
+function requireVerifiedEmail(auth) {
+  if (auth.token?.email_verified !== true) {
+    throw new HttpsError("failed-precondition", "Verifica tu correo antes de continuar.", {
+      reason: "email-verification-required",
+    });
+  }
+}
+
 function requirePatientRole(user = {}) {
   const roles = [...(Array.isArray(user.roles) ? user.roles : []), user.rol, user.role];
   if (!roles.some((role) => ["patient", "paciente"].includes(role))) {
@@ -113,4 +121,4 @@ async function requirePatientAccess(request) {
 }
 
 module.exports = {eligibilityPolicy, legalPolicy, readLegalPolicy, ageOnDate, assertEligible,
-  hasCurrentConsent, evaluateAccess, requirePatientAccess, requirePatientRole};
+  hasCurrentConsent, evaluateAccess, requirePatientAccess, requirePatientRole, requireVerifiedEmail};

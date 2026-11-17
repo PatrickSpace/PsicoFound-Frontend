@@ -4,7 +4,7 @@ const {FieldValue} = require("firebase-admin/firestore");
 const {requireAdmin: requireAdminTransaction, audit} = require("../accounts/adminHandlers");
 const logger = require("firebase-functions/logger");
 const {HttpsError} = require("firebase-functions/v2/https");
-const {assertEligible, hasCurrentConsent, legalPolicy, readLegalPolicy} = require("../accounts/accessPolicy");
+const {assertEligible, hasCurrentConsent, legalPolicy, readLegalPolicy, requireVerifiedEmail} = require("../accounts/accessPolicy");
 
 const PATIENT_ROLE = "patient";
 const PSYCHOLOGIST_ROLE = "psychologist";
@@ -100,9 +100,7 @@ async function completePatientOnboarding(request) {
   const auth = requireAuth(request);
   const profile = sanitizePatientProfile(request.data);
   assertEligible(profile.fechaNacimiento);
-  if (auth.token?.email_verified !== true) {
-    throw new HttpsError("failed-precondition", "Verifica tu correo antes de continuar.");
-  }
+  requireVerifiedEmail(auth);
   const token = auth.token || {};
   const db = firestoreAdmin.getFirestore();
   const userRef = db.collection("users").doc(auth.uid);
@@ -143,6 +141,7 @@ async function completePatientOnboarding(request) {
 
 async function submitPsychologistApplication(request) {
   const auth = requireAuth(request);
+  requireVerifiedEmail(auth);
   const application = sanitizeProfessionalApplication(request.data);
   const token = auth.token || {};
   const db = firestoreAdmin.getFirestore();

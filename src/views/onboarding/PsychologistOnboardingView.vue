@@ -23,6 +23,13 @@
       variant="tonal"
     >
       {{ errorMessage }}
+      <v-btn
+        v-if="emailVerificationRequired"
+        variant="text"
+        :to="{ path: '/verificar-correo', query: { redirect: '/onboarding/psicologo' } }"
+      >
+        Verificar correo
+      </v-btn>
     </v-alert>
 
     <v-form v-model="valid" @submit.prevent="submit">
@@ -173,6 +180,7 @@ import {
 } from "@/constants/professionalProfile";
 import {
   getCallableErrorMessage,
+  isEmailVerificationRequired,
   submitPsychologistApplication,
 } from "@/services/onboardingService";
 import { getLatestPsychologistRequestByUser } from "@/services/psychologistRequestService";
@@ -188,6 +196,7 @@ const valid = ref(false);
 const saving = ref(false);
 const declarationAccepted = ref(false);
 const errorMessage = ref("");
+const emailVerificationRequired = ref(false);
 const rejectionReason = ref("");
 const form = reactive({
   professionalName: "",
@@ -262,6 +271,7 @@ async function submit() {
 
   saving.value = true;
   errorMessage.value = "";
+  emailVerificationRequired.value = false;
 
   try {
     const result = await submitPsychologistApplication({ ...form });
@@ -271,6 +281,7 @@ async function submit() {
     );
   } catch (error) {
     console.error("Psychologist onboarding error:", error);
+    emailVerificationRequired.value = isEmailVerificationRequired(error);
     errorMessage.value = getCallableErrorMessage(
       error,
       "No pudimos enviar tu solicitud. Revisa los datos e intenta nuevamente."
