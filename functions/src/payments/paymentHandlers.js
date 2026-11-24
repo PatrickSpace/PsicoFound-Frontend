@@ -8,12 +8,15 @@ const {
 const {
   MarketplacePaymentService,
 } = require("./services/marketplacePaymentService");
+const {CulqiPaymentService} = require("./services/culqiPaymentService");
 const {requireAppCheckIfEnabled} = require("../security/appCheck");
 const {enforceRateLimit} = require("../security/rateLimit");
 
 function createService() {
   const config = getPaymentConfig();
-  return new MarketplacePaymentService({
+  const Service = config.provider === "culqi" ?
+    CulqiPaymentService : MarketplacePaymentService;
+  return new Service({
     db: admin.firestore(),
     config,
     provider: createMarketplacePaymentProvider(config),
@@ -54,6 +57,36 @@ const getPaymentAccountStatus = callable((service, uid) =>
 
 const updatePsychologistPaymentSettings = callable((service, uid, data) =>
   service.updatePaymentSettings(uid, data));
+
+const savePsychologistPayoutAccount = callable((service, uid, data) => {
+  if (service.config.provider !== "culqi") throw new PaymentDomainError("PAYMENT_CONFIGURATION_INVALID");
+  return service.savePayoutAccount(uid, data);
+});
+
+const listCulqiCards = callable((service, uid) => {
+  if (service.config.provider !== "culqi") throw new PaymentDomainError("PAYMENT_CONFIGURATION_INVALID");
+  return service.listCards(uid);
+});
+
+const saveCulqiCard = callable((service, uid, data) => {
+  if (service.config.provider !== "culqi") throw new PaymentDomainError("PAYMENT_CONFIGURATION_INVALID");
+  return service.saveCard(uid, data);
+}, {action: "save-payment-card", limit: 5, windowMs: 60 * 1000});
+
+const completeCulqiCard3DS = callable((service, uid, data) => {
+  if (service.config.provider !== "culqi") throw new PaymentDomainError("PAYMENT_CONFIGURATION_INVALID");
+  return service.completeCard3DS(uid, data);
+});
+
+const removeCulqiCard = callable((service, uid, data) => {
+  if (service.config.provider !== "culqi") throw new PaymentDomainError("PAYMENT_CONFIGURATION_INVALID");
+  return service.removeCard(uid, data);
+});
+
+const completeCulqiPayment3DS = callable((service, uid, data) => {
+  if (service.config.provider !== "culqi") throw new PaymentDomainError("PAYMENT_CONFIGURATION_INVALID");
+  return service.completePayment3DS(uid, data);
+});
 
 const disconnectPaymentAccount = callable((service, uid) =>
   service.disconnectPaymentAccount(uid));
@@ -137,6 +170,27 @@ async function mercadoPagoWebhook(request, response) {
   }
 }
 
+async function culqiWebhook(request, response) {
+  if (request.method !== "POST") {
+    response.status(405).send("Method Not Allowed");
+    return;
+  }
+  try {
+    const service = createService();
+    if (service.config.provider !== "culqi") {
+      response.status(404).send("Not Found");
+      return;
+    }
+    // Culqi's documented webhook does not provide a signature. The event is
+    // treated only as a hint; processWebhook fetches the charge from Culqi.
+    await service.processWebhook({body: request.body || {}});
+    response.status(200).send("OK");
+  } catch (error) {
+    logger.error("Culqi webhook failed", {errorType: error.code || error.name});
+    response.status(error.code === "INVALID_WEBHOOK" ? 400 : 500).send("Error");
+  }
+}
+
 async function expirePendingBookingHolds() {
   return createService().expirePendingBookingHolds();
 }
@@ -157,18 +211,25 @@ module.exports = {
   cancelBooking,
   createBookingHold,
   createBookingPayment,
+  completeCulqiCard3DS,
+  completeCulqiPayment3DS,
   createMercadoPagoAuthorizationUrl,
   createPaymentAccountConnection,
   disconnectPaymentAccount,
+  culqiWebhook,
   expireBookingHold,
   expirePendingBookingHolds,
   getBookingPaymentStatus,
   getPaymentAccountStatus,
   listMyPaymentBookings,
+  listCulqiCards,
   mercadoPagoOAuthCallback,
   mercadoPagoWebhook,
   reconcilePayments,
   requestBookingRefund,
+  removeCulqiCard,
+  saveCulqiCard,
+  savePsychologistPayoutAccount,
   simulatePaymentEvent,
   updatePsychologistPaymentSettings,
 };

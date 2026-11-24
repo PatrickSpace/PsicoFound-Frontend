@@ -30,9 +30,46 @@
           </v-chip>
         </div>
 
-        <p class="text-body-2 text-medium-emphasis mb-4">
+        <p class="text-body-2 text-medium-emphasis mb-4" v-if="isCulqi">
+          Lurems cobra la sesión y registra tu 70% para abonarlo a tu cuenta bancaria.
+          Ingresa el CCI de una cuenta a tu nombre.
+        </p>
+        <p class="text-body-2 text-medium-emphasis mb-4" v-else>
           Conecta Mercado Pago para recibir reservas pagadas. Lurems nunca muestra ni almacena tus credenciales en el navegador.
         </p>
+
+        <template v-if="isCulqi">
+          <v-alert v-if="account.cciLastFour" color="info" variant="tonal" class="mb-4">
+            CCI registrada: •••• {{ account.cciLastFour }} · {{ account.bankName }}.
+            Estado: {{ account.payoutStatus === 'pending_verification' ? 'pendiente de verificación' : account.payoutStatus }}.
+          </v-alert>
+          <v-text-field
+            v-model="bankName"
+            label="Banco de tu cuenta"
+            variant="outlined"
+            density="comfortable"
+            maxlength="80"
+            autocomplete="organization"
+          />
+          <v-text-field
+            v-model="cci"
+            label="CCI (20 dígitos)"
+            variant="outlined"
+            density="comfortable"
+            maxlength="20"
+            inputmode="numeric"
+            autocomplete="off"
+            :hint="account.cciLastFour ? 'Deja vacío si no deseas cambiar la cuenta.' : 'Se usará para tus abonos.'"
+            persistent-hint
+          />
+          <v-btn
+            color="secondary"
+            class="pf-btn-primary mb-4"
+            :loading="savingPayout"
+            :disabled="!/^\d{20}$/.test(cci) || bankName.trim().length < 2"
+            @click="savePayout"
+          >Guardar cuenta para abonos</v-btn>
+        </template>
 
         <v-text-field
           v-model.number="priceSoles"
@@ -63,7 +100,7 @@
           La cuenta necesita revisión antes de aceptar nuevas reservas.
         </v-alert>
 
-        <div class="d-flex flex-wrap ga-2">
+        <div v-if="!isCulqi" class="d-flex flex-wrap ga-2">
           <v-btn
             v-if="account.status !== 'connected'"
             color="secondary"
@@ -110,6 +147,7 @@ import {
   getPaymentAccountStatus,
   paymentErrorMessage,
   savePaymentSettings,
+  savePsychologistPayoutAccount,
 } from "@/services/paymentService";
 import { paymentClientConfig } from "@/config/paymentClientConfig";
 
@@ -117,8 +155,12 @@ const loading = ref(true);
 const saving = ref(false);
 const connecting = ref(false);
 const disconnecting = ref(false);
+const savingPayout = ref(false);
 const errorMessage = ref("");
 const priceSoles = ref(0);
+const cci = ref("");
+const bankName = ref("");
+const isCulqi = paymentClientConfig.provider === "culqi";
 const account = ref({
   status: "not_started",
   isFake: false,
@@ -153,10 +195,25 @@ async function loadAccount() {
   try {
     account.value = await getPaymentAccountStatus();
     priceSoles.value = Number(account.value.sessionPriceAmount || 0) / 100;
+    bankName.value = account.value.bankName || "";
   } catch (error) {
     errorMessage.value = paymentErrorMessage(error);
   } finally {
     loading.value = false;
+  }
+}
+
+async function savePayout() {
+  if (savingPayout.value) return;
+  savingPayout.value = true;
+  errorMessage.value = "";
+  try {
+    account.value = await savePsychologistPayoutAccount({ cci: cci.value, bankName: bankName.value });
+    cci.value = "";
+  } catch (error) {
+    errorMessage.value = paymentErrorMessage(error);
+  } finally {
+    savingPayout.value = false;
   }
 }
 

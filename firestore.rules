@@ -177,7 +177,6 @@ service cloud.firestore {
           "motivoTerapia",
           "detalleTerapia",
           "objetivosIniciales",
-          "citas",
           "estado",
           "modalidad",
           "terapeutaNombre",
@@ -285,21 +284,14 @@ service cloud.firestore {
     }
 
     match /therapist_availability/{slotId} {
-      allow read: if signedIn();
-      allow create: if signedIn() &&
-        request.resource.data.therapistId is string &&
-        assignedTherapist(request.resource.data.therapistId) &&
-        request.resource.data.status == "available";
-      allow update: if (
-        assignedTherapist(resource.data.therapistId) &&
-        request.resource.data.therapistId == resource.data.therapistId &&
-        request.resource.data.diff(resource.data).affectedKeys().hasOnly([
-          "status",
-          "updatedAt"
-        ]) &&
-        request.resource.data.status in ["available", "closed"]
-      );
-      allow delete: if false;
+      // Public availability is returned by listAvailability without patient IDs.
+      allow read: if assignedTherapist(resource.data.therapistId) || isAdmin();
+      allow write: if false;
+    }
+
+    match /appointment_events/{eventId} {
+      allow read: if ownsExistingPatientDoc() || ownsExistingTherapistDoc() || isAdmin();
+      allow write: if false;
     }
 
     match /notifications/{notificationId} {
@@ -327,8 +319,7 @@ service cloud.firestore {
         ownsExistingTherapistDoc() ||
         isAdmin();
       allow create: if false;
-      allow update: if financialAppointmentFieldsUnchanged() &&
-        validTherapistAppointmentUpdate();
+      allow update: if false;
       allow delete: if false;
     }
 

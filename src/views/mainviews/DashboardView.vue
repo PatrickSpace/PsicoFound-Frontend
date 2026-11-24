@@ -134,7 +134,9 @@
           v-if="nextAppointment"
           class="my-5"
           :appointment="nextAppointment"
-          :reschedulable="Boolean(editableAppointment)"
+          :reschedulable="canPatientReschedule(nextAppointment, clockNow)"
+          :cancellable="canCancelAppointment(nextAppointment, clockNow)"
+          @cancel="cancelDialog = true"
           @reschedule="openRescheduleDialog"
         />
 
@@ -172,6 +174,7 @@
         </v-card-text>
       </v-card>
 
+      <AppointmentCancellationDialog v-model="cancelDialog" :appointment="nextAppointment" @cancelled="loadActiveTherapy" />
       <CitaDialog
         v-model="dialog"
         :terapia-id="dialogAppointment?.terapiaId || activeTherapy?.id || ''"
@@ -191,6 +194,9 @@ import { computed, onBeforeUnmount, ref, watch } from "vue";
 import { storeToRefs } from "pinia";
 import LayoutDefault from "@/components/Layout/Layoutmain.vue";
 import CitaDialog from "@/components/Terapias/CitaDialog.vue";
+import AppointmentCancellationDialog from "@/components/Terapias/AppointmentCancellationDialog.vue";
+import { watchAppointmentChanges } from "@/services/appointmentRepository";
+import { appointmentEnd, canPatientReschedule, canCancelAppointment } from "@/utils/appointmentTime";
 import NextAppointmentCard from "@/components/Terapias/NextAppointmentCard.vue";
 import ActiveTherapySummaryCard from "@/components/Terapias/ActiveTherapySummaryCard.vue";
 import { useAuthStore } from "@/store/auth";
@@ -211,6 +217,10 @@ const loadingTherapist = ref(false);
 const dialog = ref(false);
 const dialogAppointment = ref(null);
 
+const cancelDialog = ref(false);
+const clockNow = ref(Date.now());
+const clockTimer = setInterval(() => { clockNow.value = Date.now(); }, 30000);
+let stopAppointmentWatch = () => {};
 let therapistRequestId = 0;
 let profileRequestId = 0;
 
@@ -253,16 +263,14 @@ function parseAppointmentDate(appointment) {
   if (!appointment?.fecha) return null;
 
   const rawDate = appointment.hora
-    ? `${appointment.fecha}T${appointment.hora}`
-    : `${appointment.fecha}T00:00`;
+    ? `${appointment.fecha}T${appointment.hora}:00-05:00`
+    : `${appointment.fecha}T00:00:00-05:00`;
 
   const parsed = new Date(rawDate);
   return Number.isNaN(parsed.getTime()) ? null : parsed;
 }
 
 const nextAppointment = computed(() => {
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
 
   const appointments = therapies.value
     .flatMap((therapy) =>
@@ -281,7 +289,7 @@ const nextAppointment = computed(() => {
       return (
         (status === "pendiente" || status === "confirmada") &&
         parseAppointmentDate(appointment) &&
-        parseAppointmentDate(appointment) >= today
+        appointmentEnd(appointment) > clockNow.value
       );
     })
     .sort((a, b) => parseAppointmentDate(a) - parseAppointmentDate(b));
@@ -293,6 +301,7 @@ const editableAppointment = computed(() => {
   if (!nextAppointment.value) return null;
 
   return {
+    ...nextAppointment.value,
     citaId: nextAppointment.value.citaId || "",
     terapiaId: nextAppointment.value.terapiaId || "",
     terapeutaId: nextAppointment.value.terapeutaId || "",
@@ -314,7 +323,7 @@ const upcomingSessionsCount = computed(
         .toString()
         .trim()
         .toLowerCase();
-      return status === "pendiente" || status === "confirmada";
+      return ["pendiente", "confirmada"].includes(status) && appointmentEnd(appointment) > clockNow.value;
     }).length
 );
 
@@ -347,7 +356,7 @@ async function loadActiveTherapy() {
 
   try {
     const [patientTherapies, patientExercises] = await Promise.all([
-      getTherapiesByPatient(pacienteUid),
+      getTherapiesByPatient(pacienteUid, { force: true }),
       getExercisesByPatient(pacienteUid),
     ]);
 
@@ -370,6 +379,8 @@ async function loadActiveTherapy() {
 watch(
   () => currentUser.value?.uid,
   async (uid) => {
+    stopAppointmentWatch();
+    stopAppointmentWatch = watchAppointmentChanges({ patientId: uid }, loadActiveTherapy);
     const requestId = ++profileRequestId;
     profile.value = null;
     dialogAppointment.value = null;
@@ -428,6 +439,8 @@ watch(
 );
 
 onBeforeUnmount(() => {
+  stopAppointmentWatch();
+  clearInterval(clockTimer);
   profileRequestId += 1;
   therapistRequestId += 1;
 });

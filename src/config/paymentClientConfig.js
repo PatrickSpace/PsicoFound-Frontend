@@ -1,4 +1,7 @@
-const publicKey = import.meta.env.VITE_MERCADO_PAGO_PUBLIC_KEY || "";
+const provider = import.meta.env.VITE_PAYMENT_PROVIDER || "culqi";
+const publicKey = provider === "culqi" ?
+  import.meta.env.VITE_CULQI_PUBLIC_KEY || "" :
+  import.meta.env.VITE_MERCADO_PAGO_PUBLIC_KEY || "";
 const environment = import.meta.env.VITE_PAYMENT_ENVIRONMENT || "sandbox";
 const placeholderMarkers = [
   "REEMPLAZAR",
@@ -9,7 +12,7 @@ const placeholderMarkers = [
 ];
 
 export const paymentClientConfig = Object.freeze({
-  provider: import.meta.env.VITE_PAYMENT_PROVIDER || "mercado_pago",
+  provider,
   environment,
   publicKey,
   useFakeProvider:
@@ -19,7 +22,7 @@ export const paymentClientConfig = Object.freeze({
 });
 
 export function assertPaymentClientConfig() {
-  if (paymentClientConfig.provider !== "mercado_pago") {
+  if (!["culqi", "mercado_pago"].includes(paymentClientConfig.provider)) {
     throw new Error("La configuración del proveedor de pagos no es válida.");
   }
   if (
@@ -27,6 +30,10 @@ export function assertPaymentClientConfig() {
     (paymentClientConfig.useFakeProvider || environment !== "production")
   ) {
     throw new Error("Los pagos no están habilitados en este entorno.");
+  }
+  if (provider === "culqi" && !paymentClientConfig.useFakeProvider &&
+    !publicKey.startsWith(environment === "production" ? "pk_live_" : "pk_test_")) {
+    throw new Error("La llave pública de Culqi no está configurada.");
   }
   return paymentClientConfig;
 }

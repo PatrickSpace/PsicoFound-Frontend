@@ -44,7 +44,7 @@
                 Terapeuta: {{ terapeutaNombre || "No definido" }}
               </div>
               <div class="text-body-2 text-medium-emphasis">
-                {{ citaId ? "Actualiza la fecha y hora de la cita." : "Completa la fecha y hora para registrar la cita." }}
+                {{ citaId ? "Actualiza las notas y el enlace de la sesión." : "Completa la fecha y hora para registrar la cita." }}
               </div>
             </v-col>
 
@@ -62,11 +62,11 @@
                   </div>
                   <div class="appointment-therapist-card__meta">
                     <v-icon size="16">mdi-clock-outline</v-icon>
-                    Bloques de 60 min
+                    Sesiones de {{ sessionDuration }} min · hora de Perú
                   </div>
                 </div>
                 <v-chip color="secondary" variant="tonal" size="small">
-                  60 min
+                  {{ sessionDuration }} min
                 </v-chip>
               </div>
             </v-col>
@@ -145,7 +145,7 @@
                       @click="selectAvailabilitySlot(slot)"
                     >
                       <span class="availability-slot__radio"></span>
-                      <span>{{ slot.startTime }} hs</span>
+                      <span>{{ slot.startTime }}–{{ slot.endTime }} · {{ slot.durationMinutes }} min</span>
                     </button>
                   </div>
                 </section>
@@ -155,7 +155,8 @@
             <v-col v-if="!showAvailabilityPicker" cols="12" md="6">
               <v-text-field
                 v-model="form.fecha"
-                label="Fecha"
+                label="Fecha (hora de Perú)"
+                readonly
                 type="date"
                 variant="outlined"
                 density="comfortable"
@@ -166,6 +167,7 @@
               <v-text-field
                 v-model="form.hora"
                 label="Hora"
+                readonly
                 type="time"
                 variant="outlined"
                 density="comfortable"
@@ -195,7 +197,7 @@
               ></v-text-field>
             </v-col>
 
-            <v-col v-if="canEditMeetingLink" cols="12" md="6">
+            <v-col v-if="canEditMeetingLink && !showAvailabilityPicker" cols="12" md="6">
               <v-select
                 v-model="form.meetingProvider"
                 :items="meetingProviderOptions"
@@ -211,7 +213,7 @@
               ></v-select>
             </v-col>
 
-            <v-col v-if="canEditMeetingLink" cols="12" md="6">
+            <v-col v-if="canEditMeetingLink && !showAvailabilityPicker" cols="12" md="6">
               <v-text-field
                 v-model="form.meetingUrl"
                 label="URL de la sesión"
@@ -237,7 +239,7 @@
               </v-alert>
             </v-col>
 
-            <v-col cols="12">
+            <v-col v-if="!citaId || !showAvailabilityPicker" cols="12">
               <v-textarea
                 v-model="form.notas"
                 :label="showAvailabilityPicker ? 'Notas para el psicólogo' : 'Notas para la cita'"
@@ -259,7 +261,7 @@
           @click="submitAppointment"
 
         class="pf-btn-secondary">
-          {{ showAvailabilityPicker ? "Siguiente paso" : citaId ? "Guardar cambios" : "Registrar cita" }}
+          {{ showAvailabilityPicker ? (citaId ? "Confirmar nuevo horario" : "Siguiente paso") : "Guardar detalles" }}
         </v-btn>
       </v-card-actions>
     </v-card>
@@ -272,14 +274,17 @@ import { storeToRefs } from "pinia";
 import { useRouter } from "vue-router";
 import { useAuthStore } from "@/store/auth";
 import { useAppContextStore } from "@/store/appContext";
-import { createAppointment, updateAppointment } from "@/services/citaService";
+import { rescheduleAppointment, updateAppointment } from "@/services/citaService";
 import { getAvailableSlotsByTherapist } from "@/services/availabilityService";
 import { getTherapistById } from "@/services/psicologoService";
 import { getTherapyById } from "@/services/terapiaService";
 import { createBookingHold } from "@/services/paymentService";
 import BookingPaymentPanel from "@/components/Payments/BookingPaymentPanel.vue";
 
+import { peruDateKey } from "@/utils/appointmentTime";
+
 const props = defineProps({
+  mode: { type: String, default: "schedule" },
   modelValue: {
     type: Boolean,
     default: false,
@@ -327,7 +332,7 @@ const emit = defineEmits(["update:modelValue", "saved"]);
 const router = useRouter();
 const authStore = useAuthStore();
 const appContext = useAppContextStore();
-const { currentUser, userName } = storeToRefs(authStore);
+const { currentUser } = storeToRefs(authStore);
 const saving = ref(false);
 const loadingTherapist = ref(false);
 const loadingTherapy = ref(false);
@@ -391,12 +396,14 @@ const isRemote = computed(() => normalizeModalidad(form.modalidad) === "remoto")
 const canEditMeetingLink = computed(() =>
   ["psychologist", "admin"].includes(appContext.activeMode)
 );
-const showAvailabilityPicker = computed(() => !canEditMeetingLink.value);
+const showAvailabilityPicker = computed(() => props.mode !== "details");
+const sessionDuration = computed(() => selectedSlot.value?.durationMinutes || props.initialAppointment?.durationMinutes || therapist.value?.scheduleSettings?.durationMinutes || 60);
 const appointmentDialogTitle = computed(() => {
   if (!showAvailabilityPicker.value) {
-    return props.citaId ? "Editar cita" : "Agendar cita";
+    return "Detalles de la sesión";
   }
 
+  if (props.citaId) return "Reprogramar cita";
   const modality = normalizeModalidad(form.modalidad);
   if (modality === "presencial") return "Solicita una cita presencial";
   if (modality === "remoto") return "Solicita una cita online";
@@ -438,7 +445,7 @@ const therapistSpecialty = computed(() => {
 });
 const filteredAvailabilitySlots = computed(() => {
   const now = new Date();
-  const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const startOfToday = new Date(`${peruDateKey(now.getTime())}T00:00`);
   const start = rangeStartDate(availabilityRange.value, startOfToday);
   const end = rangeEndDate(availabilityRange.value, startOfToday);
 
@@ -475,7 +482,7 @@ const canSubmitAppointment = computed(() => {
   }
 
   if (showAvailabilityPicker.value) {
-    return Boolean(selectedSlotId.value);
+    return Boolean(selectedSlot.value);
   }
 
   return Boolean(form.fecha && form.hora);
@@ -683,7 +690,11 @@ async function loadAvailabilitySlots() {
   availabilityError.value = "";
 
   try {
-    availabilitySlots.value = await getAvailableSlotsByTherapist(props.terapeutaId);
+    const slots = await getAvailableSlotsByTherapist(props.terapeutaId);
+    availabilitySlots.value = slots.filter((slot) => !props.citaId ||
+      !props.initialAppointment?.bookingId ||
+      (slot.durationMinutes === Number(props.initialAppointment.durationMinutes || 60) &&
+        slot.modality === props.initialAppointment.modalidad));
 
     if (!selectedSlotId.value && availabilitySlots.value.length === 1) {
       selectAvailabilitySlot(availabilitySlots.value[0]);
@@ -752,8 +763,15 @@ async function submitAppointment() {
   try {
     let savedAppointment = null;
 
-    if (props.citaId) {
+    if (props.citaId && showAvailabilityPicker.value) {
+      savedAppointment = await rescheduleAppointment({
+        citaId: props.citaId,
+        slotId: selectedSlotId.value,
+        revision: props.initialAppointment?.revision || 0,
+      });
+    } else if (props.citaId) {
       savedAppointment = await updateAppointment({
+        revision: props.initialAppointment?.revision || 0,
         citaId: props.citaId,
         terapiaId: props.terapiaId || "",
         fecha: form.fecha,
@@ -774,25 +792,7 @@ async function submitAppointment() {
       });
       return;
     } else {
-      const appointmentPatientUid = props.pacienteUid || currentUser.value.uid;
-      savedAppointment = await createAppointment({
-        terapiaId: props.terapiaId || "",
-        usuarioId: appointmentPatientUid,
-        terapeutaId: props.terapeutaId,
-        terapeutaNombre: props.terapeutaNombre,
-        pacienteUid: appointmentPatientUid,
-        pacienteNombre: props.pacienteNombre || userName.value || "Usuario",
-        pacienteEmail: props.pacienteEmail || currentUser.value?.email || "",
-        fecha: form.fecha,
-        hora: form.hora,
-        notas: form.notas,
-        modalidad: normalizeDisplayModalidad(form.modalidad),
-        ubicacion: form.ubicacion,
-        meetingProvider: meetingProviderForSave.value,
-        meetingUrl: meetingUrlForSave.value,
-        availabilitySlotId: selectedSlotId.value,
-        estado: "pendiente",
-      });
+      throw new Error("Selecciona un horario disponible para reservar.");
     }
 
     window.dispatchEvent(

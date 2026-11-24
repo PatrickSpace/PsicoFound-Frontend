@@ -130,6 +130,77 @@
           </v-btn>
         </div>
 
+        <div v-else-if="paymentClientConfig.provider === 'culqi'" class="d-flex flex-column ga-3">
+          <template v-if="savedCards.length">
+            <p class="text-body-2 font-weight-bold mb-0">Tus tarjetas guardadas</p>
+            <v-radio-group v-model="selectedCardId" hide-details>
+              <v-radio
+                v-for="card in savedCards"
+                :key="card.id"
+                :label="`${card.brand} terminada en ${card.lastFour}`"
+                :value="card.id"
+              />
+            </v-radio-group>
+            <div class="d-flex flex-wrap ga-2">
+              <v-btn
+                color="secondary"
+                class="pf-btn-primary"
+                :disabled="!acceptedTerms || !selectedCardId || processing"
+                @click="paySavedCard"
+              >Pagar {{ formattedPrice }} con esta tarjeta</v-btn>
+              <v-btn
+                variant="text"
+                color="error"
+                :disabled="!selectedCardId || processing"
+                @click="removeSelectedCard"
+              >Eliminar tarjeta</v-btn>
+            </div>
+          </template>
+
+          <v-btn
+            v-if="savedCards.length"
+            variant="text"
+            color="secondary"
+            @click="showNewCard = !showNewCard"
+          >{{ showNewCard ? 'Ocultar nueva tarjeta' : 'Añadir otra tarjeta' }}</v-btn>
+
+          <template v-if="showNewCard || !savedCards.length">
+            <p class="text-body-2 font-weight-bold mb-0">Añadir tarjeta</p>
+            <v-row dense>
+              <v-col cols="12" sm="6">
+                <v-text-field v-model="billing.firstName" label="Nombre del titular" variant="outlined" density="comfortable" />
+              </v-col>
+              <v-col cols="12" sm="6">
+                <v-text-field v-model="billing.lastName" label="Apellido del titular" variant="outlined" density="comfortable" />
+              </v-col>
+              <v-col cols="12" sm="6">
+                <v-text-field v-model="billing.phoneNumber" label="Celular" variant="outlined" density="comfortable" inputmode="tel" />
+              </v-col>
+              <v-col cols="12" sm="6">
+                <v-text-field v-model="billing.addressCity" label="Ciudad" variant="outlined" density="comfortable" />
+              </v-col>
+              <v-col cols="12">
+                <v-text-field v-model="billing.address" label="Dirección de facturación" variant="outlined" density="comfortable" />
+              </v-col>
+            </v-row>
+            <v-checkbox v-model="cardStorageConsent" color="secondary" hide-details>
+              <template #label>
+                <span>Autorizo guardar esta tarjeta en Culqi para mis próximos pagos en Lurems.</span>
+              </template>
+            </v-checkbox>
+            <v-btn
+              color="secondary"
+              class="pf-btn-primary"
+              :disabled="!acceptedTerms || !cardStorageConsent || !validBilling || processing || openingCheckout"
+              :loading="openingCheckout || savingCard"
+              @click="openCulqiCheckout"
+            >Añadir tarjeta y pagar {{ formattedPrice }}</v-btn>
+            <p class="text-caption text-medium-emphasis mb-0">
+              Los datos de la tarjeta se ingresan en Culqi. Lurems solo conserva su identificador y los últimos cuatro dígitos.
+            </p>
+          </template>
+        </div>
+
         <div v-else>
           <div :id="brickContainerId" class="payment-brick-container" />
           <v-alert
@@ -152,8 +223,13 @@ import { RouterLink } from "vue-router";
 import { paymentClientConfig, assertPaymentClientConfig } from "@/config/paymentClientConfig";
 import {
   createBookingPayment,
+  completeCulqiCard3DS,
+  completeCulqiPayment3DS,
   getBookingPaymentStatus,
+  listCulqiCards,
   paymentErrorMessage,
+  removeCulqiCard,
+  saveCulqiCard,
   simulatePaymentEvent,
 } from "@/services/paymentService";
 
@@ -166,10 +242,17 @@ const emit = defineEmits(["completed"]);
 const acceptedTerms = ref(false);
 const processing = ref(false);
 const loadingBrick = ref(false);
+const openingCheckout = ref(false);
+const savingCard = ref(false);
 const errorMessage = ref("");
 const status = ref(null);
 const fakeScenario = ref("approved");
 const brickController = ref(null);
+const savedCards = ref([]);
+const selectedCardId = ref("");
+const showNewCard = ref(false);
+const cardStorageConsent = ref(false);
+const billing = ref({ firstName: "", lastName: "", phoneNumber: "", address: "", addressCity: "" });
 const brickContainerId = `payment-brick-${props.booking.id}`;
 const isDevelopment = import.meta.env.DEV;
 const nowMs = ref(Date.now());
@@ -204,11 +287,19 @@ const remainingLabel = computed(() => {
   return `${minutes}:${String(seconds).padStart(2, "0")}`;
 });
 const holdExpired = computed(() => holdExpiresAtMs.value > 0 && remainingSeconds.value === 0);
+const validBilling = computed(() => billing.value.firstName.trim().length >= 2 &&
+  billing.value.lastName.trim().length >= 2 &&
+  /^\+?\d{9,15}$/.test(billing.value.phoneNumber.replace(/\s/g, "")) &&
+  billing.value.address.trim().length >= 5 && billing.value.addressCity.trim().length >= 2);
 
 onMounted(async () => {
   clockTimer = window.setInterval(() => { nowMs.value = Date.now(); }, 1000);
   await refreshPaymentStatus();
-  if (!paymentClientConfig.useFakeProvider && !holdExpired.value) {
+  if (paymentClientConfig.provider === "culqi" && !paymentClientConfig.useFakeProvider) {
+    await refreshCards();
+  }
+  if (!paymentClientConfig.useFakeProvider && !holdExpired.value &&
+    paymentClientConfig.provider === "mercado_pago") {
     await initializePaymentBrick();
   }
 });
@@ -267,6 +358,23 @@ async function initializePaymentBrick() {
 }
 
 async function submitFakePayment() {
+  if (paymentClientConfig.provider === "culqi") {
+    try {
+      const cardResult = await saveCulqiCard({
+        tokenId: "fake-card-token",
+        deviceId: crypto.randomUUID(),
+        billing: {firstName: "Paciente", lastName: "Prueba", phoneNumber: "999999999",
+          address: "Av. Prueba 123", addressCity: "Lima"},
+        cardStorageConsent: true,
+        paymentConsentVersion: PAYMENT_CONSENT_VERSION,
+      });
+      await submitPayment({cardId: cardResult.card.id, deviceId: crypto.randomUUID(),
+        fakeScenario: fakeScenario.value});
+    } catch (error) {
+      errorMessage.value = paymentErrorMessage(error);
+    }
+    return;
+  }
   await submitPayment({
     paymentToken: "fake-card-token",
     paymentMethodId: "fake_card",
@@ -281,12 +389,21 @@ async function submitPayment(paymentData) {
   processing.value = true;
   errorMessage.value = "";
   try {
-    status.value = await createBookingPayment({
+    let result = await createBookingPayment({
       bookingId: props.booking.id,
       paymentTermsAccepted: acceptedTerms.value,
       paymentConsentVersion: PAYMENT_CONSENT_VERSION,
       ...paymentData,
     });
+    if (result?.requires3DS) {
+      const authentication3DS = await authenticate3DS(result.tokenId);
+      result = await completeCulqiPayment3DS({
+        bookingId: props.booking.id,
+        challengeId: result.challengeId,
+        authentication3DS,
+      });
+    }
+    status.value = result;
     if (status.value?.payment?.status === "pending") {
       errorMessage.value = "Estamos confirmando tu pago. Puedes revisar el estado en Mis sesiones.";
       statusTimer = window.setTimeout(refreshPaymentStatus, 5000);
@@ -304,6 +421,145 @@ async function submitPayment(paymentData) {
   } finally {
     processing.value = false;
   }
+}
+
+async function refreshCards() {
+  try {
+    const result = await listCulqiCards();
+    savedCards.value = result.cards || [];
+    selectedCardId.value = savedCards.value[0]?.id || "";
+  } catch (error) {
+    errorMessage.value = paymentErrorMessage(error);
+  }
+}
+
+async function removeSelectedCard() {
+  try {
+    await removeCulqiCard(selectedCardId.value);
+    await refreshCards();
+  } catch (error) {
+    errorMessage.value = paymentErrorMessage(error);
+  }
+}
+
+async function paySavedCard() {
+  if (!acceptedTerms.value || !selectedCardId.value) return;
+  try {
+    const deviceId = await prepareCulqi3DS();
+    await submitPayment({cardId: selectedCardId.value, deviceId});
+  } catch (error) {
+    errorMessage.value = paymentErrorMessage(error);
+  } finally {
+    window.Culqi3DS?.reset?.();
+  }
+}
+
+async function openCulqiCheckout() {
+  if (!acceptedTerms.value || !cardStorageConsent.value || !validBilling.value) return;
+  openingCheckout.value = true;
+  errorMessage.value = "";
+  try {
+    const config = assertPaymentClientConfig();
+    const deviceId = await prepareCulqi3DS();
+    await loadScript("https://js.culqi.com/checkout-js", "luremsCulqiCheckout");
+    const checkout = new window.CulqiCheckout(config.publicKey, {
+      settings: {title: "Lurems", currency: "PEN", amount: Number(props.booking.priceAmount || 0)},
+      client: {email: props.payerEmail},
+      options: {lang: "es", modal: true, installments: false,
+        paymentMethods: {tarjeta: true, yape: false, billetera: false,
+          bancaMovil: false, agente: false, cuotealo: false}},
+    });
+    checkout.culqi = () => {
+      if (checkout.token?.id) {
+        const tokenId = checkout.token.id;
+        checkout.close();
+        openingCheckout.value = false;
+        void saveNewCardAndPay(tokenId, deviceId);
+      } else if (checkout.error) {
+        checkout.close();
+        openingCheckout.value = false;
+        errorMessage.value = "No se pudo validar la tarjeta. Revisa los datos e inténtalo otra vez.";
+      }
+    };
+    checkout.open();
+    openingCheckout.value = false;
+  } catch (error) {
+    openingCheckout.value = false;
+    errorMessage.value = paymentErrorMessage(error);
+  }
+}
+
+async function saveNewCardAndPay(tokenId, deviceId) {
+  savingCard.value = true;
+  try {
+    let result = await saveCulqiCard({
+      tokenId, deviceId, billing: billing.value,
+      cardStorageConsent: cardStorageConsent.value,
+      paymentConsentVersion: PAYMENT_CONSENT_VERSION,
+    });
+    if (result.requires3DS) {
+      const authentication3DS = await authenticate3DS(result.tokenId);
+      result = await completeCulqiCard3DS({challengeId: result.challengeId, authentication3DS});
+    }
+    await refreshCards();
+    selectedCardId.value = result.card.id;
+    showNewCard.value = false;
+    await submitPayment({cardId: result.card.id, deviceId});
+  } catch (error) {
+    errorMessage.value = paymentErrorMessage(error);
+  } finally {
+    savingCard.value = false;
+    window.Culqi3DS?.reset?.();
+  }
+}
+
+async function prepareCulqi3DS() {
+  const config = assertPaymentClientConfig();
+  await loadScript("https://3ds.culqi.com", "luremsCulqi3ds");
+  const library = window.Culqi3DS;
+  library.publicKey = config.publicKey;
+  library.settings = {
+    charge: {totalAmount: Number(props.booking.priceAmount || 0), currency: "PEN",
+      returnUrl: window.location.href},
+    card: {email: props.payerEmail},
+  };
+  return library.generateDevice();
+}
+
+function authenticate3DS(tokenId) {
+  return new Promise((resolve, reject) => {
+    const timer = window.setTimeout(() => finish(new Error("Tiempo de autenticación agotado.")), 120000);
+    function finish(error, parameters) {
+      window.clearTimeout(timer);
+      window.removeEventListener("message", onMessage);
+      if (error) reject(error);
+      else resolve(parameters);
+    }
+    function onMessage(event) {
+      if (event.origin !== window.location.origin) return;
+      if (event.data?.parameters3DS) finish(null, event.data.parameters3DS);
+      else if (event.data?.error) finish(new Error("No se pudo autenticar la tarjeta."));
+    }
+    window.addEventListener("message", onMessage);
+    Promise.resolve(window.Culqi3DS.initAuthentication(tokenId)).catch(finish);
+  });
+}
+
+function loadScript(src, datasetKey) {
+  if (datasetKey === "luremsCulqiCheckout" && window.CulqiCheckout) return Promise.resolve();
+  if (datasetKey === "luremsCulqi3ds" && window.Culqi3DS) return Promise.resolve();
+  return new Promise((resolve, reject) => {
+    let script = document.querySelector(`script[data-${datasetKey.replace(/[A-Z]/g, (letter) => `-${letter.toLowerCase()}`)}]`);
+    if (!script) {
+      script = document.createElement("script");
+      script.src = src;
+      script.async = true;
+      script.dataset[datasetKey] = "true";
+      document.head.appendChild(script);
+    }
+    script.addEventListener("load", resolve, {once: true});
+    script.addEventListener("error", reject, {once: true});
+  });
 }
 
 async function refreshPaymentStatus() {

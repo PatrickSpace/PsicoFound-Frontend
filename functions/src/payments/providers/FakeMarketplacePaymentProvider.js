@@ -37,6 +37,22 @@ class FakeMarketplacePaymentProvider extends MarketplacePaymentProvider {
 
   async disconnectSeller() {}
 
+  async createCustomer(input) {
+    return {customerId: `cus_test_${stableHash(input.email)}`};
+  }
+
+  async createCard(input) {
+    return {
+      cardId: `crd_test_${stableHash(input.tokenId)}`,
+      customerId: input.customerId,
+      brand: "Visa",
+      lastFour: "1111",
+      tokenId: input.tokenId,
+    };
+  }
+
+  async deleteCard() {}
+
   async createPayment(input) {
     const scenario = normalizeScenario(
         input.metadata?.fakeScenario || this.config.fakePaymentDefaultResult,

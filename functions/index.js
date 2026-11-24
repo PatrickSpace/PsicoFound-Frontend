@@ -4,9 +4,7 @@ const {onCall, onRequest} = require("firebase-functions/v2/https");
 const {onSchedule} = require("firebase-functions/v2/scheduler");
 const {GEMINI_API_KEY} = require("./src/config");
 const {
-  MERCADO_PAGO_ACCESS_TOKEN,
-  MERCADO_PAGO_CLIENT_SECRET,
-  MERCADO_PAGO_WEBHOOK_SECRET,
+  CULQI_SECRET_KEY,
   PAYMENT_TOKEN_ENCRYPTION_KEY,
 } = require("./src/payments/config/paymentConfig");
 const {
@@ -116,9 +114,7 @@ exports.seedQaMarketplaceData = onCall(
 );
 
 const paymentSecrets = [
-  MERCADO_PAGO_ACCESS_TOKEN,
-  MERCADO_PAGO_CLIENT_SECRET,
-  MERCADO_PAGO_WEBHOOK_SECRET,
+  CULQI_SECRET_KEY,
   PAYMENT_TOKEN_ENCRYPTION_KEY,
 ];
 const paymentCallableOptions = {
@@ -131,10 +127,6 @@ exports.createPaymentAccountConnection = onCall(
     paymentCallableOptions,
     paymentHandlers.createPaymentAccountConnection,
 );
-exports.createMercadoPagoAuthorizationUrl = onCall(
-    paymentCallableOptions,
-    paymentHandlers.createMercadoPagoAuthorizationUrl,
-);
 exports.getPaymentAccountStatus = onCall(
     paymentCallableOptions,
     paymentHandlers.getPaymentAccountStatus,
@@ -142,6 +134,30 @@ exports.getPaymentAccountStatus = onCall(
 exports.updatePsychologistPaymentSettings = onCall(
     paymentCallableOptions,
     paymentHandlers.updatePsychologistPaymentSettings,
+);
+exports.savePsychologistPayoutAccount = onCall(
+    paymentCallableOptions,
+    paymentHandlers.savePsychologistPayoutAccount,
+);
+exports.listCulqiCards = onCall(
+    paymentCallableOptions,
+    paymentHandlers.listCulqiCards,
+);
+exports.saveCulqiCard = onCall(
+    paymentCallableOptions,
+    paymentHandlers.saveCulqiCard,
+);
+exports.completeCulqiCard3DS = onCall(
+    paymentCallableOptions,
+    paymentHandlers.completeCulqiCard3DS,
+);
+exports.removeCulqiCard = onCall(
+    paymentCallableOptions,
+    paymentHandlers.removeCulqiCard,
+);
+exports.completeCulqiPayment3DS = onCall(
+    paymentCallableOptions,
+    paymentHandlers.completeCulqiPayment3DS,
 );
 exports.disconnectPaymentAccount = onCall(
     paymentCallableOptions,
@@ -183,13 +199,9 @@ exports.simulatePaymentEvent = onCall(
     paymentCallableOptions,
     paymentHandlers.simulatePaymentEvent,
 );
-exports.mercadoPagoOAuthCallback = onRequest(
-    {timeoutSeconds: 60, secrets: paymentSecrets},
-    paymentHandlers.mercadoPagoOAuthCallback,
-);
-exports.mercadoPagoWebhook = onRequest(
+exports.culqiWebhook = onRequest(
     {timeoutSeconds: 30, secrets: paymentSecrets},
-    paymentHandlers.mercadoPagoWebhook,
+    paymentHandlers.culqiWebhook,
 );
 exports.expirePendingBookingHolds = onSchedule(
     {schedule: "every 1 minutes", timeoutSeconds: 60, secrets: paymentSecrets},
@@ -202,4 +214,16 @@ exports.reconcilePayments = onSchedule(
       secrets: paymentSecrets,
     },
     paymentHandlers.reconcilePayments,
+);
+
+// Calendar and appointment operations do not depend on a payment provider.
+const schedulingHandlers = require("./src/scheduling/schedulingHandlers");
+for (const name of ["getTherapistCalendar", "projectAvailability",
+  "listAvailability", "closeAvailability", "mutateAppointment",
+  "cancelAppointment"]) {
+  exports[name] = onCall({timeoutSeconds: 60}, schedulingHandlers[name]);
+}
+exports.sendAppointmentReminders = onSchedule(
+    {schedule: "every 5 minutes", timeoutSeconds: 120},
+    schedulingHandlers.sendAppointmentReminders,
 );

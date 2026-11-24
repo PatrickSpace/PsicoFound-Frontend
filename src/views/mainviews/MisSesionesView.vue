@@ -87,8 +87,8 @@
         v-if="nextAppointment"
         class="mb-5"
         :appointment="nextAppointment"
-        :reschedulable="Boolean(editableAppointment) && !isPaidAppointment"
-        :cancellable="isPaidAppointment"
+        :reschedulable="canPatientReschedule(nextAppointment, clockNow)"
+        :cancellable="canCancelAppointment(nextAppointment, clockNow)"
         @reschedule="openRescheduleDialog"
         @cancel="cancelDialog = true"
       />
@@ -202,45 +202,27 @@
         </v-card>
       </v-dialog>
 
-      <v-dialog v-model="cancelDialog" class="bg-transparent" max-width="520">
-        <v-card class="card-backgoundcustom pa-5">
-          <v-card-title>Cancelar cita</v-card-title>
-          <v-card-text>
-            La política de cancelación se evaluará en el backend. El reembolso solo se mostrará como completado cuando el proveedor lo confirme.
-          </v-card-text>
-          <v-card-actions>
-            <v-spacer />
-            <v-btn variant="text" @click="cancelDialog = false">Volver</v-btn>
-            <v-btn
-              color="error"
-              class="pf-btn-destructive"
-              :loading="cancelling"
-              @click="confirmCancellation"
-            >
-              Cancelar cita
-            </v-btn>
-          </v-card-actions>
-        </v-card>
-      </v-dialog>
+      <AppointmentCancellationDialog v-model="cancelDialog" :appointment="nextAppointment" @cancelled="handleDialogSaved" />
     </v-container>
   </LayoutDefault>
 </template>
 
 <script setup>
-import { computed, ref, watch } from "vue";
+import { computed, ref, watch, onBeforeUnmount } from "vue";
 import { storeToRefs } from "pinia";
 import { useRouter } from "vue-router";
 import LayoutDefault from "@/components/Layout/Layoutmain.vue";
 import CitaDialog from "@/components/Terapias/CitaDialog.vue";
+import AppointmentCancellationDialog from "@/components/Terapias/AppointmentCancellationDialog.vue";
+import { watchAppointmentChanges } from "@/services/appointmentRepository";
+import { appointmentEnd, canPatientReschedule, canCancelAppointment } from "@/utils/appointmentTime";
 import NextAppointmentCard from "@/components/Terapias/NextAppointmentCard.vue";
 import TherapyAppointmentsTable from "@/components/Terapias/TherapyAppointmentsTable.vue";
 import BookingPaymentPanel from "@/components/Payments/BookingPaymentPanel.vue";
 import { useAuthStore } from "@/store/auth";
 import { getTherapiesByPatient } from "@/services/terapiaService";
 import {
-  cancelPaidBooking,
   getMyPaymentBookings,
-  paymentErrorMessage,
 } from "@/services/paymentService";
 
 const router = useRouter();
@@ -252,7 +234,10 @@ const dialogAppointment = ref(null);
 const paymentBookings = ref([]);
 const checkoutBooking = ref(null);
 const cancelDialog = ref(false);
-const cancelling = ref(false);
+const clockNow = ref(Date.now());
+const clockTimer = setInterval(() => { clockNow.value = Date.now(); }, 30000);
+let stopWatching = () => {};
+onBeforeUnmount(() => { stopWatching(); clearInterval(clockTimer); });
 
 const checkoutDialog = computed({
   get: () => Boolean(checkoutBooking.value),
@@ -263,7 +248,7 @@ const checkoutDialog = computed({
 
 const visiblePaymentBookings = computed(() => paymentBookings.value.filter(
   (booking) => !["confirmed", "expired", "cancelled_by_patient",
-    "cancelled_by_psychologist", "cancelled_by_platform", "refunded"]
+    "cancelled_by_psychologist", "cancelled_by_platform", "refunded", "completed", "no_show"]
     .includes(booking.status)
 ));
 
@@ -271,16 +256,14 @@ function parseAppointmentDate(appointment) {
   if (!appointment?.fecha) return null;
 
   const rawDate = appointment.hora
-    ? `${appointment.fecha}T${appointment.hora}`
-    : `${appointment.fecha}T00:00`;
+    ? `${appointment.fecha}T${appointment.hora}:00-05:00`
+    : `${appointment.fecha}T00:00:00-05:00`;
 
   const parsed = new Date(rawDate);
   return Number.isNaN(parsed.getTime()) ? null : parsed;
 }
 
 const nextAppointment = computed(() => {
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
 
   const appointments = therapies.value
     .flatMap((therapy) =>
@@ -300,7 +283,7 @@ const nextAppointment = computed(() => {
       return (
         (status === "pendiente" || status === "confirmada") &&
         appointmentDate &&
-        appointmentDate >= today
+        appointmentEnd(appointment) > clockNow.value
       );
     })
     .sort((a, b) => parseAppointmentDate(a) - parseAppointmentDate(b));
@@ -314,6 +297,7 @@ const editableAppointment = computed(() => {
   }
 
   return {
+    ...nextAppointment.value,
     citaId: nextAppointment.value.citaId || "",
     terapiaId: nextAppointment.value.terapiaId || "",
     terapeutaId: nextAppointment.value.terapeutaId || "",
@@ -327,10 +311,6 @@ const editableAppointment = computed(() => {
     meetingUrl: nextAppointment.value.meetingUrl || "",
   };
 });
-
-const isPaidAppointment = computed(() =>
-  nextAppointment.value?.paymentStatus === "approved"
-);
 
 const activeTherapy = computed(
   () =>
@@ -371,28 +351,6 @@ function canRetryPayment(booking) {
     booking.status !== "expired";
 }
 
-async function confirmCancellation() {
-  if (!nextAppointment.value?.citaId || cancelling.value) return;
-  cancelling.value = true;
-  try {
-    const result = await cancelPaidBooking(nextAppointment.value.citaId);
-    cancelDialog.value = false;
-    window.dispatchEvent(new CustomEvent("ui-success", { detail: {
-      title: "Cita cancelada",
-      message: result.status === "refunded" ?
-        "La cita se canceló y el reembolso fue procesado." :
-        "La cita se canceló. Revisa el estado del pago en esta vista.",
-    }}));
-    await Promise.all([loadTherapies(), loadPaymentBookings()]);
-  } catch (error) {
-    window.dispatchEvent(new CustomEvent("api-error", { detail: {
-      message: paymentErrorMessage(error),
-    }}));
-  } finally {
-    cancelling.value = false;
-  }
-}
-
 function openActiveTherapy() {
   if (!activeTherapy.value?.id) {
     return;
@@ -413,7 +371,7 @@ async function loadTherapies() {
   }
 
   try {
-    therapies.value = await getTherapiesByPatient(pacienteUid);
+    therapies.value = await getTherapiesByPatient(pacienteUid, { force: true });
   } catch (error) {
     console.error("Error loading therapies for sessions:", error);
     therapies.value = [];
@@ -466,6 +424,11 @@ function formatMoney(cents) {
 watch(
   () => currentUser.value?.uid,
   () => {
+    stopWatching();
+    stopWatching = watchAppointmentChanges({ patientId: currentUser.value?.uid }, () => {
+      loadTherapies();
+      loadPaymentBookings();
+    });
     dialogAppointment.value = null;
     loadTherapies();
     loadPaymentBookings();

@@ -4,7 +4,9 @@ const logger = require("firebase-functions/logger");
 const {calculatePaymentAllocation} = require("../domain/paymentAllocation");
 const {PaymentDomainError} = require("../domain/paymentErrors");
 const {canTransitionPayment} = require("../domain/paymentStates");
-const {evaluateCancellationPolicy} = require("../domain/cancellationPolicy");
+const calendar = require("../../scheduling/calendar");
+const {checkSlotConflicts} = require("../../scheduling/bookingConflicts");
+const {SchedulingService, reminderFields} = require("../../scheduling/schedulingService");
 const {decryptToken, encryptToken} = require("../security/tokenVault");
 const {
   buildInitialTherapyFields,
@@ -211,9 +213,14 @@ class MarketplacePaymentService {
         (therapySnapshot.exists ? therapySnapshot : null) :
         (therapySnapshot.empty ? null : therapySnapshot.docs[0]);
       const activeTherapy = activeTherapyDocument?.data() || null;
-      if (slot.status !== "available") throw new PaymentDomainError("SLOT_NOT_AVAILABLE");
+      const span = calendar.assertBookable(slot, Date.now(), slot.minimumNoticeHours || 0);
+      const claimSlot = await checkSlotConflicts(transaction, this.db,
+          {...slot, id: slotId}, uid);
       if (!therapistSnapshot.exists || therapist.activo === false) {
         throw new PaymentDomainError("PSYCHOLOGIST_NOT_ACTIVE");
+      }
+      if (this.config.provider === "culqi" && account.provider !== "culqi") {
+        throw new PaymentDomainError("PAYMENT_ACCOUNT_NOT_CONNECTED");
       }
       assertConnectedAccount(account);
       if (requestedTherapyId && !activeTherapyDocument) {
@@ -264,12 +271,14 @@ class MarketplacePaymentService {
         psychologistName: cleanText(therapist.nombre, 160) || "Psicólogo",
         status: "payment_pending",
         paymentStatus: "created",
-        startsAt: slotTimestamp(slot.date, slot.startTime),
-        endsAt: slotTimestamp(slot.date, slot.endTime),
+        startsAt: Timestamp.fromMillis(span.start),
+        endsAt: Timestamp.fromMillis(span.end),
+        durationMinutes: span.durationMinutes,
+        bufferMinutes: Number(slot.bufferMinutes || 0),
         date: slot.date,
         startTime: slot.startTime,
         endTime: slot.endTime,
-        timezone: cleanText(data.timezone, 80) || "America/Lima",
+        timezone: calendar.TIMEZONE,
         modality: normalizeModality(slot.modality),
         location: cleanText(slot.location, 240),
         notes: cleanText(data.notes, 800),
@@ -281,12 +290,13 @@ class MarketplacePaymentService {
         createdAt: now,
         updatedAt: now,
       };
+      claimSlot();
       transaction.create(bookingRef, booking);
       transaction.create(this.db.collection("payments").doc(bookingRef.id), {
         bookingId: bookingRef.id,
         patientId: uid,
         psychologistId: slot.therapistId,
-        provider: "mercado_pago",
+        provider: this.config.provider,
         environment: this.config.environment,
         isFake: this.config.useFakeProvider,
         externalReference: `booking:${bookingRef.id}`,
@@ -332,6 +342,9 @@ class MarketplacePaymentService {
     }
     if (booking.status === "confirmed" || payment.status === "approved") {
       return {bookingId, paymentId: paymentRef.id, status: "approved"};
+    }
+    if (booking.cancelledAt || String(booking.status).startsWith("cancelled")) {
+      throw new PaymentDomainError("BOOKING_HOLD_EXPIRED");
     }
     if (booking.holdExpiresAt?.toMillis() <= Date.now()) {
       throw new PaymentDomainError("BOOKING_HOLD_EXPIRED");
@@ -585,10 +598,23 @@ class MarketplacePaymentService {
         therapyRef = this.db.collection("terapias").doc(booking.terapiaId);
         therapySnapshot = await transaction.get(therapyRef);
       }
+      let scheduleConflict = false;
+      let claimSlot = null;
+      if (event.status === "approved" && !booking.cancelledAt &&
+        booking.startsAt.toMillis() > Date.now()) {
+        try {
+          claimSlot = await checkSlotConflicts(transaction, this.db,
+              {...booking, id: booking.slotId, therapistId: booking.psychologistId},
+              booking.patientId, payment.bookingId);
+        } catch (error) {
+          if (error.code !== "failed-precondition") throw error;
+          scheduleConflict = true;
+        }
+      }
       const mismatch = validateProviderPayment(payment, event);
       const now = FieldValue.serverTimestamp();
       transaction.set(eventRef, {
-        provider: "mercado_pago",
+        provider: this.config.provider,
         environment: this.config.environment,
         providerEventId: eventId,
         providerPaymentId: event.providerPaymentId,
@@ -636,8 +662,10 @@ class MarketplacePaymentService {
       if (event.status === "approved") {
         const slot = slotSnapshot.data() || {};
         const canClaimSlot = slot.bookingId === payment.bookingId || slot.status === "available";
-        const bookingWasCancelled = String(booking.status).startsWith("cancelled_");
-        if (!canClaimSlot || therapyConflict || bookingWasCancelled) {
+        const bookingWasCancelled = Boolean(booking.cancelledAt) ||
+          String(booking.status).startsWith("cancelled_") ||
+          booking.startsAt.toMillis() <= Date.now();
+        if (!canClaimSlot || therapyConflict || bookingWasCancelled || scheduleConflict) {
           const conflictCode = bookingWasCancelled ? "late_approval_cancelled_booking" :
             therapyConflict ? "active_therapy_conflict" :
               "late_approval_slot_conflict";
@@ -648,6 +676,7 @@ class MarketplacePaymentService {
           outcome = {manualReview: true, refundRequired: true, status: "manual_review"};
           return;
         }
+        if (claimSlot) claimSlot();
         transaction.update(bookingRef, {
           status: "confirmed",
           paymentStatus: "approved",
@@ -776,78 +805,17 @@ class MarketplacePaymentService {
   }
 
   async cancelBooking(uid, data) {
-    const bookingId = cleanText(data.bookingId, 180);
-    const bookingSnapshot = await this.db.collection("bookings").doc(bookingId).get();
-    if (!bookingSnapshot.exists) throw new PaymentDomainError("BOOKING_NOT_FOUND");
-    const booking = bookingSnapshot.data();
-    const adminUser = await this.isAdmin(uid);
-    const isPatient = booking.patientId === uid;
-    const isPsychologist = booking.psychologistUid === uid;
-    if (!isPatient && !isPsychologist && !adminUser) {
-      throw new PaymentDomainError("INVALID_ROLE");
+    const result = await new SchedulingService(this.db).cancelReservation(uid, data);
+    if (result.refundRequired) {
+      return this.refundBookingPayment(uid,
+          {bookingId: result.bookingId, reasonCode: result.reasonCode},
+          {systemAllowed: true});
     }
-    const reason = isPsychologist ? "psychologist_cancelled" :
-      adminUser ? "platform_cancelled" : "patient_cancelled";
-    const policy = evaluateCancellationPolicy({
-      startsAtMs: booking.startsAt.toMillis(),
-      cancelledAtMs: Date.now(),
-      cancelledBy: isPsychologist ? "psychologist" :
-        adminUser ? "platform" : "patient",
-    });
-    const refundable = policy.refundable;
-    await this.db.runTransaction(async (transaction) => {
-      const bookingRef = this.db.collection("bookings").doc(bookingId);
-      const slotRef = this.db.collection("therapist_availability")
-          .doc(booking.slotId);
-      const therapyRef = booking.terapiaId ?
-        this.db.collection("terapias").doc(booking.terapiaId) : null;
-      const [slotSnapshot, therapySnapshot] = await Promise.all([
-        transaction.get(slotRef),
-        therapyRef ? transaction.get(therapyRef) : Promise.resolve(null),
-      ]);
-      const now = FieldValue.serverTimestamp();
-      transaction.set(bookingRef, {
-        status: isPsychologist ? "cancelled_by_psychologist" :
-          adminUser ? "cancelled_by_platform" : "cancelled_by_patient",
-        cancelledAt: now,
-        updatedAt: now,
-      }, {merge: true});
-      if (slotSnapshot.exists && slotSnapshot.data().bookingId === bookingId) {
-        transaction.update(slotRef, {
-          status: "available",
-          bookedBy: "",
-          appointmentId: "",
-          bookingId: "",
-          heldBy: FieldValue.delete(),
-          holdExpiresAt: FieldValue.delete(),
-          updatedAt: now,
-        });
-      }
-      if (booking.paymentStatus === "approved") {
-        this.writeLegacyPaymentState(
-            transaction,
-            bookingId,
-            therapyRef,
-            therapySnapshot,
-            "cancelada",
-            refundable ? "refund_pending" : "approved",
-            now,
-        );
-      } else {
-        transaction.set(this.db.collection("payments").doc(bookingId), {
-          status: "cancelled",
-          cancelledAt: now,
-          updatedAt: now,
-        }, {merge: true});
-      }
-    });
-    if (booking.paymentStatus === "approved" && refundable) {
-      return this.refundBookingPayment(uid, {bookingId, reasonCode: reason}, {systemAllowed: true});
-    }
-    return {bookingId, status: "cancelled", refundable};
+    return result;
   }
 
   async refundBookingPayment(uid, data, options = {}) {
+    if (!options.systemAllowed) return this.cancelBooking(uid, data);
     const bookingId = cleanText(data.bookingId, 180);
     const [bookingSnapshot, paymentSnapshot] = await Promise.all([
       this.db.collection("bookings").doc(bookingId).get(),
@@ -1002,6 +970,7 @@ class MarketplacePaymentService {
     const snapshot = await this.db.collection("users").doc(uid).get();
     const user = snapshot.data() || {};
     const roles = normalizeRoles(user);
+    if (user.accountStatus === "disabled") throw new PaymentDomainError("INVALID_ROLE");
     if (!roles.includes(role) && !roles.includes("admin")) {
       throw new PaymentDomainError("INVALID_ROLE");
     }
@@ -1106,6 +1075,15 @@ class MarketplacePaymentService {
       ubicacion: booking.location,
       notas: booking.notes || "",
       estado: "confirmada",
+      psychologistUid: booking.psychologistUid || "",
+      startsAt: booking.startsAt,
+      endsAt: booking.endsAt,
+      endTime: booking.endTime,
+      durationMinutes: booking.durationMinutes || 60,
+      bufferMinutes: booking.bufferMinutes || 0,
+      timezone: calendar.TIMEZONE,
+      revision: 0,
+      ...reminderFields(booking.startsAt.toMillis()),
       availabilitySlotId: booking.slotId,
       bookingId,
       paymentId: bookingId,
@@ -1135,7 +1113,6 @@ class MarketplacePaymentService {
     };
     if (therapySnapshot.exists) {
       transaction.update(therapyRef, {
-        citas: FieldValue.arrayUnion(appointment),
         updatedAt: now,
       });
       return;
@@ -1151,7 +1128,8 @@ class MarketplacePaymentService {
       modalidad: appointment.modalidad,
       estado: "activo",
       fechaCreacion: new Date().toISOString(),
-      citas: [appointment],
+      citas: [],
+      appointmentsSource: "citas",
       intakeSnapshot,
       ...buildInitialTherapyFields(intakeSnapshot),
       createdAt: now,
@@ -1164,18 +1142,11 @@ class MarketplacePaymentService {
     transaction.set(this.db.collection("citas").doc(bookingId), {
       estado: appointmentStatus,
       paymentStatus,
+      revision: FieldValue.increment(1),
+      nextReminderAt: null,
       updatedAt: now,
     }, {merge: true});
-    if (!therapyRef || !therapySnapshot?.exists) return;
-    const appointments = Array.isArray(therapySnapshot.data().citas) ?
-      therapySnapshot.data().citas : [];
-    transaction.update(therapyRef, {
-      citas: appointments.map((appointment) =>
-        appointment.citaId === bookingId ?
-          {...appointment, estado: appointmentStatus, paymentStatus} : appointment,
-      ),
-      updatedAt: now,
-    });
+    // citas is canonical. Therapy arrays are read-only legacy snapshots.
   }
 
   writeNotifications(transaction, bookingId, booking, event, now) {
@@ -1192,7 +1163,7 @@ class MarketplacePaymentService {
         type: `payment_${event}`,
         title: "Actualización de tu cita",
         message,
-        route: "/sesiones",
+        route: recipientUid === booking.patientId ? "/sesiones" : "/psicologo/sesiones",
         readAt: null,
         metadata: {bookingId, paymentStatus: event},
         createdAt: now,
@@ -1253,12 +1224,6 @@ function publicBooking(id, booking) {
     priceAmount: booking.priceAmount,
     holdExpiresAt: toIso(booking.holdExpiresAt),
   };
-}
-
-function slotTimestamp(date, time) {
-  const value = new Date(`${date}T${time || "00:00"}:00-05:00`);
-  if (Number.isNaN(value.getTime())) throw new PaymentDomainError("SLOT_NOT_AVAILABLE");
-  return Timestamp.fromDate(value);
 }
 
 function normalizeModality(value) {

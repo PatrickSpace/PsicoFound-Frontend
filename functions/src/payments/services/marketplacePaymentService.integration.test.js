@@ -32,7 +32,10 @@ test("fake payment confirms one booking and creates ledger once", {
       .where("pacienteUid", "==", "patient-1")
       .where("estado", "==", "activo").limit(1).get();
   assert.equal(therapy.size, 1);
-  assert.equal(therapy.docs[0].data().citas.length, 1);
+  assert.equal(therapy.docs[0].data().citas.length, 0);
+  const appointment = await db.collection("citas").doc(booking.id).get();
+  assert.equal(appointment.data().terapiaId, therapy.docs[0].id);
+  assert.equal(appointment.data().estado, "confirmada");
   const ledger = await db.collection("ledger_entries")
       .where("bookingId", "==", booking.id).get();
   assert.equal(ledger.size, 3);
@@ -97,6 +100,7 @@ function createTestService() {
   const db = admin.firestore();
   const config = getPaymentConfig({
     APP_ENVIRONMENT: "development",
+    PAYMENT_PROVIDER: "mercado_pago",
     PAYMENT_ENVIRONMENT: "sandbox",
     PAYMENT_USE_FAKE_PROVIDER: "true",
   });
@@ -135,7 +139,7 @@ async function seed(db, slotId) {
   });
   batch.set(db.collection("therapist_availability").doc(slotId), {
     therapistId: "therapist-1",
-    date: "2030-08-10",
+    date: slotId === "slot-2" ? "2030-08-11" : "2030-08-10",
     startTime: "10:00",
     endTime: "11:00",
     modality: "Remoto",

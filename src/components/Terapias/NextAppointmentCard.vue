@@ -32,7 +32,8 @@
             </v-list-item-title>
             <v-list-item-subtitle>
               {{ appointmentYear }}
-              {{ appointment?.hora ? `• ${appointment.hora}` : "" }}
+              {{ appointment?.hora ? `• ${appointment.hora}` : "" }} · hora de Perú
+              <span class="d-block">{{ appointment?.durationMinutes || 60 }} minutos</span>
             </v-list-item-subtitle>
           </v-list-item>
         </v-col>
@@ -93,7 +94,7 @@
           ¿Cambio de planes?
         </p>
         <p class="text-body-2 mb-0">
-          Puedes cambiar el horario de tu cita pendiente o confirmada.
+          Puedes reprogramar con más de 24 horas de anticipación, a un bloque de la misma duración y modalidad.
         </p>
       </div>
       <v-btn
@@ -145,26 +146,26 @@ const appointmentDate = computed(() => {
 
   const parsed = new Date(
     props.appointment.hora
-      ? `${props.appointment.fecha}T${props.appointment.hora}`
-      : `${props.appointment.fecha}T00:00`
+      ? `${props.appointment.fecha}T${props.appointment.hora}:00-05:00`
+      : `${props.appointment.fecha}T00:00:00-05:00`
   );
   return Number.isNaN(parsed.getTime()) ? null : parsed;
 });
 
 const appointmentDay = computed(() =>
   appointmentDate.value
-    ? String(appointmentDate.value.getDate()).padStart(2, "0")
+    ? appointmentDate.value.toLocaleDateString("es-PE", { day: "2-digit", timeZone: "America/Lima" })
     : "--"
 );
 
 const appointmentMonth = computed(() =>
   appointmentDate.value
-    ? appointmentDate.value.toLocaleDateString("es-PE", { month: "long" })
+    ? appointmentDate.value.toLocaleDateString("es-PE", { month: "long", timeZone: "America/Lima" })
     : "Sin fecha"
 );
 
 const appointmentYear = computed(
-  () => appointmentDate.value?.getFullYear() || ""
+  () => appointmentDate.value?.toLocaleDateString("es-PE", { year: "numeric", timeZone: "America/Lima" }) || ""
 );
 
 const normalizedStatus = computed(() =>

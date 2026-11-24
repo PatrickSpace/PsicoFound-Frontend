@@ -1,7 +1,8 @@
 const PAYMENT_TRANSITIONS = {
   created: ["pending", "processing", "approved", "rejected", "provider_error"],
   pending: ["processing", "approved", "rejected", "cancelled", "manual_review"],
-  processing: ["pending", "approved", "rejected", "provider_error", "manual_review"],
+  processing: ["pending", "requires_3ds", "approved", "rejected", "provider_error", "manual_review"],
+  requires_3ds: ["processing", "approved", "rejected", "manual_review"],
   rejected: ["pending", "processing", "approved"],
   provider_error: ["pending", "processing", "approved", "rejected"],
   approved: ["refund_pending", "charged_back", "manual_review"],

@@ -12,6 +12,12 @@ const callables = Object.fromEntries(
     "disconnectPaymentAccount",
     "createBookingHold",
     "createBookingPayment",
+    "savePsychologistPayoutAccount",
+    "listCulqiCards",
+    "saveCulqiCard",
+    "completeCulqiCard3DS",
+    "removeCulqiCard",
+    "completeCulqiPayment3DS",
     "getBookingPaymentStatus",
     "listMyPaymentBookings",
     "expireBookingHold",
@@ -39,6 +45,30 @@ export async function savePaymentSettings(sessionPriceAmount) {
   );
 }
 
+export async function savePsychologistPayoutAccount(payload) {
+  return unwrap(await callables.savePsychologistPayoutAccount(payload));
+}
+
+export async function listCulqiCards() {
+  return unwrap(await callables.listCulqiCards());
+}
+
+export async function saveCulqiCard(payload) {
+  return unwrap(await callables.saveCulqiCard(payload));
+}
+
+export async function completeCulqiCard3DS(payload) {
+  return unwrap(await callables.completeCulqiCard3DS(payload));
+}
+
+export async function removeCulqiCard(cardId) {
+  return unwrap(await callables.removeCulqiCard({ cardId }));
+}
+
+export async function completeCulqiPayment3DS(payload) {
+  return unwrap(await callables.completeCulqiPayment3DS(payload));
+}
+
 export async function disconnectPaymentAccount() {
   return unwrap(await callables.disconnectPaymentAccount());
 }
@@ -59,8 +89,8 @@ export async function getMyPaymentBookings() {
   return unwrap(await callables.listMyPaymentBookings());
 }
 
-export async function cancelPaidBooking(bookingId) {
-  return unwrap(await callables.cancelBooking({ bookingId }));
+export async function cancelPaidBooking(bookingId, reason = "") {
+  return unwrap(await callables.cancelBooking({ bookingId, reason }));
 }
 
 export async function requestBookingRefund(bookingId, reasonCode) {
@@ -87,6 +117,10 @@ export function paymentErrorMessage(error) {
       "El servicio de pagos no está disponible temporalmente.",
     PAYMENT_CONFIGURATION_INVALID:
       "Los pagos aún no están configurados para este entorno.",
+    PAYMENT_PENDING:
+      "El pago sigue en proceso. Consulta su estado antes de volver a intentarlo.",
+    MANUAL_REVIEW_REQUIRED:
+      "Estamos verificando este cobro. No vuelvas a pagar hasta recibir una confirmación.",
     "resource-exhausted":
       "Has realizado demasiados intentos. Espera un momento y vuelve a intentarlo.",
     "failed-precondition":

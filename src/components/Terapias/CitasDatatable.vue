@@ -74,58 +74,16 @@
     </template>
 
     <template #item.actions="{ item }">
-      <div class="d-flex ga-1">
-        <v-btn
-          icon
-          variant="text"
-          color="secondary"
-          aria-label="Editar cita"
-          :disabled="item.estado === 'realizada'"
-          @click="openEditDialog(item)"
-
-        class="pf-btn-icon">
-          <v-icon>mdi-pencil</v-icon>
-        </v-btn>
-        <v-btn
-          icon
-          variant="text"
-          color="success"
-          aria-label="Confirmar cita"
-          :loading="isActionLoading(item, 'confirm')"
-          :disabled="isRowBusy(item) || item.estado === 'confirmada' || item.estado === 'realizada'"
-          @click="handleConfirmAppointment(item)"
-
-        class="pf-btn-patient">
-          <v-icon>mdi-check-circle</v-icon>
-        </v-btn>
-        <v-btn
-          icon
-          variant="text"
-          color="primary"
-          aria-label="Marcar cita como realizada"
-          :loading="isActionLoading(item, 'complete')"
-          :disabled="isRowBusy(item) || item.estado === 'realizada'"
-          @click="handleCompleteAppointment(item)"
-
-        class="pf-btn-icon">
-          <v-icon>mdi-calendar-check</v-icon>
-        </v-btn>
-        <v-btn
-          icon
-          variant="text"
-          color="warning"
-          aria-label="Volver cita a pendiente"
-          :loading="isActionLoading(item, 'reset')"
-          :disabled="isRowBusy(item) || item.estado === 'pendiente'"
-          @click="handleResetAppointment(item)"
-
-        class="pf-btn-hope">
-          <v-icon>mdi-refresh</v-icon>
-        </v-btn>
-      </div>
+      <v-btn icon="mdi-calendar-edit-outline" variant="text" color="secondary"
+        aria-label="Reprogramar cita" :disabled="!canPatientReschedule(item, clockNow)"
+        @click="openEditDialog(item)" />
+      <v-btn icon="mdi-calendar-remove-outline" variant="text" color="error"
+        aria-label="Cancelar cita" :disabled="!canCancelAppointment(item, clockNow)"
+        @click="cancellingAppointment = item; cancelDialog = true" />
     </template>
   </v-data-table>
 
+  <AppointmentCancellationDialog v-model="cancelDialog" :appointment="cancellingAppointment" @cancelled="loadAppointments" />
   <CitaDialog
     v-model="dialog"
     :terapia-id="dialogTherapy?.id || activeTherapy?.id || ''"
@@ -139,16 +97,14 @@
 </template>
 
 <script setup>
-import { computed, ref, watch } from "vue";
+import { computed, ref, watch, onBeforeUnmount } from "vue";
 import { storeToRefs } from "pinia";
 import { useAuthStore } from "@/store/auth";
 import { useAppContextStore } from "@/store/appContext";
 import CitaDialog from "@/components/Terapias/CitaDialog.vue";
-import {
-  confirmAppointment,
-  markAppointmentAsCompleted,
-  resetAppointmentToPending,
-} from "@/services/citaService";
+import AppointmentCancellationDialog from "@/components/Terapias/AppointmentCancellationDialog.vue";
+import { canPatientReschedule, canCancelAppointment } from "@/utils/appointmentTime";
+import { watchAppointmentChanges } from "@/services/appointmentRepository";
 import { getTherapiesByPatient } from "@/services/terapiaService";
 import {
   isTableLoadingTimeout,
@@ -171,7 +127,12 @@ const therapies = ref([]);
 const dialog = ref(false);
 const editingAppointment = ref(null);
 const dialogTherapy = ref(null);
-const rowAction = ref({ id: "", type: "" });
+const cancelDialog = ref(false);
+const cancellingAppointment = ref(null);
+const clockNow = ref(Date.now());
+const timer = setInterval(() => { clockNow.value = Date.now(); }, 30000);
+let stopWatching = () => {};
+onBeforeUnmount(() => { stopWatching(); clearInterval(timer); });
 
 const headers = [
   { title: "Fecha", key: "fechaOrden", value: "fecha" },
@@ -182,7 +143,7 @@ const headers = [
   { title: "Sesión online", value: "meetingUrl", sortable: false },
   { title: "Resumen", value: "sessionSummary", sortable: false },
   { title: "Notas", value: "notas" },
-  { title: "Confirmar", key: "actions", sortable: false },
+  { title: "Acciones", key: "actions", sortable: false },
 ];
 
 const filteredItems = computed(() => {
@@ -238,11 +199,12 @@ async function loadAppointments() {
 
   try {
     therapies.value = await withTableLoadingTimeout(
-      getTherapiesByPatient(pacienteUid)
+      getTherapiesByPatient(pacienteUid, { force: true })
     );
 
     items.value = therapies.value.flatMap((therapy) =>
       (Array.isArray(therapy.citas) ? therapy.citas : []).map((appointment) => ({
+        ...appointment,
         id: appointment.citaId || `${therapy.id}-${appointment.fecha}-${appointment.hora}`,
         fecha: appointment.fecha || "Sin fecha",
         fechaOrden: buildSortableDate(appointment.fecha, appointment.hora),
@@ -295,6 +257,7 @@ function openEditDialog(item) {
   }
 
   editingAppointment.value = {
+    ...item,
     citaId: item.citaId,
     fecha: item.fecha,
     hora: item.hora,
@@ -309,134 +272,12 @@ function openEditDialog(item) {
   dialog.value = true;
 }
 
-async function handleConfirmAppointment(item) {
-  if (isRowBusy(item)) return;
-  setRowAction(item, "confirm");
-
-  try {
-    await confirmAppointment({
-      citaId: item.citaId,
-      terapiaId: item.terapiaId,
-    });
-
-    window.dispatchEvent(
-      new CustomEvent("ui-success", {
-        detail: {
-          title: "Cita confirmada",
-          message: "La cita fue actualizada correctamente.",
-        },
-      })
-    );
-
-    await loadAppointments();
-  } catch (error) {
-    console.error("Error confirming appointment:", error);
-    window.dispatchEvent(
-      new CustomEvent("api-error", {
-        detail: {
-          message: error?.message || "No se pudo confirmar la cita.",
-        },
-      })
-    );
-  } finally {
-    clearRowAction();
-  }
-}
-
-async function handleCompleteAppointment(item) {
-  if (isRowBusy(item)) return;
-  setRowAction(item, "complete");
-
-  try {
-    await markAppointmentAsCompleted({
-      citaId: item.citaId,
-      terapiaId: item.terapiaId,
-    });
-
-    window.dispatchEvent(
-      new CustomEvent("ui-success", {
-        detail: {
-          title: "Cita realizada",
-          message: "La cita fue marcada como realizada.",
-        },
-      })
-    );
-
-    await loadAppointments();
-  } catch (error) {
-    console.error("Error completing appointment:", error);
-    window.dispatchEvent(
-      new CustomEvent("api-error", {
-        detail: {
-          message: "No se pudo marcar la cita como realizada.",
-        },
-      })
-    );
-  } finally {
-    clearRowAction();
-  }
-}
-
-async function handleResetAppointment(item) {
-  if (isRowBusy(item)) return;
-  setRowAction(item, "reset");
-
-  try {
-    await resetAppointmentToPending({
-      citaId: item.citaId,
-      terapiaId: item.terapiaId,
-    });
-
-    window.dispatchEvent(
-      new CustomEvent("ui-success", {
-        detail: {
-          title: "Cita actualizada",
-          message: "La cita volvió al estado pendiente.",
-        },
-      })
-    );
-
-    await loadAppointments();
-  } catch (error) {
-    console.error("Error resetting appointment:", error);
-    window.dispatchEvent(
-      new CustomEvent("api-error", {
-        detail: {
-          message: "No se pudo regresar la cita a pendiente.",
-        },
-      })
-    );
-  } finally {
-    clearRowAction();
-  }
-}
-
-function actionRowId(item) {
-  return item.citaId || item.id || "";
-}
-
-function isActionLoading(item, type) {
-  return rowAction.value.id === actionRowId(item) && rowAction.value.type === type;
-}
-
-function isRowBusy(item) {
-  return rowAction.value.id === actionRowId(item);
-}
-
-function setRowAction(item, type) {
-  rowAction.value = {
-    id: actionRowId(item),
-    type,
-  };
-}
-
-function clearRowAction() {
-  rowAction.value = { id: "", type: "" };
-}
 
 watch(
   () => currentUser.value?.uid,
   () => {
+    stopWatching();
+    stopWatching = watchAppointmentChanges({ patientId: currentUser.value?.uid }, loadAppointments);
     loadAppointments();
   },
   { immediate: true }

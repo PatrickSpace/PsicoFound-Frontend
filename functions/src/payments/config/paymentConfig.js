@@ -4,6 +4,7 @@ const MERCADO_PAGO_ACCESS_TOKEN = defineSecret("MERCADO_PAGO_ACCESS_TOKEN");
 const MERCADO_PAGO_CLIENT_SECRET = defineSecret("MERCADO_PAGO_CLIENT_SECRET");
 const MERCADO_PAGO_WEBHOOK_SECRET = defineSecret("MERCADO_PAGO_WEBHOOK_SECRET");
 const PAYMENT_TOKEN_ENCRYPTION_KEY = defineSecret("PAYMENT_TOKEN_ENCRYPTION_KEY");
+const CULQI_SECRET_KEY = defineSecret("CULQI_SECRET_KEY");
 
 const PLACEHOLDER_MARKERS = [
   "REEMPLAZAR",
@@ -17,7 +18,7 @@ const PLACEHOLDER_MARKERS = [
 function getPaymentConfig(overrides = {}) {
   const source = {...process.env, ...overrides};
   const config = {
-    provider: source.PAYMENT_PROVIDER || "mercado_pago",
+    provider: source.PAYMENT_PROVIDER || "culqi",
     environment: source.PAYMENT_ENVIRONMENT || "sandbox",
     appEnvironment: source.APP_ENVIRONMENT ||
       (source.K_SERVICE ? "production" : "development"),
@@ -34,6 +35,8 @@ function getPaymentConfig(overrides = {}) {
         70,
     ),
     processorFeeBearer: source.PROCESSOR_FEE_BEARER || "platform",
+    payoutEncryptionKey: source.PAYMENT_TOKEN_ENCRYPTION_KEY ||
+      (source.APP_ENVIRONMENT === "development" ? "development-payout-key" : ""),
     reconciliationEnabled: parseBoolean(
         source.PAYMENT_RECONCILIATION_ENABLED,
         true,
@@ -59,6 +62,11 @@ function getPaymentConfig(overrides = {}) {
       webhookUrl: source.MERCADO_PAGO_WEBHOOK_URL || "",
       tokenEncryptionKey: source.PAYMENT_TOKEN_ENCRYPTION_KEY || "",
     },
+    culqi: {
+      publicKey: source.CULQI_PUBLIC_KEY || "",
+      secretKey: source.CULQI_SECRET_KEY || "",
+      apiBaseUrl: source.CULQI_API_BASE_URL || "https://api.culqi.com",
+    },
   };
 
   validatePaymentConfig(config);
@@ -70,7 +78,7 @@ function validatePaymentConfig(config) {
   const production = config.appEnvironment === "production" ||
     config.environment === "production";
 
-  if (config.provider !== "mercado_pago") errors.push("PAYMENT_PROVIDER");
+  if (!["mercado_pago", "culqi"].includes(config.provider)) errors.push("PAYMENT_PROVIDER");
   if (!["sandbox", "production"].includes(config.environment)) {
     errors.push("PAYMENT_ENVIRONMENT");
   }
@@ -85,21 +93,32 @@ function validatePaymentConfig(config) {
   if (production) {
     if (config.useFakeProvider) errors.push("PAYMENT_USE_FAKE_PROVIDER");
     if (config.environment !== "production") errors.push("PAYMENT_ENVIRONMENT");
-    [
+    const requiredSecrets = config.provider === "culqi" ? [
+      ["CULQI_PUBLIC_KEY", config.culqi.publicKey],
+      ["CULQI_SECRET_KEY", config.culqi.secretKey],
+      ["PAYMENT_TOKEN_ENCRYPTION_KEY", config.payoutEncryptionKey],
+    ] : [
       ["MERCADO_PAGO_ACCESS_TOKEN", config.mercadoPago.accessToken],
       ["MERCADO_PAGO_CLIENT_SECRET", config.mercadoPago.clientSecret],
       ["MERCADO_PAGO_WEBHOOK_SECRET", config.mercadoPago.webhookSecret],
       ["MERCADO_PAGO_CLIENT_ID", config.mercadoPago.clientId],
       ["PAYMENT_TOKEN_ENCRYPTION_KEY", config.mercadoPago.tokenEncryptionKey],
-    ].forEach(([name, value]) => {
+    ];
+    requiredSecrets.forEach(([name, value]) => {
       if (!value || isPlaceholder(value)) errors.push(name);
     });
-    [
-      ["MERCADO_PAGO_OAUTH_REDIRECT_URI", config.mercadoPago.oauthRedirectUri],
-      ["MERCADO_PAGO_WEBHOOK_URL", config.mercadoPago.webhookUrl],
-    ].forEach(([name, value]) => {
-      if (!isValidProductionUrl(value)) errors.push(name);
-    });
+    if (config.provider === "culqi") {
+      if (!config.culqi.publicKey.startsWith("pk_live_")) errors.push("CULQI_PUBLIC_KEY");
+      if (!config.culqi.secretKey.startsWith("sk_live_")) errors.push("CULQI_SECRET_KEY");
+    }
+    if (config.provider === "mercado_pago") {
+      [
+        ["MERCADO_PAGO_OAUTH_REDIRECT_URI", config.mercadoPago.oauthRedirectUri],
+        ["MERCADO_PAGO_WEBHOOK_URL", config.mercadoPago.webhookUrl],
+      ].forEach(([name, value]) => {
+        if (!isValidProductionUrl(value)) errors.push(name);
+      });
+    }
   }
 
   if (errors.length) {
@@ -164,6 +183,7 @@ module.exports = {
   MERCADO_PAGO_CLIENT_SECRET,
   MERCADO_PAGO_WEBHOOK_SECRET,
   PAYMENT_TOKEN_ENCRYPTION_KEY,
+  CULQI_SECRET_KEY,
   getPaymentConfig,
   isPlaceholder,
   validatePaymentConfig,

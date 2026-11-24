@@ -1,5 +1,4 @@
 import {
-  arrayUnion,
   collection,
   doc,
   serverTimestamp,
@@ -17,6 +16,8 @@ import {
   getOrFetch,
   invalidateCachePrefix,
 } from "@/utils/requestCache";
+
+import { attachAppointments } from "@/services/appointmentRepository";
 
 const THERAPIES_COLLECTION = "terapias";
 const ACTIVE_THERAPY_STATUS = "activo";
@@ -81,36 +82,6 @@ export async function updateTherapyClinicalInfo(terapiaId, data = {}) {
   invalidateTherapyCaches();
 }
 
-export async function appendAppointmentToTherapy(terapiaId, appointmentSummary) {
-  const therapyRef = doc(db, THERAPIES_COLLECTION, terapiaId);
-
-  await trackWrite({
-    resource: THERAPIES_COLLECTION,
-    source: "appendAppointmentToTherapy",
-    operation: "updateDoc",
-    write: () => updateDoc(therapyRef, {
-      citas: arrayUnion(appointmentSummary),
-      updatedAt: serverTimestamp(),
-    }),
-  });
-  invalidateTherapyCaches();
-}
-
-export async function replaceTherapyAppointments(terapiaId, citas = []) {
-  const therapyRef = doc(db, THERAPIES_COLLECTION, terapiaId);
-
-  await trackWrite({
-    resource: THERAPIES_COLLECTION,
-    source: "replaceTherapyAppointments",
-    operation: "updateDoc",
-    write: () => updateDoc(therapyRef, {
-      citas,
-      updatedAt: serverTimestamp(),
-    }),
-  });
-  invalidateTherapyCaches();
-}
-
 export async function getTherapyById(terapiaId, options = {}) {
   if (!terapiaId) return null;
 
@@ -125,7 +96,7 @@ export async function getTherapyById(terapiaId, options = {}) {
         doc(db, THERAPIES_COLLECTION, terapiaId),
         { resource: THERAPIES_COLLECTION, source: "getTherapyById" }
       );
-      return snapshot.exists() ? { id: snapshot.id, ...snapshot.data() } : null;
+      return snapshot.exists() ? (await attachAppointments([{ id: snapshot.id, ...snapshot.data() }]))[0] : null;
     },
   });
 }
@@ -150,7 +121,7 @@ export async function getTherapiesByPatient(pacienteUid, options = {}) {
         resource: THERAPIES_COLLECTION,
         source: "getTherapiesByPatient",
       });
-      return snapshot.docs.map((item) => ({ id: item.id, ...item.data() }));
+      return attachAppointments(snapshot.docs.map((item) => ({ id: item.id, ...item.data() })));
     },
   });
 }
@@ -218,7 +189,7 @@ export async function getTherapiesByTherapist(terapeutaId, options = {}) {
         resource: THERAPIES_COLLECTION,
         source: "getTherapiesByTherapist",
       });
-      return snapshot.docs.map((item) => ({ id: item.id, ...item.data() }));
+      return attachAppointments(snapshot.docs.map((item) => ({ id: item.id, ...item.data() })));
     },
   });
 }
@@ -244,7 +215,7 @@ export async function getActiveTherapyByPatient(pacienteUid, options = {}) {
         source: "getActiveTherapyByPatient",
       });
       const item = snapshot.docs[0];
-      return item ? { id: item.id, ...item.data() } : null;
+      return item ? (await attachAppointments([{ id: item.id, ...item.data() }]))[0] : null;
     },
   });
 }

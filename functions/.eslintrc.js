@@ -25,7 +25,7 @@ module.exports = {
       rules: {},
     },
     {
-      files: ["src/payments/**/*.js"],
+      files: ["src/payments/**/*.js", "src/scheduling/**/*.js"],
       rules: {
         "max-len": "off",
       },

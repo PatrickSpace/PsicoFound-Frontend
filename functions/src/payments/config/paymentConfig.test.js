@@ -41,3 +41,25 @@ test("blocks percentages that do not sum 100", () => {
     DEFAULT_PSYCHOLOGIST_PERCENTAGE: "70",
   }), /PAYMENT_PERCENTAGES/);
 });
+
+test("requires live Culqi keys and encryption in production", () => {
+  assert.throws(() => getPaymentConfig({
+    PAYMENT_PROVIDER: "culqi",
+    APP_ENVIRONMENT: "production",
+    PAYMENT_ENVIRONMENT: "production",
+    PAYMENT_USE_FAKE_PROVIDER: "false",
+    CULQI_PUBLIC_KEY: "pk_test_not_live",
+    CULQI_SECRET_KEY: "sk_test_not_live",
+    PAYMENT_TOKEN_ENCRYPTION_KEY: "a-real-key",
+  }), /CULQI_PUBLIC_KEY|CULQI_SECRET_KEY/);
+  const config = getPaymentConfig({
+    PAYMENT_PROVIDER: "culqi",
+    APP_ENVIRONMENT: "production",
+    PAYMENT_ENVIRONMENT: "production",
+    PAYMENT_USE_FAKE_PROVIDER: "false",
+    CULQI_PUBLIC_KEY: "pk_live_valid",
+    CULQI_SECRET_KEY: "sk_live_valid",
+    PAYMENT_TOKEN_ENCRYPTION_KEY: "a-real-key",
+  });
+  assert.equal(config.provider, "culqi");
+});

@@ -98,62 +98,7 @@
           </v-col>
         </v-row>
 
-        <v-card class="pa-4 mb-5 card-backgoundcustom" elevation="2" variant="text">
-          <div class="d-flex flex-column flex-md-row align-md-center justify-space-between ga-3">
-            <div>
-              <div class="d-flex align-center ga-2 mb-1">
-                <v-icon color="secondary" size="small">mdi-calendar-plus-outline</v-icon>
-                <h2 class="text-h6 font-weight-bold mb-0">Abrir horarios disponibles</h2>
-              </div>
-              <p class="text-body-2 text-medium-emphasis mb-0">
-                Cada bloque dura 1 hora y queda visible para pacientes con terapia activa.
-              </p>
-            </div>
-            <v-btn
-              color="secondary"
-              variant="tonal"
-              prepend-icon="mdi-calendar-plus"
-              @click="availabilityDialog = true"
-              class="pf-btn-secondary align-self-start align-self-md-center"
-            >
-              Abrir bloque
-            </v-btn>
-          </div>
-          <v-card-text>
-            <v-divider class="mb-4"></v-divider>
-            <div class="availability-slot-list">
-              <v-chip
-                v-for="slot in upcomingAvailabilitySlots"
-                :key="slot.id"
-                :color="slot.status === 'available' ? 'secondary' : 'grey'"
-                variant="tonal"
-                class="availability-chip"
-              >
-                <v-icon start size="small">
-                  {{ slot.status === "available" ? "mdi-calendar-clock" : "mdi-lock-outline" }}
-                </v-icon>
-                {{ formatAvailabilitySlot(slot) }}
-                <v-btn
-                  v-if="slot.status === 'available'"
-                  icon="mdi-close"
-                  variant="text"
-                  size="x-small"
-                  class="ml-1 pf-btn-icon"
-                  aria-label="Cerrar bloque disponible"
-                  :loading="availabilityActionId === slot.id"
-                  :disabled="Boolean(availabilityActionId)"
-                  @click.stop="handleCloseAvailabilitySlot(slot)"
-                />
-              </v-chip>
-              <span
-                v-if="!loadingAvailability && upcomingAvailabilitySlots.length === 0"
-                class="text-body-2 text-medium-emphasis"
-              >
-                Aún no tienes horarios abiertos.
-              </span>
-            </div>
-          </v-card-text>
-        </v-card>
+        <CalendarPlanner v-if="therapist?.id" :therapist-id="therapist.id" @changed="loadTherapistSchedule" />
 
         <v-card class="pa-4 card-backgoundcustom" elevation="2" variant="text">
           <v-card-title class="d-flex align-center ga-2 text-h6 font-weight-bold px-0 pt-0">
@@ -215,7 +160,7 @@
                     :color="item.meetingUrl ? 'secondary' : 'warning'"
                     variant="text"
                     :prepend-icon="item.meetingUrl ? 'mdi-link-edit' : 'mdi-link-plus'"
-                    :disabled="item.estado === 'realizada'"
+                    :disabled="!['pendiente', 'confirmada'].includes(item.estado)"
                     @click="openMeetingLinkDialog(item)"
 
         class="pf-btn-ghost">
@@ -226,16 +171,16 @@
 
               <template #item.actions="{ item }">
                 <div class="d-flex ga-1">
-                  <v-tooltip text="Editar fecha, modalidad o enlace">
+                  <v-tooltip text="Reprogramar cita">
                     <template #activator="{ props: tooltipProps }">
                       <v-btn
                         v-bind="tooltipProps"
                         icon
                         variant="text"
                         color="secondary"
-                        aria-label="Editar cita"
-                        :disabled="item.estado === 'realizada'"
-                        @click="openEditDialog(item)"
+                        aria-label="Reprogramar cita"
+                        :disabled="!['pendiente', 'confirmada'].includes(item.estado)"
+                        @click="openEditDialog(item, 'reschedule')"
 
         class="pf-btn-icon">
                         <v-icon>mdi-pencil</v-icon>
@@ -251,7 +196,7 @@
                         color="success"
                         aria-label="Confirmar cita"
                         :loading="isAppointmentActionLoading(item, 'confirm')"
-                        :disabled="isAppointmentBusy(item) || item.estado === 'confirmada' || item.estado === 'realizada'"
+                        :disabled="isAppointmentBusy(item) || item.estado !== 'pendiente' || appointmentStart(item) <= clockNow"
                         @click="handleConfirmAppointment(item)"
 
         class="pf-btn-patient">
@@ -268,7 +213,7 @@
                         color="primary"
                         aria-label="Marcar como realizada"
                         :loading="isAppointmentActionLoading(item, 'complete')"
-                        :disabled="isAppointmentBusy(item) || item.estado === 'realizada'"
+                        :disabled="isAppointmentBusy(item) || !canCompleteAppointment(item, clockNow)"
                         @click="handleCompleteAppointment(item)"
 
         class="pf-btn-icon">
@@ -276,17 +221,20 @@
                       </v-btn>
                     </template>
                   </v-tooltip>
-                  <v-tooltip text="Regresar cita a pendiente">
+                  <v-btn icon="mdi-calendar-remove-outline" variant="text" color="error"
+                    aria-label="Cancelar cita" :disabled="!canCancelAppointment(item, clockNow)"
+                    @click="cancellingAppointment = item; cancelDialog = true" />
+                  <v-tooltip text="Registrar inasistencia">
                     <template #activator="{ props: tooltipProps }">
                       <v-btn
                         v-bind="tooltipProps"
                         icon
                         variant="text"
                         color="warning"
-                        aria-label="Regresar a pendiente"
+                        aria-label="Registrar inasistencia"
                         :loading="isAppointmentActionLoading(item, 'reset')"
-                        :disabled="isAppointmentBusy(item) || item.estado === 'pendiente'"
-                        @click="handleResetAppointment(item)"
+                        :disabled="isAppointmentBusy(item) || !canCompleteAppointment(item, clockNow)"
+                        @click="handleNoShowAppointment(item)"
 
         class="pf-btn-hope">
                         <v-icon>mdi-refresh</v-icon>
@@ -307,83 +255,12 @@
         :terapeuta-nombre="therapist?.nombre || editingAppointment?.terapeutaNombre || ''"
         :cita-id="editingAppointment?.citaId || ''"
         :initial-appointment="editingAppointment || {}"
+        :mode="dialogMode"
         :redirect-on-save="false"
         @saved="handleDialogSaved"
       />
 
-      <v-dialog v-model="availabilityDialog" class="bg-transparent" max-width="760">
-        <v-card class="pa-4 card-backgoundcustom" elevation="2" variant="text">
-          <v-card-title class="text-h6 font-weight-bold px-0 pt-0">
-            Abrir bloque disponible
-          </v-card-title>
-          <v-card-text>
-            <v-row align="start">
-              <v-col cols="12" md="6">
-                <v-text-field
-                  v-model="availabilityForm.date"
-                  label="Fecha"
-                  type="date"
-                  variant="outlined"
-                  density="comfortable"
-                />
-              </v-col>
-              <v-col cols="12" md="6">
-                <v-text-field
-                  v-model="availabilityForm.startTime"
-                  label="Hora de inicio"
-                  type="time"
-                  variant="outlined"
-                  density="comfortable"
-                  hint="Duración fija: 1 hora"
-                  persistent-hint
-                />
-              </v-col>
-              <v-col cols="12" md="6">
-                <v-select
-                  v-model="availabilityForm.modality"
-                  :items="modalityOptions"
-                  label="Modalidad"
-                  variant="outlined"
-                  density="comfortable"
-                />
-              </v-col>
-              <v-col cols="12" md="6">
-                <v-text-field
-                  v-model="availabilityForm.location"
-                  label="Ubicación"
-                  variant="outlined"
-                  density="comfortable"
-                  :disabled="isAvailabilityRemote"
-                  :hint="isAvailabilityRemote ? 'Se registrará como Terapia Online' : 'Dirección o sede'"
-                  persistent-hint
-                />
-              </v-col>
-            </v-row>
-          </v-card-text>
-          <v-card-actions>
-            <v-spacer />
-            <v-btn
-              variant="text"
-              :disabled="savingAvailability"
-              @click="availabilityDialog = false"
-              class="pf-btn-ghost"
-            >
-              Cancelar
-            </v-btn>
-            <v-btn
-              color="secondary"
-              variant="tonal"
-              prepend-icon="mdi-calendar-plus"
-              :loading="savingAvailability"
-              :disabled="!availabilityForm.date || !availabilityForm.startTime"
-              @click="saveAvailabilitySlot"
-              class="pf-btn-secondary"
-            >
-              Abrir bloque
-            </v-btn>
-          </v-card-actions>
-        </v-card>
-      </v-dialog>
+      <AppointmentCancellationDialog v-model="cancelDialog" :appointment="cancellingAppointment" psychologist @cancelled="loadTherapistSchedule" />
 
       <v-dialog v-model="completeDialog" class="bg-transparent" max-width="640">
         <v-card class="pa-4 card-backgoundcustom" elevation="2" variant="text">
@@ -428,9 +305,13 @@
 </template>
 
 <script setup>
-import { computed, ref, watch } from "vue";
+import { computed, ref, watch, onBeforeUnmount } from "vue";
 import { storeToRefs } from "pinia";
 import LayoutDefault from "@/components/Layout/Layoutmain.vue";
+import CalendarPlanner from "@/components/Agenda/CalendarPlanner.vue";
+import AppointmentCancellationDialog from "@/components/Terapias/AppointmentCancellationDialog.vue";
+import { watchAppointmentChanges } from "@/services/appointmentRepository";
+import { appointmentStart, appointmentEnd, canCompleteAppointment, canCancelAppointment } from "@/utils/appointmentTime";
 import CitaDialog from "@/components/Terapias/CitaDialog.vue";
 import { useAuthStore } from "@/store/auth";
 import { getTherapistByUserUid } from "@/services/psicologoService";
@@ -438,13 +319,9 @@ import { getTherapiesByTherapist } from "@/services/terapiaService";
 import {
   confirmAppointment,
   markAppointmentAsCompleted,
-  resetAppointmentToPending,
+  markAppointmentAsNoShow,
 } from "@/services/citaService";
-import {
-  closeAvailabilitySlot,
-  createAvailabilitySlot,
-  getAvailabilityByTherapist,
-} from "@/services/availabilityService";
+
 
 const authStore = useAuthStore();
 const { currentUser } = storeToRefs(authStore);
@@ -455,17 +332,17 @@ const errorMessage = ref("");
 const search = ref("");
 const dialog = ref(false);
 const editingAppointment = ref(null);
-const availabilitySlots = ref([]);
-const loadingAvailability = ref(false);
-const savingAvailability = ref(false);
-const availabilityDialog = ref(false);
-const availabilityActionId = ref("");
+const dialogMode = ref("details");
+const cancelDialog = ref(false);
+const cancellingAppointment = ref(null);
 const appointmentAction = ref({ id: "", type: "" });
-const availabilityForm = ref({
-  date: "",
-  startTime: "",
-  modality: "Remoto",
-  location: "",
+const clockNow = ref(Date.now());
+const clockTimer = setInterval(() => { clockNow.value = Date.now(); }, 30000);
+let stopWatching = () => {};
+onBeforeUnmount(() => { stopWatching(); clearInterval(clockTimer); });
+watch(() => therapist.value?.id, (id) => {
+  stopWatching();
+  stopWatching = watchAppointmentChanges({ therapistId: id }, loadTherapistSchedule);
 });
 const completeDialog = ref(false);
 const completingAppointment = ref(null);
@@ -481,11 +358,12 @@ const headers = [
   { title: "Sesión online", value: "meetingUrl", sortable: false },
   { title: "Acciones", key: "actions", sortable: false },
 ];
-const modalityOptions = ["Remoto", "Presencial", "Híbrido"];
+
 
 const appointments = computed(() =>
   therapies.value.flatMap((therapy) =>
     (Array.isArray(therapy.citas) ? therapy.citas : []).map((appointment) => ({
+      ...appointment,
       id: appointment.citaId || `${therapy.id}-${appointment.fecha}-${appointment.hora}`,
       citaId: appointment.citaId || "",
       terapiaId: therapy.id,
@@ -531,12 +409,13 @@ const filteredAppointments = computed(() => {
 
 const upcomingAppointments = computed(() =>
   appointments.value.filter((appointment) =>
-    ["pendiente", "confirmada"].includes(normalizeStatus(appointment.estado))
+    ["pendiente", "confirmada"].includes(normalizeStatus(appointment.estado)) &&
+    appointmentEnd(appointment) > clockNow.value
   )
 );
 
 const activePatientsCount = computed(
-  () => new Set(therapies.value.map((therapy) => therapy.pacienteUid).filter(Boolean)).size
+  () => new Set(therapies.value.filter((therapy) => therapy.estado === "activo").map((therapy) => therapy.pacienteUid).filter(Boolean)).size
 );
 
 const missingMeetingLinksCount = computed(() =>
@@ -544,18 +423,6 @@ const missingMeetingLinksCount = computed(() =>
     (appointment) => isRemote(appointment.modalidad) && !appointment.meetingUrl
   ).length
 );
-const isAvailabilityRemote = computed(() => isRemote(availabilityForm.value.modality));
-const upcomingAvailabilitySlots = computed(() => {
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-
-  return availabilitySlots.value
-    .filter((slot) => {
-      const parsed = parseDateOnly(slot.date);
-      return parsed && parsed >= today && slot.status !== "closed";
-    })
-    .slice(0, 18);
-});
 
 watch(
   () => currentUser.value?.uid,
@@ -604,16 +471,9 @@ async function loadTherapistSchedule() {
   try {
     therapist.value = await getTherapistByUserUid(uid);
     if (therapist.value?.id) {
-      loadingAvailability.value = true;
-      const [therapistTherapies, therapistAvailability] = await Promise.all([
-        getTherapiesByTherapist(therapist.value.id),
-        getAvailabilityByTherapist(therapist.value.id),
-      ]);
-      therapies.value = therapistTherapies;
-      availabilitySlots.value = therapistAvailability;
+      therapies.value = await getTherapiesByTherapist(therapist.value.id, { force: true });
     } else {
       therapies.value = [];
-      availabilitySlots.value = [];
     }
   } catch (error) {
     console.error("Error loading therapist schedule:", error);
@@ -621,80 +481,15 @@ async function loadTherapistSchedule() {
       error?.message || "No pudimos cargar la agenda del psicólogo.";
     therapist.value = null;
     therapies.value = [];
-    availabilitySlots.value = [];
   } finally {
     loading.value = false;
-    loadingAvailability.value = false;
   }
 }
 
-async function saveAvailabilitySlot() {
-  if (!therapist.value?.id || savingAvailability.value) {
-    return;
-  }
-
-  savingAvailability.value = true;
-
-  try {
-    await createAvailabilitySlot({
-      therapistId: therapist.value.id,
-      date: availabilityForm.value.date,
-      startTime: availabilityForm.value.startTime,
-      modality: availabilityForm.value.modality,
-      location: availabilityForm.value.location,
-    });
-    availabilityForm.value.startTime = "";
-    availabilityForm.value.location = "";
-    availabilityDialog.value = false;
-    await loadTherapistSchedule();
-    window.dispatchEvent(
-      new CustomEvent("ui-success", {
-        detail: {
-          title: "Horario abierto",
-          message: "El bloque ya está disponible para tus pacientes.",
-        },
-      })
-    );
-  } catch (error) {
-    console.error("Error creating availability slot:", error);
-    window.dispatchEvent(
-      new CustomEvent("api-error", {
-        detail: {
-          message: error?.message || "No se pudo abrir el horario.",
-        },
-      })
-    );
-  } finally {
-    savingAvailability.value = false;
-  }
-}
-
-async function handleCloseAvailabilitySlot(slot) {
-  if (availabilityActionId.value) {
-    return;
-  }
-
-  availabilityActionId.value = slot.id;
-
-  try {
-    await closeAvailabilitySlot(slot.id);
-    await loadTherapistSchedule();
-  } catch (error) {
-    console.error("Error closing availability slot:", error);
-    window.dispatchEvent(
-      new CustomEvent("api-error", {
-        detail: {
-          message: error?.message || "No se pudo cerrar el bloque.",
-        },
-      })
-    );
-  } finally {
-    availabilityActionId.value = "";
-  }
-}
-
-function openEditDialog(item) {
+function openEditDialog(item, mode = "details") {
+  dialogMode.value = mode;
   editingAppointment.value = {
+    ...item,
     citaId: item.citaId,
     terapiaId: item.terapiaId,
     terapeutaId: item.terapeutaId,
@@ -720,7 +515,7 @@ async function handleConfirmAppointment(item) {
   setAppointmentAction(item, "confirm");
 
   await runAppointmentAction(
-    () => confirmAppointment({ citaId: item.citaId, terapiaId: item.terapiaId }),
+    () => confirmAppointment({ citaId: item.citaId, revision: item.revision || 0 }),
     "Cita confirmada",
     "La cita fue confirmada correctamente."
   );
@@ -749,6 +544,7 @@ async function saveAppointmentCompletion() {
           citaId: completingAppointment.value.citaId,
           terapiaId: completingAppointment.value.terapiaId,
           sessionSummary: sessionSummary.value.trim(),
+          revision: completingAppointment.value.revision || 0,
         }),
       "Sesión realizada",
       "La sesión fue marcada como realizada."
@@ -765,14 +561,14 @@ async function saveAppointmentCompletion() {
   }
 }
 
-async function handleResetAppointment(item) {
+async function handleNoShowAppointment(item) {
   if (isAppointmentBusy(item)) return;
   setAppointmentAction(item, "reset");
 
   await runAppointmentAction(
-    () => resetAppointmentToPending({ citaId: item.citaId, terapiaId: item.terapiaId }),
+    () => markAppointmentAsNoShow({ citaId: item.citaId, revision: item.revision || 0 }),
     "Cita actualizada",
-    "La cita volvió al estado pendiente."
+    "Se registró la inasistencia."
   );
 }
 
@@ -806,28 +602,6 @@ async function runAppointmentAction(action, title, message) {
 function handleDialogSaved() {
   editingAppointment.value = null;
   loadTherapistSchedule();
-}
-
-function parseDateOnly(value) {
-  if (!value) {
-    return null;
-  }
-
-  const parsed = new Date(`${value}T00:00`);
-  return Number.isNaN(parsed.getTime()) ? null : parsed;
-}
-
-function formatAvailabilitySlot(slot) {
-  const parsed = parseDateOnly(slot.date);
-  const date = parsed
-    ? new Intl.DateTimeFormat("es-PE", {
-        weekday: "short",
-        day: "2-digit",
-        month: "2-digit",
-      }).format(parsed)
-    : slot.date;
-
-  return `${date} · ${slot.startTime}-${slot.endTime} · ${slot.modality}`;
 }
 
 function appointmentRowId(item) {

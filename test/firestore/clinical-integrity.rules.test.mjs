@@ -75,10 +75,27 @@ test("clinical resources preserve ownership and role boundaries", {
   await assertFails(updateDoc(doc(patientDb, "citas/appointment-1"), {
     estado: "realizada",
   }));
-  await assertSucceeds(updateDoc(doc(psychologistDb, "citas/appointment-1"), {
+  await assertFails(updateDoc(doc(psychologistDb, "citas/appointment-1"), {
     meetingProvider: "Google Meet",
     meetingUrl: "https://meet.google.com/example",
     meetingUrlUpdatedAt: new Date(),
+  }));
+
+  await assertFails(updateDoc(doc(psychologistDb, "terapias/therapy-1"), {
+    citas: [{citaId: "forged", estado: "realizada"}],
+  }));
+  await assertFails(setDoc(doc(psychologistDb, "therapist_availability/direct"), {
+    therapistId: "therapist-1", status: "available",
+  }));
+  await environment.withSecurityRulesDisabled(async (context) => {
+    await setDoc(doc(context.firestore(), "therapist_availability/private-slot"), {
+      therapistId: "therapist-1", status: "booked", bookedBy: "patient-1",
+    });
+  });
+  await assertFails(getDoc(doc(patientDb, "therapist_availability/private-slot")));
+  await assertSucceeds(getDoc(doc(psychologistDb, "therapist_availability/private-slot")));
+  await assertFails(updateDoc(doc(psychologistDb, "therapist_availability/private-slot"), {
+    status: "available",
   }));
 
   const goal = await assertSucceeds(addDoc(collection(patientDb, "therapy_goals"), {
