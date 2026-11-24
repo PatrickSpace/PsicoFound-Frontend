@@ -474,9 +474,38 @@ async function reserveAppointment(request) {
   }
 }
 
+async function providerAppointmentChange(request, action) {
+  const data = request.data || {};
+  const id = cleanId(data.appointmentId || data.citaId, "cita");
+  const db = firestoreAdmin.getFirestore();
+  const current = (await db.doc(`citas/${id}`).get()).data();
+  if (!current?.bookingId) return null;
+  if (data.mode === "patient") await requirePatientAccess(request);
+  if (data.sessionAction) {
+    throw new HttpsError("failed-precondition",
+        "Esta reserva conserva el cierre de atención registrado.");
+  }
+  if (action === "status" && normalizeStatus(data.status || data.estado) === "cancelada") {
+    const {cancelBooking} = require("../payments/paymentHandlers");
+    await cancelBooking({...request, data: {bookingId: current.bookingId,
+      reason: data.reason || ""}});
+  } else {
+    const {SchedulingService} = require("../scheduling/schedulingService");
+    await new SchedulingService(db).mutateAppointment(request.auth.uid, {
+      ...data, citaId: id, action,
+      estado: normalizeStatus(data.status || data.estado),
+      slotId: data.availabilitySlotId || data.slotId,
+    });
+  }
+  const appointment = (await db.doc(`citas/${id}`).get()).data();
+  return {appointmentId: id, therapyId: appointment.terapiaId, appointment};
+}
+
 async function rescheduleAppointment(request) {
   assertAgendaZone(request.data || {});
   const auth = requireAuth(request);
+  const providerResult = await providerAppointmentChange(request, "reschedule");
+  if (providerResult) return providerResult;
   const data = request.data || {};
   const db = firestoreAdmin.getFirestore();
   const appointmentId = cleanId(data.appointmentId || data.citaId, "cita");
@@ -589,6 +618,8 @@ async function rescheduleAppointment(request) {
 
 async function changeAppointmentStatus(request, internalOptions = {}) {
   const auth = requireAuth(request);
+  const providerResult = await providerAppointmentChange(request, "status");
+  if (providerResult) return providerResult;
   const data = request.data || {};
   const db = firestoreAdmin.getFirestore();
   const appointmentId = cleanId(data.appointmentId || data.citaId, "cita");
@@ -751,6 +782,8 @@ async function changeAppointmentStatus(request, internalOptions = {}) {
 
 async function updateAppointmentDetails(request) {
   const auth = requireAuth(request);
+  const providerResult = await providerAppointmentChange(request, "details");
+  if (providerResult) return providerResult;
   const data = request.data || {};
   const db = firestoreAdmin.getFirestore();
   const appointmentId = cleanId(data.appointmentId || data.citaId, "cita");

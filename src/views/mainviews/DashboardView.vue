@@ -94,6 +94,7 @@
             <v-card-actions class="px-0 pt-4 pb-0">
               <v-btn
                 class="pf-btn-secondary"
+                data-welcome-focus-return
                 to="/progreso"
                 append-icon="mdi-arrow-right"
               >
@@ -166,6 +167,7 @@
             color="secondary"
             size="large"
             to="/encuesta"
+            data-welcome-focus-return
             class="pf-btn-secondary"
           >
             Encontrar terapeuta

@@ -23,9 +23,11 @@ export async function createAvailabilitySlot(data) {
 export async function closeAvailabilitySlot(slotId, therapistId) {
   return manage({action: "close", slotId, therapistId});
 }
-export async function getAvailabilityByTherapist(therapistId) {
+export async function getAvailabilityByTherapist(therapistId, { availableOnly = false } = {}) {
   if (!therapistId) return [];
-  const snapshot = await getDocs(query(collection(db, "therapist_availability"), where("therapistId", "==", therapistId)));
+  const constraints = [where("therapistId", "==", therapistId)];
+  if (availableOnly) constraints.push(where("status", "==", "available"));
+  const snapshot = await getDocs(query(collection(db, "therapist_availability"), ...constraints));
   return snapshot.docs.map((item) => {
     const original = item.data();
     const schedule = resolveSchedule(original);
@@ -40,6 +42,6 @@ export async function getAvailabilityByTherapist(therapistId) {
 }
 export async function getAvailableSlotsByTherapist(therapistId) {
   const now = new Date();
-  return (await getAvailabilityByTherapist(therapistId)).filter((slot) =>
+  return (await getAvailabilityByTherapist(therapistId, { availableOnly: true })).filter((slot) =>
     slot.status === "available" && slot.scheduleStatus === "resolved" && new Date(slot.startAtIso) > now);
 }

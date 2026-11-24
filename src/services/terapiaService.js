@@ -13,6 +13,7 @@ import { db } from "@/plugins/Firebase/firestore";
 import { createOperationId } from "@/services/citaService";
 import { useAppContextStore } from "@/store/appContext";
 
+import { attachAppointments } from '@/services/appointmentRepository';
 import { agendaPresentation } from "@/utils/dateTime";
 
 function presentTherapy(data) {
@@ -36,7 +37,7 @@ export async function getTherapyById(terapiaId) {
 
   return {
     id: snapshot.id,
-    ...presentTherapy(snapshot.data()),
+    ...presentTherapy((await attachAppointments([{id: snapshot.id, ...snapshot.data()}]))[0]),
   };
 }
 
@@ -53,30 +54,33 @@ export async function getTherapiesByPatient(pacienteUid) {
 
   const snapshot = await getDocs(therapiesQuery);
 
-  return snapshot.docs.map((item) => ({
-    id: item.id,
-    ...presentTherapy(item.data()),
-  }));
+  const therapies = await attachAppointments(snapshot.docs.map(item => ({ id: item.id, ...item.data() })));
+  return therapies.map(therapy => ({ ...therapy, ...presentTherapy(therapy) }));
 }
 
 export function watchTherapiesByPatient(pacienteUid, onData, onError) {
-  if (!pacienteUid) {
-    onData([]);
-    return () => {};
+  if (!pacienteUid) { onData([]); return () => {}; }
+  let active = true, generation = 0;
+  let therapies = null, appointments = null;
+  async function emit() {
+    if (!active || !therapies || !appointments) return;
+    const current = ++generation;
+    const merged = await attachAppointments(therapies, appointments);
+    if (active && current === generation) {
+      onData(merged.map(therapy => ({ ...therapy, ...presentTherapy(therapy) })));
+    }
   }
-
-  const therapiesQuery = query(
-    collection(db, THERAPIES_COLLECTION),
-    where("pacienteUid", "==", pacienteUid)
-  );
-  return onSnapshot(
-    therapiesQuery,
-    (snapshot) => onData(snapshot.docs.map((item) => ({
-      id: item.id,
-      ...presentTherapy(item.data()),
-    }))),
-    onError
-  );
+  const stops = [
+    onSnapshot(query(collection(db, THERAPIES_COLLECTION), where('pacienteUid', '==', pacienteUid)), snapshot => {
+      therapies = snapshot.docs.map(item => ({ id: item.id, ...item.data() }));
+      emit();
+    }, onError),
+    onSnapshot(query(collection(db, 'citas'), where('pacienteUid', '==', pacienteUid)), snapshot => {
+      appointments = snapshot.docs.map(item => ({ ...item.data(), citaId: item.id }));
+      emit();
+    }, onError),
+  ];
+  return () => { active = false; stops.forEach(stop => stop()); };
 }
 
 export async function getTherapiesByTherapist(terapeutaId) {
@@ -92,10 +96,8 @@ export async function getTherapiesByTherapist(terapeutaId) {
 
   const snapshot = await getDocs(therapiesQuery);
 
-  return snapshot.docs.map((item) => ({
-    id: item.id,
-    ...presentTherapy(item.data()),
-  }));
+  const therapies = await attachAppointments(snapshot.docs.map(item => ({ id: item.id, ...item.data() })));
+  return therapies.map(therapy => ({ ...therapy, ...presentTherapy(therapy) }));
 }
 
 export async function getActiveTherapyByPatient(pacienteUid) {

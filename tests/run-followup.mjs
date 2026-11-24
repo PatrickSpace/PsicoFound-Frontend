@@ -5,7 +5,11 @@ import { createServer } from "node:net";
 assert.match(process.env.FIRESTORE_EMULATOR_HOST || "", /^127\.0\.0\.1:8080$/);
 assert.match(process.env.FIREBASE_AUTH_EMULATOR_HOST || "", /^127\.0\.0\.1:9099$/);
 const env = {
-  ...process.env, FUNCTIONS_EMULATOR: "true", GCLOUD_PROJECT: "demo-lurems-followup",
+  ...process.env,
+  ...(process.env.MARKETPLACE_BROWSER_ONLY ? {
+    VITE_PAYMENT_PROVIDER: 'culqi', VITE_PAYMENT_USE_FAKE_PROVIDER: 'true', VITE_CULQI_PUBLIC_KEY: 'pk_test_synthetic',
+  } : {}),
+  FUNCTIONS_EMULATOR: "true", GCLOUD_PROJECT: "demo-lurems-followup",
   VITE_USE_FIREBASE_EMULATORS: "true", VITE_FIREBASE_PROJECT_ID: "demo-lurems-followup",
   VITE_FIREBASE_API_KEY: "synthetic-only", VITE_FIREBASE_APP_ID: "synthetic-only",
   VITE_FIREBASE_AUTH_DOMAIN: "demo-lurems-followup.firebaseapp.com",
@@ -26,6 +30,22 @@ try {
     probe.once("error", () => reject(new Error("Port 5178 must be free: validation must launch its own isolated frontend")));
     probe.listen(5178, "127.0.0.1", () => probe.close(resolve));
   });
+  const callableCheck = await fetch('http://127.0.0.1:5001/demo-lurems-followup/southamerica-east1/getProfessionalSetup', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ data: {} }),
+  });
+  const callableBody = await callableCheck.text();
+  assert.equal(callableCheck.status, 401, 'Functions must load successfully before validation: ' + callableBody.slice(0, 180));
+  assert.equal(JSON.parse(callableBody).error?.status, 'UNAUTHENTICATED');
+  for (const [flag, files] of [
+    ['RULES_VALIDATION', ['test/firestore/*.test.mjs']],
+    ['CALENDAR_VALIDATION', ['functions/src/scheduling/schedulingService.integration.test.js']],
+    ['MARKETPLACE_VALIDATION', ['functions/src/payments/services/marketplacePaymentService.integration.test.js']],
+  ]) {
+    if (process.env[flag]) {
+      await run(['--test', '--test-concurrency=1', ...files]);
+      process.exit(0);
+    }
+  }
   if (process.env.OPERATIONS_REVIEW) {
     assert.equal(env.GCLOUD_PROJECT, "demo-lurems-followup");
     process.env.FUNCTIONS_EMULATOR = "true";
@@ -85,7 +105,10 @@ try {
     process.exit(0);
   }
   if (process.env.LEGAL_VALIDATION) await run(["--test", "tests/legal-documents.integration.test.mjs"]);
-  if (!process.env.OPERATIONS_REVIEW && !process.env.CARE_GUIDE_REVIEW && !process.env.LEGAL_VALIDATION && !process.env.PILOT_BROWSER_ONLY && !process.env.PAYMENT_DEADLINE_ONLY && !process.env.ADMIN_BROWSER_ONLY) {
+  if (!process.env.OPERATIONS_REVIEW && !process.env.CARE_GUIDE_REVIEW && !process.env.LEGAL_VALIDATION && !process.env.PILOT_BROWSER_ONLY && !process.env.MARKETPLACE_BROWSER_ONLY && !process.env.PAYMENT_DEADLINE_ONLY && !process.env.ADMIN_BROWSER_ONLY) {
+  await run(["--test", "--test-concurrency=1", "test/firestore/*.test.mjs"]);
+  await run(["--test", "functions/src/scheduling/schedulingService.integration.test.js"]);
+  await run(["--test", "functions/src/payments/services/marketplacePaymentService.integration.test.js"]);
   await run(["--test", "tests/followup.integration.test.mjs"]);
   await run(["--test", "tests/appointments.integration.test.mjs"]);
   await run(["--test", "tests/professional-setup.integration.test.mjs"]);
@@ -125,7 +148,7 @@ try {
     process.exit(0);
   }
   if (process.env.AGENDA_VALIDATION && !process.env.PAYMENT_DEADLINE_ONLY && !process.env.ADMIN_BROWSER_ONLY) await run(["node_modules/@playwright/test/cli.js", "test", "--config", "playwright.lima.config.js", ...(process.env.LIMA_RETRY_FAILED ? ["--last-failed"] : [])]);
-  await run(["node_modules/@playwright/test/cli.js", "test", ...(process.env.VALIDATION_GREP ? ["--grep", process.env.VALIDATION_GREP] : []), ...(process.env.LEGAL_VALIDATION ? ["tests/browser/legal-documents.spec.mjs"] : process.env.ADMIN_BROWSER_ONLY ? ["tests/browser/admin-pilot.spec.mjs"] : process.env.PAYMENT_DEADLINE_ONLY ? ["tests/browser/payment-deadline.spec.mjs"] : [])]);
+  await run(["node_modules/@playwright/test/cli.js", "test", ...(process.env.MARKETPLACE_BROWSER_ONLY ? ["--grep", "provider checkout:"] : []), ...(process.env.VALIDATION_GREP ? ["--grep", process.env.VALIDATION_GREP] : []), ...(process.env.LEGAL_VALIDATION ? ["tests/browser/legal-documents.spec.mjs"] : process.env.ADMIN_BROWSER_ONLY ? ["tests/browser/admin-pilot.spec.mjs"] : process.env.PAYMENT_DEADLINE_ONLY ? ["tests/browser/payment-deadline.spec.mjs"] : [])]);
 } finally {
   server?.kill("SIGTERM");
 }

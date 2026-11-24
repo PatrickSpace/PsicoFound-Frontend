@@ -19,10 +19,19 @@ async function context(tx, db, request) {
   const therapies = await tx.get(db.collection("terapias").where("pacienteUid", "==", uid));
   const active = new Map(therapies.docs.filter((doc) => doc.data().estado === "activo").map((doc) => [doc.id, doc.data()]));
   const candidates = appointments.docs.map((doc) => ({...doc.data(), id: doc.id})).filter((item) =>
-    ["confirmada", "realizada"].includes(item.estado) && item.paymentStatus === "confirmed" &&
-    active.get(item.terapiaId)?.terapeutaId === item.terapeutaId && validId(item.paymentOperationId));
+    ["confirmada", "realizada"].includes(item.estado) && ["confirmed", "approved"].includes(item.paymentStatus) &&
+    active.get(item.terapiaId)?.terapeutaId === item.terapeutaId && (validId(item.paymentOperationId) || validId(item.bookingId)));
   const paid = [];
   for (const appointment of candidates) {
+    if (appointment.bookingId && appointment.paymentStatus === "approved") {
+      const booking = (await tx.get(db.doc(`bookings/${appointment.bookingId}`))).data();
+      const providerPayment = (await tx.get(db.doc(`payments/${appointment.bookingId}`))).data();
+      if (booking?.paymentStatus === "approved" && ["confirmed", "completed"].includes(booking.status) &&
+          booking.patientId === uid && booking.psychologistId === appointment.terapeutaId &&
+          appointment.id === appointment.bookingId && providerPayment?.status === "approved" &&
+          providerPayment.patientId === uid && providerPayment.psychologistId === appointment.terapeutaId) paid.push(appointment);
+      continue;
+    }
     const payment = (await tx.get(db.doc(`payment_operations/${appointment.paymentOperationId}`))).data();
     if (payment?.status === "confirmed" && payment.patientUid === uid &&
         payment.appointmentId === appointment.id && payment.therapistId === appointment.terapeutaId) paid.push(appointment);

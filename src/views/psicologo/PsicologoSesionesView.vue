@@ -56,6 +56,7 @@
       </v-card>
 
       <template v-else>
+        <CalendarPlanner v-if="therapist && calendarPlannerEnabled" :therapist-id="therapist.id" @published="loadTherapistSchedule" />
         <v-row class="mb-4" align="stretch">
           <v-col cols="12" md="4" class="d-flex">
             <v-card class="pa-4 card-backgoundcustom flex-grow-1 schedule-stat-card" elevation="2" variant="text">
@@ -279,14 +280,17 @@
                       </v-btn>
                     </template>
                   </v-tooltip>
-                  <v-btn v-if="item.estado === 'realizada'" icon variant="text" class="pf-btn-icon"
+                  <v-btn v-if="item.estado === 'realizada' && !item.bookingId" icon variant="text" class="pf-btn-icon"
                     aria-label="Corregir atención" :disabled="isAppointmentBusy(item)" @click="openAttendanceDialog(item, 'correct')">
                     <v-icon>mdi-file-document-edit-outline</v-icon>
                   </v-btn>
-                  <v-btn v-if="item.estado === 'realizada'" icon variant="text" class="pf-btn-icon"
+                  <v-btn v-if="item.estado === 'realizada' && !item.bookingId" icon variant="text" class="pf-btn-icon"
                     aria-label="Deshacer realización" :disabled="isAppointmentBusy(item)" @click="openAttendanceDialog(item, 'undo')">
                     <v-icon>mdi-undo</v-icon>
                   </v-btn>
+                  <v-btn v-if="item.bookingId && item.estado === 'confirmada'" variant="text"
+                    :disabled="isAppointmentBusy(item) || !canCompleteAppointment(item, agendaNow)"
+                    @click="recordNoShow(item)">No asistió</v-btn>
                   <v-tooltip text="Rechazar cita y solicitar otro horario">
                     <template #activator="{ props: tooltipProps }">
                       <v-btn
@@ -482,6 +486,10 @@
 </template>
 
 <script setup>
+import { markAppointmentAsNoShow } from '@/services/automatedAppointmentService';
+import { canCompleteAppointment } from '@/utils/appointmentTime';
+import CalendarPlanner from '@/components/Agenda/CalendarPlanner.vue';
+import { calendarPlannerEnabled } from '@/services/calendarService';
 import { useRoute as useNotificationRoute, useRouter } from "vue-router";
 const notificationRoute = useNotificationRoute();
 const setupRouter = useRouter();
@@ -1030,6 +1038,12 @@ function setAppointmentAction(item, type) {
 
 function clearAppointmentAction() {
   appointmentAction.value = { id: "", type: "" };
+}
+async function recordNoShow(item) {
+  try {
+    await markAppointmentAsNoShow({ citaId: item.citaId, revision: item.revision });
+    await loadTherapistSchedule();
+  } catch (error) { errorMessage.value = error?.message || 'No pudimos registrar la inasistencia.'; }
 }
 </script>
 

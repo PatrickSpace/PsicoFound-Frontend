@@ -36,6 +36,8 @@ import { useAppContextStore } from "@/store/appContext";
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
+    { path: '/:pathMatch(.*)*', name: 'not-found',
+      component: () => import('@/views/NotFoundView.vue'), meta: { public: true } },
     {
       path: "/cuenta-suspendida", name: "suspended-account",
       component: () => import("@/views/Auth/SuspendedAccountView.vue"),

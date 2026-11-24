@@ -69,7 +69,9 @@ export async function seedFollowup({ therapySelectionCases = false } = {}) {
       await db.doc(`citas/survey-share-${id}`).set({
         ...identity,
         citaId: `survey-share-${id}`,
-        estado: "confirmada",
+        fecha: '2026-09-19', hora: '10:00', timeZone: 'America/Lima',
+        startAtIso: '2026-09-19T15:00:00.000Z',
+        estado: "realizada",
         paymentStatus: "confirmed",
         surveyHistoryConsent: true,
         surveyHistoryConsentAt: "2026-10-21T12:00:00.000Z",
