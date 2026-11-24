@@ -33,7 +33,7 @@ Las cancelaciones y los cambios financieros comparten la reserva transaccional. 
 4. Desplegar coordinadamente las funciones de agenda, los cambios compartidos de reservas, las reglas y el frontend. Las versiones anteriores del frontend ya no podrán escribir citas directamente.
 5. Validar con cuentas de prueba: semana 45+15, día excluido, reserva simultánea, cambio de horario, cancelación y cierre después de la sesión.
 
-La agenda configurable se habilita con `VITE_CALENDAR_ENABLED=true` después de publicar sus APIs. Esta activación es independiente de los cobros automáticos. Culqi y Mercado Pago requieren configuración explícita del proveedor, llaves y backend compatible. La integración de código conserva la conciliación existente como recorrido predeterminado.
+La agenda configurable se habilita con `VITE_CALENDAR_ENABLED=true` después de publicar sus APIs. Esta activación es independiente de los cobros automáticos. Culqi y Mercado Pago requieren `VITE_AUTOMATED_PAYMENTS_ENABLED=true`, configuración explícita del proveedor, llaves y backend compatible. La integración de código conserva la conciliación existente como recorrido predeterminado.
 
 ## Verificación local
 

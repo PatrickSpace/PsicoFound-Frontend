@@ -247,6 +247,17 @@ async function therapistRecipient(transaction, db, therapistId) {
   return therapist && therapist.uid || "";
 }
 
+async function therapyAppointments(transaction, db, therapyId, therapy) {
+  const records = new Map((therapy.citas || []).filter(Boolean)
+      .map((item, index) => [item.citaId || item.id || `legacy-${index}`, item]));
+  const official = await transaction.get(db.collection(COLLECTIONS.appointments)
+      .where("terapiaId", "==", therapyId));
+  for (const doc of official.docs) {
+    records.set(doc.id, {...doc.data(), citaId: doc.id});
+  }
+  return [...records.values()];
+}
+
 async function reserveAppointment(request) {
   assertAgendaZone(request.data || {});
   const auth = requireAuth(request);
@@ -295,7 +306,8 @@ async function reserveAppointment(request) {
         if (therapy.terapeutaId !== therapistId) {
           throw new HttpsError("failed-precondition", "El profesional no corresponde a la terapia.");
         }
-        if ((therapy.citas || []).some((item) => isOpenAppointment(item.estado))) {
+        const appointments = await therapyAppointments(transaction, db, therapySnapshot.id, therapy);
+        if (appointments.some((item) => isOpenAppointment(item.estado))) {
           throw new HttpsError("already-exists", "Ya existe una cita pendiente o confirmada para esta terapia.");
         }
       } else {
@@ -660,7 +672,9 @@ async function changeAppointmentStatus(request, internalOptions = {}) {
         const attendance = attendanceChange(current, data, {...actor, uid: auth.uid}, serverNow);
         const targetStatus = attendance.action === "undo" ? "confirmada" : "realizada";
         if (requestedStatus !== targetStatus) throw new HttpsError("invalid-argument", "La acción de atención y el estado solicitado no coinciden.");
-        if (attendance.action === "undo" && (therapy.citas || []).some((item) => item.citaId !== appointmentId && isOpenAppointment(item.estado))) {
+        const appointments = attendance.action === "undo" ?
+          await therapyAppointments(transaction, db, therapyRef.id, therapy) : [];
+        if (appointments.some((item) => item.citaId !== appointmentId && isOpenAppointment(item.estado))) {
           throw new HttpsError("failed-precondition", "Ya existe otra cita abierta en este proceso. Resuélvela antes de deshacer la realización.");
         }
         const recordedAt = serverNow.toISOString();
@@ -890,7 +904,8 @@ async function changeTherapyStatus(request) {
     if (!["patient", "admin"].includes(actor.mode)) {
       throw new HttpsError("permission-denied", "El profesional no puede cambiar este estado por el paciente.");
     }
-    if ((therapy.citas || []).some((item) => isOpenAppointment(item.estado))) {
+    const appointments = await therapyAppointments(transaction, db, therapyId, therapy);
+    if (appointments.some((item) => isOpenAppointment(item.estado))) {
       throw new HttpsError(
           "failed-precondition",
           "Primero reprograma o cancela la cita abierta. El cambio de terapia no cancela citas silenciosamente.",

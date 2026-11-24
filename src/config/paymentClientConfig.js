@@ -39,7 +39,7 @@ export function assertPaymentClientConfig() {
 }
 
 // Existing deployments keep the current checkout until a provider is configured.
-export const automatedPaymentsEnabled = Boolean(
+export const automatedPaymentsEnabled = import.meta.env.VITE_AUTOMATED_PAYMENTS_ENABLED === "true" && Boolean(
   (import.meta.env.VITE_PAYMENT_PROVIDER && publicKey &&
     !placeholderMarkers.some(marker => publicKey.toUpperCase().includes(marker))) ||
   (import.meta.env.DEV && import.meta.env.VITE_PAYMENT_USE_FAKE_PROVIDER === "true")

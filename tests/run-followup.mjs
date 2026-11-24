@@ -7,7 +7,7 @@ assert.match(process.env.FIREBASE_AUTH_EMULATOR_HOST || "", /^127\.0\.0\.1:9099$
 const env = {
   ...process.env,
   ...(process.env.MARKETPLACE_BROWSER_ONLY ? {
-    VITE_PAYMENT_PROVIDER: 'culqi', VITE_PAYMENT_USE_FAKE_PROVIDER: 'true', VITE_CULQI_PUBLIC_KEY: 'pk_test_synthetic',
+    VITE_AUTOMATED_PAYMENTS_ENABLED: 'true', VITE_PAYMENT_PROVIDER: 'culqi', VITE_PAYMENT_USE_FAKE_PROVIDER: 'true', VITE_CULQI_PUBLIC_KEY: 'pk_test_synthetic',
   } : {}),
   FUNCTIONS_EMULATOR: "true", GCLOUD_PROJECT: "demo-lurems-followup",
   VITE_USE_FIREBASE_EMULATORS: "true", VITE_FIREBASE_PROJECT_ID: "demo-lurems-followup",

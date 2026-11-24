@@ -222,6 +222,7 @@ const dialogAppointment = ref(null);
 
 let unsubscribeProfile = null;
 let therapistRequestId = 0;
+let dashboardRequestId = 0;
 
 const activeTherapy = computed(() => activeTherapyData.value);
 
@@ -336,6 +337,7 @@ function handleDialogSaved() {
 }
 
 async function loadActiveTherapy() {
+  const requestId = ++dashboardRequestId;
   const pacienteUid = currentUser.value?.uid;
 
   if (!pacienteUid) {
@@ -353,16 +355,18 @@ async function loadActiveTherapy() {
       getExercisesByPatient(pacienteUid),
     ]);
 
+    if (requestId !== dashboardRequestId || pacienteUid !== currentUser.value?.uid) return;
     activeTherapyData.value = activeTherapy;
     therapies.value = patientTherapies;
     exercises.value = patientExercises;
   } catch (error) {
+    if (requestId !== dashboardRequestId || pacienteUid !== currentUser.value?.uid) return;
     console.error("Error loading active therapy for dashboard:", error);
     activeTherapyData.value = null;
     therapies.value = [];
     exercises.value = [];
   } finally {
-    therapiesReady.value = true;
+    if (requestId === dashboardRequestId) therapiesReady.value = true;
   }
 }
 
@@ -372,13 +376,17 @@ watch(
     unsubscribeProfile?.();
     unsubscribeProfile = null;
     profile.value = null;
+    activeTherapyData.value = null;
+    therapies.value = [];
+    exercises.value = [];
+    dialog.value = false;
     dialogAppointment.value = null;
 
     if (uid) {
       unsubscribeProfile = watchProfile(
         uid,
         (item) => {
-          profile.value = item;
+          if (uid === currentUser.value?.uid) profile.value = item;
         },
         (error) => {
           console.error("Error loading profile for dashboard:", error);
@@ -428,6 +436,7 @@ watch(
 );
 
 onBeforeUnmount(() => {
+  dashboardRequestId++;
   unsubscribeProfile?.();
   therapistRequestId += 1;
 });

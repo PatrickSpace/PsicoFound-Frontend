@@ -331,6 +331,7 @@ const props = defineProps({
 
 const emit = defineEmits(["update:modelValue", "saved"]);
 const shareSurveyConsent = ref(false);
+let generation = 0;
 
 const router = useRouter();
 const authStore = useAuthStore();
@@ -762,6 +763,7 @@ async function submitAppointment() {
   }
 
   saving.value = true;
+  const currentGeneration = generation;
 
   try {
     let savedAppointment = null;
@@ -787,18 +789,20 @@ async function submitAppointment() {
         availabilitySlotId: selectedSlotId.value,
       });
     } else if (showAvailabilityPicker.value) {
-      bookingHold.value = await createBookingHold({
+      const booking = await createBookingHold({
         slotId: selectedSlotId.value,
         shareSurveyHistoryConsent: shareSurveyConsent.value,
         terapiaId: props.terapiaId || "",
         notes: form.notas,
         timezone: "America/Lima",
       });
+      if (currentGeneration === generation) bookingHold.value = booking;
       return;
     } else {
       throw new Error("Selecciona un horario disponible para reservar.");
     }
 
+    if (currentGeneration !== generation) return;
     window.dispatchEvent(
       new CustomEvent("ui-success", {
         detail: {
@@ -816,6 +820,7 @@ async function submitAppointment() {
       router.push("/sesiones");
     }
   } catch (error) {
+    if (currentGeneration !== generation) return;
     console.error("Error registrando cita:", error);
     window.dispatchEvent(
       new CustomEvent("api-error", {
@@ -826,7 +831,7 @@ async function submitAppointment() {
       })
     );
   } finally {
-    saving.value = false;
+    if (currentGeneration === generation) saving.value = false;
   }
 }
 
@@ -895,7 +900,14 @@ function formatDisplayDate(date) {
     year: "numeric",
   }).format(parsed);
 }
-watch([() => props.modelValue, () => currentUser.value?.uid], () => { shareSurveyConsent.value = false; });
+watch([() => props.modelValue, () => currentUser.value?.uid, () => appContext.activeMode],
+  ([open, uid, mode], [, previousUid, previousMode]) => {
+    generation++;
+    shareSurveyConsent.value = false;
+    bookingHold.value = null;
+    saving.value = false;
+    if (open && (uid !== previousUid || mode !== previousMode)) emit('update:modelValue', false);
+  });
 </script>
 
 <style scoped>

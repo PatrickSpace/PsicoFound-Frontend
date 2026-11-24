@@ -187,7 +187,7 @@ anterior a la integración. Se resolvieron los conflictos con las versiones actu
 de autenticación, consentimiento, conciliación, privacidad y controles de operación.
 
 Los parámetros de activación se revisan por separado. `VITE_CALENDAR_ENABLED=true`
-requiere publicar las APIs de agenda. Los cobros automáticos requieren proveedor,
+requiere publicar las APIs de agenda. Los cobros automáticos requieren `VITE_AUTOMATED_PAYMENTS_ENABLED=true`, proveedor,
 llaves y funciones compatibles. Las cuentas, reservas y citas existentes continúan
 atendidas por sus contratos actuales, y las citas de proveedores usan su flujo de
 cancelación y reembolso. El progreso de bienvenida y acompañamiento se conserva.

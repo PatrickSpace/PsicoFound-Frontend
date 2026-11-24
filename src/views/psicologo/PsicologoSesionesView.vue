@@ -195,7 +195,7 @@
 
               <template #item.estado="{ value }">
                 <v-chip :color="statusColor(value)" size="small" variant="tonal">
-                  {{ value || "pendiente" }}
+                  {{ value === "no_asistio" ? "No asistió" : value || "pendiente" }}
                 </v-chip>
               </template>
 
@@ -288,6 +288,10 @@
                     aria-label="Deshacer realización" :disabled="isAppointmentBusy(item)" @click="openAttendanceDialog(item, 'undo')">
                     <v-icon>mdi-undo</v-icon>
                   </v-btn>
+                  <v-btn v-if="item.bookingId && ['pendiente', 'confirmada'].includes(item.estado)" variant="text"
+                    aria-label="Reprogramar cita" :disabled="isAppointmentBusy(item)" @click="openProviderRescheduleDialog(item)">
+                    Reprogramar
+                  </v-btn>
                   <v-btn v-if="item.bookingId && item.estado === 'confirmada'" variant="text"
                     :disabled="isAppointmentBusy(item) || !canCompleteAppointment(item, agendaNow)"
                     @click="recordNoShow(item)">No asistió</v-btn>
@@ -322,6 +326,7 @@
         :terapeuta-nombre="therapist?.nombre || editingAppointment?.terapeutaNombre || ''"
         :cita-id="editingAppointment?.citaId || ''"
         :initial-appointment="editingAppointment || {}"
+        :mode="dialogMode"
         :redirect-on-save="false"
         @saved="handleDialogSaved"
       />
@@ -529,6 +534,7 @@ const errorMessage = ref("");
 const search = ref("");
 const dialog = ref(false);
 const editingAppointment = ref(null);
+const dialogMode = ref("details");
 const availabilitySlots = ref([]);
 const loadingAvailability = ref(false);
 const savingAvailability = ref(false);
@@ -599,11 +605,12 @@ const modalityOptions = ["Remoto", "Presencial", "Híbrido"];
 const appointments = computed(() =>
   therapies.value.flatMap((therapy) =>
     (Array.isArray(therapy.citas) ? therapy.citas : []).map((appointment) => ({
+      ...appointment,
       id: appointment.citaId || `${therapy.id}-${appointment.fecha}-${appointment.hora}`,
       citaId: appointment.citaId || "",
       terapiaId: therapy.id,
       pacienteUid: therapy.pacienteUid || appointment.usuarioId || "",
-      pacienteNombre: therapy.pacienteNombre || "Paciente",
+      pacienteNombre: therapy.pacienteNombre || appointment.pacienteNombre || "Paciente",
       terapeutaId: therapy.terapeutaId || therapist.value?.id || "",
       terapeutaNombre: therapy.terapeutaNombre || therapist.value?.nombre || "",
       timeZone: appointment.timeZone,
@@ -830,7 +837,11 @@ async function handleCloseAvailabilitySlot(slot) {
 }
 
 function openEditDialog(item) {
+  dialogMode.value = "details";
   editingAppointment.value = {
+    bookingId: item.bookingId,
+    revision: item.revision,
+    durationMinutes: item.durationMinutes,
     citaId: item.citaId,
     terapiaId: item.terapiaId,
     terapeutaId: item.terapeutaId,
@@ -865,6 +876,7 @@ async function handleConfirmAppointment(item) {
 }
 
 function canRecordAttendance(item) {
+  if (item.bookingId) return canCompleteAppointment(item, agendaNow.value);
   const start = resolveSchedule(item).start;
   return Boolean(start && start <= agendaNow.value);
 }
@@ -1039,11 +1051,17 @@ function setAppointmentAction(item, type) {
 function clearAppointmentAction() {
   appointmentAction.value = { id: "", type: "" };
 }
+function openProviderRescheduleDialog(item) {
+  openEditDialog(item);
+  dialogMode.value = 'reschedule';
+}
 async function recordNoShow(item) {
-  try {
-    await markAppointmentAsNoShow({ citaId: item.citaId, revision: item.revision });
-    await loadTherapistSchedule();
-  } catch (error) { errorMessage.value = error?.message || 'No pudimos registrar la inasistencia.'; }
+  if (isAppointmentBusy(item)) return;
+  setAppointmentAction(item, 'no-show');
+  await runAppointmentAction(
+    () => markAppointmentAsNoShow({ citaId: item.citaId, revision: item.revision }),
+    'Inasistencia registrada', 'Se actualizó el estado de la sesión.'
+  );
 }
 </script>
 
