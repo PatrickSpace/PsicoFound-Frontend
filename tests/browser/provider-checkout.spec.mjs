@@ -69,18 +69,18 @@ test('provider checkout: professional reschedules the paid appointment using an 
     startTime: '11:00', endTime: '11:45', durationMinutes: 45, bufferMinutes: 15,
     status: 'available', modality: 'Remoto', location: 'Terapia Online', timezone: 'America/Lima' });
   await page.evaluate(async password => {
-    const { auth } = await import('/src/plugins/Firebase/firebase.js');
+    const { auth } = await import(new URL('/src/plugins/Firebase/firebase.js', location.origin).href);
     const module = performance.getEntriesByType('resource').find(entry => entry.name.includes('/firebase_auth.js'));
     const { signInWithEmailAndPassword } = await import(module.name);
     await signInWithEmailAndPassword(auth, 'professional-a@example.test', password);
   }, password);
   await expect.poll(() => page.evaluate(async () => {
-    const { useAppContextStore } = await import('/src/store/appContext.js');
+    const { useAppContextStore } = await import(new URL('/src/store/appContext.js', location.origin).href);
     return useAppContextStore().loadedForUid;
   })).toBe('professional-a');
   await page.evaluate(async () => {
-    const { useAppContextStore } = await import('/src/store/appContext.js');
-    const { default: router } = await import('/src/router/index.js');
+    const { useAppContextStore } = await import(new URL('/src/store/appContext.js', location.origin).href);
+    const { default: router } = await import(new URL('/src/router/index.js', location.origin).href);
     useAppContextStore().setActiveMode('psychologist');
     await router.push('/psicologo/sesiones');
   });
@@ -113,7 +113,7 @@ test('provider checkout: dashboard ignores a delayed result after an account cha
   await page.getByRole('button', { name: 'Iniciar Sesión', exact: true }).click();
   await expect.poll(() => page.evaluate(() => typeof window.__releaseDashboard)).toBe('function');
   await page.evaluate(async password => {
-    const { auth } = await import('/src/plugins/Firebase/firebase.js');
+    const { auth } = await import(new URL('/src/plugins/Firebase/firebase.js', location.origin).href);
     const module = performance.getEntriesByType('resource').find(entry => entry.name.includes('/firebase_auth.js'));
     const { signInWithEmailAndPassword } = await import(module.name);
     await signInWithEmailAndPassword(auth, 'professional-a@example.test', password);
