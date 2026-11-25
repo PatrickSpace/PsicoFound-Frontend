@@ -1,3 +1,5 @@
+import { VRadioGroup } from "vuetify/components/VRadioGroup";
+import { VRadio } from "vuetify/components/VRadio";
 // Register only components used by the application. Add new Vuetify tags here.
 import { VAlert } from "vuetify/components/VAlert";
 import { VApp } from "vuetify/components/VApp";
@@ -54,4 +56,4 @@ import { VTimelineItem } from "vuetify/components/VTimeline";
 import { VToolbar } from "vuetify/components/VToolbar";
 import { VTooltip } from "vuetify/components/VTooltip";
 
-export default { VAlert, VApp, VAppBar, VAppBarTitle, VAvatar, VBadge, VBottomNavigation, VBtn, VCard, VCardActions, VCardItem, VCardSubtitle, VCardText, VCardTitle, VCheckbox, VChip, VCol, VCombobox, VContainer, VDataTable, VDialog, VDivider, VEmptyState, VExpansionPanel, VExpansionPanelText, VExpansionPanels, VForm, VIcon, VImg, VList, VListItem, VListItemSubtitle, VListItemTitle, VMain, VMenu, VNavigationDrawer, VProgressCircular, VProgressLinear, VRow, VSelect, VSkeletonLoader, VSlider, VSnackbar, VSpacer, VSwitch, VTable, VTab, VTabs, VTextField, VTextarea, VTimeline, VTimelineItem, VToolbar, VTooltip };
+export default { VRadioGroup, VRadio, VAlert, VApp, VAppBar, VAppBarTitle, VAvatar, VBadge, VBottomNavigation, VBtn, VCard, VCardActions, VCardItem, VCardSubtitle, VCardText, VCardTitle, VCheckbox, VChip, VCol, VCombobox, VContainer, VDataTable, VDialog, VDivider, VEmptyState, VExpansionPanel, VExpansionPanelText, VExpansionPanels, VForm, VIcon, VImg, VList, VListItem, VListItemSubtitle, VListItemTitle, VMain, VMenu, VNavigationDrawer, VProgressCircular, VProgressLinear, VRow, VSelect, VSkeletonLoader, VSlider, VSnackbar, VSpacer, VSwitch, VTable, VTab, VTabs, VTextField, VTextarea, VTimeline, VTimelineItem, VToolbar, VTooltip };

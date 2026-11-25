@@ -40,7 +40,7 @@ test('attendance: professional records, corrects and undoes; patient can read th
   await page.getByRole('button', {name:'Cerrar sesión', exact:true}).click();
   await expect(page).toHaveURL(/\/login/);
   await login(page, 'patient-b', '/sesiones');
-  await page.getByRole('button', {name:'Ver resumen', exact:true}).click();
+  await page.getByRole('row').filter({hasText:'2020-01-01'}).getByRole('button', {name:'Ver resumen', exact:true}).click();
   dialog = page.getByRole('dialog');
   await expect(dialog).toContainText('Resumen original de prueba');
   await expect(dialog).toContainText('Resumen corregido de prueba');

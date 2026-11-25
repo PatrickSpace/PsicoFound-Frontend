@@ -29,6 +29,8 @@
         <v-divider class="page-header-divider" />
       </div>
 
+      <PatientPaymentBookings v-if="automatedPaymentsEnabled" />
+
       <v-card
         v-if="loadError"
         class="pa-4 mb-5 card-backgoundcustom"
@@ -241,6 +243,8 @@
 </template>
 
 <script setup>
+import PatientPaymentBookings from '@/components/Payments/PatientPaymentBookings.vue';
+import { automatedPaymentsEnabled } from '@/config/paymentClientConfig';
 import { useRoute as useNotificationRoute } from "vue-router";
 const notificationRoute = useNotificationRoute();
 import { computed, onBeforeUnmount, ref, watch } from "vue";

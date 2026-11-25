@@ -26,6 +26,7 @@
         <v-divider class="page-header-divider" />
       </div>
 
+      <PaymentAccountCard v-if="automatedPaymentsEnabled && appContext.hasPsychologistAccess && appContext.activeMode === 'psychologist'" />
       <ProfessionalSetupCard v-if="appContext.hasPsychologistAccess && appContext.activeMode === 'psychologist'" />
       <v-row align="stretch">
         <v-col v-if="appContext.hasPsychologistAccess && appContext.activeMode === 'psychologist'" cols="12" md="6" class="d-flex">
@@ -751,6 +752,8 @@ import {
 import { useRouter } from "vue-router";
 import LayoutDefault from "@/components/Layout/Layoutmain.vue";
 import PsychologistRateCard from "@/components/Payments/PsychologistRateCard.vue";
+import PaymentAccountCard from '@/components/Payments/PaymentAccountCard.vue';
+import { automatedPaymentsEnabled } from '@/config/paymentClientConfig';
 import ProfessionalSetupCard from "@/components/onboarding/ProfessionalSetupCard.vue";
 import { auth } from "@/plugins/Firebase/firebase";
 import { useAppContextStore } from "@/store/appContext";

@@ -108,7 +108,7 @@
         color="secondary"
         variant="tonal"
         prepend-icon="mdi-calendar-edit-outline"
-        :disabled="!reschedulable"
+        :disabled="!reschedulable || (appointment.bookingId && !canPatientReschedule(appointment))"
         @click="emit('reschedule')"
       >
         Reprogramar
@@ -119,6 +119,7 @@
         color="error"
         variant="tonal"
         prepend-icon="mdi-calendar-remove-outline"
+        :disabled="Boolean(appointment.bookingId) && !canCancelAppointment(appointment)"
         @click="emit('cancel')"
       >
         Cancelar cita
@@ -128,6 +129,7 @@
 </template>
 
 <script setup>
+import { canPatientReschedule, canCancelAppointment } from '@/utils/appointmentTime';
 import { computed } from "vue";
 import { appointmentStart, DEFAULT_TIME_ZONE, resolveSchedule, AGENDA_NOTICE } from "@/utils/dateTime";
 
