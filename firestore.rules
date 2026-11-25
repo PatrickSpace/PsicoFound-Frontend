@@ -238,9 +238,31 @@ service cloud.firestore {
     }
 
     match /therapist_availability/{slotId} {
-      allow read: if signedIn();
+      allow read: if assignedTherapist(resource.data.therapistId) || isAdmin() ||
+        (signedIn() && resource.data.status == 'available');
       // Agenda policy, ownership and slot concurrency are enforced by Functions.
       allow create, update, delete: if false;
+    }
+
+    match /appointment_events/{eventId} {
+      allow read: if ownsExistingPatientDoc() || ownsExistingTherapistDoc();
+      allow write: if false;
+    }
+
+    match /payment_accounts/{psychologistId} {
+      allow read: if isAdmin() || (signedIn() && resource.data.psychologistUid == request.auth.uid);
+      allow write: if false;
+    }
+
+    match /bookings/{bookingId} {
+      allow read: if isAdmin() || (signedIn() &&
+        (resource.data.patientId == request.auth.uid || resource.data.psychologistUid == request.auth.uid));
+      allow write: if false;
+    }
+
+    match /refunds/{refundId} {
+      allow read: if isAdmin() || (signedIn() && resource.data.requestedByUserId == request.auth.uid);
+      allow write: if false;
     }
 
     match /notifications/{notificationId} {

@@ -327,3 +327,25 @@ test("unlinked actors cannot read or mutate another patient's appointment",
       );
     }
   });
+
+test('canonical appointments govern therapy closure and no-shows remain final', async () => {
+  const db = adminFirestore.getFirestore();
+  const therapy = db.doc('terapias/b-active');
+  const appointment = db.doc('citas/canonical-state');
+  await therapy.update({ citas: [{ citaId: appointment.id, estado: 'cancelada' }] });
+  await appointment.set({ terapiaId: 'b-active', pacienteUid: accounts.B.uid,
+    terapeutaId: 'therapist-a', estado: 'confirmada' });
+  await assert.rejects(handlers.changeTherapyStatus(call('B', {
+    therapyId: 'b-active', mode: 'patient', status: 'pausado', requestId: 'canonical-open',
+  })), { code: 'failed-precondition' });
+  await appointment.update({ estado: 'cancelada' });
+  await handlers.changeTherapyStatus(call('B', {
+    therapyId: 'b-active', mode: 'patient', status: 'pausado', requestId: 'canonical-cancelled',
+  }));
+  await therapy.update({ estado: 'activo', citas: [{ citaId: appointment.id, estado: 'confirmada' }] });
+  await appointment.update({ estado: 'no_asistio' });
+  await handlers.changeTherapyStatus(call('B', {
+    therapyId: 'b-active', mode: 'patient', status: 'pausado', requestId: 'canonical-no-show',
+  }));
+  assert.equal((await therapy.get()).data().estado, 'pausado');
+});

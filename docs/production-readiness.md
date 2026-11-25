@@ -176,3 +176,21 @@ La entrega de aquel corte tenía comprobaciones técnicas y smokes documentados.
 Ese cierre no aprueba una entrega posterior ni la apertura comercial actual. Las
 exclusiones y acciones humanas no se registran como ejecutadas y conservan su
 evidencia y decisión propias.
+
+## Integración local del 24/11/2026
+
+La agenda configurable y los adaptadores Culqi/Mercado Pago se incorporan junto con los contratos vigentes. Los cobros automáticos requieren configurar explícitamente el proveedor, las llaves y el backend compatible. La guía de puesta en marcha se encuentra en `docs/scheduling/calendar-and-appointments.md`. La instantánea de los cambios locales se conserva en la rama `codex/local-pending-20261124`.
+
+La publicación de este conjunto en `main` fue autorizada en el chat el 24/11/2026.
+La rama `codex/local-pending-20261124` conserva una copia íntegra del estado local
+anterior a la integración. Se resolvieron los conflictos con las versiones actuales
+de autenticación, consentimiento, conciliación, privacidad y controles de operación.
+
+Los parámetros de activación se revisan por separado. `VITE_CALENDAR_ENABLED=true`
+requiere publicar las APIs de agenda. Los cobros automáticos requieren `VITE_AUTOMATED_PAYMENTS_ENABLED=true`, proveedor,
+llaves y funciones compatibles. Las cuentas, reservas y citas existentes continúan
+atendidas por sus contratos actuales, y las citas de proveedores usan su flujo de
+cancelación y reembolso. El progreso de bienvenida y acompañamiento se conserva.
+
+Las comprobaciones y los resultados del candidato se adjuntan al PR de integración.
+Los informes locales se encuentran en `test-results/integracion-main-2026-11-24/`.

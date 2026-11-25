@@ -1,7 +1,9 @@
 const {zonedDateTimeToDate, resolveSchedule} = require("./schedulePolicy.mjs");
 
 const OPEN_APPOINTMENT_STATUSES = new Set(["pendiente", "confirmada"]);
-const FINAL_APPOINTMENT_STATUSES = new Set(["realizada", "cancelada"]);
+const FINAL_APPOINTMENT_STATUSES = new Set([
+  "realizada", "cancelada", "no_asistio",
+]);
 
 const ROLE_TRANSITIONS = Object.freeze({
   patient: Object.freeze({
@@ -27,7 +29,7 @@ const ROLE_TRANSITIONS = Object.freeze({
 function normalizeStatus(value, fallback = "pendiente") {
   const normalized = typeof value === "string" ?
     value.trim().toLowerCase() : "";
-  return ["pendiente", "confirmada", "realizada", "cancelada"]
+  return ["pendiente", "confirmada", "realizada", "cancelada", "no_asistio"]
       .includes(normalized) ?
     normalized : fallback;
 }

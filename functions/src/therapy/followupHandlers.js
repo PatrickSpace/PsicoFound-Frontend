@@ -223,7 +223,7 @@ async function findSurveySharingAppointment(transaction, db, ctx) {
     appointment = appointments.find((item) => item.id === initialId) || null;
   }
   const allowed = appointment && appointment.estado !== "cancelada" &&
-    appointment.paymentStatus === "confirmed" &&
+    ["confirmed", "approved"].includes(appointment.paymentStatus) &&
     appointment.surveyHistoryConsent === true &&
     appointment.pacienteUid === ctx.therapy.pacienteUid &&
     appointment.terapeutaId === ctx.therapy.terapeutaId;

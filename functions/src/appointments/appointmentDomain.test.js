@@ -4,6 +4,7 @@ const {
   assertFutureSlot,
   assertTransition,
   isOpenAppointment,
+  isFinalAppointment,
   replaceAppointmentSummary,
   zonedDateTimeToDate,
 } = require("./appointmentDomain");
@@ -32,6 +33,8 @@ test("open appointment status only includes pending and confirmed", () => {
   assert.equal(isOpenAppointment("confirmada"), true);
   assert.equal(isOpenAppointment("realizada"), false);
   assert.equal(isOpenAppointment("cancelada"), false);
+  assert.equal(isOpenAppointment("no_asistio"), false);
+  assert.equal(isFinalAppointment("no_asistio"), true);
 });
 
 test("converts local appointment time using the declared timezone", () => {

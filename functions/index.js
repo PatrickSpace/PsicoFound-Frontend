@@ -311,3 +311,72 @@ exports.recordProfessionalRecovery = onCall({minInstances: 0, timeoutSeconds: 20
 exports.cancelAdminReservation = onCall({minInstances: 0, timeoutSeconds: 30}, require("./src/appointments/appointmentHandlers").cancelAdminReservation);
 
 exports.refreshOwnPaymentReservation = onCall({minInstances: 0, timeoutSeconds: 20}, require("./src/payments/paymentAutomation").refreshOwnPaymentReservation);
+
+// Additional calendar and provider APIs share the current application controls.
+const schedulingHandlers = require("./src/scheduling/schedulingHandlers");
+for (const name of ["getTherapistCalendar", "projectAvailability",
+  "listAvailability", "closeAvailability", "mutateAppointment",
+  "cancelAppointment"]) {
+  exports[name] = onCall({timeoutSeconds: 60, verifiedEmailRequired: true},
+      schedulingHandlers[name]);
+}
+exports.sendAppointmentReminders = onSchedule(
+    {schedule: "every 5 minutes", timeoutSeconds: 120},
+    schedulingHandlers.sendAppointmentReminders,
+);
+const marketplaceHandlers = require("./src/payments/paymentHandlers");
+const {onRequest, HttpsError} = require("firebase-functions/v2/https");
+const {CULQI_SECRET_KEY, PAYMENT_TOKEN_ENCRYPTION_KEY,
+  MERCADO_PAGO_ACCESS_TOKEN, MERCADO_PAGO_CLIENT_SECRET,
+  MERCADO_PAGO_WEBHOOK_SECRET} = require("./src/payments/config/paymentConfig");
+const isolatedProvider = process.env.FUNCTIONS_EMULATOR === "true" &&
+  /^demo-/.test(process.env.GCLOUD_PROJECT || "");
+const providerSecrets = isolatedProvider ? [] : process.env.PAYMENT_PROVIDER === "culqi" ?
+  [CULQI_SECRET_KEY, PAYMENT_TOKEN_ENCRYPTION_KEY] :
+  process.env.PAYMENT_PROVIDER === "mercado_pago" ?
+    [MERCADO_PAGO_ACCESS_TOKEN, MERCADO_PAGO_CLIENT_SECRET,
+      MERCADO_PAGO_WEBHOOK_SECRET, PAYMENT_TOKEN_ENCRYPTION_KEY] : [];
+const {requirePatientAccess} = require("./src/accounts/accessPolicy");
+const patientProviderMethods = new Set(["createBookingHold", "createBookingPayment",
+  "listCulqiCards", "saveCulqiCard", "completeCulqiCard3DS", "removeCulqiCard",
+  "completeCulqiPayment3DS", "getBookingPaymentStatus", "listMyPaymentBookings",
+  "requestBookingRefund", "simulatePaymentEvent"]);
+for (const name of ["createPaymentAccountConnection",
+  "createMercadoPagoAuthorizationUrl", "getPaymentAccountStatus",
+  "updatePsychologistPaymentSettings", "disconnectPaymentAccount",
+  "savePsychologistPayoutAccount", "listCulqiCards", "saveCulqiCard",
+  "completeCulqiCard3DS", "removeCulqiCard", "completeCulqiPayment3DS",
+  "createBookingHold", "createBookingPayment", "getBookingPaymentStatus",
+  "listMyPaymentBookings", "expireBookingHold", "cancelBooking",
+  "requestBookingRefund", "simulatePaymentEvent"]) {
+  const providerOperation = async (request) => {
+    if (patientProviderMethods.has(name)) await requirePatientAccess(request);
+    if (name === "createBookingHold" && request.data?.shareSurveyHistoryConsent !== true) {
+      throw new HttpsError("failed-precondition", "Autoriza compartir el resumen y el historial antes de reservar.");
+    }
+    return marketplaceHandlers[name](request);
+  };
+  Object.defineProperty(providerOperation, "name", {value: name});
+  exports[name] = onCall({timeoutSeconds: 60, secrets: providerSecrets,
+    verifiedEmailRequired: true}, providerOperation);
+}
+exports.culqiWebhook = onRequest({timeoutSeconds: 30, secrets: providerSecrets},
+    marketplaceHandlers.culqiWebhook);
+exports.mercadoPagoWebhook = onRequest({timeoutSeconds: 30,
+  secrets: providerSecrets}, marketplaceHandlers.mercadoPagoWebhook);
+exports.mercadoPagoOAuthCallback = onRequest({timeoutSeconds: 60,
+  secrets: providerSecrets}, marketplaceHandlers.mercadoPagoOAuthCallback);
+exports.expirePendingBookingHolds = onSchedule(
+    {schedule: "every 1 minutes", timeoutSeconds: 60, secrets: providerSecrets},
+    async () => {
+      if (process.env.PAYMENT_PROVIDER) {
+        await marketplaceHandlers.expirePendingBookingHolds();
+      }
+    },
+);
+exports.reconcilePayments = onSchedule(
+    {schedule: "every 15 minutes", timeoutSeconds: 120, secrets: providerSecrets},
+    async () => {
+      if (process.env.PAYMENT_PROVIDER) await marketplaceHandlers.reconcilePayments();
+    },
+);
