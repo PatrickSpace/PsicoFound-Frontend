@@ -11,7 +11,8 @@ permissions:
 jobs:
   verify:
     runs-on: ubuntu-22.04
-    timeout-minutes: 45
+    # The serial emulator/browser suite can exceed 45 minutes on slower runners.
+    timeout-minutes: 75
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
